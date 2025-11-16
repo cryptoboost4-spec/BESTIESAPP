@@ -1,0 +1,53 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+    
+    function isUnder10MB() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Check-in media (photos/videos)
+    match /checkins/{userId}/{checkinId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+        && isOwner(userId)
+        && (isImage() || isVideo())
+        && isUnder10MB();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Emergency recordings (encrypted)
+    match /emergency/{userId}/{emergencyId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isOwner(userId);
+      allow delete: if false; // Can only be deleted by cloud function after 7 days
+    }
+    
+    // Profile pictures
+    match /profiles/{userId}/{fileName} {
+      allow read: if true; // Public
+      allow write: if isAuthenticated() 
+        && isOwner(userId)
+        && isImage()
+        && isUnder10MB();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+  }
+}
