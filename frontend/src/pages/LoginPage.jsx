@@ -197,28 +197,47 @@ const LoginPage = () => {
                     {loading ? 'Sending...' : 'Send Verification Code'}
                   </button>
 
-                  {/* Fake reCAPTCHA Visual (shows auto-verification) */}
-                  {recaptchaStatus !== 'idle' && (
-                    <div className="flex items-center justify-center gap-2 py-2">
-                      <div className={`w-6 h-6 border-2 rounded flex items-center justify-center ${
-                        recaptchaStatus === 'checking' ? 'border-gray-400 bg-white' : 'border-green-500 bg-green-500'
-                      }`}>
-                        {recaptchaStatus === 'checking' ? (
-                          <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-sm text-text-secondary font-medium">
-                        {recaptchaStatus === 'checking' ? 'Verifying you\'re human...' : 'Verified ✓'}
-                      </span>
+                  {/* Fake Google reCAPTCHA (looks exactly like the real thing) */}
+                  <div className="mt-4 flex items-start gap-3 p-3 bg-gray-50 border border-gray-300 rounded">
+                    {/* Checkbox */}
+                    <div className={`w-7 h-7 border-2 rounded flex items-center justify-center flex-shrink-0 transition-all ${
+                      recaptchaStatus === 'idle'
+                        ? 'border-gray-400 bg-white'
+                        : recaptchaStatus === 'checking'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-green-500 bg-green-500'
+                    }`}>
+                      {recaptchaStatus === 'idle' && null}
+                      {recaptchaStatus === 'checking' && (
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                      {recaptchaStatus === 'verified' && (
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
                     </div>
-                  )}
 
-                  {/* Invisible reCAPTCHA container */}
-                  <div id="recaptcha-container"></div>
+                    {/* Text */}
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-700">
+                        {recaptchaStatus === 'idle' && "I'm not a robot"}
+                        {recaptchaStatus === 'checking' && "Verifying..."}
+                        {recaptchaStatus === 'verified' && "Verified"}
+                      </div>
+                      {/* reCAPTCHA branding */}
+                      <div className="flex items-center gap-1 mt-1">
+                        <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                        </svg>
+                        <span className="text-xs text-gray-500">reCAPTCHA</span>
+                        <span className="text-xs text-gray-400 ml-1">Privacy - Terms</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Invisible reCAPTCHA container (hidden, auto-executes) */}
+                  <div id="recaptcha-container" style={{ display: 'none' }}></div>
                 </form>
               ) : (
                 <form onSubmit={handleVerifyCode} className="space-y-3">

@@ -100,11 +100,11 @@ service cloud.firestore {
     
     // Templates collection
     match /templates/{templateId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isSignedIn() && 
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isSignedIn() &&
         request.auth.uid == request.resource.data.userId;
       allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
     }
     
     // Badges collection - public (anyone can see badges)
