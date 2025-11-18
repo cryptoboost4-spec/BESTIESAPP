@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
@@ -12,7 +12,7 @@ const CreateCheckInPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [locationInput, setLocationInput] = useState('');
   const [duration, setDuration] = useState(30);
   const [selectedBesties, setSelectedBesties] = useState([]);
@@ -20,6 +20,10 @@ const CreateCheckInPage = () => {
   const [besties, setBesties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [useGPS, setUseGPS] = useState(false);
+  const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
+
+  const locationInputRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
   // Common locations for suggestions
   const commonLocations = [
@@ -36,13 +40,13 @@ const CreateCheckInPage = () => {
   useEffect(() => {
     errorTracker.trackFunnelStep('checkin', 'view_create_page');
     loadBesties();
-    
+
     // Load from quick button or template
     if (location.state?.quickMinutes) {
       errorTracker.trackFunnelStep('checkin', 'use_quick_button', { minutes: location.state.quickMinutes });
       setDuration(location.state.quickMinutes);
     }
-    
+
     if (location.state?.template) {
       errorTracker.trackFunnelStep('checkin', 'use_template');
       const template = location.state.template;
@@ -52,6 +56,84 @@ const CreateCheckInPage = () => {
       setNotes(template.notes || '');
     }
   }, [location.state]);
+
+  // Load Google Places API
+  useEffect(() => {
+    const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+
+    if (!apiKey) {
+      console.warn('Google Maps API key not configured');
+      return;
+    }
+
+    // Check if script already loaded
+    if (window.google && window.google.maps && window.google.maps.places) {
+      setAutocompleteLoaded(true);
+      return;
+    }
+
+    // Load script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      setAutocompleteLoaded(true);
+    };
+    script.onerror = () => {
+      console.error('Failed to load Google Maps API');
+      toast.error('Failed to load address autocomplete', { duration: 2000 });
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup: remove script on unmount
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
+
+  // Initialize Autocomplete when API is loaded
+  useEffect(() => {
+    if (!autocompleteLoaded || !locationInputRef.current) return;
+
+    try {
+      // Initialize Google Places Autocomplete
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+        locationInputRef.current,
+        {
+          types: ['establishment', 'geocode'], // Allow both businesses and addresses
+          fields: ['formatted_address', 'name', 'geometry'], // Request only needed fields
+        }
+      );
+
+      // Listen for place selection
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current.getPlace();
+
+        if (place.formatted_address) {
+          // Use business name if available, otherwise use formatted address
+          const displayLocation = place.name && place.name !== place.formatted_address
+            ? `${place.name}, ${place.formatted_address}`
+            : place.formatted_address;
+
+          setLocationInput(displayLocation);
+          setUseGPS(false);
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing autocomplete:', error);
+    }
+
+    return () => {
+      // Cleanup autocomplete listeners
+      if (autocompleteRef.current) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, [autocompleteLoaded]);
 
   const loadBesties = async () => {
     if (!currentUser) return;
@@ -211,12 +293,14 @@ const CreateCheckInPage = () => {
 
             <div className="flex gap-2 mb-3">
               <input
+                ref={locationInputRef}
                 type="text"
                 value={locationInput}
                 onChange={(e) => setLocationInput(e.target.value)}
                 className="input flex-1"
-                placeholder="Enter location..."
+                placeholder="Type an address or place name..."
                 required
+                autoComplete="off"
               />
               {isEnabled('gpsLocation') && (
                 <button
