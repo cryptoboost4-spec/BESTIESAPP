@@ -821,42 +821,88 @@ exports.sendCheckInReminders = functions.pubsub
 // ========================================
 
 // Monitor critical errors and send email alerts to admin
+// Only alerts on SITE ISSUES (affecting multiple users or core functionality)
+// Not individual user errors
 exports.monitorCriticalErrors = functions.firestore
   .document('errors/{errorId}')
   .onCreate(async (snapshot, context) => {
     const error = snapshot.data();
 
-    // Determine if this is a critical error
-    const isCritical =
+    // First check: Is this error type critical at all?
+    const isCriticalType =
       error.type === 'uncaught_error' ||
       error.type === 'unhandled_promise' ||
       error.message?.includes('verification failed') ||
-      error.message?.includes('Check-in was not saved');
+      error.message?.includes('Check-in was not saved') ||
+      error.message?.includes('Firebase') ||
+      error.message?.includes('Database') ||
+      error.message?.includes('Function') ||
+      error.code === 'permission-denied' ||
+      error.code === 'unavailable';
 
-    if (!isCritical) {
-      return null; // Not critical, no alert needed
+    if (!isCriticalType) {
+      return null; // Not a critical error type
     }
 
-    console.log('Critical error detected:', error.message);
+    // Second check: Is this a SITE ISSUE or just a single user problem?
+    // Look for same error in last 5 minutes from multiple users
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    const recentErrorsQuery = await db.collection('errors')
+      .where('message', '==', error.message)
+      .where('timestamp', '>=', fiveMinutesAgo)
+      .get();
+
+    const uniqueUsers = new Set();
+    recentErrorsQuery.forEach(doc => {
+      const errorData = doc.data();
+      if (errorData.userId) {
+        uniqueUsers.add(errorData.userId);
+      }
+    });
+
+    // Only alert if multiple users (2+) have same error, OR if it's a database/firebase error
+    const isSystemError =
+      error.message?.includes('Firebase') ||
+      error.message?.includes('Database') ||
+      error.code === 'unavailable' ||
+      error.code === 'permission-denied';
+
+    const affectsMultipleUsers = uniqueUsers.size >= 2;
+
+    if (!isSystemError && !affectsMultipleUsers) {
+      console.log('Single user error, not alerting admin:', error.message);
+      return null; // Single user error, don't alert
+    }
+
+    console.log(`SITE ISSUE detected: ${error.message} (affects ${uniqueUsers.size} users)`);
 
     // Send email alert to admin
     const adminEmail = functions.config().admin?.email || 'admin@bestiesapp.com';
 
+    const alertType = isSystemError ? 'SYSTEM ERROR' : `SITE ISSUE (${uniqueUsers.size} users affected)`;
+
     const msg = {
       to: adminEmail,
       from: 'alerts@bestiesapp.com',
-      subject: `🚨 Critical Error Alert - ${error.type}`,
+      subject: `🚨 ${alertType} - ${error.type}`,
       html: `
-        <h2 style="color: #dc2626;">Critical Error Detected</h2>
+        <h2 style="color: #dc2626;">${alertType}</h2>
 
         <div style="background: #fee2e2; padding: 15px; border-left: 4px solid #dc2626; margin: 20px 0;">
           <strong>Error Message:</strong><br/>
           ${error.message}
         </div>
 
+        ${affectsMultipleUsers ? `
+          <div style="background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+            <strong>⚠️ This error has affected ${uniqueUsers.size} users in the last 5 minutes</strong>
+          </div>
+        ` : ''}
+
         <h3>Details:</h3>
         <ul>
           <li><strong>Type:</strong> ${error.type}</li>
+          <li><strong>Severity:</strong> ${isSystemError ? 'System Error' : 'Multiple Users Affected'}</li>
           <li><strong>User ID:</strong> ${error.userId || 'Anonymous'}</li>
           <li><strong>Session ID:</strong> ${error.sessionId}</li>
           <li><strong>URL:</strong> ${error.url}</li>

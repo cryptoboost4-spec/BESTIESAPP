@@ -128,10 +128,19 @@ export const AuthProvider = ({ children }) => {
             notifications: { whatsapp: false, email: true },
             smsSubscription: { active: false },
             lastActive: Timestamp.now(),
+            onboardingCompleted: false, // New users need onboarding
           });
         } else {
           // Returning user - update last active timestamp
-          await updateDoc(userRef, { lastActive: Timestamp.now() });
+          const updates = { lastActive: Timestamp.now() };
+
+          // If existing user doesn't have onboardingCompleted field, set it to true
+          // (they're an existing user, so they don't need onboarding)
+          if (userSnap.data().onboardingCompleted === undefined) {
+            updates.onboardingCompleted = true;
+          }
+
+          await updateDoc(userRef, updates);
         }
 
         // Process pending invite (works for multiple users)

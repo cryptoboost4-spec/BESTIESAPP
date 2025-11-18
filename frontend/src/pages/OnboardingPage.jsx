@@ -5,16 +5,26 @@ import { db, storage } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
+import BestieCircle from '../components/BestieCircle';
 
 const OnboardingPage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState('welcome'); // welcome, slides, name, photo, bestie-circle
   const [slideIndex, setSlideIndex] = useState(0);
-  const [displayName, setDisplayName] = useState(userData?.displayName || '');
+  const [displayName, setDisplayName] = useState('');
   const [uploading, setUploading] = useState(false);
   const [hasBesties, setHasBesties] = useState(false);
   const [checkingBesties, setCheckingBesties] = useState(false);
+
+  // Prefill name from user data when it loads
+  useEffect(() => {
+    if (userData?.displayName && !displayName) {
+      setDisplayName(userData.displayName);
+    } else if (currentUser?.displayName && !displayName) {
+      setDisplayName(currentUser.displayName);
+    }
+  }, [userData, currentUser, displayName]);
 
   const slides = [
     {
@@ -206,7 +216,7 @@ const OnboardingPage = () => {
                 onClick={() => setStep('name')}
                 className="w-full btn btn-primary text-lg py-4"
               >
-                Okay, let's get logged in! →
+                Let's check your details! →
               </button>
             )}
           </div>
@@ -311,7 +321,7 @@ const OnboardingPage = () => {
 
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4 overflow-y-auto">
-        <div className="max-w-md w-full py-8">
+        <div className="max-w-2xl w-full py-8">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">⭐</div>
             <h2 className="text-3xl font-display text-text-primary mb-2">
@@ -336,6 +346,11 @@ const OnboardingPage = () => {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Show actual bestie circle */}
+          <div className="mb-8">
+            <BestieCircle />
           </div>
 
           <div className="card p-6 mb-6">
