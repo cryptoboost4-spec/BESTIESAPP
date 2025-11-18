@@ -21,6 +21,7 @@ import LocationFavoritesPage from './pages/LocationFavoritesPage';
 import ExportDataPage from './pages/ExportDataPage';
 import MonitoringDashboard from './pages/MonitoringDashboard';
 import SocialFeedPage from './pages/SocialFeedPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 // Context
 import { AuthProvider } from './contexts/AuthContext';
@@ -78,11 +79,15 @@ function App() {
             <div className="App">
               <Routes>
             {/* Public routes */}
-            <Route 
-              path="/login" 
-              element={user ? <Navigate to="/" /> : <LoginPage />} 
+            <Route
+              path="/login"
+              element={user ? <Navigate to="/" /> : <LoginPage />}
             />
-            
+            <Route
+              path="/privacy"
+              element={<PrivacyPolicyPage />}
+            />
+
             {/* Protected routes */}
             <Route 
               path="/onboarding" 
