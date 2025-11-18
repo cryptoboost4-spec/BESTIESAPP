@@ -25,28 +25,31 @@ exports.checkExpiredCheckIns = functions.pubsub
   .schedule('every 1 minutes')
   .onRun(async (context) => {
     const now = admin.firestore.Timestamp.now();
-    
+
     const checkInsSnapshot = await db.collection('checkins')
       .where('status', '==', 'active')
       .where('alertTime', '<=', now)
       .get();
-    
+
     const alerts = [];
-    
+
     for (const doc of checkInsSnapshot.docs) {
       const checkIn = doc.data();
-      
+
       await doc.ref.update({
         status: 'alerted',
         alertedAt: now,
       });
-      
+
+      // Update user stats
+      await updateUserStats(checkIn.userId, 'checkInAlerted');
+
       alerts.push(sendAlertToBesties(doc.id, checkIn));
       await logAlertEvent(doc.id, checkIn);
     }
-    
+
     await Promise.all(alerts);
-    
+
     console.log(`Processed ${checkInsSnapshot.size} expired check-ins`);
     return null;
   });
@@ -83,25 +86,33 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   }
-  
+
   const { checkInId } = data;
-  
+
   const checkInRef = db.collection('checkins').doc(checkInId);
   const checkIn = await checkInRef.get();
-  
+
   if (!checkIn.exists || checkIn.data().userId !== context.auth.uid) {
     throw new functions.https.HttpsError('permission-denied', 'Invalid check-in');
   }
-  
+
   await checkInRef.update({
     status: 'completed',
     completedAt: admin.firestore.Timestamp.now(),
   });
-  
+
   await updateUserStats(context.auth.uid, 'checkInCompleted');
-  
+
   return { success: true };
 });
+
+// Firestore trigger: When a check-in is created, increment totalCheckIns
+exports.onCheckInCreated = functions.firestore
+  .document('checkins/{checkInId}')
+  .onCreate(async (snap, context) => {
+    const checkIn = snap.data();
+    await updateUserStats(checkIn.userId, 'checkInCreated');
+  });
 
 // Send alerts to besties
 async function sendAlertToBesties(checkInId, checkIn) {
@@ -485,17 +496,21 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
 
 async function updateUserStats(userId, statType) {
   const userRef = db.collection('users').doc(userId);
-  
+
   const updates = {
     lastActive: admin.firestore.Timestamp.now(),
   };
-  
-  if (statType === 'checkInCompleted') {
+
+  if (statType === 'checkInCreated') {
     updates['stats.totalCheckIns'] = admin.firestore.FieldValue.increment(1);
+  } else if (statType === 'checkInCompleted') {
+    updates['stats.completedCheckIns'] = admin.firestore.FieldValue.increment(1);
+  } else if (statType === 'checkInAlerted') {
+    updates['stats.alertedCheckIns'] = admin.firestore.FieldValue.increment(1);
   } else if (statType === 'bestieAdded') {
     updates['stats.totalBesties'] = admin.firestore.FieldValue.increment(1);
   }
-  
+
   await userRef.update(updates);
 }
 
@@ -1062,7 +1077,7 @@ exports.cleanupOldData = functions.pubsub
 // TEST ALERT FUNCTION
 // ========================================
 
-// Send test alert to verify notification setup
+// Send test alert to verify notification setup (EMAIL ONLY to save SMS costs)
 exports.sendTestAlert = functions.https.onCall(async (data, context) => {
   // Verify user is authenticated
   if (!context.auth) {
@@ -1079,11 +1094,9 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
     }
 
     const userData = userDoc.data();
-    const testMessage = `✅ Test Alert from Besties!\n\nThis is a test notification to confirm your alert settings are working correctly.\n\nYour notification channels:\n${userData.notificationPreferences?.email ? '✓ Email' : '✗ Email'}\n${userData.notificationPreferences?.whatsapp ? '✓ WhatsApp' : '✗ WhatsApp'}\n${userData.notificationsEnabled ? '✓ Push Notifications' : '✗ Push Notifications'}`;
-
     const notifications = [];
 
-    // Send Email
+    // Send Email ONLY (SMS/WhatsApp use the same backend system, so if email works, they work too)
     if (userData.email && userData.notificationPreferences?.email) {
       const emailMsg = {
         to: userData.email,
@@ -1098,9 +1111,13 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
               <h3 style="margin-top: 0;">Your Notification Channels:</h3>
               <ul style="margin: 10px 0;">
                 <li>${userData.notificationPreferences?.email ? '✅' : '❌'} Email</li>
-                <li>${userData.notificationPreferences?.whatsapp ? '✅' : '❌'} WhatsApp</li>
+                <li>${userData.notificationPreferences?.whatsapp ? '✅' : '❌'} WhatsApp / SMS</li>
                 <li>${userData.notificationsEnabled ? '✅' : '❌'} Push Notifications</li>
               </ul>
+              <p style="background: #fff3cd; padding: 10px; border-radius: 5px; font-size: 14px; margin-top: 15px;">
+                <strong>Note:</strong> We only test email to save SMS costs. WhatsApp and SMS use the same delivery system,
+                so if your email works, they will work too during real alerts!
+              </p>
             </div>
             <p>If you received this, your email notifications are set up correctly! 💜</p>
           </div>
@@ -1109,18 +1126,7 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       notifications.push(sgMail.send(emailMsg));
     }
 
-    // Send WhatsApp
-    if (userData.phoneNumber && userData.notificationPreferences?.whatsapp) {
-      notifications.push(
-        twilioClient.messages.create({
-          body: testMessage,
-          from: `whatsapp:${twilioPhone}`,
-          to: `whatsapp:${userData.phoneNumber}`,
-        })
-      );
-    }
-
-    // Send Push Notification
+    // Send Push Notification (free, so we can test it)
     if (userData.fcmToken && userData.notificationsEnabled) {
       const pushMessage = {
         notification: {
@@ -1140,7 +1146,7 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       message: 'Test alerts sent successfully',
       channels: {
         email: userData.notificationPreferences?.email && userData.email,
-        whatsapp: userData.notificationPreferences?.whatsapp && userData.phoneNumber,
+        whatsapp: false, // Not tested to save costs
         push: userData.notificationsEnabled && userData.fcmToken,
       },
     };

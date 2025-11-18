@@ -204,12 +204,26 @@ const CreateCheckInPage = () => {
         },
         (error) => {
           setLoading(false);
-          toast.error('Could not get location');
           console.error('Geolocation error:', error);
+
+          // Provide specific error messages based on error code
+          if (error.code === 1) {
+            toast.error('Location permission denied. Please enable location access in your browser settings.', { duration: 5000 });
+          } else if (error.code === 2) {
+            toast.error('Location unavailable. Please enter your location manually.', { duration: 4000 });
+          } else if (error.code === 3) {
+            toast.error('Location request timed out. Please try again or enter manually.', { duration: 4000 });
+          } else {
+            toast.error('Could not get location. Please enter manually.');
+          }
+        },
+        {
+          timeout: 10000, // 10 second timeout
+          enableHighAccuracy: false // Faster, less battery drain
         }
       );
     } else {
-      toast.error('Geolocation not supported');
+      toast.error('Geolocation not supported by your browser. Please enter location manually.');
     }
   };
 

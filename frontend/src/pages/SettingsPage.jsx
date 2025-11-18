@@ -148,15 +148,14 @@ const SettingsPage = () => {
 
       if (result.data && result.data.success) {
         const channels = result.data.channels;
-        const enabledChannels = [];
-        if (channels.email) enabledChannels.push('Email');
-        if (channels.whatsapp) enabledChannels.push('WhatsApp');
-        if (channels.push) enabledChannels.push('Push');
+        const testedChannels = [];
+        if (channels.email) testedChannels.push('Email');
+        if (channels.push) testedChannels.push('Push');
 
-        if (enabledChannels.length > 0) {
-          toast.success(`Test alert sent to: ${enabledChannels.join(', ')}`, { duration: 5000 });
+        if (testedChannels.length > 0) {
+          toast.success(`Test alert sent to: ${testedChannels.join(', ')}. WhatsApp/SMS not tested to save costs, but use same system.`, { duration: 6000 });
         } else {
-          toast.error('No notification channels enabled. Enable at least one channel to test.', { duration: 5000 });
+          toast.error('No notification channels enabled. Enable email to test alerts.', { duration: 5000 });
         }
       } else {
         toast.error('Failed to send test alert');

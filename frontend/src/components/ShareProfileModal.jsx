@@ -3,10 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const ShareProfileModal = ({ onClose }) => {
-  const { userData } = useAuth();
+  const { userData, currentUser } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = `https://bestiesapp.web.app/?invite=${userData?.uid}`;
+  const shareUrl = `https://bestiesapp.web.app/?invite=${currentUser?.uid}`;
   const shareMessage = `Hey! I'm using Besties to stay safe. Join me and be my safety bestie! ${shareUrl}`;
 
   const handleCopy = () => {

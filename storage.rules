@@ -24,9 +24,9 @@ service firebase.storage {
     }
     
     // Check-in media (photos/videos)
-    match /checkins/{userId}/{checkinId}/{fileName} {
+    match /checkin-photos/{userId}/{fileName} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() 
+      allow write: if isAuthenticated()
         && isOwner(userId)
         && (isImage() || isVideo())
         && isUnder10MB();
@@ -43,9 +43,9 @@ service firebase.storage {
     }
     
     // Profile pictures
-    match /profiles/{userId}/{fileName} {
+    match /profile-pictures/{userId}/{fileName} {
       allow read: if true; // Public
-      allow write: if isAuthenticated() 
+      allow write: if isAuthenticated()
         && isOwner(userId)
         && isImage()
         && isUnder10MB();
