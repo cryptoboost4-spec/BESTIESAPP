@@ -166,10 +166,10 @@ const BestieCircle = ({ userId, onAddClick }) => {
               >
                 {bestie ? (
                   <div className="relative group">
-                    {/* Bestie Circle - clickable with unique color */}
+                    {/* Bestie Circle - clickable with unique color, full size */}
                     <button
                       onClick={() => setSelectedSlot(selectedSlot === index ? null : index)}
-                      className={`relative w-18 h-18 ${slotColors[index]} rounded-full flex items-center justify-center text-white text-2xl font-display shadow-xl border-4 border-white hover:scale-110 transition-transform overflow-hidden`}
+                      className={`relative w-20 h-20 ${slotColors[index]} rounded-full flex items-center justify-center text-white text-2xl font-display shadow-xl border-4 border-white hover:scale-110 transition-transform overflow-hidden`}
                     >
                       {bestie.photoURL ? (
                         <img src={bestie.photoURL} alt={bestie.name || 'Bestie'} className="w-full h-full object-cover" />
@@ -212,7 +212,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
                 ) : onAddClick ? (
                   <button
                     onClick={onAddClick}
-                    className={`w-18 h-18 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-4xl font-bold hover:scale-110 hover:${slotColors[index].replace('bg-', 'bg-')}/20 transition-all shadow-lg`}
+                    className={`w-20 h-20 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-4xl font-bold hover:scale-110 hover:${slotColors[index].replace('bg-', 'bg-')}/20 transition-all shadow-lg`}
                   >
                     +
                   </button>

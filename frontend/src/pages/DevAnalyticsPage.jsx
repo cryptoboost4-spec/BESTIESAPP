@@ -408,7 +408,7 @@ const DevAnalyticsPage = () => {
         console.error('Firestore index missing. Create index at:', error.message);
         alert('Analytics require database indices. Check console for index creation link.');
       } else if (error.code === 'permission-denied') {
-        alert('Permission denied. Make sure you have admin access.');
+        alert('Permission denied. Make sure your user document has one of these fields set:\n- admin: true\n- role: "admin"\n- isAdmin: true');
       } else {
         alert(`Failed to load analytics: ${error.message}`);
       }
