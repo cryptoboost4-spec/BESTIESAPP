@@ -180,19 +180,6 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Floating Add Button (when there's an active check-in) */}
-      {activeCheckIns.length > 0 && (
-        <button
-          onClick={() => navigate('/create')}
-          className="fab"
-          title="Create new check-in"
-        >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
-      )}
-
       {/* Emergency SOS Button */}
       <EmergencySOSButton />
     </div>

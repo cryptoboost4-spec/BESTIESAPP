@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 
 const CelebrationScreen = () => {
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-
   const messages = [
     { title: "You're Safe!", subtitle: "Your besties have been notified 💜", emoji: "✅" },
     { title: "Way to Go!", subtitle: "You're taking care of yourself!", emoji: "🎉" },
@@ -14,15 +12,10 @@ const CelebrationScreen = () => {
     { title: "Perfect!", subtitle: "Your besties can rest easy now!", emoji: "💯" },
   ];
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 2000); // Change message every 2 seconds
-
-    return () => clearInterval(interval);
-  }, [messages.length]);
-
-  const currentMessage = messages[currentMessageIndex];
+  // Pick a random message once when component loads
+  const currentMessage = useMemo(() => {
+    return messages[Math.floor(Math.random() * messages.length)];
+  }, []);
 
   return (
     <div className="card p-8 bg-gradient-primary text-white text-center overflow-hidden relative">
@@ -48,10 +41,10 @@ const CelebrationScreen = () => {
         <div className="text-6xl mb-4 animate-bounce">
           {currentMessage.emoji}
         </div>
-        <h2 className="font-display text-3xl mb-2 transition-all duration-500">
+        <h2 className="font-display text-3xl mb-2">
           {currentMessage.title}
         </h2>
-        <p className="text-lg opacity-90 mb-4 transition-all duration-500">
+        <p className="text-lg opacity-90 mb-4">
           {currentMessage.subtitle}
         </p>
         <div className="text-sm opacity-75">
