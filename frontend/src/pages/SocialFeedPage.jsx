@@ -14,6 +14,7 @@ const SocialFeedPage = () => {
 
   useEffect(() => {
     loadFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, filter]);
 
   const loadFeed = async () => {

@@ -13,6 +13,7 @@ const MonitoringDashboard = () => {
 
   useEffect(() => {
     loadMonitoringData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange]);
 
   const getTimeRangeStart = () => {

@@ -18,6 +18,7 @@ const CheckInHistoryPage = () => {
 
   useEffect(() => {
     loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, filter]);
 
   const loadHistory = async (loadMore = false) => {

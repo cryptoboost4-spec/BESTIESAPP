@@ -17,6 +17,7 @@ const ViewUserProfilePage = () => {
 
   useEffect(() => {
     loadUserProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, currentUser]);
 
   const loadUserProfile = async () => {
