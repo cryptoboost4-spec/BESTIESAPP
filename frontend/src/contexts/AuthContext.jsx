@@ -50,13 +50,19 @@ export const AuthProvider = ({ children }) => {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          // New user - create their document
+          // New user - create their document with stats tracking
           await setDoc(userRef, {
             displayName: user.displayName || 'New User',
             email: user.email,
             phoneNumber: user.phoneNumber || null,
             photoURL: user.photoURL || null,
-            stats: { joinedAt: Timestamp.now(), totalCheckIns: 0, totalBesties: 0 },
+            stats: {
+              joinedAt: Timestamp.now(),
+              totalCheckIns: 0,
+              completedCheckIns: 0,
+              alertedCheckIns: 0,
+              totalBesties: 0
+            },
             notifications: { whatsapp: false, email: true },
             smsSubscription: { active: false },
             lastActive: Timestamp.now(),

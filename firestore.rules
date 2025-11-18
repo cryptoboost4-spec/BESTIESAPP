@@ -16,8 +16,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    function isBestie(userId) {
-      return isSignedIn() && (
+    function isBestieOf(userId) {
+      // Check if current user is a bestie of the specified userId
+      // This requires checking the besties collection for accepted relationships
+      return isSignedIn() && userId != request.auth.uid && (
+        // Check if there's an accepted bestie relationship in either direction
         exists(/databases/$(database)/documents/besties/$(request.auth.uid + '_' + userId)) ||
         exists(/databases/$(database)/documents/besties/$(userId + '_' + request.auth.uid))
       );
@@ -95,6 +98,9 @@ service cloud.firestore {
     }
     
     // Badges collection
+    // NOTE: Ideally only besties should see badges, but security rules can't query
+    // the besties collection efficiently. For now: owner only (private).
+    // To make bestie-viewable, would need to denormalize bestie IDs into user doc.
     match /badges/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create, update: if false; // Only Cloud Functions

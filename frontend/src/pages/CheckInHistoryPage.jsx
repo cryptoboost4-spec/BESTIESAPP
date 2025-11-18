@@ -8,7 +8,7 @@ import Header from '../components/Header';
 const ITEMS_PER_PAGE = 20;
 
 const CheckInHistoryPage = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -172,24 +172,24 @@ const CheckInHistoryPage = () => {
           </button>
         </div>
 
-        {/* Stats Summary */}
+        {/* Stats Summary - loads from user document (efficient!) */}
         <div className="card p-6 mb-6">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-display text-primary">
-                {history.length}
+                {userData?.stats?.totalCheckIns || 0}
               </div>
               <div className="text-sm text-text-secondary">Total</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-display text-success">
-                {history.filter(c => c.status === 'completed').length}
+                {userData?.stats?.completedCheckIns || 0}
               </div>
               <div className="text-sm text-text-secondary">Completed</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-display text-warning">
-                {history.filter(c => c.status === 'alerted').length}
+                {userData?.stats?.alertedCheckIns || 0}
               </div>
               <div className="text-sm text-text-secondary">Alerted</div>
             </div>
