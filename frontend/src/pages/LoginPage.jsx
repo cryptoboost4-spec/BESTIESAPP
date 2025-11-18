@@ -236,8 +236,8 @@ const LoginPage = () => {
                     </div>
                   </div>
 
-                  {/* Invisible reCAPTCHA container (hidden, auto-executes) */}
-                  <div id="recaptcha-container" style={{ display: 'none' }}></div>
+                  {/* Real reCAPTCHA container (hidden off-screen but functional for challenges) */}
+                  <div id="recaptcha-container" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}></div>
                 </form>
               ) : (
                 <form onSubmit={handleVerifyCode} className="space-y-3">
