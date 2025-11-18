@@ -192,11 +192,13 @@ const LoginPage = () => {
                     {loading ? 'Verifying & Sending...' : 'Send Verification Code'}
                   </button>
 
-                  {/* Invisible reCAPTCHA - auto-executes when button clicked */}
-                  <div id="recaptcha-container" style={{ display: 'none' }}></div>
+                  {/* Visible reCAPTCHA - shows checkbox that auto-verifies */}
+                  <div className="mt-4 flex justify-center">
+                    <div id="recaptcha-container"></div>
+                  </div>
 
                   <p className="text-xs text-text-secondary text-center mt-2">
-                    Verification happens automatically - just click send
+                    The checkbox will verify automatically when you click send
                   </p>
                 </form>
               ) : (
