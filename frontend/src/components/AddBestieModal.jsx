@@ -25,14 +25,14 @@ const COUNTRY_CODES = {
 };
 
 const AddBestieModal = ({ onClose, onSuccess }) => {
-  const { userData } = useAuth();
+  const { currentUser } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('AU');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showShareOptions, setShowShareOptions] = useState(false);
 
-  const shareUrl = `https://bestiesapp.web.app/?invite=${userData?.uid}`;
+  const shareUrl = `https://bestiesapp.web.app/?invite=${currentUser?.uid}`;
   const shareMessage = `Hey! I'm using Besties to stay safe. Join me and be my safety bestie! ${shareUrl}`;
 
   // Auto-format phone number
@@ -194,8 +194,8 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
                 </p>
               )}
               <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
-                {selectedCountry === 'AU' ? 'e.g., 0412 345 678 (auto-converts to +61)' :
-                 selectedCountry === 'US' || selectedCountry === 'CA' ? 'e.g., 555 123 4567 (auto-converts to +1)' :
+                {selectedCountry === 'AU' ? 'e.g., 0412 345 678' :
+                 selectedCountry === 'US' || selectedCountry === 'CA' ? 'e.g., 555 123 4567' :
                  'Enter local format or international format (+...)'}
               </p>
             </div>

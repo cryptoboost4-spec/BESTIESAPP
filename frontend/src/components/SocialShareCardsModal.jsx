@@ -3,14 +3,14 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const SocialShareCardsModal = ({ onClose }) => {
-  const { userData } = useAuth();
+  const { userData, currentUser } = useAuth();
   const [selectedCard, setSelectedCard] = useState(0);
   const cardRef = useRef(null);
 
   // Dynamic share URL that shows custom card on social media
-  const shareUrl = `https://bestiesapp.web.app/share?invite=${userData?.uid}`;
+  const shareUrl = `https://bestiesapp.web.app/share?invite=${currentUser?.uid}`;
   // Direct app URL for copying
-  const appUrl = `https://bestiesapp.web.app/?invite=${userData?.uid}`;
+  const appUrl = `https://bestiesapp.web.app/?invite=${currentUser?.uid}`;
 
   const cardDesigns = [
     {

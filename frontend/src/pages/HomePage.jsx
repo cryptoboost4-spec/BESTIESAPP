@@ -11,7 +11,7 @@ import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 
 const HomePage = () => {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activeCheckIns, setActiveCheckIns] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -19,10 +19,13 @@ const HomePage = () => {
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
-    if (userData && !userData.onboardingCompleted) {
+    // Wait for auth to finish loading before checking
+    if (authLoading) return;
+
+    if (userData && userData.onboardingCompleted === false) {
       navigate('/onboarding');
     }
-  }, [userData, navigate]);
+  }, [userData, authLoading, navigate]);
 
   useEffect(() => {
     if (!currentUser) return;

@@ -10,7 +10,7 @@ import { isEnabled } from '../config/features';
 import errorTracker from '../services/errorTracking';
 
 const CreateCheckInPage = () => {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,10 +31,12 @@ const CreateCheckInPage = () => {
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
-    if (userData && !userData.onboardingCompleted) {
+    if (authLoading) return;
+
+    if (userData && userData.onboardingCompleted === false) {
       navigate('/onboarding');
     }
-  }, [userData, navigate]);
+  }, [userData, authLoading, navigate]);
 
 
   useEffect(() => {
@@ -204,12 +206,26 @@ const CreateCheckInPage = () => {
         },
         (error) => {
           setLoading(false);
-          toast.error('Could not get location');
           console.error('Geolocation error:', error);
+
+          // Provide specific error messages based on error code
+          if (error.code === 1) {
+            toast.error('Location permission denied. Please enable location access in your browser settings.', { duration: 5000 });
+          } else if (error.code === 2) {
+            toast.error('Location unavailable. Please enter your location manually.', { duration: 4000 });
+          } else if (error.code === 3) {
+            toast.error('Location request timed out. Please try again or enter manually.', { duration: 4000 });
+          } else {
+            toast.error('Could not get location. Please enter manually.');
+          }
+        },
+        {
+          timeout: 10000, // 10 second timeout
+          enableHighAccuracy: false // Faster, less battery drain
         }
       );
     } else {
-      toast.error('Geolocation not supported');
+      toast.error('Geolocation not supported by your browser. Please enter location manually.');
     }
   };
 
@@ -409,13 +425,17 @@ const CreateCheckInPage = () => {
                 <button
                   type="button"
                   onClick={handleGetLocation}
-                  className="btn btn-secondary px-4"
+                  className="btn btn-secondary px-4 whitespace-nowrap"
                   disabled={loading}
+                  title="Use my current GPS location"
                 >
-                  📍 GPS
+                  📍 Use GPS
                 </button>
               )}
             </div>
+            <p className="text-xs text-text-secondary mt-2">
+              Type your destination manually or use GPS to auto-fill your current location
+            </p>
           </div>
 
           {/* Who You're Meeting */}

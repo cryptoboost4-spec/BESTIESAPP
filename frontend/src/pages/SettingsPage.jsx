@@ -141,6 +141,33 @@ const SettingsPage = () => {
     }
   };
 
+  const handleSendTestAlert = async () => {
+    setLoading(true);
+    try {
+      const result = await apiService.sendTestAlert();
+
+      if (result.data && result.data.success) {
+        const channels = result.data.channels;
+        const testedChannels = [];
+        if (channels.email) testedChannels.push('Email');
+        if (channels.push) testedChannels.push('Push');
+
+        if (testedChannels.length > 0) {
+          toast.success(`Test alert sent to: ${testedChannels.join(', ')}. WhatsApp/SMS not tested to save costs, but use same system.`, { duration: 6000 });
+        } else {
+          toast.error('No notification channels enabled. Enable email to test alerts.', { duration: 5000 });
+        }
+      } else {
+        toast.error('Failed to send test alert');
+      }
+    } catch (error) {
+      console.error('Test alert error:', error);
+      toast.error('Failed to send test alert');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-pattern">
       <Header />
@@ -271,6 +298,20 @@ const SettingsPage = () => {
                 {userData?.smsSubscription?.active ? 'Active' : 'Inactive'}
               </div>
             </div>
+          </div>
+
+          {/* Test Alert Button */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={handleSendTestAlert}
+              disabled={loading}
+              className="w-full btn btn-primary"
+            >
+              {loading ? 'Sending Test Alert...' : '🧪 Send Test Alert'}
+            </button>
+            <p className="text-xs text-text-secondary mt-2 text-center">
+              Test your notification setup - sends to all enabled channels
+            </p>
           </div>
         </div>
 

@@ -10,6 +10,10 @@ const LoginPage = () => {
   const [displayName, setDisplayName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,7 +40,7 @@ const LoginPage = () => {
   const handleEmailAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     errorTracker.trackFunnelStep('signup', isSignUp ? 'click_email_signup' : 'click_email_signin');
 
     let result;
@@ -55,6 +59,54 @@ const LoginPage = () => {
     } else {
       errorTracker.logCustomError('Email auth failed', { error: result.error, isSignUp });
       toast.error(result.error || 'Authentication failed');
+    }
+  };
+
+  const handleSendCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    errorTracker.trackFunnelStep('signup', 'click_phone_send_code');
+
+    // Format phone number with country code
+    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+1${phoneNumber}`;
+
+    // Set up reCAPTCHA
+    const recaptchaResult = authService.setupRecaptcha('recaptcha-container');
+    if (!recaptchaResult.success) {
+      toast.error('Failed to set up verification. Please refresh the page.');
+      setLoading(false);
+      return;
+    }
+
+    // Send verification code
+    const result = await authService.sendPhoneVerification(formattedPhone, recaptchaResult.verifier);
+    setLoading(false);
+
+    if (result.success) {
+      setConfirmationResult(result.confirmationResult);
+      toast.success('Verification code sent!');
+      errorTracker.trackFunnelStep('signup', 'phone_code_sent');
+    } else {
+      errorTracker.logCustomError('Phone verification failed', { error: result.error });
+      toast.error(result.error || 'Failed to send code');
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    errorTracker.trackFunnelStep('signup', 'click_phone_verify_code');
+
+    const result = await authService.verifyPhoneCode(confirmationResult, verificationCode);
+    setLoading(false);
+
+    if (result.success) {
+      errorTracker.trackFunnelStep('signup', 'complete_phone_signin');
+      toast.success('Welcome to Besties!');
+      navigate('/onboarding');
+    } else {
+      errorTracker.logCustomError('Phone code verification failed', { error: result.error });
+      toast.error(result.error || 'Invalid code');
     }
   };
 
@@ -84,6 +136,94 @@ const LoginPage = () => {
             Continue with Google
           </button>
 
+          {/* Phone Sign In */}
+          <button
+            onClick={() => setShowPhoneAuth(!showPhoneAuth)}
+            className="w-full btn btn-secondary mb-3"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            Continue with Phone
+          </button>
+
+          {/* Phone Auth Form */}
+          {showPhoneAuth && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              {!confirmationResult ? (
+                <form onSubmit={handleSendCode} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-text-primary mb-2">
+                      Phone Number
+                    </label>
+                    <div className="flex gap-2">
+                      <select className="input w-24">
+                        <option value="+1">+1</option>
+                        <option value="+44">+44</option>
+                        <option value="+91">+91</option>
+                      </select>
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="input flex-1"
+                        placeholder="5551234567"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Enter your phone number including area code
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full btn btn-primary"
+                  >
+                    {loading ? 'Sending...' : 'Send Verification Code'}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyCode} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-text-primary mb-2">
+                      Verification Code
+                    </label>
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="input"
+                      placeholder="123456"
+                      required
+                      maxLength={6}
+                    />
+                    <p className="text-xs text-text-secondary mt-1">
+                      Enter the 6-digit code sent to your phone
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full btn btn-primary"
+                  >
+                    {loading ? 'Verifying...' : 'Verify Code'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmationResult(null);
+                      setVerificationCode('');
+                    }}
+                    className="w-full btn btn-secondary"
+                  >
+                    Back
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
           {/* Facebook Sign In */}
           <button
             onClick={handleGoogleSignIn}
@@ -106,6 +246,9 @@ const LoginPage = () => {
               <span className="px-2 bg-white text-text-secondary">Or</span>
             </div>
           </div>
+
+          {/* reCAPTCHA Container (invisible) */}
+          <div id="recaptcha-container"></div>
 
           {/* Email Form */}
           <form onSubmit={handleEmailAuth} className="space-y-4">

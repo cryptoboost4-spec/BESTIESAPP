@@ -25,28 +25,31 @@ exports.checkExpiredCheckIns = functions.pubsub
   .schedule('every 1 minutes')
   .onRun(async (context) => {
     const now = admin.firestore.Timestamp.now();
-    
+
     const checkInsSnapshot = await db.collection('checkins')
       .where('status', '==', 'active')
       .where('alertTime', '<=', now)
       .get();
-    
+
     const alerts = [];
-    
+
     for (const doc of checkInsSnapshot.docs) {
       const checkIn = doc.data();
-      
+
       await doc.ref.update({
         status: 'alerted',
         alertedAt: now,
       });
-      
+
+      // Update user stats
+      await updateUserStats(checkIn.userId, 'checkInAlerted');
+
       alerts.push(sendAlertToBesties(doc.id, checkIn));
       await logAlertEvent(doc.id, checkIn);
     }
-    
+
     await Promise.all(alerts);
-    
+
     console.log(`Processed ${checkInsSnapshot.size} expired check-ins`);
     return null;
   });
@@ -83,25 +86,33 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   }
-  
+
   const { checkInId } = data;
-  
+
   const checkInRef = db.collection('checkins').doc(checkInId);
   const checkIn = await checkInRef.get();
-  
+
   if (!checkIn.exists || checkIn.data().userId !== context.auth.uid) {
     throw new functions.https.HttpsError('permission-denied', 'Invalid check-in');
   }
-  
+
   await checkInRef.update({
     status: 'completed',
     completedAt: admin.firestore.Timestamp.now(),
   });
-  
+
   await updateUserStats(context.auth.uid, 'checkInCompleted');
-  
+
   return { success: true };
 });
+
+// Firestore trigger: When a check-in is created, increment totalCheckIns
+exports.onCheckInCreated = functions.firestore
+  .document('checkins/{checkInId}')
+  .onCreate(async (snap, context) => {
+    const checkIn = snap.data();
+    await updateUserStats(checkIn.userId, 'checkInCreated');
+  });
 
 // Send alerts to besties
 async function sendAlertToBesties(checkInId, checkIn) {
@@ -485,17 +496,21 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
 
 async function updateUserStats(userId, statType) {
   const userRef = db.collection('users').doc(userId);
-  
+
   const updates = {
     lastActive: admin.firestore.Timestamp.now(),
   };
-  
-  if (statType === 'checkInCompleted') {
+
+  if (statType === 'checkInCreated') {
     updates['stats.totalCheckIns'] = admin.firestore.FieldValue.increment(1);
+  } else if (statType === 'checkInCompleted') {
+    updates['stats.completedCheckIns'] = admin.firestore.FieldValue.increment(1);
+  } else if (statType === 'checkInAlerted') {
+    updates['stats.alertedCheckIns'] = admin.firestore.FieldValue.increment(1);
   } else if (statType === 'bestieAdded') {
     updates['stats.totalBesties'] = admin.firestore.FieldValue.increment(1);
   }
-  
+
   await userRef.update(updates);
 }
 
@@ -965,5 +980,180 @@ ${JSON.stringify(error.details, null, 2)}
 // Dynamic share card generator
 const { generateShareCard } = require('./shareCard');
 exports.generateShareCard = generateShareCard;
+
+// ========================================
+// DATA RETENTION CLEANUP
+// ========================================
+
+// Clean up old data based on user preferences
+exports.cleanupOldData = functions.pubsub
+  .schedule('0 3 * * *') // Run daily at 3:00 AM
+  .timeZone('America/New_York')
+  .onRun(async (context) => {
+    console.log('Starting data cleanup...');
+
+    const now = admin.firestore.Timestamp.now();
+    const twentyFourHoursAgo = admin.firestore.Timestamp.fromDate(
+      new Date(now.toDate().getTime() - 24 * 60 * 60 * 1000)
+    );
+
+    let deletedCheckIns = 0;
+    let deletedSOS = 0;
+    let deletedPhotos = 0;
+
+    try {
+      // Get all users who DON'T have holdData enabled
+      const usersSnapshot = await db.collection('users')
+        .where('settings.holdData', '!=', true)
+        .get();
+
+      const userIds = usersSnapshot.docs.map(doc => doc.id);
+
+      // Add users without settings field at all
+      const usersWithoutSettings = await db.collection('users')
+        .where('settings', '==', null)
+        .get();
+
+      userIds.push(...usersWithoutSettings.docs.map(doc => doc.id));
+
+      console.log(`Found ${userIds.length} users without data retention enabled`);
+
+      // Delete old check-ins
+      for (const userId of userIds) {
+        const oldCheckIns = await db.collection('checkins')
+          .where('userId', '==', userId)
+          .where('createdAt', '<', twentyFourHoursAgo)
+          .get();
+
+        for (const doc of oldCheckIns.docs) {
+          const checkInData = doc.data();
+
+          // Delete associated photo if exists
+          if (checkInData.photoURL) {
+            try {
+              // Extract storage path from URL
+              const photoPath = checkInData.photoURL.split('/o/')[1]?.split('?')[0];
+              if (photoPath) {
+                const decodedPath = decodeURIComponent(photoPath);
+                await admin.storage().bucket().file(decodedPath).delete();
+                deletedPhotos++;
+              }
+            } catch (photoError) {
+              console.error('Error deleting photo:', photoError);
+            }
+          }
+
+          await doc.ref.delete();
+          deletedCheckIns++;
+        }
+
+        // Delete old emergency SOS
+        const oldSOS = await db.collection('emergency_sos')
+          .where('userId', '==', userId)
+          .where('createdAt', '<', twentyFourHoursAgo)
+          .get();
+
+        for (const doc of oldSOS.docs) {
+          await doc.ref.delete();
+          deletedSOS++;
+        }
+      }
+
+      console.log(`Cleanup complete: ${deletedCheckIns} check-ins, ${deletedSOS} SOS, ${deletedPhotos} photos deleted`);
+
+      return {
+        success: true,
+        deletedCheckIns,
+        deletedSOS,
+        deletedPhotos,
+      };
+    } catch (error) {
+      console.error('Error during cleanup:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+// ========================================
+// TEST ALERT FUNCTION
+// ========================================
+
+// Send test alert to verify notification setup (EMAIL ONLY to save SMS costs)
+exports.sendTestAlert = functions.https.onCall(async (data, context) => {
+  // Verify user is authenticated
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const userId = context.auth.uid;
+
+  try {
+    // Get user data
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const notifications = [];
+
+    // Send Email ONLY (SMS/WhatsApp use the same backend system, so if email works, they work too)
+    if (userData.email && userData.notificationPreferences?.email) {
+      const emailMsg = {
+        to: userData.email,
+        from: 'alerts@bestiesapp.web.app',
+        subject: '✅ Test Alert - Besties',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #7c3aed;">✅ Test Alert Success!</h2>
+            <p>Hi ${userData.displayName},</p>
+            <p>This is a test notification to confirm your email alerts are working correctly.</p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">Your Notification Channels:</h3>
+              <ul style="margin: 10px 0;">
+                <li>${userData.notificationPreferences?.email ? '✅' : '❌'} Email</li>
+                <li>${userData.notificationPreferences?.whatsapp ? '✅' : '❌'} WhatsApp / SMS</li>
+                <li>${userData.notificationsEnabled ? '✅' : '❌'} Push Notifications</li>
+              </ul>
+              <p style="background: #fff3cd; padding: 10px; border-radius: 5px; font-size: 14px; margin-top: 15px;">
+                <strong>Note:</strong> We only test email to save SMS costs. WhatsApp and SMS use the same delivery system,
+                so if your email works, they will work too during real alerts!
+              </p>
+            </div>
+            <p>If you received this, your email notifications are set up correctly! 💜</p>
+          </div>
+        `,
+      };
+      notifications.push(sgMail.send(emailMsg));
+    }
+
+    // Send Push Notification (free, so we can test it)
+    if (userData.fcmToken && userData.notificationsEnabled) {
+      const pushMessage = {
+        notification: {
+          title: '✅ Test Alert - Besties',
+          body: 'Your push notifications are working! This is a test alert.',
+        },
+        token: userData.fcmToken,
+      };
+      notifications.push(admin.messaging().send(pushMessage));
+    }
+
+    // Wait for all notifications to send
+    await Promise.all(notifications);
+
+    return {
+      success: true,
+      message: 'Test alerts sent successfully',
+      channels: {
+        email: userData.notificationPreferences?.email && userData.email,
+        whatsapp: false, // Not tested to save costs
+        push: userData.notificationsEnabled && userData.fcmToken,
+      },
+    };
+  } catch (error) {
+    console.error('Error sending test alert:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to send test alert');
+  }
+});
 
 module.exports = exports;

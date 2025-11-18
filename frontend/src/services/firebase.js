@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
@@ -55,6 +55,51 @@ export const authService = {
       return { success: true, user: result.user };
     } catch (error) {
       console.error('Email sign up error:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Set up reCAPTCHA verifier for phone auth
+  setupRecaptcha: (containerId) => {
+    try {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+          'size': 'invisible',
+          'callback': () => {
+            // reCAPTCHA solved - allow signInWithPhoneNumber
+          }
+        });
+      }
+      return { success: true, verifier: window.recaptchaVerifier };
+    } catch (error) {
+      console.error('reCAPTCHA setup error:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Send verification code to phone
+  sendPhoneVerification: async (phoneNumber, recaptchaVerifier) => {
+    try {
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+      return { success: true, confirmationResult };
+    } catch (error) {
+      console.error('Phone verification error:', error);
+      // Reset reCAPTCHA on error
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Verify code and sign in
+  verifyPhoneCode: async (confirmationResult, code) => {
+    try {
+      const result = await confirmationResult.confirm(code);
+      return { success: true, user: result.user };
+    } catch (error) {
+      console.error('Code verification error:', error);
       return { success: false, error: error.message };
     }
   },
