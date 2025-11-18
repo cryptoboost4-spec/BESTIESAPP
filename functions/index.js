@@ -609,8 +609,8 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
           quantity: 1,
         },
       ],
-      success_url: `https://bestiesapp.web.app/?payment=success`,
-      cancel_url: `https://bestiesapp.web.app/?payment=cancelled`,
+      success_url: `https://bestiesapp.web.app/subscription-success`,
+      cancel_url: `https://bestiesapp.web.app/subscription-cancel`,
       metadata: {
         firebaseUID: context.auth.uid,
         type: type,
