@@ -18,6 +18,39 @@ export const messaging = getMessaging(app);
 // Auth providers
 export const googleProvider = new GoogleAuthProvider();
 
+// Helper function to parse Firebase auth errors into user-friendly messages
+const getAuthErrorMessage = (error) => {
+  const errorCode = error.code;
+
+  switch (errorCode) {
+    case 'auth/wrong-password':
+      return 'Incorrect password. Please try again.';
+    case 'auth/user-not-found':
+      return 'No account found with this email.';
+    case 'auth/email-already-in-use':
+      return 'This email is already registered.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Invalid email address.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in popup was closed.';
+    case 'auth/cancelled-popup-request':
+      return 'Sign-in was cancelled.';
+    case 'auth/invalid-credential':
+      return 'Invalid credentials. Please check your email and password.';
+    default:
+      // Return original message if no specific handling
+      return error.message.replace('Firebase: ', '').replace(/\(auth\/[\w-]+\)\.?/, '').trim();
+  }
+};
+
 // Auth functions
 export const authService = {
   // Sign in with Google
@@ -27,7 +60,7 @@ export const authService = {
       return { success: true, user: result.user };
     } catch (error) {
       console.error('Google sign in error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: getAuthErrorMessage(error) };
     }
   },
 
@@ -38,7 +71,7 @@ export const authService = {
       return { success: true, user: result.user };
     } catch (error) {
       console.error('Email sign in error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: getAuthErrorMessage(error) };
     }
   },
 
@@ -55,7 +88,7 @@ export const authService = {
       return { success: true, user: result.user };
     } catch (error) {
       console.error('Email sign up error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: getAuthErrorMessage(error) };
     }
   },
 

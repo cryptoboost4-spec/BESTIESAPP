@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import CheckInCard from '../components/CheckInCard';
 import QuickButtons from '../components/QuickButtons';
@@ -13,9 +14,27 @@ import EmergencySOSButton from '../components/EmergencySOSButton';
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeCheckIns, setActiveCheckIns] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Handle payment success/cancel from Stripe redirect
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    if (payment === 'success') {
+      toast.success('Payment successful! Your subscription will be activated shortly.', { duration: 6000 });
+      // Clear the query parameter
+      setSearchParams({});
+      // Refresh the page after a short delay to show updated subscription status
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else if (payment === 'cancelled') {
+      toast.error('Payment cancelled');
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {

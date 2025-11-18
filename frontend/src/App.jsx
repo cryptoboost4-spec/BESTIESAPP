@@ -33,6 +33,7 @@ import { DarkModeProvider } from './contexts/DarkModeContext';
 // Components
 import ErrorBoundary from './components/ErrorBoundary';
 import AdminRoute from './components/AdminRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 // Services
 import errorTracker from './services/errorTracking';
@@ -40,11 +41,11 @@ import errorTracker from './services/errorTracking';
 // Route tracker component
 function RouteTracker() {
   const location = useLocation();
-  
+
   useEffect(() => {
     errorTracker.trackPageView(location.pathname);
   }, [location]);
-  
+
   return null;
 }
 
@@ -80,6 +81,7 @@ function App() {
         <AuthProvider>
           <Router>
             <RouteTracker />
+            <ScrollToTop />
             <div className="App">
               <Routes>
             {/* Public routes */}
