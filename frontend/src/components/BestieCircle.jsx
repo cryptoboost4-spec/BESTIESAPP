@@ -172,16 +172,16 @@ const BestieCircle = ({ userId, onAddClick }) => {
                       className={`relative w-18 h-18 ${slotColors[index]} rounded-full flex items-center justify-center text-white text-2xl font-display shadow-xl border-4 border-white hover:scale-110 transition-transform overflow-hidden`}
                     >
                       {bestie.photoURL ? (
-                        <img src={bestie.photoURL} alt={bestie.name} className="w-full h-full object-cover" />
+                        <img src={bestie.photoURL} alt={bestie.name || 'Bestie'} className="w-full h-full object-cover" />
                       ) : (
-                        bestie.name[0]
+                        bestie.name?.[0] || '?'
                       )}
                     </button>
 
                     {/* Name Tooltip */}
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                       <div className="bg-text-primary text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap">
-                        {bestie.name}
+                        {bestie.name || 'Unknown'}
                       </div>
                     </div>
 
@@ -249,13 +249,13 @@ const BestieCircle = ({ userId, onAddClick }) => {
                   >
                     <div className="w-10 h-10 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-display overflow-hidden">
                       {bestie.photoURL ? (
-                        <img src={bestie.photoURL} alt={bestie.name} className="w-full h-full object-cover" />
+                        <img src={bestie.photoURL} alt={bestie.name || 'Bestie'} className="w-full h-full object-cover" />
                       ) : (
-                        bestie.name[0]
+                        bestie.name?.[0] || '?'
                       )}
                     </div>
                     <div className="text-left">
-                      <div className="font-semibold">{bestie.name}</div>
+                      <div className="font-semibold">{bestie.name || 'Unknown'}</div>
                     </div>
                   </button>
                 ))}

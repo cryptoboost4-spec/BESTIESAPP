@@ -49,6 +49,11 @@ export const AuthProvider = ({ children }) => {
 
       const inviterData = inviterSnap.data();
 
+      // Get current user's data for name fields
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
       // Store inviter info for welcome screen (only for new users during onboarding)
       localStorage.setItem('inviter_info', JSON.stringify({
         uid: inviterUID,
@@ -72,6 +77,10 @@ export const AuthProvider = ({ children }) => {
             status: 'accepted',
             acceptedAt: Timestamp.now(),
             recipientId: user.uid,
+            recipientName: userData.displayName || user.displayName || 'Unknown',
+            recipientPhone: user.phoneNumber || user.email,
+            requesterName: inviterData.displayName || 'Unknown',
+            requesterPhone: inviterData.phoneNumber || inviterData.email,
           });
           found = true;
           break;
@@ -86,6 +95,10 @@ export const AuthProvider = ({ children }) => {
           status: 'accepted',
           acceptedAt: Timestamp.now(),
           createdAt: Timestamp.now(),
+          requesterName: inviterData.displayName || 'Unknown',
+          requesterPhone: inviterData.phoneNumber || inviterData.email,
+          recipientName: userData.displayName || user.displayName || 'Unknown',
+          recipientPhone: user.phoneNumber || user.email,
         });
       }
 
@@ -97,16 +110,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Save invite to localStorage if present in URL
+  // Save invite to localStorage if present in URL (BEFORE login/signup)
   // Auth listener will process it after auth initializes
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const inviterUID = urlParams.get('invite');
     if (inviterUID) {
+      console.log('💾 Saving invite code to localStorage:', inviterUID);
       localStorage.setItem('pending_invite', inviterUID);
+
+      // Fetch inviter info early so it's ready for welcome screen
+      const fetchInviterInfo = async () => {
+        try {
+          const inviterRef = doc(db, 'users', inviterUID);
+          const inviterSnap = await getDoc(inviterRef);
+          if (inviterSnap.exists()) {
+            const inviterData = inviterSnap.data();
+            localStorage.setItem('inviter_info', JSON.stringify({
+              uid: inviterUID,
+              displayName: inviterData.displayName,
+              photoURL: inviterData.photoURL,
+            }));
+            console.log('✅ Inviter info saved:', inviterData.displayName);
+          }
+        } catch (error) {
+          console.error('Failed to fetch inviter info:', error);
+        }
+      };
+      fetchInviterInfo();
+
       // Clear URL immediately for cleanliness
       window.history.replaceState({}, '', '/');
-      // Don't process here - let auth listener handle it reliably after auth initializes
+      // Don't process bestie connection here - let auth listener handle it reliably
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
