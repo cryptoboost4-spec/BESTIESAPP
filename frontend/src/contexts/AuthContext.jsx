@@ -29,6 +29,62 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const userUnsubscribeRef = useRef(null);
 
+  // Process invite by connecting user with inviter
+  const processInvite = async (user, inviterUID) => {
+    if (!user || !inviterUID || inviterUID === user.uid) {
+      return;
+    }
+
+    try {
+      const inviterRef = doc(db, 'users', inviterUID);
+      const inviterSnap = await getDoc(inviterRef);
+
+      if (!inviterSnap.exists()) {
+        console.log('Invalid invite - user does not exist');
+        localStorage.removeItem('pending_invite');
+        return;
+      }
+
+      // Check if bestie already exists (any direction or by phone)
+      const queries = [
+        query(collection(db, 'besties'), where('requesterId', '==', inviterUID), where('recipientId', '==', user.uid)),
+        query(collection(db, 'besties'), where('requesterId', '==', user.uid), where('recipientId', '==', inviterUID)),
+        query(collection(db, 'besties'), where('requesterId', '==', inviterUID), where('recipientPhone', '==', user.phoneNumber || user.email)),
+      ];
+
+      let found = false;
+      for (let q of queries) {
+        const result = await getDocs(q);
+        if (!result.empty) {
+          const docRef = result.docs[0];
+          await updateDoc(doc(db, 'besties', docRef.id), {
+            status: 'accepted',
+            acceptedAt: Timestamp.now(),
+            recipientId: user.uid,
+          });
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        // No existing connection - create a new bestie
+        await addDoc(collection(db, 'besties'), {
+          requesterId: inviterUID,
+          recipientId: user.uid,
+          status: 'accepted',
+          acceptedAt: Timestamp.now(),
+          createdAt: Timestamp.now(),
+        });
+      }
+
+      // Clean up localStorage after successful processing
+      localStorage.removeItem('pending_invite');
+    } catch (error) {
+      console.error('Auto-add bestie failed:', error);
+    }
+  };
+
   // Save invite to localStorage if present in URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -37,7 +93,13 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('pending_invite', inviterUID);
       // Clear URL immediately for cleanliness
       window.history.replaceState({}, '', '/');
+
+      // If user is already logged in, process invite immediately
+      if (auth.currentUser) {
+        processInvite(auth.currentUser, inviterUID);
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -74,50 +136,8 @@ export const AuthProvider = ({ children }) => {
 
         // Process pending invite (works for multiple users)
         const inviterUID = localStorage.getItem('pending_invite');
-        if (inviterUID && inviterUID !== user.uid) {
-          try {
-            const inviterRef = doc(db, 'users', inviterUID);
-            const inviterSnap = await getDoc(inviterRef);
-
-            if (!inviterSnap.exists()) {
-              console.log('Invalid invite - user does not exist');
-            } else {
-              // Check if bestie already exists (any direction or by phone)
-              const queries = [
-                query(collection(db, 'besties'), where('requesterId', '==', inviterUID), where('recipientId', '==', user.uid)),
-                query(collection(db, 'besties'), where('requesterId', '==', user.uid), where('recipientId', '==', inviterUID)),
-                query(collection(db, 'besties'), where('requesterId', '==', inviterUID), where('recipientPhone', '==', user.phoneNumber || user.email)),
-              ];
-
-              let found = false;
-              for (let q of queries) {
-                const result = await getDocs(q);
-                if (!result.empty) {
-                  const docRef = result.docs[0];
-                  await updateDoc(doc(db, 'besties', docRef.id), {
-                    status: 'accepted',
-                    acceptedAt: Timestamp.now(),
-                    recipientId: user.uid,
-                  });
-                  found = true;
-                  break;
-                }
-              }
-
-              if (!found) {
-                // No existing connection - create a new bestie
-                await addDoc(collection(db, 'besties'), {
-                  requesterId: inviterUID,
-                  recipientId: user.uid,
-                  status: 'accepted',
-                  acceptedAt: Timestamp.now(),
-                  createdAt: Timestamp.now(),
-                });
-              }
-            }
-          } catch (error) {
-            console.error('Auto-add bestie failed:', error);
-          }
+        if (inviterUID) {
+          await processInvite(user, inviterUID);
         }
 
         // Clean up previous listener if it exists
