@@ -55,27 +55,19 @@ const SettingsPage = () => {
   };
 
   const handleSMSSubscription = async () => {
-    setLoading(true);
-    const result = await apiService.createCheckoutSession(1, 'sms');
-    setLoading(false);
-
-    if (result.success) {
-      window.location.href = result.data.url;
-    } else {
-      toast.error('Failed to start subscription');
-    }
+    // TODO: Implement Stripe checkout session
+    toast('SMS subscription coming soon! 🚀', {
+      icon: '⏳',
+      duration: 3000
+    });
   };
 
   const handleDonation = async (amount) => {
-    setLoading(true);
-    const result = await apiService.createCheckoutSession(amount, 'donation');
-    setLoading(false);
-
-    if (result.success) {
-      window.location.href = result.data.url;
-    } else {
-      toast.error('Failed to start donation');
-    }
+    // TODO: Implement Stripe checkout session
+    toast(`Donations coming soon! Thank you for your interest 💜`, {
+      icon: '⏳',
+      duration: 3000
+    });
   };
 
   return (

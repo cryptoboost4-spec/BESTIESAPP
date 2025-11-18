@@ -1,11 +1,11 @@
-// Firebase configuration
+// Firebase configuration - uses environment variables from .env file
 const firebaseConfig = {
-  apiKey: "AIzaSyAtcxae1F5cJljA2q8JbmcvYuXpxS_EGhw",
-  authDomain: "bestiesapp.firebaseapp.com",
-  projectId: "bestiesapp",
-  storageBucket: "bestiesapp.firebasestorage.app",
-  messagingSenderId: "816425843858",
-  appId: "1:816425843858:web:60eaaa2ddd094b6e797a4b"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
 export default firebaseConfig;

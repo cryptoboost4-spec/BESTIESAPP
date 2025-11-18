@@ -291,16 +291,16 @@ Firebase Functions need your API keys. Set them with:
 cd besties-complete
 
 # Set Twilio credentials
-firebase functions:config:set twilio.account_sid="AC0147d6a0e5c5329f67141d2a57182620"
-firebase functions:config:set twilio.auth_token="9801105f760ec502976f40808510fb70"
-firebase functions:config:set twilio.phone_number="+61468050420"
+firebase functions:config:set twilio.account_sid="YOUR_TWILIO_ACCOUNT_SID"
+firebase functions:config:set twilio.auth_token="YOUR_TWILIO_AUTH_TOKEN"
+firebase functions:config:set twilio.phone_number="YOUR_TWILIO_PHONE_NUMBER"
 
 # Set Stripe credentials
-firebase functions:config:set stripe.publishable_key="pk_live_51SR1CfEelNu8QcRAALMompJfse2B7tXODHYIpbcRcawyAN3fMi75mMAXpTyP66c444ydSE0Y01yczaw64TgyKW85005IvwbRX2"
-firebase functions:config:set stripe.secret_key="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"
+firebase functions:config:set stripe.publishable_key="YOUR_STRIPE_PUBLISHABLE_KEY"
+firebase functions:config:set stripe.secret_key="YOUR_STRIPE_SECRET_KEY"
 
 # Set Google Maps API
-firebase functions:config:set google.maps_api_key="AIzaSyCegUYW6OZ2rVE3V31ewJbzkhfrPbKzFgk"
+firebase functions:config:set google.maps_api_key="YOUR_GOOGLE_MAPS_API_KEY"
 
 # Set app config
 firebase functions:config:set app.domain="bestiesapp.xyz"
@@ -315,16 +315,16 @@ You should see output like:
 ```json
 {
   "twilio": {
-    "account_sid": "AC01...",
-    "auth_token": "980...",
-    "phone_number": "+61468050420"
+    "account_sid": "YOUR_TWILIO_ACCOUNT_SID",
+    "auth_token": "YOUR_TWILIO_AUTH_TOKEN",
+    "phone_number": "YOUR_TWILIO_PHONE_NUMBER"
   },
   "stripe": {
-    "publishable_key": "pk_live...",
-    "secret_key": "sk_live..."
+    "publishable_key": "YOUR_STRIPE_PUBLISHABLE_KEY",
+    "secret_key": "YOUR_STRIPE_SECRET_KEY"
   },
   "google": {
-    "maps_api_key": "AIza..."
+    "maps_api_key": "YOUR_GOOGLE_MAPS_API_KEY"
   },
   "app": {
     "domain": "bestiesapp.xyz",

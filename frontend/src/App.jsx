@@ -9,6 +9,7 @@ import OnboardingPage from './pages/OnboardingPage';
 import HomePage from './pages/HomePage';
 import CreateCheckInPage from './pages/CreateCheckInPage';
 import ProfilePage from './pages/ProfilePage';
+import ViewUserProfilePage from './pages/ViewUserProfilePage';
 import BestiesPage from './pages/BestiesPage';
 import SettingsPage from './pages/SettingsPage';
 import BadgesPage from './pages/BadgesPage';
@@ -95,13 +96,17 @@ function App() {
               path="/create" 
               element={user ? <CreateCheckInPage /> : <Navigate to="/login" />} 
             />
-            <Route 
-              path="/profile" 
-              element={user ? <ProfilePage /> : <Navigate to="/login" />} 
+            <Route
+              path="/profile"
+              element={user ? <ProfilePage /> : <Navigate to="/login" />}
             />
-            <Route 
-              path="/edit-profile" 
-              element={user ? <EditProfilePage /> : <Navigate to="/login" />} 
+            <Route
+              path="/user/:userId"
+              element={user ? <ViewUserProfilePage /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/edit-profile"
+              element={user ? <EditProfilePage /> : <Navigate to="/login" />}
             />
             <Route 
               path="/besties" 

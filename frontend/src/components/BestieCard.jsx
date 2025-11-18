@@ -1,8 +1,20 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const BestieCard = ({ bestie }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (bestie.userId) {
+      navigate(`/user/${bestie.userId}`);
+    }
+  };
+
   return (
-    <div className="card p-4">
+    <div
+      className="card p-4 cursor-pointer hover:shadow-lg transition-all"
+      onClick={handleClick}
+    >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display text-lg flex-shrink-0">
           {bestie.name[0]}
@@ -19,8 +31,8 @@ const BestieCard = ({ bestie }) => {
 
       {bestie.role && (
         <div className={`badge text-xs ${
-          bestie.role === 'guardian' 
-            ? 'badge-primary' 
+          bestie.role === 'guardian'
+            ? 'badge-primary'
             : 'badge-success'
         }`}>
           {bestie.role === 'guardian' ? '🛡️ Watching Over You' : '💜 You Watch Over'}

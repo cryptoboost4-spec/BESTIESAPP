@@ -47,8 +47,8 @@ const EmergencySOSButton = () => {
         }
       }
 
-      // Create emergency alert
-      await addDoc(collection(db, 'emergencies'), {
+      // Create emergency alert (matches backend collection name)
+      await addDoc(collection(db, 'emergency_sos'), {
         userId: currentUser.uid,
         userName: userData?.displayName || 'User',
         location,

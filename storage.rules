@@ -34,8 +34,10 @@ service firebase.storage {
     }
     
     // Emergency recordings (encrypted)
+    // Only the owner can read their own emergency recordings
+    // Besties should be sent links via cloud functions with signed URLs
     match /emergency/{userId}/{emergencyId}/{fileName} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && isOwner(userId);
       allow write: if isAuthenticated() && isOwner(userId);
       allow delete: if false; // Can only be deleted by cloud function after 7 days
     }

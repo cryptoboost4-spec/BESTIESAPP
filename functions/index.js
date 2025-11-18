@@ -290,34 +290,62 @@ exports.declineBestieRequest = functions.https.onCall(async (data, context) => {
 });
 
 // ========================================
-// BADGE FUNCTIONS
+// BADGE FUNCTIONS & STATS TRACKING
 // ========================================
 
-exports.onCheckInCountUpdate = functions.firestore
+// Track when check-ins are created
+exports.onCheckInCreated = functions.firestore
   .document('checkins/{checkInId}')
   .onCreate(async (snap, context) => {
     const checkIn = snap.data();
-    if (checkIn.status !== 'completed') return;
-    
-    const count = await db.collection('checkins')
-      .where('userId', '==', checkIn.userId)
-      .where('status', '==', 'completed')
-      .count()
-      .get();
-    
-    const total = count.data().count;
-    const badgesRef = db.collection('badges').doc(checkIn.userId);
-    const badgesDoc = await badgesRef.get();
-    const badges = badgesDoc.exists ? badgesDoc.data().badges || [] : [];
-    
-    if (total >= 5 && !badges.includes('safety_starter')) badges.push('safety_starter');
-    if (total >= 25 && !badges.includes('safety_pro')) badges.push('safety_pro');
-    if (total >= 50 && !badges.includes('safety_master')) badges.push('safety_master');
-    
-    if (badgesDoc.exists) {
-      await badgesRef.update({ badges });
-    } else {
-      await badgesRef.set({ userId: checkIn.userId, badges, createdAt: admin.firestore.Timestamp.now() });
+    // Increment total check-in count
+    await db.collection('users').doc(checkIn.userId).update({
+      'stats.totalCheckIns': admin.firestore.FieldValue.increment(1)
+    });
+  });
+
+// Track when check-ins status changes (completed/alerted)
+exports.onCheckInCountUpdate = functions.firestore
+  .document('checkins/{checkInId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const oldData = change.before.data();
+    const userRef = db.collection('users').doc(newData.userId);
+
+    // Update stats when status changes to 'completed'
+    if (newData.status === 'completed' && oldData.status !== 'completed') {
+      // Increment completed count in user stats
+      await userRef.update({
+        'stats.completedCheckIns': admin.firestore.FieldValue.increment(1)
+      });
+
+      const count = await db.collection('checkins')
+        .where('userId', '==', newData.userId)
+        .where('status', '==', 'completed')
+        .count()
+        .get();
+
+      const total = count.data().count;
+      const badgesRef = db.collection('badges').doc(newData.userId);
+      const badgesDoc = await badgesRef.get();
+      const badges = badgesDoc.exists ? badgesDoc.data().badges || [] : [];
+
+      if (total >= 5 && !badges.includes('safety_starter')) badges.push('safety_starter');
+      if (total >= 25 && !badges.includes('safety_pro')) badges.push('safety_pro');
+      if (total >= 50 && !badges.includes('safety_master')) badges.push('safety_master');
+
+      if (badgesDoc.exists) {
+        await badgesRef.update({ badges });
+      } else {
+        await badgesRef.set({ userId: newData.userId, badges, createdAt: admin.firestore.Timestamp.now() });
+      }
+    }
+
+    // Update stats when status changes to 'alerted'
+    if (newData.status === 'alerted' && oldData.status !== 'alerted') {
+      await userRef.update({
+        'stats.alertedCheckIns': admin.firestore.FieldValue.increment(1)
+      });
     }
   });
 
@@ -326,8 +354,16 @@ exports.onBestieCountUpdate = functions.firestore
   .onUpdate(async (change, context) => {
     const newData = change.after.data();
     const oldData = change.before.data();
-    
+
     if (newData.status === 'accepted' && oldData.status !== 'accepted') {
+      // Increment totalBesties for both users
+      await db.collection('users').doc(newData.requesterId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
+      await db.collection('users').doc(newData.recipientId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
+
       await awardBestieBadge(newData.requesterId);
       await awardBestieBadge(newData.recipientId);
     }

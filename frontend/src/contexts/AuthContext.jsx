@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { auth, db } from '../services/firebase';
 import {
   doc,
@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const userUnsubscribeRef = useRef(null);
 
   // Save invite to localStorage if present in URL
   useEffect(() => {
@@ -49,13 +50,19 @@ export const AuthProvider = ({ children }) => {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          // New user - create their document
+          // New user - create their document with stats tracking
           await setDoc(userRef, {
             displayName: user.displayName || 'New User',
             email: user.email,
             phoneNumber: user.phoneNumber || null,
             photoURL: user.photoURL || null,
-            stats: { joinedAt: Timestamp.now(), totalCheckIns: 0, totalBesties: 0 },
+            stats: {
+              joinedAt: Timestamp.now(),
+              totalCheckIns: 0,
+              completedCheckIns: 0,
+              alertedCheckIns: 0,
+              totalBesties: 0
+            },
             notifications: { whatsapp: false, email: true },
             smsSubscription: { active: false },
             lastActive: Timestamp.now(),
@@ -113,22 +120,35 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
+        // Clean up previous listener if it exists
+        if (userUnsubscribeRef.current) {
+          userUnsubscribeRef.current();
+        }
+
         // Listen for real-time updates to user document
-        const unsubscribeUser = onSnapshot(userRef, (doc) => {
+        userUnsubscribeRef.current = onSnapshot(userRef, (doc) => {
           if (doc.exists()) setUserData({ id: doc.id, ...doc.data() });
           setLoading(false);
         });
-
-        return () => unsubscribeUser();
       } else {
-        // No user logged in
+        // No user logged in - clean up listener
+        if (userUnsubscribeRef.current) {
+          userUnsubscribeRef.current();
+          userUnsubscribeRef.current = null;
+        }
         errorTracker.setUser(null);
         setUserData(null);
         setLoading(false);
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      // Clean up user listener on unmount
+      if (userUnsubscribeRef.current) {
+        userUnsubscribeRef.current();
+      }
+    };
   }, []);
 
   return (

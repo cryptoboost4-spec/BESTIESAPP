@@ -44,10 +44,12 @@ export const authService = {
   signUpWithEmail: async (email, password, displayName) => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      // Update profile with display name
-      await updateDoc(doc(db, 'users', result.user.uid), {
-        displayName: displayName
-      });
+      // Create initial user document (AuthContext will fill in the rest)
+      // Use setDoc with merge to avoid overwriting if doc is already created
+      await setDoc(doc(db, 'users', result.user.uid), {
+        displayName: displayName,
+        email: result.user.email
+      }, { merge: true });
       return { success: true, user: result.user };
     } catch (error) {
       console.error('Email sign up error:', error);
