@@ -59,7 +59,7 @@ class NotificationService {
     try {
       if (!VAPID_KEY) {
         console.warn('VAPID key not configured');
-        toast.error('Push notifications are not configured. Please contact support.', { duration: 6000 });
+        toast.error('Push notifications require additional setup. Please use email or WhatsApp notifications instead.', { duration: 6000 });
         return null;
       }
 

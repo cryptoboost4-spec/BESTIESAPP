@@ -11,6 +11,7 @@ export const triggerEmergencySOS = httpsCallable(functions, 'triggerEmergencySOS
 export const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
 export const createPortalSession = httpsCallable(functions, 'createPortalSession');
 export const sendTestAlert = httpsCallable(functions, 'sendTestAlert');
+export const migratePhoneNumbers = httpsCallable(functions, 'migratePhoneNumbers');
 
 const apiService = {
   extendCheckIn,
@@ -22,6 +23,7 @@ const apiService = {
   createCheckoutSession,
   createPortalSession,
   sendTestAlert,
+  migratePhoneNumbers,
 };
 
 export default apiService;

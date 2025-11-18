@@ -261,10 +261,10 @@ const SettingsPage = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-semibold text-text-primary">Push Notifications</div>
+                <div className="font-semibold text-text-primary">Push Notifications (Beta)</div>
                 <div className="text-sm text-text-secondary">
                   {pushNotificationsSupported
-                    ? 'Get browser push notifications for check-in reminders'
+                    ? 'Browser notifications - may require additional setup'
                     : 'Not supported in this browser'}
                 </div>
               </div>
@@ -288,6 +288,12 @@ const SettingsPage = () => {
                 />
               </button>
             </div>
+
+            {pushNotificationsSupported && !pushNotificationsEnabled && (
+              <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded-lg">
+                💡 Tip: Email and WhatsApp are more reliable for critical safety alerts
+              </div>
+            )}
 
             <div className="flex items-center justify-between opacity-50">
               <div>

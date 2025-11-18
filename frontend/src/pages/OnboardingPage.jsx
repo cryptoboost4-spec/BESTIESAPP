@@ -106,6 +106,7 @@ const OnboardingPage = () => {
     }
 
     setUploading(true);
+    const uploadToast = toast.loading('Uploading photo...');
 
     try {
       const storageRef = ref(storage, `profile-pictures/${currentUser.uid}/${Date.now()}_${file.name}`);
@@ -116,11 +117,11 @@ const OnboardingPage = () => {
         photoURL: downloadURL,
       });
 
-      toast.success('Photo uploaded!');
+      toast.success('Photo uploaded!', { id: uploadToast });
       setStep('bestie-circle');
     } catch (error) {
       console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo');
+      toast.error('Failed to upload photo', { id: uploadToast });
     } finally {
       setUploading(false);
     }

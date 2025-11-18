@@ -10,6 +10,7 @@ const LoginPage = () => {
   const [displayName, setDisplayName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState('+1');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -67,8 +68,8 @@ const LoginPage = () => {
     setLoading(true);
     errorTracker.trackFunnelStep('signup', 'click_phone_send_code');
 
-    // Format phone number with country code
-    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+1${phoneNumber}`;
+    // Format phone number with selected country code
+    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `${countryCode}${phoneNumber}`;
 
     // Set up reCAPTCHA
     const recaptchaResult = authService.setupRecaptcha('recaptcha-container');
@@ -157,22 +158,27 @@ const LoginPage = () => {
                       Phone Number
                     </label>
                     <div className="flex gap-2">
-                      <select className="input w-24">
-                        <option value="+1">+1</option>
-                        <option value="+44">+44</option>
-                        <option value="+91">+91</option>
+                      <select
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="input w-24"
+                      >
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+61">🇦🇺 +61</option>
+                        <option value="+91">🇮🇳 +91</option>
                       </select>
                       <input
                         type="tel"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         className="input flex-1"
-                        placeholder="5551234567"
+                        placeholder="412345678"
                         required
                       />
                     </div>
                     <p className="text-xs text-text-secondary mt-1">
-                      Enter your phone number including area code
+                      Enter your phone number without the country code
                     </p>
                   </div>
                   <button

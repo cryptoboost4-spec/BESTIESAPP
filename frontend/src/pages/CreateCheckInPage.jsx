@@ -320,13 +320,15 @@ const CreateCheckInPage = () => {
       // Upload photo if provided
       let photoURL = null;
       if (photoFile) {
+        const photoToast = toast.loading('Uploading photo...');
         try {
           const storageRef = ref(storage, `checkin-photos/${currentUser.uid}/${Date.now()}_${photoFile.name}`);
           await uploadBytes(storageRef, photoFile);
           photoURL = await getDownloadURL(storageRef);
+          toast.success('Photo uploaded!', { id: photoToast });
         } catch (photoError) {
           console.error('Photo upload failed:', photoError);
-          toast.error('Photo upload failed, continuing without photo');
+          toast.error('Photo upload failed, continuing without photo', { id: photoToast });
         }
       }
 
