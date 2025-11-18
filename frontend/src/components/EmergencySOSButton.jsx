@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
@@ -8,16 +8,18 @@ const EmergencySOSButton = () => {
   const { currentUser, userData } = useAuth();
   const [activating, setActivating] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const countdownInterval = useRef(null);
 
   const handleSOSPress = () => {
     // 5 second countdown before sending
     setCountdown(5);
     setActivating(true);
 
-    const interval = setInterval(() => {
+    countdownInterval.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
-          clearInterval(interval);
+          clearInterval(countdownInterval.current);
+          countdownInterval.current = null;
           sendSOS();
           return null;
         }
@@ -27,6 +29,12 @@ const EmergencySOSButton = () => {
   };
 
   const handleCancel = () => {
+    // Clear the interval to prevent SOS from sending
+    if (countdownInterval.current) {
+      clearInterval(countdownInterval.current);
+      countdownInterval.current = null;
+    }
+
     setActivating(false);
     setCountdown(null);
     toast('SOS cancelled');
