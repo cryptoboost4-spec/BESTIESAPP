@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
@@ -79,12 +79,16 @@ export const authService = {
   signUpWithEmail: async (email, password, displayName) => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      // Create initial user document (AuthContext will fill in the rest)
-      // Use setDoc with merge to avoid overwriting if doc is already created
-      await setDoc(doc(db, 'users', result.user.uid), {
-        displayName: displayName,
-        email: result.user.email
-      }, { merge: true });
+
+      // Update the Firebase Auth user profile with displayName
+      // This ensures AuthContext will see the correct displayName when it creates the Firestore doc
+      await updateProfile(result.user, {
+        displayName: displayName || 'New User'
+      });
+
+      // The AuthContext listener will create the Firestore document with the correct displayName
+      // from result.user.displayName, so we don't need to create it here
+
       return { success: true, user: result.user };
     } catch (error) {
       console.error('Email sign up error:', error);

@@ -14,8 +14,11 @@ const BADGE_TIERS = {
     { id: 'besties_10', name: 'Squad Goals', requirement: 10, icon: '💜✨' },
     { id: 'besties_20', name: 'Community Leader', requirement: 20, icon: '💜⭐' }
   ],
+  subscriber: [
+    { id: 'subscriber_active', name: 'SMS Supporter', requirement: 1, icon: '⭐💝' }
+  ],
   donor: [
-    { id: 'donor_10', name: 'Supporter', requirement: 10, icon: '💝' },
+    { id: 'donor_10', name: 'Donor', requirement: 10, icon: '💝' },
     { id: 'donor_25', name: 'Champion', requirement: 25, icon: '💝✨' },
     { id: 'donor_50', name: 'Hero', requirement: 50, icon: '💝⭐' },
     { id: 'donor_100', name: 'Legend', requirement: 100, icon: '👑💝' }
@@ -49,6 +52,8 @@ async function updateUserBadges(userId) {
       guardianCount: await countGuardianBesties(userId),
       // Besties: Total besties this user has
       bestiesCount: await countTotalBesties(userId),
+      // Subscriber: Active SMS subscription
+      hasActiveSubscription: userData.smsSubscription?.active || false,
       // Donations: Total amount donated
       donationTotal: userData.donationStats?.totalDonated || 0,
       // Check-ins: Completed check-ins
@@ -69,6 +74,13 @@ async function updateUserBadges(userId) {
     for (const badge of BADGE_TIERS.besties) {
       if (stats.bestiesCount >= badge.requirement) {
         earnedBadges.push({ ...badge, category: 'besties', earnedAt: new Date() });
+      }
+    }
+
+    // Subscriber badge (for active SMS subscription)
+    if (stats.hasActiveSubscription) {
+      for (const badge of BADGE_TIERS.subscriber) {
+        earnedBadges.push({ ...badge, category: 'subscriber', earnedAt: new Date() });
       }
     }
 

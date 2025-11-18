@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const twilio = require('twilio');
+const { updateUserBadges } = require('./utils/badges');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -679,6 +680,9 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
           'smsSubscription.stripeSubscriptionId': session.subscription,
           'smsSubscription.startedAt': admin.firestore.Timestamp.now(),
         });
+
+        // Update badges to award subscriber badge
+        await updateUserBadges(firebaseUID);
       } else if (type === 'donation') {
         // Track donation
         const amount = session.amount_total / 100;
@@ -693,6 +697,9 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
           'donationStats.stripeSubscriptionId': session.subscription,
           'donationStats.lastDonation': admin.firestore.Timestamp.now(),
         });
+
+        // Update badges to check for donor badges
+        await updateUserBadges(firebaseUID);
       }
       break;
 
@@ -715,11 +722,17 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
             'smsSubscription.active': false,
             'smsSubscription.cancelledAt': admin.firestore.Timestamp.now(),
           });
+
+          // Update badges to remove subscriber badge
+          await updateUserBadges(userDoc.id);
         } else if (userData.donationStats?.stripeSubscriptionId === subscription.id) {
           await userDoc.ref.update({
             'donationStats.isActive': false,
             'donationStats.cancelledAt': admin.firestore.Timestamp.now(),
           });
+
+          // Update badges in case they lost a donor tier
+          await updateUserBadges(userDoc.id);
         }
       }
       break;

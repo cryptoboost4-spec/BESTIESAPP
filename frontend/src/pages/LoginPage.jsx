@@ -10,7 +10,7 @@ const LoginPage = () => {
   const [displayName, setDisplayName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [countryCode, setCountryCode] = useState('+1');
+  const [countryCode, setCountryCode] = useState('+61'); // Default to Australia
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -24,14 +24,15 @@ const LoginPage = () => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     errorTracker.trackFunnelStep('signup', 'click_google_signin');
-    
+
     const result = await authService.signInWithGoogle();
     setLoading(false);
-    
+
     if (result.success) {
       errorTracker.trackFunnelStep('signup', 'complete_google_signin');
       toast.success('Welcome to Besties!');
-      navigate('/onboarding');
+      // Navigate to home - HomePage will handle onboarding redirect if needed
+      navigate('/');
     } else {
       errorTracker.logCustomError('Google sign-in failed', { error: result.error });
       toast.error(result.error || 'Sign in failed');
@@ -56,7 +57,8 @@ const LoginPage = () => {
     if (result.success) {
       errorTracker.trackFunnelStep('signup', isSignUp ? 'complete_email_signup' : 'complete_email_signin');
       toast.success(isSignUp ? 'Account created!' : 'Welcome back!');
-      navigate(isSignUp ? '/onboarding' : '/');
+      // Navigate to home - HomePage will handle onboarding redirect if needed
+      navigate('/');
     } else {
       errorTracker.logCustomError('Email auth failed', { error: result.error, isSignUp });
       toast.error(result.error || 'Authentication failed');
@@ -104,7 +106,8 @@ const LoginPage = () => {
     if (result.success) {
       errorTracker.trackFunnelStep('signup', 'complete_phone_signin');
       toast.success('Welcome to Besties!');
-      navigate('/onboarding');
+      // Navigate to home - HomePage will handle onboarding redirect if needed
+      navigate('/');
     } else {
       errorTracker.logCustomError('Phone code verification failed', { error: result.error });
       toast.error(result.error || 'Invalid code');
