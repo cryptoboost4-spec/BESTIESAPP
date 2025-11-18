@@ -66,7 +66,11 @@ service cloud.firestore {
     match /besties/{bestieId} {
       allow read: if isAdmin() || (isSignedIn() && (
         request.auth.uid == resource.data.requesterId ||
-        request.auth.uid == resource.data.recipientId
+        request.auth.uid == resource.data.recipientId ||
+        // Allow reading pending invites sent to user's phone/email
+        (resource.data.recipientPhone != null &&
+         (request.auth.token.phone_number == resource.data.recipientPhone ||
+          request.auth.token.email == resource.data.recipientPhone))
       ));
 
       allow create: if isSignedIn() && (
