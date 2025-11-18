@@ -13,6 +13,7 @@ import {
   where,
   updateDoc
 } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
 
 const AuthContext = createContext();
@@ -176,7 +177,6 @@ export const AuthProvider = ({ children }) => {
             if (inviterInfo) {
               try {
                 const { displayName } = JSON.parse(inviterInfo);
-                const toast = require('react-hot-toast').default;
                 toast.success(`You're now besties with ${displayName}! 💜`, { duration: 5000 });
               } catch (e) {
                 console.error('Failed to parse inviter info:', e);

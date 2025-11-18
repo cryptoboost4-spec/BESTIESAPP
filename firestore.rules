@@ -68,16 +68,26 @@ service cloud.firestore {
         request.auth.uid == resource.data.requesterId ||
         request.auth.uid == resource.data.recipientId
       ));
-      
-      allow create: if isSignedIn() && 
-        request.auth.uid == request.resource.data.requesterId &&
-        request.resource.data.keys().hasAll(['requesterId', 'recipientPhone', 'status', 'createdAt']) &&
-        request.resource.data.status == 'pending';
+
+      allow create: if isSignedIn() && (
+        // Normal request: user creates pending bestie request
+        (request.auth.uid == request.resource.data.requesterId &&
+         request.resource.data.keys().hasAll(['requesterId', 'recipientPhone', 'status', 'createdAt']) &&
+         request.resource.data.status == 'pending') ||
+        // Invite link: user accepts invite by creating accepted connection
+        (request.auth.uid == request.resource.data.recipientId &&
+         request.resource.data.keys().hasAll(['requesterId', 'recipientId', 'status', 'createdAt', 'acceptedAt']) &&
+         request.resource.data.status == 'accepted')
+      );
       
       allow update: if isSignedIn() && (
-        (request.auth.uid == resource.data.recipientId && 
+        // Recipient can accept/decline or update acceptedAt/recipientId when accepting invite
+        (request.auth.uid == resource.data.recipientId &&
          request.resource.data.status in ['accepted', 'declined']) ||
-        (request.auth.uid == resource.data.requesterId && 
+        (request.auth.uid == request.resource.data.recipientId &&
+         request.resource.data.status == 'accepted') ||
+        // Requester can cancel
+        (request.auth.uid == resource.data.requesterId &&
          request.resource.data.status == 'cancelled')
       );
       
