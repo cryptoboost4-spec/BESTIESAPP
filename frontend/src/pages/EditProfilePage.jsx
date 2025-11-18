@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { db, storage } from '../services/firebase';
+import { db, storage, authService } from '../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updatePassword, updateEmail } from 'firebase/auth';
@@ -11,7 +11,7 @@ import Header from '../components/Header';
 const EditProfilePage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
-  
+
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [bio, setBio] = useState(userData?.profile?.bio || '');
   const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
@@ -21,6 +21,12 @@ const EditProfilePage = () => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(userData?.photoURL || null);
   const [loading, setLoading] = useState(false);
+
+  // Phone verification states
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [phoneConfirmationResult, setPhoneConfirmationResult] = useState(null);
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState('');
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -49,21 +55,70 @@ const EditProfilePage = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-
-    if (newPassword && newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    if (newPassword && newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+  const handleSendPhoneVerification = async () => {
+    if (!phoneNumber || phoneNumber === userData?.phoneNumber) {
+      toast.error('Please enter a new phone number');
       return;
     }
 
     setLoading(true);
 
+    // Format phone number - ensure it starts with +
+    let formattedPhone = phoneNumber.trim();
+    if (!formattedPhone.startsWith('+')) {
+      // If it doesn't start with +, assume Australia +61 and remove leading 0
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '+61' + formattedPhone.slice(1);
+      } else {
+        formattedPhone = '+' + formattedPhone;
+      }
+    }
+
+    // Setup reCAPTCHA
+    const recaptchaResult = authService.setupRecaptcha('phone-recaptcha-container');
+    if (!recaptchaResult.success) {
+      toast.error('Failed to set up verification. Please refresh the page.');
+      setLoading(false);
+      return;
+    }
+
+    // Send verification code
+    const result = await authService.sendPhoneVerification(formattedPhone, recaptchaResult.verifier);
+    setLoading(false);
+
+    if (result.success) {
+      setPhoneConfirmationResult(result.confirmationResult);
+      setPendingPhoneNumber(formattedPhone);
+      setShowPhoneVerification(true);
+      toast.success('Verification code sent to your phone!');
+    } else {
+      toast.error(result.error || 'Failed to send verification code');
+    }
+  };
+
+  const handleVerifyPhoneCode = async () => {
+    if (!verificationCode || !phoneConfirmationResult) {
+      toast.error('Please enter the verification code');
+      return;
+    }
+
+    setLoading(true);
+
+    const result = await authService.verifyPhoneCode(phoneConfirmationResult, verificationCode);
+
+    if (result.success) {
+      toast.success('Phone number verified!');
+      setShowPhoneVerification(false);
+      setPhoneNumber(pendingPhoneNumber);
+      // Now save the profile with the verified phone number
+      saveProfileChanges(pendingPhoneNumber);
+    } else {
+      setLoading(false);
+      toast.error(result.error || 'Invalid verification code');
+    }
+  };
+
+  const saveProfileChanges = async (verifiedPhoneNumber = null) => {
     try {
       // Upload profile picture if changed
       const photoURL = await uploadProfilePicture();
@@ -71,7 +126,7 @@ const EditProfilePage = () => {
       // Update Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), {
         displayName,
-        phoneNumber,
+        phoneNumber: verifiedPhoneNumber || phoneNumber,
         photoURL,
         'profile.bio': bio,
         updatedAt: new Date(),
@@ -101,6 +156,33 @@ const EditProfilePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    if (newPassword && newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (newPassword && newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    // Check if phone number has changed
+    const phoneChanged = phoneNumber && phoneNumber !== userData?.phoneNumber;
+
+    if (phoneChanged) {
+      // Phone number changed, require verification
+      handleSendPhoneVerification();
+      return; // Don't save yet, wait for verification
+    }
+
+    // If phone number hasn't changed, save normally
+    setLoading(true);
+    await saveProfileChanges();
   };
 
   return (
@@ -194,8 +276,13 @@ const EditProfilePage = () => {
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="input"
-                  placeholder="+61 400 000 000"
+                  placeholder="+61 400 000 000 or 0400 000 000"
                 />
+                {phoneNumber !== userData?.phoneNumber && phoneNumber && (
+                  <div className="text-xs text-orange-600 mt-1">
+                    ⚠️ You'll need to verify this number via SMS before saving
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -272,6 +359,68 @@ const EditProfilePage = () => {
             </button>
           </div>
         </form>
+
+        {/* Phone Verification Modal */}
+        {showPhoneVerification && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="card p-6 max-w-md w-full animate-scale-up">
+              <h2 className="text-2xl font-display text-text-primary mb-2">Verify Phone Number</h2>
+              <p className="text-text-secondary mb-4">
+                We sent a 6-digit code to <strong>{pendingPhoneNumber}</strong>
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-text-primary mb-2">
+                  Verification Code
+                </label>
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  className="input"
+                  placeholder="123456"
+                  maxLength={6}
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowPhoneVerification(false);
+                    setVerificationCode('');
+                    setPhoneConfirmationResult(null);
+                  }}
+                  className="flex-1 btn btn-secondary"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleVerifyPhoneCode}
+                  className="flex-1 btn btn-primary"
+                  disabled={loading || verificationCode.length !== 6}
+                >
+                  {loading ? 'Verifying...' : 'Verify & Save'}
+                </button>
+              </div>
+
+              <p className="text-xs text-text-secondary mt-4 text-center">
+                Didn't receive the code?{' '}
+                <button
+                  onClick={handleSendPhoneVerification}
+                  className="text-primary underline"
+                  disabled={loading}
+                >
+                  Resend
+                </button>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Invisible reCAPTCHA container */}
+        <div id="phone-recaptcha-container"></div>
       </div>
     </div>
   );
