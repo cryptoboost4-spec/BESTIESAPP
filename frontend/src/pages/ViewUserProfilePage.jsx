@@ -12,7 +12,7 @@ const ViewUserProfilePage = () => {
   const [user, setUser] = useState(null);
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isBestie, setIsBestie] = useState(false);
+  const [, setIsBestie] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {

@@ -16,6 +16,7 @@ const LocationFavoritesPage = () => {
 
   useEffect(() => {
     loadFavorites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const loadFavorites = async () => {

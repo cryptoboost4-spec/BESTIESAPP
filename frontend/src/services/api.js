@@ -9,7 +9,7 @@ export const acceptBestieRequest = httpsCallable(functions, 'acceptBestieRequest
 export const declineBestieRequest = httpsCallable(functions, 'declineBestieRequest');
 export const triggerEmergencySOS = httpsCallable(functions, 'triggerEmergencySOS');
 
-export default {
+const apiService = {
   extendCheckIn,
   completeCheckIn,
   sendBestieInvite,
@@ -17,3 +17,5 @@ export default {
   declineBestieRequest,
   triggerEmergencySOS,
 };
+
+export default apiService;

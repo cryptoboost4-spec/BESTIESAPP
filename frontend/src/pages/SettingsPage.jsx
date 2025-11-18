@@ -6,13 +6,12 @@ import { authService, db } from '../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
-import apiService from '../services/api';
 
 const SettingsPage = () => {
   const { currentUser, userData } = useAuth();
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   const handleSignOut = async () => {
     const result = await authService.signOut();

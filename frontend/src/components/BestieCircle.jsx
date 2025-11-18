@@ -6,10 +6,6 @@ const BestieCircle = ({ userId, onAddClick }) => {
   const [besties, setBesties] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadBesties();
-  }, [userId]);
-
   const loadBesties = async () => {
     if (!userId) return;
 
@@ -56,6 +52,11 @@ const BestieCircle = ({ userId, onAddClick }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadBesties();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const slots = Array.from({ length: 5 }, (_, i) => besties[i] || null);
 

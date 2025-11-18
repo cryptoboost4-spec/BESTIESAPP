@@ -19,7 +19,6 @@ const CreateCheckInPage = () => {
   const [notes, setNotes] = useState('');
   const [besties, setBesties] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [useGPS, setUseGPS] = useState(false);
   const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
 
   const locationInputRef = useRef(null);
@@ -55,6 +54,7 @@ const CreateCheckInPage = () => {
       setSelectedBesties(template.bestieIds || []);
       setNotes(template.notes || '');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
   // Load Google Places API
@@ -120,7 +120,6 @@ const CreateCheckInPage = () => {
             : place.formatted_address;
 
           setLocationInput(displayLocation);
-          setUseGPS(false);
         }
       });
     } catch (error) {
@@ -195,7 +194,6 @@ const CreateCheckInPage = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLocationInput(`GPS: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
-          setUseGPS(true);
           setLoading(false);
           toast.success('Location captured!');
         },

@@ -26,6 +26,7 @@ const BadgesPage = () => {
 
   useEffect(() => {
     loadBadges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const loadBadges = async () => {
