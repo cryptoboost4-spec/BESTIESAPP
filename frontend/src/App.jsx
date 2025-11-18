@@ -31,6 +31,7 @@ import { DarkModeProvider } from './contexts/DarkModeContext';
 
 // Components
 import ErrorBoundary from './components/ErrorBoundary';
+import AdminRoute from './components/AdminRoute';
 
 // Services
 import errorTracker from './services/errorTracking';
@@ -139,29 +140,31 @@ function App() {
               path="/templates" 
               element={user ? <TemplatesPage /> : <Navigate to="/login" />} 
             />
-            <Route 
-              path="/dev-analytics" 
-              element={user ? <DevAnalyticsPage /> : <Navigate to="/login" />} 
+            <Route
+              path="/favorites"
+              element={user ? <LocationFavoritesPage /> : <Navigate to="/login" />}
             />
-            <Route 
-              path="/favorites" 
-              element={user ? <LocationFavoritesPage /> : <Navigate to="/login" />} 
-            />
-            <Route 
-              path="/export-data" 
-              element={user ? <ExportDataPage /> : <Navigate to="/login" />} 
-            />
-            <Route 
-              path="/monitoring" 
-              element={user ? <MonitoringDashboard /> : <Navigate to="/login" />} 
+            <Route
+              path="/export-data"
+              element={user ? <ExportDataPage /> : <Navigate to="/login" />}
             />
             <Route
               path="/social-feed"
               element={user ? <SocialFeedPage /> : <Navigate to="/login" />}
             />
+
+            {/* Admin-only routes */}
+            <Route
+              path="/dev-analytics"
+              element={user ? <AdminRoute><DevAnalyticsPage /></AdminRoute> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/monitoring"
+              element={user ? <AdminRoute><MonitoringDashboard /></AdminRoute> : <Navigate to="/login" />}
+            />
             <Route
               path="/error-dashboard"
-              element={user ? <ErrorDashboard /> : <Navigate to="/login" />}
+              element={user ? <AdminRoute><ErrorDashboard /></AdminRoute> : <Navigate to="/login" />}
             />
 
             {/* Catch all */}

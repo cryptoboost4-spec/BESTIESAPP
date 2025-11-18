@@ -17,6 +17,7 @@ const CreateCheckInPage = () => {
   const [duration, setDuration] = useState(30);
   const [selectedBesties, setSelectedBesties] = useState([]);
   const [notes, setNotes] = useState('');
+  const [meetingWith, setMeetingWith] = useState('');
   const [besties, setBesties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
@@ -31,17 +32,6 @@ const CreateCheckInPage = () => {
     }
   }, [userData, navigate]);
 
-  // Common locations for suggestions
-  const commonLocations = [
-    '📍 Coffee Shop',
-    '🍽️ Restaurant',
-    '🎬 Cinema',
-    '🏠 Their Place',
-    '🎵 Concert/Event',
-    '🍻 Bar/Pub',
-    '🏃 Gym',
-    '🛍️ Shopping Center',
-  ];
 
   useEffect(() => {
     errorTracker.trackFunnelStep('checkin', 'view_create_page');
@@ -268,6 +258,7 @@ const CreateCheckInPage = () => {
         alertTime: Timestamp.fromDate(alertTime),
         bestieIds: selectedBesties,
         notes: notes || null,
+        meetingWith: meetingWith || null,
         status: 'active',
         createdAt: Timestamp.now(),
         lastUpdate: Timestamp.now(),
@@ -339,7 +330,7 @@ const CreateCheckInPage = () => {
               Where are you going? 📍
             </label>
 
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2">
               <input
                 ref={locationInputRef}
                 type="text"
@@ -361,20 +352,20 @@ const CreateCheckInPage = () => {
                 </button>
               )}
             </div>
+          </div>
 
-            {/* Location Suggestions */}
-            <div className="flex flex-wrap gap-2">
-              {commonLocations.map((loc) => (
-                <button
-                  key={loc}
-                  type="button"
-                  onClick={() => setLocationInput(loc)}
-                  className="px-3 py-1 bg-accent/20 text-primary rounded-full text-sm hover:bg-accent/30 transition-colors"
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
+          {/* Who You're Meeting */}
+          <div className="card p-6">
+            <label className="block text-lg font-display text-text-primary mb-3">
+              Who are you meeting? 👥 (Optional)
+            </label>
+            <input
+              type="text"
+              value={meetingWith}
+              onChange={(e) => setMeetingWith(e.target.value)}
+              className="input"
+              placeholder="e.g., Alex, Sarah, John..."
+            />
           </div>
 
           {/* Duration */}

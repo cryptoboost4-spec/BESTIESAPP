@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { db, storage } from '../services/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import BestieCircle from '../components/BestieCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
@@ -13,11 +15,26 @@ const ProfilePage = () => {
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadBadges();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
+
+  // Close photo menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showPhotoMenu && !e.target.closest('.photo-menu-container')) {
+        setShowPhotoMenu(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showPhotoMenu]);
 
   const loadBadges = async () => {
     if (!currentUser) return;
@@ -35,6 +52,49 @@ const ProfilePage = () => {
   };
 
   const featuredBadges = badges.slice(0, 3);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Photo must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const storageRef = ref(storage, `profile-pictures/${currentUser.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        photoURL: downloadURL,
+      });
+
+      toast.success('Profile picture updated!');
+      setShowPhotoMenu(false);
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        photoURL: currentUser?.photoURL || null, // Fallback to auth provider photo
+      });
+
+      toast.success('Profile picture removed');
+      setShowPhotoMenu(false);
+    } catch (error) {
+      console.error('Error removing photo:', error);
+      toast.error('Failed to remove photo');
+    }
+  };
 
   if (loading) {
     return (
@@ -54,13 +114,57 @@ const ProfilePage = () => {
       <div className="max-w-4xl mx-auto p-4 pb-20">
         {/* Profile Header */}
         <div className="card p-6 mb-6 text-center">
-          <div className="w-24 h-24 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center text-white text-4xl font-display overflow-hidden">
-            {userData?.photoURL ? (
-              <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
+          <div className="relative inline-block photo-menu-container">
+            <button
+              onClick={() => setShowPhotoMenu(!showPhotoMenu)}
+              className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center text-white text-4xl font-display overflow-hidden hover:opacity-90 transition-opacity"
+            >
+              {userData?.photoURL ? (
+                <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
+              )}
+            </button>
+
+            {/* Photo Management Menu */}
+            {showPhotoMenu && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-2 z-30 w-48">
+                <div className="text-xs font-semibold text-gray-500 px-3 py-1">Manage</div>
+                <button
+                  onClick={() => navigate(`/user/${currentUser.uid}`)}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
+                >
+                  👤 View Profile
+                </button>
+                <button
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                    setShowPhotoMenu(false);
+                  }}
+                  disabled={uploading}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
+                >
+                  🔄 Replace
+                </button>
+                <button
+                  onClick={handleRemovePhoto}
+                  className="w-full text-left px-3 py-2 hover:bg-red-50 rounded text-sm font-semibold text-red-600"
+                >
+                  ❌ Remove
+                </button>
+              </div>
             )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
           </div>
+
+          <div className="mt-4"></div>
           
           <h1 className="text-3xl font-display text-text-primary mb-2">
             {userData?.displayName || 'User'}

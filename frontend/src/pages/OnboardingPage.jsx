@@ -350,7 +350,7 @@ const OnboardingPage = () => {
 
           {/* Show actual bestie circle */}
           <div className="mb-8">
-            <BestieCircle />
+            <BestieCircle userId={currentUser?.uid} onAddClick={() => navigate('/besties')} />
           </div>
 
           <div className="card p-6 mb-6">

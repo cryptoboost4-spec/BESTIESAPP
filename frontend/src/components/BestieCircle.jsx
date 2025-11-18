@@ -141,7 +141,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
           {/* Bestie Slots - closer to center */}
           {slots.map((bestie, index) => {
             const angle = (index * 72 - 90) * (Math.PI / 180);
-            const radius = 80; // Reduced from 100 for tighter spacing
+            const radius = 60; // Tight spacing around center
             const x = 50 + radius * Math.cos(angle);
             const y = 50 + radius * Math.sin(angle);
 

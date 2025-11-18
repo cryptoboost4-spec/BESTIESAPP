@@ -1,30 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { formatDistanceToNow } from 'date-fns';
 
 const ErrorDashboard = () => {
-  const { userData } = useAuth();
-  const navigate = useNavigate();
   const [errors, setErrors] = useState([]);
   const [filter, setFilter] = useState('all'); // all, uncaught_error, custom_error, unhandled_promise
   const [timeFilter, setTimeFilter] = useState('24h'); // 24h, 7d, 30d, all
   const [loading, setLoading] = useState(true);
-
-  // Check if user is admin
-  useEffect(() => {
-    if (userData) {
-      const adminStatus = userData.isAdmin === true;
-
-      if (!adminStatus) {
-        // Not admin - redirect to home
-        navigate('/');
-      }
-    }
-  }, [userData, navigate]);
 
   useEffect(() => {
     let q = collection(db, 'errors');
