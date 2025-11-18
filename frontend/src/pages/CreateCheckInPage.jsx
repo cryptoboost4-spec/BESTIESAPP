@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../services/firebase';
+import { db, storage } from '../services/firebase';
 import { collection, query, where, getDocs, addDoc, getDoc, doc, Timestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import { isEnabled } from '../config/features';
@@ -18,12 +19,15 @@ const CreateCheckInPage = () => {
   const [selectedBesties, setSelectedBesties] = useState([]);
   const [notes, setNotes] = useState('');
   const [meetingWith, setMeetingWith] = useState('');
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [besties, setBesties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
 
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -60,6 +64,10 @@ const CreateCheckInPage = () => {
 
     if (!apiKey) {
       console.warn('Google Maps API key not configured');
+      toast.error('Address autocomplete is not available. Please type your location manually.', {
+        duration: 5000,
+        id: 'maps-api-missing'
+      });
       return;
     }
 
@@ -217,6 +225,32 @@ const CreateCheckInPage = () => {
     }
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Photo must be less than 5MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const removePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -251,6 +285,19 @@ const CreateCheckInPage = () => {
       const now = new Date();
       const alertTime = new Date(now.getTime() + duration * 60 * 1000);
 
+      // Upload photo if provided
+      let photoURL = null;
+      if (photoFile) {
+        try {
+          const storageRef = ref(storage, `checkin-photos/${currentUser.uid}/${Date.now()}_${photoFile.name}`);
+          await uploadBytes(storageRef, photoFile);
+          photoURL = await getDownloadURL(storageRef);
+        } catch (photoError) {
+          console.error('Photo upload failed:', photoError);
+          toast.error('Photo upload failed, continuing without photo');
+        }
+      }
+
       const checkInData = {
         userId: currentUser.uid,
         location: locationInput,
@@ -259,6 +306,7 @@ const CreateCheckInPage = () => {
         bestieIds: selectedBesties,
         notes: notes || null,
         meetingWith: meetingWith || null,
+        photoURL: photoURL,
         status: 'active',
         createdAt: Timestamp.now(),
         lastUpdate: Timestamp.now(),
@@ -400,8 +448,17 @@ const CreateCheckInPage = () => {
               onChange={(e) => setDuration(parseInt(e.target.value))}
               className="w-full"
             />
-            <div className="text-center text-sm text-text-secondary mt-2">
-              {duration} minutes
+            <div className="text-center mt-3">
+              <div className="text-sm text-text-secondary">
+                {duration} minutes
+              </div>
+              <div className="text-sm font-semibold text-primary mt-1">
+                Alert at: {new Date(Date.now() + duration * 60 * 1000).toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })}
+              </div>
             </div>
           </div>
 
@@ -471,6 +528,94 @@ const CreateCheckInPage = () => {
               placeholder="Any additional info for your besties..."
             />
           </div>
+
+          {/* Photo */}
+          <div className="card p-6">
+            <label className="block text-lg font-display text-text-primary mb-3">
+              Add a Photo (Optional) 📸
+            </label>
+
+            {photoPreview ? (
+              <div className="relative">
+                <img
+                  src={photoPreview}
+                  alt="Check-in preview"
+                  className="w-full rounded-xl max-h-64 object-cover mb-3"
+                />
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold hover:bg-red-600"
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            ) : (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                  id="photo-input"
+                />
+                <label
+                  htmlFor="photo-input"
+                  className="block w-full p-8 border-2 border-dashed border-gray-300 rounded-xl text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                >
+                  <div className="text-4xl mb-2">📷</div>
+                  <div className="text-sm text-text-secondary">
+                    Click to add a photo (max 5MB)
+                  </div>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Preview Section */}
+          {(locationInput || selectedBesties.length > 0) && (
+            <div className="card p-6 bg-blue-50 border-2 border-blue-200">
+              <h3 className="font-display text-lg text-text-primary mb-3">
+                👀 Your besties will see:
+              </h3>
+              <div className="bg-white rounded-xl p-4 border-2 border-gray-200">
+                <div className="text-sm text-text-secondary mb-1">🚨 Safety Alert</div>
+                <div className="font-semibold text-text-primary mb-2">
+                  {userData?.displayName || 'Your friend'} hasn't checked in!
+                </div>
+                {locationInput && (
+                  <div className="text-sm mb-2">
+                    <span className="font-semibold">Location:</span> {locationInput}
+                  </div>
+                )}
+                {meetingWith && (
+                  <div className="text-sm mb-2">
+                    <span className="font-semibold">Meeting with:</span> {meetingWith}
+                  </div>
+                )}
+                {notes && (
+                  <div className="text-sm mb-2">
+                    <span className="font-semibold">Notes:</span> {notes}
+                  </div>
+                )}
+                {photoPreview && (
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    className="w-full rounded-lg mt-2 max-h-32 object-cover"
+                  />
+                )}
+                <div className="text-xs text-text-secondary mt-2">
+                  Alert time: {new Date(Date.now() + duration * 60 * 1000).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Submit */}
           <button

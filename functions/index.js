@@ -133,8 +133,8 @@ async function sendAlertToBesties(checkInId, checkIn) {
         await sendSMSAlert(bestieData.phoneNumber, alertMessage);
       }
       
-      // Always send email as backup
-      if (bestieData.email) {
+      // Send email if enabled
+      if (bestieData.email && bestieData.notificationPreferences?.email) {
         await sendEmailAlert(bestieData.email, alertMessage, checkIn);
       }
       
@@ -450,7 +450,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
         await sendSMSAlert(bestieData.phoneNumber, alertMessage);
         await sendWhatsAppAlert(bestieData.phoneNumber, alertMessage);
       }
-      if (bestieData.email) {
+      if (bestieData.email && bestieData.notificationPreferences?.email) {
         await sendEmailAlert(bestieData.email, alertMessage, {
           location: location || 'Unknown',
           alertTime: admin.firestore.Timestamp.now(),

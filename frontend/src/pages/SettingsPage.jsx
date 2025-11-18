@@ -42,6 +42,15 @@ const SettingsPage = () => {
 
     try {
       const newValue = !userData?.notificationPreferences?.[type];
+
+      // Validate WhatsApp requires phone number
+      if (type === 'whatsapp' && newValue) {
+        if (!userData?.phoneNumber) {
+          toast.error('Please add your phone number in Edit Profile first', { duration: 5000 });
+          return;
+        }
+      }
+
       await updateDoc(doc(db, 'users', currentUser.uid), {
         [`notificationPreferences.${type}`]: newValue,
       });
@@ -174,7 +183,13 @@ const SettingsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-semibold text-text-primary">WhatsApp (Free)</div>
-                <div className="text-sm text-text-secondary">Get alerts via WhatsApp</div>
+                <div className="text-sm text-text-secondary">
+                  {!userData?.phoneNumber ? (
+                    <span className="text-orange-600">⚠️ Add phone number in profile first</span>
+                  ) : (
+                    'Get alerts via WhatsApp'
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => toggleNotification('whatsapp')}
@@ -394,24 +409,28 @@ const SettingsPage = () => {
             >
               <div className="text-sm">📥 Export Data</div>
             </button>
-            <button
-              onClick={() => navigate('/dev-analytics')}
-              className="btn btn-secondary text-left px-4 py-3"
-            >
-              <div className="text-sm">📈 Analytics</div>
-            </button>
-            <button
-              onClick={() => navigate('/monitoring')}
-              className="btn bg-gradient-primary text-white text-left px-4 py-3"
-            >
-              <div className="text-sm">🔍 Monitoring</div>
-            </button>
-            <button
-              onClick={() => navigate('/error-dashboard')}
-              className="btn bg-red-500 text-white text-left px-4 py-3 hover:bg-red-600"
-            >
-              <div className="text-sm">🚨 Errors</div>
-            </button>
+            {userData?.isAdmin && (
+              <>
+                <button
+                  onClick={() => navigate('/dev-analytics')}
+                  className="btn btn-secondary text-left px-4 py-3"
+                >
+                  <div className="text-sm">📈 Analytics</div>
+                </button>
+                <button
+                  onClick={() => navigate('/monitoring')}
+                  className="btn bg-gradient-primary text-white text-left px-4 py-3"
+                >
+                  <div className="text-sm">🔍 Monitoring</div>
+                </button>
+                <button
+                  onClick={() => navigate('/error-dashboard')}
+                  className="btn bg-red-500 text-white text-left px-4 py-3 hover:bg-red-600"
+                >
+                  <div className="text-sm">🚨 Errors</div>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
