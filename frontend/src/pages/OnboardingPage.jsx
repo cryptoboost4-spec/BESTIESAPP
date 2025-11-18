@@ -9,12 +9,25 @@ import toast from 'react-hot-toast';
 const OnboardingPage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState('welcome'); // welcome, slides, name, photo, bestie-circle
+  const [step, setStep] = useState('welcome'); // welcome, slides, name, photo, invite-welcome, bestie-circle
   const [slideIndex, setSlideIndex] = useState(0);
   const [displayName, setDisplayName] = useState('');
   const [uploading, setUploading] = useState(false);
   const [hasBesties, setHasBesties] = useState(false);
   const [checkingBesties, setCheckingBesties] = useState(false);
+  const [inviterInfo, setInviterInfo] = useState(null);
+
+  // Check for inviter info on mount
+  useEffect(() => {
+    const storedInviterInfo = localStorage.getItem('inviter_info');
+    if (storedInviterInfo) {
+      try {
+        setInviterInfo(JSON.parse(storedInviterInfo));
+      } catch (e) {
+        console.error('Failed to parse inviter info:', e);
+      }
+    }
+  }, []);
 
   // Prefill name from user data when it loads
   useEffect(() => {
@@ -118,7 +131,13 @@ const OnboardingPage = () => {
       });
 
       toast.success('Photo uploaded!', { id: uploadToast });
-      setStep('bestie-circle');
+
+      // If user joined via invite, show welcome screen first
+      if (inviterInfo) {
+        setStep('invite-welcome');
+      } else {
+        setStep('bestie-circle');
+      }
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error('Failed to upload photo', { id: uploadToast });
@@ -128,7 +147,12 @@ const OnboardingPage = () => {
   };
 
   const handleSkipPhoto = () => {
-    setStep('bestie-circle');
+    // If user joined via invite, show welcome screen first
+    if (inviterInfo) {
+      setStep('invite-welcome');
+    } else {
+      setStep('bestie-circle');
+    }
   };
 
   const handleFinish = async () => {
@@ -303,6 +327,56 @@ const OnboardingPage = () => {
             disabled={uploading}
           >
             Skip for Now →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Invite Welcome Screen (only shown if user joined via invite)
+  if (step === 'invite-welcome' && inviterInfo) {
+    return (
+      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="text-8xl mb-6 animate-bounce">💜</div>
+
+          {/* Inviter's Photo */}
+          {inviterInfo.photoURL ? (
+            <div className="mb-6 flex justify-center">
+              <img
+                src={inviterInfo.photoURL}
+                alt={inviterInfo.displayName}
+                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl"
+              />
+            </div>
+          ) : (
+            <div className="mb-6 flex justify-center">
+              <div className="w-32 h-32 rounded-full bg-gradient-primary flex items-center justify-center text-white text-5xl font-display border-4 border-white shadow-xl">
+                {inviterInfo.displayName?.[0] || '?'}
+              </div>
+            </div>
+          )}
+
+          <h1 className="text-4xl font-display text-white mb-4">
+            Welcome to Besties!
+          </h1>
+          <p className="text-2xl text-white/90 mb-2">
+            You accepted <span className="font-bold">{inviterInfo.displayName}'s</span> request
+          </p>
+          <p className="text-xl text-white/90 mb-8">
+            You are now besties! 🎉
+          </p>
+
+          <button
+            onClick={() => {
+              // Clean up inviter info and proceed to bestie circle
+              localStorage.removeItem('inviter_info');
+              setInviterInfo(null);
+              setStep('bestie-circle');
+            }}
+            className="btn bg-white text-primary hover:bg-white/90 text-lg px-8 py-4"
+          >
+            Continue →
           </button>
         </div>
       </div>

@@ -42,8 +42,18 @@ export const AuthProvider = ({ children }) => {
       if (!inviterSnap.exists()) {
         console.log('Invalid invite - user does not exist');
         localStorage.removeItem('pending_invite');
+        localStorage.removeItem('inviter_info');
         return;
       }
+
+      const inviterData = inviterSnap.data();
+
+      // Store inviter info for welcome screen (only for new users during onboarding)
+      localStorage.setItem('inviter_info', JSON.stringify({
+        uid: inviterUID,
+        displayName: inviterData.displayName,
+        photoURL: inviterData.photoURL,
+      }));
 
       // Check if bestie already exists (any direction or by phone)
       const queries = [
@@ -80,6 +90,7 @@ export const AuthProvider = ({ children }) => {
 
       // Clean up localStorage after successful processing
       localStorage.removeItem('pending_invite');
+      console.log('Invite processed successfully for:', inviterData.displayName);
     } catch (error) {
       console.error('Auto-add bestie failed:', error);
     }
@@ -96,7 +107,17 @@ export const AuthProvider = ({ children }) => {
 
       // If user is already logged in, process invite immediately
       if (auth.currentUser) {
-        processInvite(auth.currentUser, inviterUID);
+        processInvite(auth.currentUser, inviterUID).then(() => {
+          // Show success toast for logged-in users
+          const inviterInfo = localStorage.getItem('inviter_info');
+          if (inviterInfo) {
+            const { displayName } = JSON.parse(inviterInfo);
+            const toast = require('react-hot-toast').default;
+            toast.success(`You're now besties with ${displayName}! 💜`, { duration: 5000 });
+            // Clean up inviter info for logged-in users (not needed for onboarding)
+            localStorage.removeItem('inviter_info');
+          }
+        });
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
