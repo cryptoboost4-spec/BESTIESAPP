@@ -1,34 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, startAfter } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import Header from '../components/Header';
+
+const ITEMS_PER_PAGE = 20;
 
 const CheckInHistoryPage = () => {
   const { currentUser } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [filter, setFilter] = useState('all'); // all, completed, alerted
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     loadHistory();
   }, [currentUser, filter]);
 
-  const loadHistory = async () => {
+  const loadHistory = async (loadMore = false) => {
     if (!currentUser) return;
 
-    setLoading(true);
+    if (loadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setHistory([]);
+      setLastDoc(null);
+      setHasMore(true);
+    }
+
     try {
       let q = query(
         collection(db, 'checkins'),
-        where('userId', '==', currentUser.uid)
+        where('userId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc'),
+        limit(ITEMS_PER_PAGE)
       );
 
       if (filter === 'completed') {
-        q = query(q, where('status', '==', 'completed'));
+        q = query(
+          collection(db, 'checkins'),
+          where('userId', '==', currentUser.uid),
+          where('status', '==', 'completed'),
+          orderBy('createdAt', 'desc'),
+          limit(ITEMS_PER_PAGE)
+        );
       } else if (filter === 'alerted') {
-        q = query(q, where('status', '==', 'alerted'));
+        q = query(
+          collection(db, 'checkins'),
+          where('userId', '==', currentUser.uid),
+          where('status', '==', 'alerted'),
+          orderBy('createdAt', 'desc'),
+          limit(ITEMS_PER_PAGE)
+        );
+      }
+
+      // If loading more, start after the last document
+      if (loadMore && lastDoc) {
+        q = query(q, startAfter(lastDoc));
       }
 
       const snapshot = await getDocs(q);
@@ -37,20 +69,29 @@ const CheckInHistoryPage = () => {
         checkIns.push({ id: doc.id, ...doc.data() });
       });
 
-      // Sort by created date (newest first)
-      checkIns.sort((a, b) => {
-        const aTime = a.createdAt?.toDate() || new Date(0);
-        const bTime = b.createdAt?.toDate() || new Date(0);
-        return bTime - aTime;
-      });
+      // Update state
+      if (loadMore) {
+        setHistory(prev => [...prev, ...checkIns]);
+      } else {
+        setHistory(checkIns);
+      }
 
-      setHistory(checkIns);
+      // Update pagination state
+      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+      setHasMore(checkIns.length === ITEMS_PER_PAGE);
+
       setLoading(false);
+      setLoadingMore(false);
     } catch (error) {
       console.error('Error loading history:', error);
-      setHistory([]);
+      if (!loadMore) setHistory([]);
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleLoadMore = () => {
+    loadHistory(true);
   };
 
   const getStatusBadge = (status) => {
@@ -167,60 +208,88 @@ const CheckInHistoryPage = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {history.map((checkIn) => (
-              <div key={checkIn.id} className="card p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-display text-lg text-text-primary">
-                        {checkIn.location}
-                      </h3>
-                      {getStatusBadge(checkIn.status)}
-                    </div>
-                    <div className="text-sm text-text-secondary">
-                      {checkIn.createdAt && formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
+          <>
+            <div className="space-y-4">
+              {history.map((checkIn) => (
+                <div key={checkIn.id} className="card p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-display text-lg text-text-primary">
+                          {checkIn.location}
+                        </h3>
+                        {getStatusBadge(checkIn.status)}
+                      </div>
+                      <div className="text-sm text-text-secondary">
+                        {checkIn.createdAt && formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
+                      </div>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-text-secondary">Duration</div>
+                      <div className="font-semibold text-text-primary">
+                        {formatDuration(checkIn.duration)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-text-secondary">Besties Notified</div>
+                      <div className="font-semibold text-text-primary">
+                        {checkIn.bestieIds?.length || 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  {checkIn.notes && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="text-sm text-text-secondary italic">
+                        "{checkIn.notes}"
+                      </div>
+                    </div>
+                  )}
+
+                  {checkIn.completedAt && (
+                    <div className="mt-3 text-xs text-success">
+                      ✅ Completed {formatDistanceToNow(checkIn.completedAt.toDate(), { addSuffix: true })}
+                    </div>
+                  )}
+
+                  {checkIn.alertedAt && (
+                    <div className="mt-3 text-xs text-warning">
+                      🚨 Alert sent {formatDistanceToNow(checkIn.alertedAt.toDate(), { addSuffix: true })}
+                    </div>
+                  )}
                 </div>
+              ))}
+            </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-text-secondary">Duration</div>
-                    <div className="font-semibold text-text-primary">
-                      {formatDuration(checkIn.duration)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-text-secondary">Besties Notified</div>
-                    <div className="font-semibold text-text-primary">
-                      {checkIn.bestieIds?.length || 0}
-                    </div>
-                  </div>
-                </div>
-
-                {checkIn.notes && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="text-sm text-text-secondary italic">
-                      "{checkIn.notes}"
-                    </div>
-                  </div>
-                )}
-
-                {checkIn.completedAt && (
-                  <div className="mt-3 text-xs text-success">
-                    ✅ Completed {formatDistanceToNow(checkIn.completedAt.toDate(), { addSuffix: true })}
-                  </div>
-                )}
-
-                {checkIn.alertedAt && (
-                  <div className="mt-3 text-xs text-warning">
-                    🚨 Alert sent {formatDistanceToNow(checkIn.alertedAt.toDate(), { addSuffix: true })}
-                  </div>
-                )}
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="btn btn-secondary px-8"
+                >
+                  {loadingMore ? (
+                    <>
+                      <span className="spinner-small mr-2"></span>
+                      Loading...
+                    </>
+                  ) : (
+                    `Load More (${ITEMS_PER_PAGE} at a time)`
+                  )}
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+
+            {!hasMore && history.length > 0 && (
+              <div className="mt-6 text-center text-text-secondary text-sm">
+                You've reached the end of your check-in history
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
