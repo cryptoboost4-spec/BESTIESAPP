@@ -51,6 +51,25 @@ function RouteTracker() {
   return null;
 }
 
+// Custom redirect component that preserves invite parameter
+function ProtectedRoute({ user, children }) {
+  const location = useLocation();
+
+  if (!user) {
+    // Preserve invite parameter when redirecting to login
+    const searchParams = new URLSearchParams(location.search);
+    const inviteParam = searchParams.get('invite');
+
+    if (inviteParam) {
+      return <Navigate to={`/login?invite=${inviteParam}`} />;
+    }
+
+    return <Navigate to="/login" />;
+  }
+
+  return children;
+}
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -113,13 +132,13 @@ function App() {
             />
 
             {/* Protected routes */}
-            <Route 
-              path="/onboarding" 
-              element={user ? <OnboardingPage /> : <Navigate to="/login" />} 
+            <Route
+              path="/onboarding"
+              element={<ProtectedRoute user={user}><OnboardingPage /></ProtectedRoute>}
             />
-            <Route 
-              path="/" 
-              element={user ? <HomePage /> : <Navigate to="/login" />} 
+            <Route
+              path="/"
+              element={<ProtectedRoute user={user}><HomePage /></ProtectedRoute>}
             />
             <Route 
               path="/create" 

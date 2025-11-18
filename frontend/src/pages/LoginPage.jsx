@@ -15,7 +15,6 @@ const LoginPage = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
-  const [recaptchaState, setRecaptchaState] = useState('idle'); // idle, verifying, verified
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,7 +68,6 @@ const LoginPage = () => {
   const handleSendCode = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setRecaptchaState('verifying'); // Show verifying animation
     errorTracker.trackFunnelStep('signup', 'click_phone_send_code');
 
     // Format phone number with selected country code
@@ -80,7 +78,6 @@ const LoginPage = () => {
     if (!recaptchaResult.success) {
       toast.error('Failed to set up verification. Please refresh the page.');
       setLoading(false);
-      setRecaptchaState('idle');
       return;
     }
 
@@ -89,12 +86,10 @@ const LoginPage = () => {
     setLoading(false);
 
     if (result.success) {
-      setRecaptchaState('verified'); // Show checkmark
       setConfirmationResult(result.confirmationResult);
       toast.success('Verification code sent!');
       errorTracker.trackFunnelStep('signup', 'phone_code_sent');
     } else {
-      setRecaptchaState('idle');
       errorTracker.logCustomError('Phone verification failed', { error: result.error });
       toast.error(result.error || 'Failed to send code');
     }
@@ -192,64 +187,16 @@ const LoginPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full btn btn-primary"
+                    className="w-full btn btn-primary flex items-center justify-center gap-2"
                   >
-                    {loading ? 'Verifying & Sending...' : 'Send Verification Code'}
+                    {loading && (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                    {loading ? 'Sending Code...' : 'Send Verification Code'}
                   </button>
 
-                  {/* Fake reCAPTCHA visual (invisible real one in background) */}
-                  <div className="mt-4 flex justify-center">
-                    <div className="bg-gray-50 border-2 border-gray-300 rounded-md p-3 flex items-center gap-3 shadow-sm" style={{ width: '304px' }}>
-                      {/* Checkbox */}
-                      <div className={`w-7 h-7 border-2 rounded flex items-center justify-center flex-shrink-0 transition-all ${
-                        recaptchaState === 'idle' ? 'border-gray-400 bg-white' :
-                        recaptchaState === 'verifying' ? 'border-blue-500 bg-blue-50' :
-                        'border-green-600 bg-green-500'
-                      }`}>
-                        {recaptchaState === 'idle' && null}
-                        {recaptchaState === 'verifying' && (
-                          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        )}
-                        {recaptchaState === 'verified' && (
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-
-                      {/* Text */}
-                      <div className="flex-1">
-                        <div className="text-sm text-gray-700 font-medium">
-                          {recaptchaState === 'idle' && "I'm not a robot"}
-                          {recaptchaState === 'verifying' && "Verifying..."}
-                          {recaptchaState === 'verified' && "Verified"}
-                        </div>
-                        <div className="flex items-center gap-1 mt-1">
-                          <div className="w-8 h-8 flex items-center justify-center">
-                            <svg className="w-6 h-6" viewBox="0 0 256 256">
-                              <rect fill="#4285F4" x="0" y="0" width="256" height="256"/>
-                              <path fill="#FFF" d="M58 128l48 48 92-92"/>
-                            </svg>
-                          </div>
-                          <div className="flex flex-col text-xs">
-                            <span className="text-gray-500 font-medium">reCAPTCHA</span>
-                            <div className="text-gray-400 space-x-1">
-                              <span>Privacy</span>
-                              <span>-</span>
-                              <span>Terms</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Real invisible reCAPTCHA container (hidden) */}
-                  <div id="recaptcha-container" style={{ position: 'absolute', left: '-9999px' }}></div>
-
-                  <p className="text-xs text-text-secondary text-center mt-2">
-                    Verification happens automatically when you click send
-                  </p>
+                  {/* Invisible reCAPTCHA container */}
+                  <div id="recaptcha-container"></div>
                 </form>
               ) : (
                 <form onSubmit={handleVerifyCode} className="space-y-3">

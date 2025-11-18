@@ -139,8 +139,9 @@ export const AuthProvider = ({ children }) => {
       };
       fetchInviterInfo();
 
-      // Clear URL immediately for cleanliness
-      window.history.replaceState({}, '', '/');
+      // Clear URL query params for cleanliness (keep the pathname)
+      const currentPath = window.location.pathname;
+      window.history.replaceState({}, '', currentPath);
       // Don't process bestie connection here - let auth listener handle it reliably
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
