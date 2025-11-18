@@ -49,6 +49,11 @@ export const AuthProvider = ({ children }) => {
 
       const inviterData = inviterSnap.data();
 
+      // Get current user's data for name fields
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
       // Store inviter info for welcome screen (only for new users during onboarding)
       localStorage.setItem('inviter_info', JSON.stringify({
         uid: inviterUID,
@@ -72,6 +77,10 @@ export const AuthProvider = ({ children }) => {
             status: 'accepted',
             acceptedAt: Timestamp.now(),
             recipientId: user.uid,
+            recipientName: userData.displayName || user.displayName || 'Unknown',
+            recipientPhone: user.phoneNumber || user.email,
+            requesterName: inviterData.displayName || 'Unknown',
+            requesterPhone: inviterData.phoneNumber || inviterData.email,
           });
           found = true;
           break;
@@ -86,6 +95,10 @@ export const AuthProvider = ({ children }) => {
           status: 'accepted',
           acceptedAt: Timestamp.now(),
           createdAt: Timestamp.now(),
+          requesterName: inviterData.displayName || 'Unknown',
+          requesterPhone: inviterData.phoneNumber || inviterData.email,
+          recipientName: userData.displayName || user.displayName || 'Unknown',
+          recipientPhone: user.phoneNumber || user.email,
         });
       }
 

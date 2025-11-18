@@ -189,16 +189,14 @@ const LoginPage = () => {
                     disabled={loading}
                     className="w-full btn btn-primary"
                   >
-                    {loading ? 'Sending...' : 'Send Verification Code'}
+                    {loading ? 'Verifying & Sending...' : 'Send Verification Code'}
                   </button>
 
-                  {/* Real reCAPTCHA - shows checkbox with auto-verify spinner */}
-                  <div className="mt-4 flex justify-center">
-                    <div id="recaptcha-container"></div>
-                  </div>
+                  {/* Invisible reCAPTCHA - auto-executes when button clicked */}
+                  <div id="recaptcha-container" style={{ display: 'none' }}></div>
 
                   <p className="text-xs text-text-secondary text-center mt-2">
-                    The verification will start automatically when you click send
+                    Verification happens automatically - just click send
                   </p>
                 </form>
               ) : (

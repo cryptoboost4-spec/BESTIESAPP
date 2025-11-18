@@ -17,14 +17,14 @@ const BestieCard = ({ bestie }) => {
     >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display text-lg flex-shrink-0">
-          {bestie.name[0]}
+          {bestie.name?.[0] || bestie.phone?.[0] || '?'}
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-text-primary truncate">
-            {bestie.name}
+            {bestie.name || bestie.phone || 'Unknown'}
           </div>
           <div className="text-sm text-text-secondary truncate">
-            {bestie.phone}
+            {bestie.phone || 'No phone'}
           </div>
         </div>
       </div>

@@ -536,10 +536,10 @@ const CreateCheckInPage = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display">
-                          {bestie.name[0]}
+                          {bestie.name?.[0] || bestie.phone?.[0] || '?'}
                         </div>
                         <div>
-                          <div className="font-semibold text-text-primary">{bestie.name}</div>
+                          <div className="font-semibold text-text-primary">{bestie.name || bestie.phone || 'Unknown'}</div>
                           <div className="text-sm text-text-secondary">
                             {bestie.phone || '⚠️ No phone number - ask them to add one'}
                           </div>
