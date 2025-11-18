@@ -25,6 +25,8 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import ErrorDashboard from './pages/ErrorDashboard';
 import AlertViewPage from './pages/AlertViewPage';
+import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
+import SubscriptionCancelPage from './pages/SubscriptionCancelPage';
 
 // Context
 import { AuthProvider } from './contexts/AuthContext';
@@ -100,6 +102,14 @@ function App() {
             <Route
               path="/alert/:alertId"
               element={<AlertViewPage />}
+            />
+            <Route
+              path="/subscription-success"
+              element={user ? <SubscriptionSuccessPage /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/subscription-cancel"
+              element={user ? <SubscriptionCancelPage /> : <Navigate to="/login" />}
             />
 
             {/* Protected routes */}
