@@ -125,7 +125,8 @@ export const AuthProvider = ({ children }) => {
               alertedCheckIns: 0,
               totalBesties: 0
             },
-            notifications: { whatsapp: false, email: true },
+            notificationPreferences: { whatsapp: false, email: true },
+            notificationsEnabled: false, // Push notifications disabled by default
             smsSubscription: { active: false },
             lastActive: Timestamp.now(),
             onboardingCompleted: false, // New users need onboarding
@@ -138,6 +139,16 @@ export const AuthProvider = ({ children }) => {
           // (they're an existing user, so they don't need onboarding)
           if (userSnap.data().onboardingCompleted === undefined) {
             updates.onboardingCompleted = true;
+          }
+
+          // Migrate old 'notifications' field to 'notificationPreferences'
+          if (userSnap.data().notifications && !userSnap.data().notificationPreferences) {
+            updates.notificationPreferences = userSnap.data().notifications;
+          }
+
+          // Ensure notificationsEnabled exists (for push notifications)
+          if (userSnap.data().notificationsEnabled === undefined) {
+            updates.notificationsEnabled = userSnap.data().fcmToken ? true : false;
           }
 
           await updateDoc(userRef, updates);

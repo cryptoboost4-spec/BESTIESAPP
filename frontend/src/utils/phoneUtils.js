@@ -153,7 +153,7 @@ export const normalizeAustralianPhone = (phoneNumber) => {
   return `+61${withoutLeadingZero}`;
 };
 
-export default {
+const phoneUtils = {
   formatToE164,
   detectCountryCode,
   parseE164,
@@ -161,3 +161,5 @@ export default {
   isValidE164,
   normalizeAustralianPhone,
 };
+
+export default phoneUtils;
