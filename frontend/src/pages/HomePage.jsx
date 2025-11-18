@@ -27,6 +27,17 @@ const HomePage = () => {
     }
   }, [userData, authLoading, navigate]);
 
+  // Redirect to login if there's a pending invite and user is not logged in
+  useEffect(() => {
+    if (authLoading) return;
+
+    const pendingInvite = localStorage.getItem('pending_invite');
+    if (pendingInvite && !currentUser) {
+      console.log('📨 Pending invite detected, redirecting to login...');
+      navigate('/login');
+    }
+  }, [currentUser, authLoading, navigate]);
+
   useEffect(() => {
     if (!currentUser) return;
 

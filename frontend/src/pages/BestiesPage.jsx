@@ -17,45 +17,42 @@ const BestiesPage = () => {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Listen to accepted besties
-    const loadBesties = async () => {
-      try {
-        const [requesterQuery, recipientQuery] = await Promise.all([
-          getDocs(
-            query(
-              collection(db, 'besties'),
-              where('requesterId', '==', currentUser.uid),
-              where('status', '==', 'accepted')
-            )
-          ),
-          getDocs(
-            query(
-              collection(db, 'besties'),
-              where('recipientId', '==', currentUser.uid),
-              where('status', '==', 'accepted')
-            )
-          ),
-        ]);
+    // Listen to accepted besties (real-time updates)
+    const requesterQuery = query(
+      collection(db, 'besties'),
+      where('requesterId', '==', currentUser.uid),
+      where('status', '==', 'accepted')
+    );
 
-        const bestiesList = [];
+    const recipientQuery = query(
+      collection(db, 'besties'),
+      where('recipientId', '==', currentUser.uid),
+      where('status', '==', 'accepted')
+    );
 
-        requesterQuery.forEach((doc) => {
-          const data = doc.data();
-          bestiesList.push({
-            id: doc.id,
-            userId: data.recipientId,
-            name: data.recipientName,
-            phone: data.recipientPhone,
-            role: 'added',
-          });
+    // Listen to both queries in real-time
+    const unsubscribeRequester = onSnapshot(requesterQuery, (snapshot) => {
+      const bestiesList = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        bestiesList.push({
+          id: doc.id,
+          userId: data.recipientId,
+          name: data.recipientName || 'Unknown',
+          phone: data.recipientPhone,
+          role: 'added',
         });
+      });
 
-        recipientQuery.forEach((doc) => {
+      // Get recipient besties too
+      getDocs(recipientQuery).then((recipientSnapshot) => {
+        recipientSnapshot.forEach((doc) => {
           const data = doc.data();
           bestiesList.push({
             id: doc.id,
             userId: data.requesterId,
-            name: data.requesterName,
+            name: data.requesterName || 'Unknown',
             phone: data.requesterPhone,
             role: 'guardian',
           });
@@ -63,12 +60,16 @@ const BestiesPage = () => {
 
         setBesties(bestiesList);
         setLoading(false);
-      } catch (error) {
-        console.error('Error loading besties:', error);
-        setBesties([]);
+      }).catch((error) => {
+        console.error('Error loading recipient besties:', error);
+        setBesties(bestiesList); // Show at least requester besties
         setLoading(false);
-      }
-    };
+      });
+    }, (error) => {
+      console.error('Error loading besties:', error);
+      setBesties([]);
+      setLoading(false);
+    });
 
     // Listen to pending requests (where current user is recipient)
     const pendingQuery = query(
@@ -85,9 +86,11 @@ const BestiesPage = () => {
       setPendingRequests(requests);
     });
 
-    loadBesties();
-
-    return () => unsubscribePending();
+    // Cleanup both listeners
+    return () => {
+      unsubscribeRequester();
+      unsubscribePending();
+    };
   }, [currentUser]);
 
   const topBesties = besties.slice(0, 5);
