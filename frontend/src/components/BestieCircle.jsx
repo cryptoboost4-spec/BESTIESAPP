@@ -118,6 +118,15 @@ const BestieCircle = ({ userId, onAddClick }) => {
 
   const slots = Array.from({ length: 5 }, (_, i) => circleBesties[i] || null);
 
+  // Different colors for each bestie slot
+  const slotColors = [
+    'bg-pink-500',      // Slot 0 - Pink
+    'bg-purple-500',    // Slot 1 - Purple
+    'bg-blue-500',      // Slot 2 - Blue
+    'bg-green-500',     // Slot 3 - Green
+    'bg-orange-500',    // Slot 4 - Orange
+  ];
+
   if (loading) {
     return (
       <div className="card p-8 flex items-center justify-center">
@@ -133,15 +142,15 @@ const BestieCircle = ({ userId, onAddClick }) => {
         <div className="absolute inset-0">
           {/* Center Circle (YOU) */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center text-white text-base font-display shadow-lg border-2 border-white">
+            <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center text-white text-lg font-display shadow-xl border-4 border-white">
               YOU
             </div>
           </div>
 
-          {/* Bestie Slots - closer to center */}
+          {/* Bestie Slots - even closer to center */}
           {slots.map((bestie, index) => {
             const angle = (index * 72 - 90) * (Math.PI / 180);
-            const radius = 60; // Tight spacing around center
+            const radius = 50; // Even tighter spacing - besties closer to YOU
             const x = 50 + radius * Math.cos(angle);
             const y = 50 + radius * Math.sin(angle);
 
@@ -157,10 +166,10 @@ const BestieCircle = ({ userId, onAddClick }) => {
               >
                 {bestie ? (
                   <div className="relative group">
-                    {/* Bestie Circle - clickable */}
+                    {/* Bestie Circle - clickable with unique color */}
                     <button
                       onClick={() => setSelectedSlot(selectedSlot === index ? null : index)}
-                      className="relative w-14 h-14 bg-gradient-secondary rounded-full flex items-center justify-center text-white text-lg font-display shadow-lg border-2 border-white hover:scale-110 transition-transform overflow-hidden"
+                      className={`relative w-18 h-18 ${slotColors[index]} rounded-full flex items-center justify-center text-white text-2xl font-display shadow-xl border-4 border-white hover:scale-110 transition-transform overflow-hidden`}
                     >
                       {bestie.photoURL ? (
                         <img src={bestie.photoURL} alt={bestie.name} className="w-full h-full object-cover" />
@@ -203,7 +212,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
                 ) : onAddClick ? (
                   <button
                     onClick={onAddClick}
-                    className="w-14 h-14 border-3 border-dashed border-primary/40 rounded-full flex items-center justify-center text-primary text-xl hover:border-primary hover:bg-primary/10 transition-all hover:scale-110"
+                    className={`w-18 h-18 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-4xl font-bold hover:scale-110 hover:${slotColors[index].replace('bg-', 'bg-')}/20 transition-all shadow-lg`}
                   >
                     +
                   </button>
