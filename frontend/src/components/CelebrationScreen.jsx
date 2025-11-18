@@ -1,17 +1,17 @@
 import React, { useMemo } from 'react';
 
-const CelebrationScreen = () => {
-  const messages = [
-    { title: "You're Safe!", subtitle: "Your besties have been notified 💜", emoji: "✅" },
-    { title: "Way to Go!", subtitle: "You're taking care of yourself!", emoji: "🎉" },
-    { title: "Safety First!", subtitle: "Your besties are proud of you!", emoji: "⭐" },
-    { title: "Great Job!", subtitle: "Staying safe makes everyone happy!", emoji: "💜" },
-    { title: "You Did It!", subtitle: "Another successful check-in!", emoji: "🎊" },
-    { title: "Well Done!", subtitle: "Keep up the great safety habits!", emoji: "✨" },
-    { title: "Amazing!", subtitle: "You're making safety a priority!", emoji: "🌟" },
-    { title: "Perfect!", subtitle: "Your besties can rest easy now!", emoji: "💯" },
-  ];
+const messages = [
+  { title: "You're Safe!", subtitle: "Your besties have been notified 💜", emoji: "✅" },
+  { title: "Way to Go!", subtitle: "You're taking care of yourself!", emoji: "🎉" },
+  { title: "Safety First!", subtitle: "Your besties are proud of you!", emoji: "⭐" },
+  { title: "Great Job!", subtitle: "Staying safe makes everyone happy!", emoji: "💜" },
+  { title: "You Did It!", subtitle: "Another successful check-in!", emoji: "🎊" },
+  { title: "Well Done!", subtitle: "Keep up the great safety habits!", emoji: "✨" },
+  { title: "Amazing!", subtitle: "You're making safety a priority!", emoji: "🌟" },
+  { title: "Perfect!", subtitle: "Your besties can rest easy now!", emoji: "💯" },
+];
 
+const CelebrationScreen = () => {
   // Pick a random message once when component loads
   const currentMessage = useMemo(() => {
     return messages[Math.floor(Math.random() * messages.length)];
