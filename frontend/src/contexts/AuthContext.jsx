@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Save invite to localStorage if present in URL
+  // Auth listener will process it after auth initializes
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const inviterUID = urlParams.get('invite');
@@ -104,21 +105,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('pending_invite', inviterUID);
       // Clear URL immediately for cleanliness
       window.history.replaceState({}, '', '/');
-
-      // If user is already logged in, process invite immediately
-      if (auth.currentUser) {
-        processInvite(auth.currentUser, inviterUID).then(() => {
-          // Show success toast for logged-in users
-          const inviterInfo = localStorage.getItem('inviter_info');
-          if (inviterInfo) {
-            const { displayName } = JSON.parse(inviterInfo);
-            const toast = require('react-hot-toast').default;
-            toast.success(`You're now besties with ${displayName}! 💜`, { duration: 5000 });
-            // Clean up inviter info for logged-in users (not needed for onboarding)
-            localStorage.removeItem('inviter_info');
-          }
-        });
-      }
+      // Don't process here - let auth listener handle it reliably after auth initializes
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -132,7 +119,9 @@ export const AuthProvider = ({ children }) => {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
 
-        if (!userSnap.exists()) {
+        const isNewUser = !userSnap.exists();
+
+        if (isNewUser) {
           // New user - create their document with stats tracking
           await setDoc(userRef, {
             displayName: user.displayName || 'New User',
@@ -175,10 +164,28 @@ export const AuthProvider = ({ children }) => {
           await updateDoc(userRef, updates);
         }
 
-        // Process pending invite (works for multiple users)
+        // Process pending invite (works for all users - new and returning)
         const inviterUID = localStorage.getItem('pending_invite');
         if (inviterUID) {
           await processInvite(user, inviterUID);
+
+          // For returning users, show toast and clean up inviter info
+          // For new users, keep inviter_info for welcome screen during onboarding
+          if (!isNewUser) {
+            const inviterInfo = localStorage.getItem('inviter_info');
+            if (inviterInfo) {
+              try {
+                const { displayName } = JSON.parse(inviterInfo);
+                const toast = require('react-hot-toast').default;
+                toast.success(`You're now besties with ${displayName}! 💜`, { duration: 5000 });
+              } catch (e) {
+                console.error('Failed to parse inviter info:', e);
+              }
+              // Clean up inviter info for returning users
+              localStorage.removeItem('inviter_info');
+            }
+          }
+          // For new users, inviter_info will be cleaned up in onboarding welcome screen
         }
 
         // Clean up previous listener if it exists
