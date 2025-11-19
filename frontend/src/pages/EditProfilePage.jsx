@@ -152,7 +152,14 @@ const EditProfilePage = () => {
   const saveProfileChanges = async (verifiedPhoneNumber = null) => {
     try {
       // Upload profile picture if changed
-      const photoURL = await uploadProfilePicture();
+      let photoURL = userData?.photoURL || null;
+
+      if (profilePicture) {
+        const uploadedPhotoURL = await uploadProfilePicture();
+        if (uploadedPhotoURL) {
+          photoURL = uploadedPhotoURL;
+        }
+      }
 
       // Update Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), {
@@ -164,7 +171,11 @@ const EditProfilePage = () => {
       });
 
       toast.success('Profile updated successfully!');
-      navigate('/profile');
+
+      // Small delay to ensure Firestore update propagates
+      setTimeout(() => {
+        navigate('/profile');
+      }, 500);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error(error.message || 'Failed to update profile');
@@ -292,7 +303,7 @@ const EditProfilePage = () => {
             </div>
           </div>
 
-          {/* Member Since */}
+          {/* Account Info */}
           <div className="card p-6">
             <h3 className="text-lg font-display text-text-primary mb-4">Account Info</h3>
 
@@ -301,7 +312,7 @@ const EditProfilePage = () => {
                 <div className="text-sm text-text-secondary mb-1">Email</div>
                 <div className="font-semibold text-text-primary">{currentUser?.email}</div>
                 <div className="text-xs text-text-secondary mt-1">
-                  To change your email, sign in with Google Auth in settings
+                  To change your email, use Google authentication
                 </div>
               </div>
 

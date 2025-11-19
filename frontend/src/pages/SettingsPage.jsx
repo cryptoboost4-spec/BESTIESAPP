@@ -17,14 +17,6 @@ const SettingsPage = () => {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [pushNotificationsSupported, setPushNotificationsSupported] = useState(true);
 
-  // Edit mode states
-  const [isEditingDetails, setIsEditingDetails] = useState(false);
-  const [editForm, setEditForm] = useState({
-    displayName: '',
-    phoneNumber: '',
-    bio: ''
-  });
-
   // SMS popup state
   const [showSMSPopup, setShowSMSPopup] = useState(false);
   const [smsWeeklyCount, setSmsWeeklyCount] = useState(0);
@@ -36,17 +28,6 @@ const SettingsPage = () => {
 
     if (isSupported) {
       setPushNotificationsEnabled(userData?.notificationsEnabled || false);
-    }
-  }, [userData]);
-
-  // Load user data for editing
-  useEffect(() => {
-    if (userData) {
-      setEditForm({
-        displayName: userData.displayName || '',
-        phoneNumber: userData.phoneNumber || '',
-        bio: userData.profile?.bio || ''
-      });
     }
   }, [userData]);
 
@@ -76,26 +57,6 @@ const SettingsPage = () => {
       navigate('/login');
     } else {
       toast.error('Sign out failed');
-    }
-  };
-
-  const handleSaveDetails = async () => {
-    if (!currentUser) return;
-
-    setLoading(true);
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        displayName: editForm.displayName,
-        phoneNumber: editForm.phoneNumber,
-        'profile.bio': editForm.bio,
-      });
-      toast.success('Profile updated successfully!');
-      setIsEditingDetails(false);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -275,97 +236,6 @@ const SettingsPage = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-display text-text-primary mb-2">Settings</h1>
           <p className="text-text-secondary">Manage your account and preferences</p>
-        </div>
-
-        {/* Account Section - Editable */}
-        <div className="card p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-display text-text-primary">Account</h2>
-            {!isEditingDetails ? (
-              <button
-                onClick={() => setIsEditingDetails(true)}
-                className="text-primary font-semibold hover:underline text-sm"
-              >
-                ✏️ Edit
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsEditingDetails(false)}
-                  className="text-gray-600 font-semibold hover:underline text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveDetails}
-                  disabled={loading}
-                  className="text-primary font-semibold hover:underline text-sm"
-                >
-                  {loading ? 'Saving...' : '💾 Save'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <div className="text-sm text-text-secondary mb-1">Email</div>
-              <div className="font-semibold text-text-primary">{currentUser?.email}</div>
-              <div className="text-xs text-text-secondary mt-1">Email cannot be changed</div>
-            </div>
-
-            <div>
-              <div className="text-sm text-text-secondary mb-1">Display Name</div>
-              {isEditingDetails ? (
-                <input
-                  type="text"
-                  value={editForm.displayName}
-                  onChange={(e) => setEditForm({...editForm, displayName: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Your name"
-                />
-              ) : (
-                <div className="font-semibold text-text-primary">{userData?.displayName || 'Not set'}</div>
-              )}
-            </div>
-
-            <div>
-              <div className="text-sm text-text-secondary mb-1">Phone Number</div>
-              {isEditingDetails ? (
-                <input
-                  type="tel"
-                  value={editForm.phoneNumber}
-                  onChange={(e) => setEditForm({...editForm, phoneNumber: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="+1234567890"
-                />
-              ) : (
-                <div className="font-semibold text-text-primary">{userData?.phoneNumber || 'Not set'}</div>
-              )}
-            </div>
-
-            <div>
-              <div className="text-sm text-text-secondary mb-1">Bio</div>
-              {isEditingDetails ? (
-                <textarea
-                  value={editForm.bio}
-                  onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Tell us about yourself..."
-                  rows={3}
-                />
-              ) : (
-                <div className="font-semibold text-text-primary">{userData?.profile?.bio || 'Not set'}</div>
-              )}
-            </div>
-
-            <div>
-              <div className="text-sm text-text-secondary">Member Since</div>
-              <div className="font-semibold text-text-primary">
-                {userData?.stats?.joinedAt?.toDate().toLocaleDateString() || 'Recently'}
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Notification Preferences */}

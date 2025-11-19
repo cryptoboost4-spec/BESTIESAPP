@@ -432,23 +432,35 @@ const ProfilePage = () => {
             </button>
 
             {showColorPicker && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-30 w-64 max-h-[400px] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-3">
-                  {GRADIENT_OPTIONS.map((option) => (
+              <>
+                <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowColorPicker(false)} />
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-50 w-80 max-h-[500px] overflow-y-auto">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-display text-text-primary">Choose Background</h3>
                     <button
-                      key={option.id}
-                      onClick={() => handleColorChange(option)}
-                      className="h-16 rounded-lg shadow-md hover:scale-105 transition-transform border-2 border-transparent hover:border-primary"
-                      style={{ background: option.gradient }}
-                      title={option.name}
+                      onClick={() => setShowColorPicker(false)}
+                      className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
                     >
-                      <span className="text-xs font-semibold text-gray-700 drop-shadow-sm">
-                        {option.name}
-                      </span>
+                      ✕
                     </button>
-                  ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {GRADIENT_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => handleColorChange(option)}
+                        className="h-16 rounded-lg shadow-md hover:scale-105 transition-transform border-2 border-transparent hover:border-primary"
+                        style={{ background: option.gradient }}
+                        title={option.name}
+                      >
+                        <span className="text-xs font-semibold text-gray-700 drop-shadow-sm">
+                          {option.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
