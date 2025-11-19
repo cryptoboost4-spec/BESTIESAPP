@@ -317,29 +317,27 @@ const BestiesPage = () => {
           activityFeed.some(a => a.userId === b.userId && a.timestamp > oneHourAgo && a.status === 'active')
         );
         break;
-      case 'reliable':
-        // Sort by completion rate (would need actual data)
+      default:
+        // Sort by most recent activity first, then favorites, then alphabetical
         filtered.sort((a, b) => {
-          const aCompleted = activityFeed.filter(f => f.userId === a.userId && f.status === 'completed').length;
-          const bCompleted = activityFeed.filter(f => f.userId === b.userId && f.status === 'completed').length;
-          return bCompleted - aCompleted;
-        });
-        break;
-      case 'recent':
-        // Sort by most recent activity
-        filtered.sort((a, b) => {
+          // Check for recent activity
           const aRecent = activityFeed.find(f => f.userId === a.userId);
           const bRecent = activityFeed.find(f => f.userId === b.userId);
-          if (!aRecent) return 1;
-          if (!bRecent) return -1;
-          return bRecent.timestamp - aRecent.timestamp;
-        });
-        break;
-      default:
-        // Favorites first, then alphabetical
-        filtered.sort((a, b) => {
+
+          // If both have recent activity, sort by timestamp
+          if (aRecent && bRecent) {
+            return bRecent.timestamp - aRecent.timestamp;
+          }
+
+          // If one has recent activity and the other doesn't
+          if (aRecent && !bRecent) return -1;
+          if (!aRecent && bRecent) return 1;
+
+          // If neither has recent activity, favorites first
           if (a.isFavorite && !b.isFavorite) return -1;
           if (!a.isFavorite && b.isFavorite) return 1;
+
+          // Finally, alphabetical
           return (a.name || '').localeCompare(b.name || '');
         });
     }
@@ -506,26 +504,6 @@ const BestiesPage = () => {
                 >
                   🔔 Active
                 </button>
-                <button
-                  onClick={() => setActiveFilter('reliable')}
-                  className={`px-3 md:px-4 py-2 rounded-full whitespace-nowrap font-semibold text-xs md:text-sm flex-shrink-0 ${
-                    activeFilter === 'reliable'
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  🛡️ Reliable
-                </button>
-                <button
-                  onClick={() => setActiveFilter('recent')}
-                  className={`px-3 md:px-4 py-2 rounded-full whitespace-nowrap font-semibold text-xs md:text-sm flex-shrink-0 ${
-                    activeFilter === 'recent'
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  ⏰ Recent
-                </button>
               </div>
             </div>
 
@@ -663,8 +641,8 @@ const BestiesPage = () => {
                 {/* Most Reliable */}
                 <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
-                      🛡️
+                    <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      💖
                     </div>
                     <div className="flex-1">
                       <div className="font-display text-sm font-bold text-gray-800">Most Reliable</div>
@@ -682,8 +660,8 @@ const BestiesPage = () => {
                 {/* Fastest Responder */}
                 <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-xl shadow-md">
-                      ⚡
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      ✨
                     </div>
                     <div className="flex-1">
                       <div className="font-display text-sm font-bold text-gray-800">Fastest Responder</div>
@@ -700,8 +678,8 @@ const BestiesPage = () => {
                 {/* Safety Champion */}
                 <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
-                      🏅
+                    <div className="w-10 h-10 bg-gradient-to-br from-rose-400 to-rose-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      👑
                     </div>
                     <div className="flex-1">
                       <div className="font-display text-sm font-bold text-gray-800">Safety Champion</div>
@@ -718,8 +696,8 @@ const BestiesPage = () => {
                 {/* Streak Master */}
                 <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white text-xl shadow-md">
-                      🔥
+                    <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-400 to-fuchsia-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      💫
                     </div>
                     <div className="flex-1">
                       <div className="font-display text-sm font-bold text-gray-800">Streak Master</div>
@@ -747,8 +725,6 @@ const BestiesPage = () => {
                 {activeFilter === 'circle' && '💜 Bestie Circle'}
                 {activeFilter === 'all' && 'All Besties'}
                 {activeFilter === 'active' && '🔔 Active Now'}
-                {activeFilter === 'reliable' && '🛡️ Most Reliable'}
-                {activeFilter === 'recent' && '⏰ Recent Activity'}
               </h2>
 
               {filteredBesties.length === 0 ? (
@@ -762,12 +738,14 @@ const BestiesPage = () => {
                   )}
                 </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredBesties.map((bestie) => {
                     const indicators = getBestieIndicators(bestie);
                     return (
-                      <div key={bestie.id} className="relative">
-                        <BestieCard bestie={bestie} />
+                      <div key={bestie.id} className="relative group">
+                        <div className="h-full">
+                          <BestieCard bestie={bestie} />
+                        </div>
                         {/* Visual Indicators */}
                         {indicators.length > 0 && (
                           <div className="absolute top-2 right-2 flex gap-1">
