@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import BestieRequestModal from './BestieRequestModal';
 
 const BestieCircle = ({ userId, onAddClick }) => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
   const [loading, setLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showReplaceModal, setShowReplaceModal] = useState(false);
+  const [showBestieRequestModal, setShowBestieRequestModal] = useState(false);
 
   const loadBesties = async () => {
     if (!userId) return;
@@ -263,15 +265,15 @@ const BestieCircle = ({ userId, onAddClick }) => {
                       </div>
                     )}
                   </div>
-                ) : onAddClick ? (
+                ) : (
                   <button
-                    onClick={onAddClick}
+                    onClick={() => setShowBestieRequestModal(true)}
                     className={`w-16 h-16 md:w-20 md:h-20 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-3xl md:text-4xl font-bold hover:scale-110 hover:bg-purple-100 transition-all shadow-lg hover:shadow-xl animate-pulse-slow`}
-                    title="Add a bestie to your circle"
+                    title="Invite a bestie to your circle"
                   >
                     +
                   </button>
-                ) : null}
+                )}
               </div>
             );
           })}
@@ -359,6 +361,11 @@ const BestieCircle = ({ userId, onAddClick }) => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Bestie Request Modal */}
+      {showBestieRequestModal && (
+        <BestieRequestModal onClose={() => setShowBestieRequestModal(false)} />
       )}
     </div>
   );
