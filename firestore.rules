@@ -177,7 +177,7 @@ service cloud.firestore {
         request.auth.uid == resource.data.userId ||
         request.auth.uid in resource.data.notifiedBesties
       ));
-      allow create: if isSignedIn() && 
+      allow create: if isSignedIn() &&
         request.auth.uid == request.resource.data.userId;
       allow update: if isSignedIn() && (
         request.auth.uid == resource.data.userId ||
@@ -185,7 +185,15 @@ service cloud.firestore {
       );
       allow delete: if isAdmin();
     }
-    
+
+    // Bestie Celebrations collection
+    match /bestie_celebrations/{celebrationId} {
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn(); // Created by system when bestie connection is made
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.userId);
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

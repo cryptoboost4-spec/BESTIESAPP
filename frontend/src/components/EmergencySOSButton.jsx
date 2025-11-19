@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
@@ -13,6 +13,24 @@ const EmergencySOSButton = () => {
   const countdownInterval = useRef(null);
   const holdIntervalRef = useRef(null);
   const holdStartTimeRef = useRef(null);
+
+  // Prevent navigation away from orange alert screen
+  useEffect(() => {
+    if (!alertSent) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'Emergency alert is active! Hold the cancel button for 10 seconds to dismiss.';
+      return e.returnValue;
+    };
+
+    // Add event listener to warn before leaving page
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [alertSent]);
 
   const handleSOSPress = () => {
     // 5 second countdown before sending
@@ -117,10 +135,10 @@ const EmergencySOSButton = () => {
     toast.success('Emergency alert cancelled');
   };
 
-  // Orange alert screen after SOS is sent
+  // Orange alert screen after SOS is sent (LOCKED - must hold 10 seconds to escape)
   if (alertSent) {
     return (
-      <div className="fixed inset-0 bg-orange-500/95 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-orange-500/95 z-[9999] flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="text-8xl mb-6 animate-pulse">
             🚨

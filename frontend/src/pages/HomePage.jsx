@@ -9,6 +9,7 @@ import QuickButtons from '../components/QuickButtons';
 import DonationCard from '../components/DonationCard';
 import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
+import BestieCelebrationModal from '../components/BestieCelebrationModal';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -203,6 +204,9 @@ const HomePage = () => {
 
       {/* Emergency SOS Button */}
       <EmergencySOSButton />
+
+      {/* Bestie Celebration Modal */}
+      <BestieCelebrationModal />
     </div>
   );
 };

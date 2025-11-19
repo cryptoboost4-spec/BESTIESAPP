@@ -9,18 +9,10 @@ import toast from 'react-hot-toast';
 const OnboardingFlow = ({ onComplete }) => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(() => {
-    // Check if user was invited - show bestie celebration first
-    const inviterInfo = localStorage.getItem('inviter_info');
-    return inviterInfo ? 'bestie-celebration' : 'welcome';
-  });
+  const [step, setStep] = useState('welcome'); // Celebration will show after onboarding on HomePage
   const [slideIndex, setSlideIndex] = useState(0);
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [uploading, setUploading] = useState(false);
-  const [inviterInfo, setInviterInfo] = useState(() => {
-    const stored = localStorage.getItem('inviter_info');
-    return stored ? JSON.parse(stored) : null;
-  });
 
   const slides = [
     {
@@ -114,56 +106,6 @@ const OnboardingFlow = ({ onComplete }) => {
       toast.error('Failed to complete onboarding');
     }
   };
-
-  // Bestie Celebration Screen (for invited users)
-  if (step === 'bestie-celebration') {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center z-50 p-4">
-        <div className="max-w-md w-full text-center">
-          <div className="text-8xl mb-6 animate-bounce">🎉</div>
-          <h1 className="text-4xl font-display text-white mb-4">
-            You and {inviterInfo?.displayName || 'your friend'} are besties!
-          </h1>
-          <p className="text-xl text-white/90 mb-2">
-            You're now connected in the Besties safety network
-          </p>
-          <div className="flex justify-center items-center gap-4 my-8">
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl">
-              {inviterInfo?.photoURL ? (
-                <img
-                  src={inviterInfo.photoURL}
-                  alt={inviterInfo.displayName}
-                  className="w-full h-full rounded-full object-cover"
-                />
-              ) : (
-                <div className="text-3xl">
-                  {inviterInfo?.displayName?.[0] || '?'}
-                </div>
-              )}
-            </div>
-            <div className="text-4xl animate-pulse">💜</div>
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl text-3xl">
-              YOU
-            </div>
-          </div>
-          <p className="text-white/80 mb-8">
-            {inviterInfo?.displayName} will be notified if you don't check in on time
-          </p>
-          <button
-            onClick={() => {
-              // Clean up inviter info from localStorage
-              localStorage.removeItem('inviter_info');
-              setInviterInfo(null);
-              setStep('welcome');
-            }}
-            className="btn bg-white text-purple-600 hover:bg-white/90 text-lg px-8 py-4 font-bold"
-          >
-            Continue →
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // Welcome Screen
   if (step === 'welcome') {

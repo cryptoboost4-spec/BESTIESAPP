@@ -102,6 +102,33 @@ export const AuthProvider = ({ children }) => {
         });
       }
 
+      // Create celebration documents for BOTH users
+      try {
+        // Celebration for the invitee (current user)
+        await addDoc(collection(db, 'bestie_celebrations'), {
+          userId: user.uid,
+          bestieId: inviterUID,
+          bestieName: inviterData.displayName || 'Unknown',
+          bestiePhotoURL: inviterData.photoURL || null,
+          seen: false,
+          createdAt: Timestamp.now(),
+        });
+
+        // Celebration for the inviter
+        await addDoc(collection(db, 'bestie_celebrations'), {
+          userId: inviterUID,
+          bestieId: user.uid,
+          bestieName: userData.displayName || user.displayName || 'Unknown',
+          bestiePhotoURL: userData.photoURL || user.photoURL || null,
+          seen: false,
+          createdAt: Timestamp.now(),
+        });
+
+        console.log('✅ Celebration documents created for both users');
+      } catch (error) {
+        console.error('Failed to create celebration documents:', error);
+      }
+
       // Clean up localStorage after successful processing
       localStorage.removeItem('pending_invite');
       console.log('Invite processed successfully for:', inviterData.displayName);
