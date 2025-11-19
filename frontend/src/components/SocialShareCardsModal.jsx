@@ -48,7 +48,7 @@ const SocialShareCardsModal = ({ onClose }) => {
   };
 
   const currentGradient = userData?.profile?.backgroundGradient || 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)';
-  const shareUrl = `${window.location.origin}/user/${currentUser?.uid}`;
+  const shareUrl = `${window.location.origin}/?invite=${currentUser?.uid}`;
   const shareText = "Come be my safety Bestie! 💜";
 
   const generateShareImage = async () => {

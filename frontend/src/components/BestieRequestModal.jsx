@@ -56,7 +56,7 @@ const BestieRequestModal = ({ onClose }) => {
   const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
   const cardRef = useRef(null);
 
-  const shareUrl = `${window.location.origin}/user/${currentUser?.uid}`;
+  const shareUrl = `${window.location.origin}/?invite=${currentUser?.uid}`;
 
   const handleTemplateChange = (template) => {
     setSelectedTemplate(template);
