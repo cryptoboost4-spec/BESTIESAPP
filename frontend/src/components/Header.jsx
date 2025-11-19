@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { authService } from '../services/firebase';
 import toast from 'react-hot-toast';
+import NotificationBell from './NotificationBell';
 
 const Header = () => {
   const { userData } = useAuth();
@@ -78,8 +79,13 @@ const Header = () => {
               </Link>
             </nav>
 
-            {/* Profile Menu */}
-            <div className="relative" ref={menuRef}>
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-3">
+              {/* Notification Bell */}
+              <NotificationBell />
+
+              {/* Profile Menu */}
+              <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display overflow-hidden hover:opacity-90 transition-opacity"
@@ -197,6 +203,7 @@ const Header = () => {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
