@@ -147,10 +147,10 @@ const BestieCircle = ({ userId, onAddClick }) => {
             </div>
           </div>
 
-          {/* Bestie Slots - even closer to center */}
+          {/* Bestie Slots - all equidistant from center */}
           {slots.map((bestie, index) => {
             const angle = (index * 72 - 90) * (Math.PI / 180);
-            const radius = 50; // Even tighter spacing - besties closer to YOU
+            const radius = 42; // Consistent distance from center - matches middle besties
             const x = 50 + radius * Math.cos(angle);
             const y = 50 + radius * Math.sin(angle);
 
@@ -187,7 +187,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
 
                     {/* Action Menu */}
                     {selectedSlot === index && (
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-2 z-30 w-36">
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-2 z-[200] w-36">
                         <button
                           onClick={() => handleViewProfile(bestie.id)}
                           className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
