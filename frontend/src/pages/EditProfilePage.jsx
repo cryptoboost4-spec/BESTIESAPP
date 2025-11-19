@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { db, storage, authService } from '../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updatePassword, updateEmail } from 'firebase/auth';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import { isValidE164 } from '../utils/phoneUtils';
@@ -16,9 +15,6 @@ const EditProfilePage = () => {
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [bio, setBio] = useState(userData?.profile?.bio || '');
   const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
-  const [email, setEmail] = useState(currentUser?.email || '');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(userData?.photoURL || null);
   const [loading, setLoading] = useState(false);
@@ -167,27 +163,11 @@ const EditProfilePage = () => {
         updatedAt: new Date(),
       });
 
-      // Update email if changed
-      if (email !== currentUser.email) {
-        await updateEmail(currentUser, email);
-        toast.success('Email updated - please verify your new email');
-      }
-
-      // Update password if provided
-      if (newPassword) {
-        await updatePassword(currentUser, newPassword);
-        toast.success('Password updated');
-      }
-
       toast.success('Profile updated successfully!');
       navigate('/profile');
     } catch (error) {
       console.error('Error updating profile:', error);
-      if (error.code === 'auth/requires-recent-login') {
-        toast.error('Please sign out and sign in again to update email/password');
-      } else {
-        toast.error(error.message || 'Failed to update profile');
-      }
+      toast.error(error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -195,16 +175,6 @@ const EditProfilePage = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-
-    if (newPassword && newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    if (newPassword && newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
 
     // Check if phone number has changed
     const phoneChanged = phoneNumber && phoneNumber !== userData?.phoneNumber;
@@ -322,57 +292,25 @@ const EditProfilePage = () => {
             </div>
           </div>
 
-          {/* Account Security */}
+          {/* Member Since */}
           <div className="card p-6">
-            <h3 className="text-lg font-display text-text-primary mb-4">Account Security</h3>
-            
+            <h3 className="text-lg font-display text-text-primary mb-4">Account Info</h3>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-text-primary mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input"
-                  placeholder="your@email.com"
-                  required
-                />
+                <div className="text-sm text-text-secondary mb-1">Email</div>
+                <div className="font-semibold text-text-primary">{currentUser?.email}</div>
                 <div className="text-xs text-text-secondary mt-1">
-                  Changing email requires re-verification
+                  To change your email, sign in with Google Auth in settings
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-primary mb-2">
-                  New Password (optional)
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="input"
-                  placeholder="••••••••"
-                  minLength={6}
-                />
-              </div>
-
-              {newPassword && (
-                <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-2">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="input"
-                    placeholder="••••••••"
-                    minLength={6}
-                  />
+                <div className="text-sm text-text-secondary mb-1">Member Since</div>
+                <div className="font-semibold text-text-primary">
+                  {userData?.stats?.joinedAt?.toDate().toLocaleDateString() || 'Recently'}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 

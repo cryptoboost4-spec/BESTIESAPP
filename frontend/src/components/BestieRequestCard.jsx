@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import apiService from '../services/api';
-import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 
 const BestieRequestCard = ({ request, onRequestHandled }) => {

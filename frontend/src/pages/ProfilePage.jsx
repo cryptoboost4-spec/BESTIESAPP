@@ -67,15 +67,8 @@ const ProfilePage = () => {
     const profileCompletion = calculateProfileCompletion();
     const targetProgress = profileCompletion.percentage;
 
-    // Reset to 0 first
-    setAnimatedProgress(0);
-
-    // Animate to target after a small delay
-    const timer = setTimeout(() => {
-      setAnimatedProgress(targetProgress);
-    }, 100);
-
-    return () => clearTimeout(timer);
+    // Set progress directly without animation from 0
+    setAnimatedProgress(targetProgress);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userData, bestiesCount, currentUser]);
 
@@ -296,7 +289,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Add 5 besties', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: `Add 5 besties (${bestiesCount}/5)`, completed: false, path: '/besties', section: null });
+      tasks.push({ name: `Add 5 besties (${bestiesCount}/5)`, completed: false, path: null, section: null, action: 'scrollToBestieCircle' });
     }
 
     const percentage = (completed / tasks.length) * 100;
@@ -358,6 +351,12 @@ const ProfilePage = () => {
         photoElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         // Trigger photo menu
         setShowPhotoMenu(true);
+      }
+    } else if (task.action === 'scrollToBestieCircle') {
+      // Scroll to bestie circle on this page
+      const bestieCircleElement = document.querySelector('.bestie-circle-section');
+      if (bestieCircleElement) {
+        bestieCircleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } else if (task.path) {
       // Navigate to path with section hash
@@ -433,8 +432,7 @@ const ProfilePage = () => {
             </button>
 
             {showColorPicker && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-30 w-64 max-h-80 overflow-y-auto">
-                <div className="text-sm font-semibold text-gray-700 mb-3 sticky top-0 bg-white pb-2">Choose Your Vibe</div>
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-30 w-64 max-h-[400px] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-3">
                   {GRADIENT_OPTIONS.map((option) => (
                     <button
@@ -875,7 +873,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Bestie Circle */}
-        <div className="mb-6">
+        <div className="mb-6 bestie-circle-section">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-display text-text-primary">Your Bestie Circle</h2>
             <button

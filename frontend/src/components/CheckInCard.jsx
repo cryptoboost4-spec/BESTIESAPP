@@ -18,7 +18,7 @@ const CheckInCard = ({ checkIn }) => {
   const [photoURLs, setPhotoURLs] = useState(checkIn.photoURLs || checkIn.photoURL ? [checkIn.photoURL] : []);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [optimisticAlertTime, setOptimisticAlertTime] = useState(null); // For optimistic updates
-  const { executeOptimistic, isProcessing } = useOptimisticUpdate();
+  const { executeOptimistic } = useOptimisticUpdate();
 
   useEffect(() => {
     const calculateTimeLeft = () => {
