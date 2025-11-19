@@ -38,6 +38,23 @@ const CreateCheckInPage = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
+  // Get supportive, girl-best-friend message
+  const getSupportiveMessage = () => {
+    const messages = [
+      "Let's make sure you're safe out there, babe! 💕",
+      "Your safety is everything to us! Let's set this up together 🤗",
+      "We've got your back, bestie! Let's get you protected ✨",
+      "Setting up your safety net - because you matter so much! 💜",
+      "Let's make sure you can have fun worry-free, love! 🌟",
+      "Your besties are here to watch over you! Let's do this 💪",
+      "Keep yourself safe while living your best life! 🦋",
+      "We're all about keeping our girl protected! Let's go 💝",
+    ];
+    // Use hour of day to get consistent but varied messages
+    const hour = new Date().getHours();
+    return messages[hour % messages.length];
+  };
+
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
     if (authLoading) return;
@@ -200,23 +217,45 @@ const CreateCheckInPage = () => {
       return;
     }
 
-    // Check if script already loaded
-    if (window.google && window.google.maps && window.google.maps.places) {
-      setAutocompleteLoaded(true);
+    // Check if Google Maps is already loaded
+    const checkGoogleLoaded = () => {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        setAutocompleteLoaded(true);
+        return true;
+      }
+      return false;
+    };
+
+    // If already loaded, set state immediately
+    if (checkGoogleLoaded()) {
       return;
     }
 
+    // Check if script is already being loaded
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      // Script exists, wait for it to load
+      const interval = setInterval(() => {
+        if (checkGoogleLoaded()) {
+          clearInterval(interval);
+        }
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+
     // Load script
-    // Note: Using legacy Autocomplete API (not PlaceAutocompleteElement)
-    // Google will give 12+ months notice before deprecating this API
-    // Migration to PlaceAutocompleteElement can be done in a future update
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
     script.async = true;
     script.defer = true;
-    script.onload = () => {
+
+    // Create global callback
+    window.initMap = () => {
       setAutocompleteLoaded(true);
+      delete window.initMap; // Clean up
     };
+
     script.onerror = () => {
       console.error('Failed to load Google Maps API');
       toast.error('Failed to load address autocomplete', { duration: 2000 });
@@ -225,9 +264,9 @@ const CreateCheckInPage = () => {
     document.head.appendChild(script);
 
     return () => {
-      // Cleanup: remove script on unmount
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+      // Don't remove script on unmount - keep it for other page visits
+      if (window.initMap) {
+        delete window.initMap;
       }
     };
   }, []);
@@ -587,7 +626,7 @@ const CreateCheckInPage = () => {
       <div className="max-w-2xl mx-auto p-4 pb-20">
         <div className="mb-6">
           <h1 className="text-3xl font-display text-text-primary mb-2">Create Check-In</h1>
-          <p className="text-text-secondary">Set up your safety check-in</p>
+          <p className="text-text-secondary">{getSupportiveMessage()}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -631,12 +670,12 @@ const CreateCheckInPage = () => {
                 </svg>
               </div>
 
-              {/* Locate me button overlay - positioned above zoom controls (top-right) */}
+              {/* Locate me button overlay - positioned below search bar */}
               {isEnabled('gpsLocation') && (
                 <button
                   type="button"
                   onClick={handleGetLocation}
-                  className="absolute right-3 top-16 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg border border-gray-300 transition-all z-10"
+                  className="absolute right-3 top-20 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg border border-gray-300 transition-all z-10"
                   disabled={loading}
                   title="Use my current location"
                 >
@@ -662,62 +701,65 @@ const CreateCheckInPage = () => {
             </p>
           </div>
 
-          {/* Who You're Meeting */}
+          {/* Who Meeting & Duration Combined */}
           <div className="card p-6">
-            <label className="block text-lg font-display text-text-primary mb-3">
-              Who are you meeting? 👥 (Optional)
-            </label>
-            <input
-              type="text"
-              value={meetingWith}
-              onChange={(e) => setMeetingWith(e.target.value)}
-              className="input"
-              placeholder="e.g., Alex, Sarah, John..."
-            />
-          </div>
-
-          {/* Duration */}
-          <div className="card p-6">
-            <label className="block text-lg font-display text-text-primary mb-3">
-              How long? ⏰
-            </label>
-
-            <div className="grid grid-cols-4 gap-3 mb-4">
-              {[15, 30, 60, 120].map((mins) => (
-                <button
-                  key={mins}
-                  type="button"
-                  onClick={() => setDuration(mins)}
-                  className={`py-3 rounded-xl font-semibold transition-all ${
-                    duration === mins
-                      ? 'bg-gradient-primary text-white shadow-lg'
-                      : 'bg-gray-100 text-text-primary hover:bg-gray-200'
-                  }`}
-                >
-                  {mins < 60 ? `${mins}m` : `${mins / 60}h`}
-                </button>
-              ))}
+            {/* Who You're Meeting */}
+            <div className="mb-6">
+              <label className="block text-lg font-display text-text-primary mb-3">
+                Who are you meeting? 👥 (Optional)
+              </label>
+              <input
+                type="text"
+                value={meetingWith}
+                onChange={(e) => setMeetingWith(e.target.value)}
+                className="input"
+                placeholder="e.g., Alex, Sarah, John..."
+              />
             </div>
 
-            <input
-              type="range"
-              min="15"
-              max="180"
-              step="15"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value))}
-              className="w-full"
-            />
-            <div className="text-center mt-3">
-              <div className="text-sm text-text-secondary">
-                {duration} minutes
+            {/* Duration */}
+            <div>
+              <label className="block text-lg font-display text-text-primary mb-3">
+                How long? ⏰
+              </label>
+
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                {[15, 30, 60, 120].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setDuration(mins)}
+                    className={`py-3 rounded-xl font-semibold transition-all ${
+                      duration === mins
+                        ? 'bg-gradient-primary text-white shadow-lg'
+                        : 'bg-gray-100 text-text-primary hover:bg-gray-200'
+                    }`}
+                  >
+                    {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                  </button>
+                ))}
               </div>
-              <div className="text-sm font-semibold text-primary mt-1">
-                Alert at: {new Date(Date.now() + duration * 60 * 1000).toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                })}
+
+              <input
+                type="range"
+                min="15"
+                max="180"
+                step="15"
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value))}
+                className="w-full"
+              />
+              <div className="text-center mt-3">
+                <div className="text-sm text-text-secondary">
+                  {duration} minutes
+                </div>
+                <div className="text-sm font-semibold text-primary mt-1">
+                  Alert at: {new Date(Date.now() + duration * 60 * 1000).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -847,55 +889,6 @@ const CreateCheckInPage = () => {
               </div>
             )}
           </div>
-
-          {/* Preview Section */}
-          {(locationInput || selectedBesties.length > 0) && (
-            <div className="card p-6 bg-blue-50 border-2 border-blue-200">
-              <h3 className="font-display text-lg text-text-primary mb-3">
-                👀 Your besties will see:
-              </h3>
-              <div className="bg-white rounded-xl p-4 border-2 border-gray-200">
-                <div className="text-sm text-text-secondary mb-1">🚨 Safety Alert</div>
-                <div className="font-semibold text-text-primary mb-2">
-                  {userData?.displayName || 'Your friend'} hasn't checked in!
-                </div>
-                {locationInput && (
-                  <div className="text-sm mb-2">
-                    <span className="font-semibold">Location:</span> {locationInput}
-                  </div>
-                )}
-                {meetingWith && (
-                  <div className="text-sm mb-2">
-                    <span className="font-semibold">Meeting with:</span> {meetingWith}
-                  </div>
-                )}
-                {notes && (
-                  <div className="text-sm mb-2">
-                    <span className="font-semibold">Notes:</span> {notes}
-                  </div>
-                )}
-                {photoPreviews.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mt-2">
-                    {photoPreviews.map((preview, index) => (
-                      <img
-                        key={index}
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full rounded-lg aspect-square object-cover"
-                      />
-                    ))}
-                  </div>
-                )}
-                <div className="text-xs text-text-secondary mt-2">
-                  Alert time: {new Date(Date.now() + duration * 60 * 1000).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Submit */}
           <button

@@ -21,6 +21,13 @@ const SettingsPage = () => {
   const [showSMSPopup, setShowSMSPopup] = useState(false);
   const [smsWeeklyCount, setSmsWeeklyCount] = useState(0);
 
+  // Passcode states
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+  const [passcodeType, setPasscodeType] = useState(null); // 'safety' or 'duress'
+  const [passcode, setPasscode] = useState('');
+  const [confirmPasscode, setConfirmPasscode] = useState('');
+  const [showPasscodeInfo, setShowPasscodeInfo] = useState(false);
+
   // Check if push notifications are supported and enabled
   useEffect(() => {
     const isSupported = notificationService.isSupported();
@@ -133,6 +140,74 @@ const SettingsPage = () => {
     } catch (error) {
       console.error('Error updating data retention:', error);
       toast.error('Failed to update setting');
+    }
+  };
+
+  const handleSavePasscode = async () => {
+    if (!passcode) {
+      toast.error('Please enter a passcode');
+      return;
+    }
+
+    if (passcode.length < 4) {
+      toast.error('Passcode must be at least 4 digits');
+      return;
+    }
+
+    if (passcode !== confirmPasscode) {
+      toast.error('Passcodes do not match');
+      return;
+    }
+
+    // Check that safety and duress codes are different
+    if (passcodeType === 'duress') {
+      if (passcode === userData?.security?.safetyPasscode) {
+        toast.error('Duress code must be different from safety passcode');
+        return;
+      }
+    } else if (passcodeType === 'safety') {
+      if (passcode === userData?.security?.duressCode) {
+        toast.error('Safety passcode must be different from duress code');
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const fieldName = passcodeType === 'safety' ? 'safetyPasscode' : 'duressCode';
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        [`security.${fieldName}`]: passcode,
+      });
+
+      toast.success(`${passcodeType === 'safety' ? 'Safety passcode' : 'Duress code'} updated!`);
+      setShowPasscodeModal(false);
+      setPasscode('');
+      setConfirmPasscode('');
+      setPasscodeType(null);
+    } catch (error) {
+      console.error('Error saving passcode:', error);
+      toast.error('Failed to save passcode');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemovePasscode = async (type) => {
+    if (!currentUser) return;
+
+    setLoading(true);
+    try {
+      const fieldName = type === 'safety' ? 'safetyPasscode' : 'duressCode';
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        [`security.${fieldName}`]: null,
+      });
+
+      toast.success(`${type === 'safety' ? 'Safety passcode' : 'Duress code'} removed`);
+    } catch (error) {
+      console.error('Error removing passcode:', error);
+      toast.error('Failed to remove passcode');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -643,6 +718,129 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Security - Passcodes */}
+        <div className="card p-6 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-display text-text-primary">Security Passcodes</h2>
+            <button
+              onClick={() => setShowPasscodeInfo(!showPasscodeInfo)}
+              className="text-primary text-sm font-semibold hover:underline"
+            >
+              {showPasscodeInfo ? 'Hide Info' : 'Learn More'}
+            </button>
+          </div>
+          <p className="text-sm text-text-secondary mb-4">
+            Protect your check-ins with passcodes
+          </p>
+
+          {showPasscodeInfo && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-blue-900 mb-2">How Passcodes Work:</h3>
+              <ul className="text-sm text-blue-800 space-y-2 list-disc ml-4">
+                <li><strong>Safety Passcode:</strong> Required to end check-ins or cancel SOS alerts. This ensures only you can mark yourself safe.</li>
+                <li><strong>Duress Code:</strong> A special code that <em>appears</em> to cancel the alert, but secretly triggers an emergency alert to all besties in your circle. Use this if you're in danger and being forced to cancel.</li>
+                <li>Both codes must be different and at least 4 digits.</li>
+                <li>Your codes are encrypted and stored securely.</li>
+              </ul>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Safety Passcode */}
+            <div className="border-2 border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="font-semibold text-text-primary">🔒 Safety Passcode</div>
+                  <div className="text-sm text-text-secondary">
+                    {userData?.security?.safetyPasscode ? 'Passcode is set' : 'Not set'}
+                  </div>
+                </div>
+                {userData?.security?.safetyPasscode ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setPasscodeType('safety');
+                        setShowPasscodeModal(true);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      Change
+                    </button>
+                    <button
+                      onClick={() => handleRemovePasscode('safety')}
+                      disabled={loading}
+                      className="btn bg-red-500 text-white hover:bg-red-600 btn-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setPasscodeType('safety');
+                      setShowPasscodeModal(true);
+                    }}
+                    className="btn btn-primary btn-sm"
+                  >
+                    Set Passcode
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-text-secondary">
+                Required to end check-ins and cancel alerts
+              </p>
+            </div>
+
+            {/* Duress Code */}
+            <div className="border-2 border-orange-200 bg-orange-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="font-semibold text-orange-900 flex items-center gap-2">
+                    ⚠️ Duress Code
+                    <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full">Advanced</span>
+                  </div>
+                  <div className="text-sm text-orange-700">
+                    {userData?.security?.duressCode ? 'Duress code is set' : 'Not set'}
+                  </div>
+                </div>
+                {userData?.security?.duressCode ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setPasscodeType('duress');
+                        setShowPasscodeModal(true);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      Change
+                    </button>
+                    <button
+                      onClick={() => handleRemovePasscode('duress')}
+                      disabled={loading}
+                      className="btn bg-red-500 text-white hover:bg-red-600 btn-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setPasscodeType('duress');
+                      setShowPasscodeModal(true);
+                    }}
+                    className="btn bg-orange-600 text-white hover:bg-orange-700 btn-sm"
+                  >
+                    Set Duress Code
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-orange-800">
+                Fake cancellation that secretly alerts your besties
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Preferences */}
         <div className="card p-6 mb-6">
           <h2 className="text-xl font-display text-text-primary mb-4">Preferences</h2>
@@ -814,6 +1012,88 @@ const SettingsPage = () => {
           Sign Out
         </button>
       </div>
+
+      {/* Passcode Modal */}
+      {showPasscodeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-display text-text-primary mb-2">
+              {passcodeType === 'safety' ? '🔒 Set Safety Passcode' : '⚠️ Set Duress Code'}
+            </h2>
+            <p className="text-text-secondary mb-4">
+              {passcodeType === 'safety'
+                ? 'This passcode will be required to end check-ins and cancel alerts.'
+                : 'This code appears to cancel alerts but secretly triggers an emergency alert to your besties.'}
+            </p>
+
+            {passcodeType === 'duress' && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-orange-800">
+                  ⚠️ <strong>Warning:</strong> Use your duress code only in genuine emergencies when you're being forced to cancel an alert under duress.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-4 mb-4">
+              <div>
+                <label className="block text-sm font-semibold text-text-primary mb-2">
+                  {passcodeType === 'safety' ? 'Passcode' : 'Duress Code'}
+                </label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-center text-2xl tracking-widest"
+                  placeholder="••••"
+                  maxLength={6}
+                  autoFocus
+                />
+                <p className="text-xs text-text-secondary mt-1">At least 4 digits</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-text-primary mb-2">
+                  Confirm {passcodeType === 'safety' ? 'Passcode' : 'Code'}
+                </label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={confirmPasscode}
+                  onChange={(e) => setConfirmPasscode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-center text-2xl tracking-widest"
+                  placeholder="••••"
+                  maxLength={6}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasscodeModal(false);
+                  setPasscode('');
+                  setConfirmPasscode('');
+                  setPasscodeType(null);
+                }}
+                className="flex-1 btn btn-secondary"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePasscode}
+                disabled={loading || !passcode || !confirmPasscode}
+                className={`flex-1 btn ${passcodeType === 'duress' ? 'bg-orange-600 hover:bg-orange-700' : 'btn-primary'} text-white`}
+              >
+                {loading ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SMS First-Time Popup */}
       {showSMSPopup && (

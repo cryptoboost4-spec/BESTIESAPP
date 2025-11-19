@@ -41,7 +41,7 @@ const EditProfilePage = () => {
     if (!profilePicture) return userData?.photoURL || null;
 
     try {
-      const storageRef = ref(storage, `profiles/${currentUser.uid}/${Date.now()}_${profilePicture.name}`);
+      const storageRef = ref(storage, `profile-pictures/${currentUser.uid}/${Date.now()}_${profilePicture.name}`);
       await uploadBytes(storageRef, profilePicture);
       const url = await getDownloadURL(storageRef);
       return url;
