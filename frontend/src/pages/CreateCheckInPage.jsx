@@ -95,8 +95,11 @@ const CreateCheckInPage = () => {
     }
 
     // Load script
+    // Note: Using legacy Autocomplete API (not PlaceAutocompleteElement)
+    // Google will give 12+ months notice before deprecating this API
+    // Migration to PlaceAutocompleteElement can be done in a future update
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
@@ -122,7 +125,7 @@ const CreateCheckInPage = () => {
     if (!autocompleteLoaded || !mapRef.current || mapInitialized) return;
 
     try {
-      // Initialize Google Map
+      // Initialize Google Map with draggable enabled
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: mapCenter,
         zoom: 12,
@@ -131,6 +134,23 @@ const CreateCheckInPage = () => {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
+        draggable: true, // Enable dragging
+        gestureHandling: 'greedy', // Allow single-finger drag on mobile
+      });
+
+      // Update location when map is dragged
+      mapInstanceRef.current.addListener('dragend', () => {
+        const center = mapInstanceRef.current.getCenter();
+        const coords = { lat: center.lat(), lng: center.lng() };
+        setGpsCoords(coords);
+
+        // Reverse geocode to get address
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: coords }, (results, status) => {
+          if (status === 'OK' && results[0]) {
+            setLocationInput(results[0].formatted_address);
+          }
+        });
       });
 
       setMapInitialized(true);
@@ -167,24 +187,13 @@ const CreateCheckInPage = () => {
 
           setLocationInput(displayLocation);
 
-          // Center map on selected place
+          // Center map on selected place (no marker needed - fixed pin in center)
           if (place.geometry && place.geometry.location && mapInstanceRef.current) {
             const location = place.geometry.location;
             const coords = { lat: location.lat(), lng: location.lng() };
             mapInstanceRef.current.setCenter(coords);
             mapInstanceRef.current.setZoom(15);
-
-            // Update or create marker
-            if (markerRef.current) {
-              markerRef.current.setPosition(coords);
-            } else {
-              markerRef.current = new window.google.maps.Marker({
-                position: coords,
-                map: mapInstanceRef.current,
-                title: displayLocation,
-                animation: window.google.maps.Animation.DROP,
-              });
-            }
+            setGpsCoords(coords); // Store coordinates
           }
         }
       });
@@ -205,22 +214,9 @@ const CreateCheckInPage = () => {
     if (!gpsCoords || !mapInstanceRef.current) return;
 
     try {
-      // Center map on GPS location
+      // Center map on GPS location (fixed pin shows the location)
       mapInstanceRef.current.setCenter(gpsCoords);
-      mapInstanceRef.current.setZoom(15);
-
-      // Update or create marker at GPS location
-      if (markerRef.current) {
-        markerRef.current.setPosition(gpsCoords);
-        markerRef.current.setTitle('Your Location');
-      } else {
-        markerRef.current = new window.google.maps.Marker({
-          position: gpsCoords,
-          map: mapInstanceRef.current,
-          title: 'Your Location',
-          animation: window.google.maps.Animation.DROP,
-        });
-      }
+      mapInstanceRef.current.setZoom(16);
     } catch (error) {
       console.error('Error updating map with GPS:', error);
     }
@@ -230,23 +226,35 @@ const CreateCheckInPage = () => {
     if (!currentUser) return;
 
     try {
+      console.group('🔍 Loading Bestie Circle');
+
       // Get user's bestie circle (featuredCircle)
       const userDocRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
+        console.error('❌ User document does not exist');
+        console.groupEnd();
         setBesties([]);
         return;
       }
 
-      const featuredIds = userDoc.data().featuredCircle || [];
+      const userData = userDoc.data();
+      const featuredIds = userData.featuredCircle || [];
+
+      console.log('User document data:', userData);
+      console.log('featuredCircle field:', featuredIds);
+      console.log('featuredCircle length:', featuredIds.length);
 
       if (featuredIds.length === 0) {
+        console.warn('⚠️ featuredCircle is empty - no besties to load');
+        console.groupEnd();
         setBesties([]);
         return;
       }
 
       // Get all accepted besties to find the ones in the circle
+      console.log('📡 Querying besties collection...');
       const [requesterQuery, recipientQuery] = await Promise.all([
         getDocs(
           query(
@@ -263,6 +271,9 @@ const CreateCheckInPage = () => {
           )
         ),
       ]);
+
+      console.log('Requester query results:', requesterQuery.size);
+      console.log('Recipient query results:', recipientQuery.size);
 
       const allBestiesList = [];
 
@@ -284,8 +295,18 @@ const CreateCheckInPage = () => {
         });
       });
 
+      console.log('All besties found:', allBestiesList);
+      console.log('Filtering for featuredCircle IDs:', featuredIds);
+
       // Filter to only show besties in the featured circle
-      const circleBesties = allBestiesList.filter(b => featuredIds.includes(b.id));
+      const circleBesties = allBestiesList.filter(b => {
+        const inCircle = featuredIds.includes(b.id);
+        console.log(`Bestie ${b.name} (${b.id}): ${inCircle ? 'IN' : 'NOT IN'} circle`);
+        return inCircle;
+      });
+
+      console.log('✅ Circle besties after filtering:', circleBesties);
+      console.groupEnd();
 
       setBesties(circleBesties);
 
@@ -295,6 +316,7 @@ const CreateCheckInPage = () => {
       }
     } catch (error) {
       console.error('Error loading besties:', error);
+      console.groupEnd();
       toast.error('Failed to load besties');
     }
   };
@@ -307,37 +329,56 @@ const CreateCheckInPage = () => {
 
     if (navigator.geolocation) {
       setLoading(true);
+      toast.loading('Getting your location...', { id: 'gps-loading' });
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          setLocationInput(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-          setGpsCoords({ lat, lng }); // Store coordinates for map
-          setLoading(false);
-          toast.success('Location captured!');
+          const gpsCoords = { lat, lng };
+
+          // Use reverse geocoding to get address from coordinates
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: gpsCoords }, (results, status) => {
+            toast.dismiss('gps-loading');
+            setLoading(false);
+
+            if (status === 'OK' && results[0]) {
+              setLocationInput(results[0].formatted_address);
+              toast.success('Location captured!', { duration: 2000 });
+            } else {
+              // Fallback to coordinates if geocoding fails
+              setLocationInput(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+              toast.success('Location captured (coordinates only)', { duration: 2000 });
+            }
+
+            setGpsCoords(gpsCoords); // Store coordinates for map
+          });
         },
         (error) => {
+          toast.dismiss('gps-loading');
           setLoading(false);
           console.error('Geolocation error:', error);
 
           // Provide specific error messages based on error code
           if (error.code === 1) {
-            toast.error('Location permission denied. Please enable location access in your browser settings.', { duration: 5000 });
+            toast.error('Location permission denied. Please enable location access in your browser settings.', { duration: 6000 });
           } else if (error.code === 2) {
-            toast.error('Location unavailable. Please enter your location manually.', { duration: 4000 });
+            toast.error('Location unavailable. Make sure location services are enabled on your device.', { duration: 5000 });
           } else if (error.code === 3) {
-            toast.error('Location request timed out. Please try again or enter manually.', { duration: 4000 });
+            toast.error('Location request timed out. Please try again or search for your location.', { duration: 5000 });
           } else {
-            toast.error('Could not get location. Please enter manually.');
+            toast.error('Could not get location. Please search manually.', { duration: 4000 });
           }
         },
         {
-          timeout: 10000, // 10 second timeout
-          enableHighAccuracy: false // Faster, less battery drain
+          timeout: 30000, // 30 second timeout (increased from 10s)
+          enableHighAccuracy: true, // Better accuracy
+          maximumAge: 0 // Don't use cached location
         }
       );
     } else {
-      toast.error('Geolocation not supported by your browser. Please enter location manually.');
+      toast.error('Geolocation not supported by your browser. Please search for your location manually.');
     }
   };
 
@@ -551,7 +592,7 @@ const CreateCheckInPage = () => {
               ></div>
 
               {/* Search bar overlay */}
-              <div className="absolute top-3 left-3 right-3">
+              <div className="absolute top-3 left-3 right-3 z-10">
                 <input
                   ref={locationInputRef}
                   type="text"
@@ -564,40 +605,45 @@ const CreateCheckInPage = () => {
                 />
               </div>
 
-              {/* Locate me button overlay */}
+              {/* Fixed center pin - doesn't move, map moves underneath */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-10 pointer-events-none">
+                <svg
+                  className="w-12 h-12 text-primary drop-shadow-lg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+              </div>
+
+              {/* Locate me button overlay - positioned above zoom controls (top-right) */}
               {isEnabled('gpsLocation') && (
                 <button
                   type="button"
                   onClick={handleGetLocation}
-                  className="absolute right-3 bottom-3 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg border border-gray-300 transition-all"
+                  className="absolute right-3 top-16 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg border border-gray-300 transition-all z-10"
                   disabled={loading}
                   title="Use my current location"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
+                  {loading ? (
+                    <div className="w-5 h-5 spinner-small"></div>
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="3" strokeWidth={2} />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                    </svg>
+                  )}
                 </button>
               )}
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              Search for a place or click the location button to use your current GPS location
+              Drag the map to adjust pin location, search for a place, or click the crosshair to use GPS
             </p>
           </div>
 

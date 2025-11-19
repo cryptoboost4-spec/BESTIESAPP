@@ -173,17 +173,25 @@ const DevAnalyticsPage = () => {
       let smsSubscribers = 0;
       let donorsActive = 0;
       let totalDonations = 0;
+      let monthlyRevenue = 0;
 
       usersSnap.forEach(doc => {
         const data = doc.data();
-        if (data.smsSubscription?.active) smsSubscribers++;
+        if (data.smsSubscription?.active) {
+          smsSubscribers++;
+          monthlyRevenue += 1; // $1/month SMS subscription
+        }
         if (data.donationStats?.isActive) {
           donorsActive++;
           totalDonations += data.donationStats?.totalDonated || 0;
+          // Add monthly recurring donation amount to MRR
+          if (data.donationStats?.monthlyAmount) {
+            monthlyRevenue += data.donationStats.monthlyAmount;
+          }
         }
       });
 
-      const mrr = (smsSubscribers * 1) + totalDonations;
+      const mrr = monthlyRevenue;
 
       // Engagement Analytics
       console.log('[Analytics] Loading templates...');
@@ -242,22 +250,27 @@ const DevAnalyticsPage = () => {
       await Promise.all(alertPromises);
 
       // Cost Tracking (estimate based on alerts sent)
-      // Each alert can go to multiple besties via SMS, WhatsApp, and Email
-      let totalSMSSent = 0;
-      let totalWhatsAppSent = 0;
+      // Real alert logic: Try WhatsApp first (free/cheap), fallback to SMS (expensive)
+      // We don't track actual delivery, so we estimate conservatively
+      let totalAlertsSent = 0;
+      let estimatedSMSSent = 0;
+      let estimatedWhatsAppSent = 0;
 
       checkInsSnap.forEach(doc => {
         const data = doc.data();
         if (data.status === 'alerted' && data.bestieIds) {
           const bestieCount = data.bestieIds.length;
-          // Estimate: assume SMS to each bestie (conservative estimate)
-          totalSMSSent += bestieCount;
-          totalWhatsAppSent += bestieCount; // Many might have WhatsApp enabled
+          totalAlertsSent += bestieCount;
+
+          // Conservative estimate: 70% get WhatsApp, 30% need SMS fallback
+          // (Reality: WhatsApp tries first, SMS only if fails or no subscription)
+          estimatedWhatsAppSent += Math.ceil(bestieCount * 0.7);
+          estimatedSMSSent += Math.floor(bestieCount * 0.3);
         }
       });
 
-      const estimatedSMSCost = (totalSMSSent * 0.0075).toFixed(2); // $0.0075 per SMS
-      const estimatedWhatsAppCost = (totalWhatsAppSent * 0.005).toFixed(2); // $0.005 per WhatsApp
+      const estimatedSMSCost = (estimatedSMSSent * 0.0075).toFixed(2); // $0.0075 per SMS
+      const estimatedWhatsAppCost = (estimatedWhatsAppSent * 0.005).toFixed(2); // $0.005 per WhatsApp
       const estimatedEmailCost = 0; // SendGrid free tier
 
       // Growth Metrics
@@ -283,11 +296,11 @@ const DevAnalyticsPage = () => {
 
       const userGrowthRate = prevWeekUsers > 0
         ? (((new7days - prevWeekUsers) / prevWeekUsers) * 100).toFixed(1)
-        : 0;
+        : new7days > 0 ? '∞' : 'N/A';
 
       const checkInGrowthRate = prevWeekCheckIns > 0
         ? (((totalCheckIns - prevWeekCheckIns) / prevWeekCheckIns) * 100).toFixed(1)
-        : 0;
+        : totalCheckIns > 0 ? '∞' : 'N/A';
 
       // Retention: users who created multiple check-ins
       const userCheckInCounts = {};
@@ -299,22 +312,42 @@ const DevAnalyticsPage = () => {
       const retentionRate = totalUsers > 0 ? ((returningUsers / totalUsers) * 100).toFixed(1) : 0;
 
       // Funnel Analytics
+      console.log('[Analytics] Calculating funnel metrics...');
       let completedOnboardingCount = 0;
       let addedBestieCount = 0;
       let firstCheckInCount = 0;
+      let debugSampleUser = null;
 
       usersSnap.forEach(doc => {
         const data = doc.data();
+        // Capture first user for debugging
+        if (!debugSampleUser) {
+          debugSampleUser = {
+            id: doc.id,
+            onboardingCompleted: data.onboardingCompleted,
+            statsExists: !!data.stats,
+            totalBesties: data.stats?.totalBesties,
+            totalCheckIns: data.stats?.totalCheckIns,
+          };
+        }
         if (data.onboardingCompleted) completedOnboardingCount++;
         if (data.stats?.totalBesties > 0) addedBestieCount++;
         if (data.stats?.totalCheckIns > 0) firstCheckInCount++;
+      });
+
+      console.log('[Analytics] Funnel Debug - Sample User:', debugSampleUser);
+      console.log('[Analytics] Funnel Counts:', {
+        totalUsers,
+        completedOnboarding: completedOnboardingCount,
+        addedBestie: addedBestieCount,
+        firstCheckIn: firstCheckInCount,
       });
 
       const onboardingRate = totalUsers > 0 ? ((completedOnboardingCount / totalUsers) * 100).toFixed(1) : 0;
       const bestieRate = completedOnboardingCount > 0 ? ((addedBestieCount / completedOnboardingCount) * 100).toFixed(1) : 0;
       const checkInRate = addedBestieCount > 0 ? ((firstCheckInCount / addedBestieCount) * 100).toFixed(1) : 0;
 
-      // User Behavior
+      // User Behavior (normalized to UTC to avoid timezone skew)
       const hourCounts = new Array(24).fill(0);
       const dayCounts = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
       const durationCounts = {};
@@ -323,9 +356,10 @@ const DevAnalyticsPage = () => {
         const data = doc.data();
         const createdAt = data.createdAt?.toDate();
         if (createdAt) {
-          hourCounts[createdAt.getHours()]++;
+          // Use UTC to normalize across timezones
+          hourCounts[createdAt.getUTCHours()]++;
           const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          dayCounts[dayNames[createdAt.getDay()]]++;
+          dayCounts[dayNames[createdAt.getUTCDay()]]++;
         }
         if (data.duration) {
           durationCounts[data.duration] = (durationCounts[data.duration] || 0) + 1;
@@ -354,7 +388,8 @@ const DevAnalyticsPage = () => {
         },
         besties: {
           totalConnections: totalBesties,
-          avgPerUser: totalUsers > 0 ? (acceptedBesties / totalUsers).toFixed(1) : 0,
+          // Each bestie relationship involves 2 users, so multiply by 2 for avg besties per user
+          avgPerUser: totalUsers > 0 ? ((acceptedBesties * 2) / totalUsers).toFixed(1) : 0,
           pending: pendingBesties,
           accepted: acceptedBesties,
         },
@@ -366,7 +401,8 @@ const DevAnalyticsPage = () => {
         },
         engagement: {
           avgCheckInsPerUser: totalUsers > 0 ? (totalCheckIns / totalUsers).toFixed(1) : 0,
-          avgBestiesPerUser: totalUsers > 0 ? (acceptedBesties / totalUsers).toFixed(1) : 0,
+          // Each bestie relationship involves 2 users, so multiply by 2 for avg besties per user
+          avgBestiesPerUser: totalUsers > 0 ? ((acceptedBesties * 2) / totalUsers).toFixed(1) : 0,
           templatesCreated: templatesSnap.size,
           badgesEarned: totalBadgesEarned,
         },
@@ -374,7 +410,7 @@ const DevAnalyticsPage = () => {
           estimatedSMS: estimatedSMSCost,
           estimatedWhatsApp: estimatedWhatsAppCost,
           estimatedEmail: estimatedEmailCost,
-          totalAlertsSent: totalSMSSent,
+          totalAlertsSent: totalAlertsSent,
         },
         growth: {
           userGrowthRate,
