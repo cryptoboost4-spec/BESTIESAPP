@@ -190,7 +190,7 @@ const Header = () => {
       </header>
 
       {/* Mobile Navigation - Fixed Bottom Bar */}
-      <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-t shadow-lg z-50 transition-colors`}>
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-t shadow-lg z-[100] transition-colors`}>
         <div className="flex items-center justify-around py-3 safe-area-inset-bottom">
           <Link
             to="/"
