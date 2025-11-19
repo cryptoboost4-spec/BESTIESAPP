@@ -25,12 +25,15 @@ const CreateCheckInPage = () => {
   const [loading, setLoading] = useState(false);
   const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
   const [gpsCoords, setGpsCoords] = useState(null); // Store GPS coordinates for map display
+  const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 }); // Default: San Francisco
+  const [mapInitialized, setMapInitialized] = useState(false);
 
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const fileInputRef = useRef(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const markerRef = useRef(null);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -111,6 +114,28 @@ const CreateCheckInPage = () => {
     };
   }, []);
 
+  // Initialize Map when API is loaded
+  useEffect(() => {
+    if (!autocompleteLoaded || !mapRef.current || mapInitialized) return;
+
+    try {
+      // Initialize Google Map
+      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+        center: mapCenter,
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+
+      setMapInitialized(true);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
+  }, [autocompleteLoaded, mapCenter, mapInitialized]);
+
   // Initialize Autocomplete when API is loaded
   useEffect(() => {
     if (!autocompleteLoaded || !locationInputRef.current) return;
@@ -136,6 +161,26 @@ const CreateCheckInPage = () => {
             : place.formatted_address;
 
           setLocationInput(displayLocation);
+
+          // Center map on selected place
+          if (place.geometry && place.geometry.location && mapInstanceRef.current) {
+            const location = place.geometry.location;
+            const coords = { lat: location.lat(), lng: location.lng() };
+            mapInstanceRef.current.setCenter(coords);
+            mapInstanceRef.current.setZoom(15);
+
+            // Update or create marker
+            if (markerRef.current) {
+              markerRef.current.setPosition(coords);
+            } else {
+              markerRef.current = new window.google.maps.Marker({
+                position: coords,
+                map: mapInstanceRef.current,
+                title: displayLocation,
+                animation: window.google.maps.Animation.DROP,
+              });
+            }
+          }
         }
       });
     } catch (error) {
@@ -150,33 +195,31 @@ const CreateCheckInPage = () => {
     };
   }, [autocompleteLoaded]);
 
-  // Initialize map when GPS coordinates are available
+  // Update map when GPS coordinates are available
   useEffect(() => {
-    if (!gpsCoords || !autocompleteLoaded || !mapRef.current) return;
+    if (!gpsCoords || !mapInstanceRef.current) return;
 
     try {
-      // Initialize Google Map
-      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-        center: { lat: gpsCoords.lat, lng: gpsCoords.lng },
-        zoom: 15,
-        disableDefaultUI: false,
-        zoomControl: true,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-      });
+      // Center map on GPS location
+      mapInstanceRef.current.setCenter(gpsCoords);
+      mapInstanceRef.current.setZoom(15);
 
-      // Add marker at GPS location
-      new window.google.maps.Marker({
-        position: { lat: gpsCoords.lat, lng: gpsCoords.lng },
-        map: mapInstanceRef.current,
-        title: 'Your Location',
-        animation: window.google.maps.Animation.DROP,
-      });
+      // Update or create marker at GPS location
+      if (markerRef.current) {
+        markerRef.current.setPosition(gpsCoords);
+        markerRef.current.setTitle('Your Location');
+      } else {
+        markerRef.current = new window.google.maps.Marker({
+          position: gpsCoords,
+          map: mapInstanceRef.current,
+          title: 'Your Location',
+          animation: window.google.maps.Animation.DROP,
+        });
+      }
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('Error updating map with GPS:', error);
     }
-  }, [gpsCoords, autocompleteLoaded]);
+  }, [gpsCoords]);
 
   const loadBesties = async () => {
     if (!currentUser) return;
@@ -451,52 +494,70 @@ const CreateCheckInPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Location */}
-          <div className="card p-6">
-            <label className="block text-lg font-display text-text-primary mb-3">
+          {/* Location with Map */}
+          <div className="card p-0 overflow-hidden">
+            <label className="block text-lg font-display text-text-primary p-6 pb-3">
               Where are you going? 📍
             </label>
 
-            <div className="flex gap-2">
-              <input
-                ref={locationInputRef}
-                type="text"
-                value={locationInput}
-                onChange={(e) => setLocationInput(e.target.value)}
-                className="input flex-1"
-                placeholder="Type an address or place name..."
-                required
-                autoComplete="off"
-              />
+            {/* Map with overlays */}
+            <div className="relative">
+              {/* Map Container */}
+              <div
+                ref={mapRef}
+                className="w-full h-80"
+                style={{ minHeight: '320px' }}
+              ></div>
+
+              {/* Search bar overlay */}
+              <div className="absolute top-3 left-3 right-3">
+                <input
+                  ref={locationInputRef}
+                  type="text"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  className="input w-full shadow-lg"
+                  placeholder="Search for a place..."
+                  required
+                  autoComplete="off"
+                />
+              </div>
+
+              {/* Locate me button overlay */}
               {isEnabled('gpsLocation') && (
                 <button
                   type="button"
                   onClick={handleGetLocation}
-                  className="btn btn-secondary px-4 whitespace-nowrap"
+                  className="absolute right-3 bottom-3 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg border border-gray-300 transition-all"
                   disabled={loading}
-                  title="Use my current GPS location"
+                  title="Use my current location"
                 >
-                  📍 Use GPS
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
                 </button>
               )}
             </div>
-            <p className="text-xs text-text-secondary mt-2">
-              Type your destination manually or use GPS to auto-fill your current location
-            </p>
 
-            {/* Map Display when GPS is used */}
-            {gpsCoords && (
-              <div className="mt-4">
-                <div
-                  ref={mapRef}
-                  className="w-full h-64 rounded-xl border-2 border-gray-300 shadow-lg"
-                  style={{ minHeight: '256px' }}
-                ></div>
-                <p className="text-xs text-text-secondary mt-2 text-center">
-                  📍 Your GPS location
-                </p>
-              </div>
-            )}
+            <p className="text-xs text-text-secondary p-3 px-6">
+              Search for a place or click the location button to use your current GPS location
+            </p>
           </div>
 
           {/* Who You're Meeting */}

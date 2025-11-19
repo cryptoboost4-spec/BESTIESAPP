@@ -13,8 +13,8 @@ const AdminRoute = ({ children }) => {
     );
   }
 
-  // Check if user is admin (check both isAdmin and admin fields for compatibility)
-  if (!userData?.isAdmin && !userData?.admin && userData?.role !== 'admin') {
+  // Check if user is admin
+  if (!userData?.isAdmin) {
     return <Navigate to="/" replace />;
   }
 
