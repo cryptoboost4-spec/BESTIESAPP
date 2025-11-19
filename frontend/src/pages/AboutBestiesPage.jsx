@@ -2550,6 +2550,430 @@ const AboutBestiesPage = () => {
           </div>
         </div>
 
+        {/* SECTION REDESIGNS - OTHER WAYS TO HELP */}
+        <div className="card p-6 mb-6 bg-gradient-to-br from-green-50 to-blue-50 border-4 border-green-300">
+          <h2 className="text-2xl font-display text-text-primary mb-6 text-center">Other Ways to Help - 4 Style Variations</h2>
+
+          {/* Style 4: Minimal with Sparkle */}
+          <div className="mb-12 p-6 bg-white rounded-2xl shadow-lg border-2 border-pink-200">
+            <h3 className="text-xl font-semibold text-pink-900 mb-6 text-center">Style 4: Minimal with Sparkle</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Spread the Word */}
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="megaphone-gradient-4" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#1D4ED8', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Megaphone */}
+                    <path d="M30 35 L70 25 L70 75 L30 65 Z" fill="url(#megaphone-gradient-4)" stroke="#1E3A8A" strokeWidth="2"/>
+                    <ellipse cx="30" cy="50" rx="8" ry="15" fill="url(#megaphone-gradient-4)" stroke="#1E3A8A" strokeWidth="2"/>
+                    {/* Sound waves */}
+                    <path d="M75 35 Q80 35 80 40" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M75 50 Q85 50 85 50" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M75 65 Q80 65 80 60" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                    {/* Sparkle */}
+                    <path d="M85 30 L86 35 L91 36 L86 37 L85 42 L84 37 L79 36 L84 35 Z" fill="#FCD34D"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-blue-900 mb-2 text-center">Spread the Word</h3>
+                <p className="text-sm text-blue-800 text-center">Tell your friends! Every person who joins makes our community stronger and safer.</p>
+              </div>
+
+              {/* Share Ideas */}
+              <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="lightbulb-gradient-4" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#10B981', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#059669', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Bulb */}
+                    <circle cx="50" cy="35" r="18" fill="url(#lightbulb-gradient-4)" stroke="#065F46" strokeWidth="2"/>
+                    {/* Base */}
+                    <rect x="44" y="53" width="12" height="8" rx="2" fill="#9CA3AF" stroke="#4B5563" strokeWidth="1.5"/>
+                    <rect x="42" y="61" width="16" height="6" rx="2" fill="#6B7280" stroke="#374151" strokeWidth="1.5"/>
+                    {/* Light rays */}
+                    <line x1="50" y1="10" x2="50" y2="15" stroke="#10B981" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="25" y1="20" x2="29" y2="24" stroke="#10B981" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="75" y1="20" x2="71" y2="24" stroke="#10B981" strokeWidth="2" strokeLinecap="round"/>
+                    {/* Sparkle */}
+                    <path d="M20 50 L21 55 L26 56 L21 57 L20 62 L19 57 L14 56 L19 55 Z" fill="#FCD34D"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-green-900 mb-2 text-center">Share Ideas</h3>
+                <p className="text-sm text-green-800 text-center">Got a feature idea? Found a bug? Your feedback makes Besties better for everyone.</p>
+              </div>
+
+              {/* Leave a Review */}
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="star-gradient-4" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#A855F7', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#7C3AED', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Star */}
+                    <path d="M50 15 L58 40 L85 40 L63 55 L71 80 L50 65 L29 80 L37 55 L15 40 L42 40 Z"
+                          fill="url(#star-gradient-4)" stroke="#5B21B6" strokeWidth="2"/>
+                    {/* Inner lines */}
+                    <line x1="50" y1="30" x2="50" y2="60" stroke="#DDD6FE" strokeWidth="1.5"/>
+                    <line x1="35" y1="45" x2="65" y2="45" stroke="#DDD6FE" strokeWidth="1.5"/>
+                    {/* Sparkle */}
+                    <path d="M80 20 L81 25 L86 26 L81 27 L80 32 L79 27 L74 26 L79 25 Z" fill="#FCD34D"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-purple-900 mb-2 text-center">Leave a Review</h3>
+                <p className="text-sm text-purple-800 text-center">Reviews help others discover Besties and know it's legit.</p>
+              </div>
+
+              {/* Use the App */}
+              <div className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="app-gradient-4" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#EC4899', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#BE185D', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Phone outline */}
+                    <rect x="30" y="15" width="40" height="70" rx="6" fill="url(#app-gradient-4)" stroke="#831843" strokeWidth="2"/>
+                    {/* Screen */}
+                    <rect x="35" y="22" width="30" height="50" rx="2" fill="#FCE7F3"/>
+                    {/* Home button */}
+                    <circle cx="50" cy="78" r="3" fill="#FCE7F3"/>
+                    {/* Heart on screen */}
+                    <path d="M50 38 L45 33 Q42 30 42 27 Q42 24 44 24 Q47 24 50 27 Q53 24 56 24 Q58 24 58 27 Q58 30 55 33 Z" fill="#EC4899"/>
+                    {/* Sparkle */}
+                    <path d="M75 30 L76 35 L81 36 L76 37 L75 42 L74 37 L69 36 L74 35 Z" fill="#FCD34D"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-pink-900 mb-2 text-center">Use the App</h3>
+                <p className="text-sm text-pink-800 text-center">Check in regularly, add your besties, and stay safe. That's what we're here for.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 5: Soft Neon Glow */}
+          <div className="mb-12 p-6 bg-white rounded-2xl shadow-lg border-2 border-purple-200">
+            <h3 className="text-xl font-semibold text-purple-900 mb-6 text-center">Style 5: Soft Neon Glow</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Spread the Word */}
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <filter id="glow-megaphone-5">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <radialGradient id="megaphone-glow-5">
+                        <stop offset="0%" style={{ stopColor: '#60A5FA', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#3B82F6', stopOpacity: 0.8 }} />
+                      </radialGradient>
+                    </defs>
+                    {/* Megaphone with glow */}
+                    <path d="M30 35 L70 25 L70 75 L30 65 Z" fill="url(#megaphone-glow-5)" filter="url(#glow-megaphone-5)"/>
+                    <ellipse cx="30" cy="50" rx="8" ry="15" fill="url(#megaphone-glow-5)" filter="url(#glow-megaphone-5)"/>
+                    {/* Glowing sound waves */}
+                    <circle cx="78" cy="38" r="2" fill="#60A5FA" filter="url(#glow-megaphone-5)"/>
+                    <circle cx="85" cy="50" r="2" fill="#60A5FA" filter="url(#glow-megaphone-5)"/>
+                    <circle cx="78" cy="62" r="2" fill="#60A5FA" filter="url(#glow-megaphone-5)"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-blue-900 mb-2 text-center">Spread the Word</h3>
+                <p className="text-sm text-blue-800 text-center">Tell your friends! Every person who joins makes our community stronger and safer.</p>
+              </div>
+
+              {/* Share Ideas */}
+              <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <filter id="glow-bulb-5">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <radialGradient id="bulb-glow-5">
+                        <stop offset="0%" style={{ stopColor: '#34D399', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#10B981', stopOpacity: 0.8 }} />
+                      </radialGradient>
+                    </defs>
+                    {/* Glowing bulb */}
+                    <circle cx="50" cy="35" r="18" fill="url(#bulb-glow-5)" filter="url(#glow-bulb-5)"/>
+                    <rect x="44" y="53" width="12" height="8" rx="2" fill="#9CA3AF"/>
+                    <rect x="42" y="61" width="16" height="6" rx="2" fill="#6B7280"/>
+                    {/* Glowing rays */}
+                    <circle cx="50" cy="12" r="2" fill="#34D399" filter="url(#glow-bulb-5)"/>
+                    <circle cx="27" cy="22" r="2" fill="#34D399" filter="url(#glow-bulb-5)"/>
+                    <circle cx="73" cy="22" r="2" fill="#34D399" filter="url(#glow-bulb-5)"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-green-900 mb-2 text-center">Share Ideas</h3>
+                <p className="text-sm text-green-800 text-center">Got a feature idea? Found a bug? Your feedback makes Besties better for everyone.</p>
+              </div>
+
+              {/* Leave a Review */}
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <filter id="glow-star-5">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <radialGradient id="star-glow-5">
+                        <stop offset="0%" style={{ stopColor: '#C084FC', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#A855F7', stopOpacity: 0.8 }} />
+                      </radialGradient>
+                    </defs>
+                    {/* Glowing star */}
+                    <path d="M50 15 L58 40 L85 40 L63 55 L71 80 L50 65 L29 80 L37 55 L15 40 L42 40 Z"
+                          fill="url(#star-glow-5)" filter="url(#glow-star-5)"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-purple-900 mb-2 text-center">Leave a Review</h3>
+                <p className="text-sm text-purple-800 text-center">Reviews help others discover Besties and know it's legit.</p>
+              </div>
+
+              {/* Use the App */}
+              <div className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <filter id="glow-app-5">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <radialGradient id="app-glow-5">
+                        <stop offset="0%" style={{ stopColor: '#F472B6', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#EC4899', stopOpacity: 0.8 }} />
+                      </radialGradient>
+                    </defs>
+                    {/* Glowing phone */}
+                    <rect x="30" y="15" width="40" height="70" rx="6" fill="url(#app-glow-5)" filter="url(#glow-app-5)"/>
+                    <rect x="35" y="22" width="30" height="50" rx="2" fill="#FCE7F3"/>
+                    <circle cx="50" cy="78" r="3" fill="#FCE7F3"/>
+                    {/* Glowing heart */}
+                    <path d="M50 38 L45 33 Q42 30 42 27 Q42 24 44 24 Q47 24 50 27 Q53 24 56 24 Q58 24 58 27 Q58 30 55 33 Z"
+                          fill="#F472B6" filter="url(#glow-app-5)"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-pink-900 mb-2 text-center">Use the App</h3>
+                <p className="text-sm text-pink-800 text-center">Check in regularly, add your besties, and stay safe. That's what we're here for.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 7: Soft Geometry */}
+          <div className="mb-12 p-6 bg-white rounded-2xl shadow-lg border-2 border-blue-200">
+            <h3 className="text-xl font-semibold text-blue-900 mb-6 text-center">Style 7: Soft Geometry</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Spread the Word */}
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="megaphone-geo-7" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#60A5FA', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Geometric megaphone */}
+                    <rect x="25" y="35" width="20" height="30" rx="4" fill="url(#megaphone-geo-7)"/>
+                    <rect x="45" y="30" width="30" height="40" rx="4" fill="url(#megaphone-geo-7)"/>
+                    {/* Sound circles */}
+                    <circle cx="82" cy="38" r="4" fill="#3B82F6" opacity="0.7"/>
+                    <circle cx="88" cy="50" r="4" fill="#3B82F6" opacity="0.5"/>
+                    <circle cx="82" cy="62" r="4" fill="#3B82F6" opacity="0.7"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-blue-900 mb-2 text-center">Spread the Word</h3>
+                <p className="text-sm text-blue-800 text-center">Tell your friends! Every person who joins makes our community stronger and safer.</p>
+              </div>
+
+              {/* Share Ideas */}
+              <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="bulb-geo-7" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#34D399', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#10B981', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Geometric bulb */}
+                    <circle cx="50" cy="35" r="18" fill="url(#bulb-geo-7)"/>
+                    <rect x="44" y="53" width="12" height="8" rx="2" fill="#9CA3AF"/>
+                    <rect x="42" y="61" width="16" height="6" rx="2" fill="#6B7280"/>
+                    {/* Light rays as rounded rects */}
+                    <rect x="48" y="8" width="4" height="8" rx="2" fill="#34D399"/>
+                    <rect x="23" y="18" width="8" height="4" rx="2" fill="#34D399"/>
+                    <rect x="69" y="18" width="8" height="4" rx="2" fill="#34D399"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-green-900 mb-2 text-center">Share Ideas</h3>
+                <p className="text-sm text-green-800 text-center">Got a feature idea? Found a bug? Your feedback makes Besties better for everyone.</p>
+              </div>
+
+              {/* Leave a Review */}
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="star-geo-7" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#C084FC', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#A855F7', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Geometric star (octagon) */}
+                    <path d="M50 20 L65 30 L70 45 L65 60 L50 70 L35 60 L30 45 L35 30 Z"
+                          fill="url(#star-geo-7)"/>
+                    {/* Inner circle */}
+                    <circle cx="50" cy="45" r="12" fill="#DDD6FE"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-purple-900 mb-2 text-center">Leave a Review</h3>
+                <p className="text-sm text-purple-800 text-center">Reviews help others discover Besties and know it's legit.</p>
+              </div>
+
+              {/* Use the App */}
+              <div className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="app-geo-7" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#F472B6', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#EC4899', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    {/* Geometric phone */}
+                    <rect x="30" y="15" width="40" height="70" rx="8" fill="url(#app-geo-7)"/>
+                    <rect x="35" y="22" width="30" height="50" rx="4" fill="#FCE7F3"/>
+                    <circle cx="50" cy="78" r="3" fill="#FCE7F3"/>
+                    {/* Geometric heart */}
+                    <rect x="43" y="35" width="8" height="8" rx="4" fill="#EC4899" transform="rotate(45 47 39)"/>
+                    <rect x="49" y="35" width="8" height="8" rx="4" fill="#EC4899" transform="rotate(45 53 39)"/>
+                    <rect x="46" y="40" width="8" height="12" rx="2" fill="#EC4899"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-pink-900 mb-2 text-center">Use the App</h3>
+                <p className="text-sm text-pink-800 text-center">Check in regularly, add your besties, and stay safe. That's what we're here for.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 9: Sketchy & Sweet */}
+          <div className="mb-12 p-6 bg-white rounded-2xl shadow-lg border-2 border-green-200">
+            <h3 className="text-xl font-semibold text-green-900 mb-6 text-center">Style 9: Sketchy & Sweet</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Spread the Word */}
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Sketchy megaphone */}
+                    <path d="M30 35 L70 25 L70.5 26 L71 75 L70.5 74 L30 65 L30.5 64 Z"
+                          fill="#93C5FD" stroke="#1E3A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <ellipse cx="30" cy="50" rx="8" ry="15" fill="#93C5FD" stroke="#1E3A8A" strokeWidth="2.5"/>
+                    {/* Sketchy detail lines */}
+                    <line x1="35" y1="40" x2="65" y2="35" stroke="#1E3A8A" strokeWidth="1.5" opacity="0.5"/>
+                    <line x1="35" y1="50" x2="65" y2="50" stroke="#1E3A8A" strokeWidth="1.5" opacity="0.5"/>
+                    <line x1="35" y1="60" x2="65" y2="65" stroke="#1E3A8A" strokeWidth="1.5" opacity="0.5"/>
+                    {/* Sketchy sound waves */}
+                    <path d="M75 35 Q76 35 78 37 Q79 38 80 40" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round"/>
+                    <path d="M75 50 Q80 50 85 50" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round"/>
+                    <path d="M75 65 Q76 65 78 63 Q79 62 80 60" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-blue-900 mb-2 text-center">Spread the Word</h3>
+                <p className="text-sm text-blue-800 text-center">Tell your friends! Every person who joins makes our community stronger and safer.</p>
+              </div>
+
+              {/* Share Ideas */}
+              <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Sketchy bulb */}
+                    <path d="M50 17 Q35 17 35 35 Q35 45 42 50 L42 53 L58 53 L58 50 Q65 45 65 35 Q65 17 50 17 Z"
+                          fill="#6EE7B7" stroke="#065F46" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    {/* Sketchy base */}
+                    <rect x="44" y="53" width="12" height="8" rx="2" fill="#9CA3AF" stroke="#4B5563" strokeWidth="2"/>
+                    <rect x="42" y="61" width="16" height="6" rx="2" fill="#6B7280" stroke="#374151" strokeWidth="2"/>
+                    {/* Sketchy rays */}
+                    <line x1="50" y1="8" x2="50" y2="14" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"/>
+                    <line x1="24" y1="20" x2="30" y2="26" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"/>
+                    <line x1="76" y1="20" x2="70" y2="26" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"/>
+                    {/* Inner sketch lines */}
+                    <line x1="45" y1="30" x2="47" y2="40" stroke="#065F46" strokeWidth="1" opacity="0.4"/>
+                    <line x1="55" y1="30" x2="53" y2="40" stroke="#065F46" strokeWidth="1" opacity="0.4"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-green-900 mb-2 text-center">Share Ideas</h3>
+                <p className="text-sm text-green-800 text-center">Got a feature idea? Found a bug? Your feedback makes Besties better for everyone.</p>
+              </div>
+
+              {/* Leave a Review */}
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Sketchy star */}
+                    <path d="M50 15 L52 16 L58 40 L59 41 L85 40 L84 42 L63 55 L64 56 L71 80 L70 81 L50 65 L49 66 L29 80 L28 79 L37 55 L36 54 L15 40 L16 39 L42 40 L43 39 Z"
+                          fill="#DDA0DD" stroke="#5B21B6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    {/* Sketchy inner details */}
+                    <line x1="50" y1="30" x2="51" y2="55" stroke="#5B21B6" strokeWidth="1.5" opacity="0.4"/>
+                    <line x1="40" y1="42" x2="60" y2="43" stroke="#5B21B6" strokeWidth="1.5" opacity="0.4"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-purple-900 mb-2 text-center">Leave a Review</h3>
+                <p className="text-sm text-purple-800 text-center">Reviews help others discover Besties and know it's legit.</p>
+              </div>
+
+              {/* Use the App */}
+              <div className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl">
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Sketchy phone */}
+                    <path d="M30 15 Q30 14 31 15 L69 15 Q70 15 70 16 L70 84 Q70 85 69 85 L31 85 Q30 85 30 84 Z"
+                          fill="#FBCFE8" stroke="#831843" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    {/* Screen */}
+                    <rect x="35" y="22" width="30" height="50" rx="2" fill="white" stroke="#831843" strokeWidth="1.5"/>
+                    {/* Home button sketch */}
+                    <circle cx="50" cy="78" r="3" fill="white" stroke="#831843" strokeWidth="1.5"/>
+                    {/* Sketchy heart on screen */}
+                    <path d="M50 38 L46 34 Q44 32 44 29 Q44 27 45 26 Q46 25 48 26 Q49 27 50 28 Q51 27 52 26 Q54 25 55 26 Q56 27 56 29 Q56 32 54 34 Z"
+                          fill="#F472B6" stroke="#831843" strokeWidth="1.5"/>
+                    {/* Texture lines */}
+                    <line x1="32" y1="25" x2="32" y2="80" stroke="#831843" strokeWidth="1" opacity="0.3"/>
+                    <line x1="68" y1="25" x2="68" y2="80" stroke="#831843" strokeWidth="1" opacity="0.3"/>
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-pink-900 mb-2 text-center">Use the App</h3>
+                <p className="text-sm text-pink-800 text-center">Check in regularly, add your besties, and stay safe. That's what we're here for.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Our Mission */}
         <div className="card p-8 mb-6 bg-gradient-to-br from-pink-50 to-purple-50">
           <h2 className="text-2xl font-display text-text-primary mb-4">Our Mission 🎯</h2>
