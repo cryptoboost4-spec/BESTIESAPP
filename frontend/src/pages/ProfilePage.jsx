@@ -35,6 +35,8 @@ const ProfilePage = () => {
   const [featuredBadgeIds, setFeaturedBadgeIds] = useState([]);
   const [bestiesCount, setBestiesCount] = useState(0);
   const [confettiTrigger, setConfettiTrigger] = useState(false);
+  const [emergencyContactCount, setEmergencyContactCount] = useState(0);
+  const [firstCheckInDate, setFirstCheckInDate] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -78,11 +80,46 @@ const ProfilePage = () => {
       // Load besties count
       const bestiesQuery = query(
         collection(db, 'besties'),
-        where('userId', '==', currentUser.uid),
+        where('requesterId', '==', currentUser.uid),
         where('status', '==', 'accepted')
       );
-      const bestiesSnapshot = await getDocs(bestiesQuery);
-      setBestiesCount(bestiesSnapshot.size);
+      const bestiesQuery2 = query(
+        collection(db, 'besties'),
+        where('recipientId', '==', currentUser.uid),
+        where('status', '==', 'accepted')
+      );
+
+      const [snapshot1, snapshot2] = await Promise.all([
+        getDocs(bestiesQuery),
+        getDocs(bestiesQuery2)
+      ]);
+
+      setBestiesCount(snapshot1.size + snapshot2.size);
+
+      // Count how many times user is an emergency contact
+      const emergencyContactQuery = query(
+        collection(db, 'checkins'),
+        where('selectedBesties', 'array-contains', currentUser.uid)
+      );
+      const emergencySnapshot = await getDocs(emergencyContactQuery);
+      setEmergencyContactCount(emergencySnapshot.size);
+
+      // Get first check-in date
+      const checkInsQuery = query(
+        collection(db, 'checkins'),
+        where('userId', '==', currentUser.uid)
+      );
+      const checkInsSnapshot = await getDocs(checkInsQuery);
+      if (!checkInsSnapshot.empty) {
+        let earliestDate = null;
+        checkInsSnapshot.forEach(doc => {
+          const date = doc.data().createdAt?.toDate();
+          if (date && (!earliestDate || date < earliestDate)) {
+            earliestDate = date;
+          }
+        });
+        setFirstCheckInDate(earliestDate);
+      }
 
       setLoading(false);
     } catch (error) {
@@ -174,57 +211,74 @@ const ProfilePage = () => {
     }
   };
 
-  // Calculate profile completion
+  // Calculate profile completion with navigation paths
   const calculateProfileCompletion = () => {
     const tasks = [];
     let completed = 0;
 
     // Email (usually from auth)
     if (currentUser?.email) {
-      tasks.push({ name: 'Add email', completed: true });
+      tasks.push({ name: 'Add email', completed: true, path: null });
       completed++;
     } else {
-      tasks.push({ name: 'Add email', completed: false });
+      tasks.push({ name: 'Add email', completed: false, path: '/settings' });
     }
 
     // Phone number
     if (userData?.phoneNumber) {
-      tasks.push({ name: 'Add phone number', completed: true });
+      tasks.push({ name: 'Add phone number', completed: true, path: null });
       completed++;
     } else {
-      tasks.push({ name: 'Add phone number', completed: false });
+      tasks.push({ name: 'Add phone number', completed: false, path: '/settings' });
     }
 
     // Profile photo
     if (userData?.photoURL) {
-      tasks.push({ name: 'Upload profile photo', completed: true });
+      tasks.push({ name: 'Upload profile photo', completed: true, path: null });
       completed++;
     } else {
-      tasks.push({ name: 'Upload profile photo', completed: false });
+      tasks.push({ name: 'Upload profile photo', completed: false, path: '/profile' });
     }
 
     // Bio
     if (userData?.profile?.bio) {
-      tasks.push({ name: 'Write a bio', completed: true });
+      tasks.push({ name: 'Write a bio', completed: true, path: null });
       completed++;
     } else {
-      tasks.push({ name: 'Write a bio', completed: false });
+      tasks.push({ name: 'Write a bio', completed: false, path: '/edit-profile' });
     }
 
     // Besties (at least 5)
     if (bestiesCount >= 5) {
-      tasks.push({ name: 'Add 5 besties', completed: true });
+      tasks.push({ name: 'Add 5 besties', completed: true, path: null });
       completed++;
     } else {
-      tasks.push({ name: `Add 5 besties (${bestiesCount}/5)`, completed: false });
+      tasks.push({ name: `Add 5 besties (${bestiesCount}/5)`, completed: false, path: '/besties' });
     }
 
     const percentage = (completed / tasks.length) * 100;
     return { tasks, percentage, completed, total: tasks.length };
   };
 
+  // Check if user has been active for at least a week
+  const hasWeekOfActivity = () => {
+    if (!firstCheckInDate) return false;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return firstCheckInDate <= weekAgo;
+  };
+
   // Get weekly summary
   const getWeeklySummary = () => {
+    if (!hasWeekOfActivity()) {
+      return {
+        status: 'new',
+        emoji: '🌱',
+        message: 'Building your safety journey',
+        tip: 'You\'ll get your weekly summary after you have one week of activity!'
+      };
+    }
+
     const checkIns = userData?.stats?.totalCheckIns || 0;
     const besties = userData?.stats?.totalBesties || 0;
 
@@ -265,6 +319,15 @@ const ProfilePage = () => {
     return 'bg-red-500';
   };
 
+  // Calculate days active
+  const getDaysActive = () => {
+    if (!firstCheckInDate) return 0;
+    const now = new Date();
+    const diffTime = Math.abs(now - firstCheckInDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
@@ -282,13 +345,22 @@ const ProfilePage = () => {
       <ConfettiCelebration trigger={confettiTrigger} type="badge" />
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
-        {/* Enhanced Profile Header with Color Picker */}
+        {/* Profile Header - Matching ViewUserProfilePage Design */}
         <div
           className="card p-6 mb-6 text-center relative overflow-hidden"
           style={{ background: currentGradient }}
         >
-          {/* Color Picker Button */}
-          <div className="absolute top-4 right-4 color-picker-container">
+          {/* Edit Profile Button - Above Color Picker */}
+          <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2">
+            <button
+              onClick={() => navigate('/edit-profile')}
+              className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform text-xl"
+              title="Edit profile"
+            >
+              ✏️
+            </button>
+
+            {/* Color Picker Button */}
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
               className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
@@ -298,8 +370,8 @@ const ProfilePage = () => {
             </button>
 
             {showColorPicker && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-30 w-64">
-                <div className="text-sm font-semibold text-gray-700 mb-3">Choose Your Vibe</div>
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-30 w-64 max-h-80 overflow-y-auto">
+                <div className="text-sm font-semibold text-gray-700 mb-3 sticky top-0 bg-white pb-2">Choose Your Vibe</div>
                 <div className="grid grid-cols-2 gap-3">
                   {GRADIENT_OPTIONS.map((option) => (
                     <button
@@ -319,7 +391,7 @@ const ProfilePage = () => {
             )}
           </div>
 
-          {/* Larger Profile Photo */}
+          {/* Profile Photo */}
           <div className="relative inline-block photo-menu-container">
             <button
               onClick={() => setShowPhotoMenu(!showPhotoMenu)}
@@ -335,13 +407,7 @@ const ProfilePage = () => {
             {/* Photo Management Menu */}
             {showPhotoMenu && (
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-2 z-30 w-48">
-                <div className="text-xs font-semibold text-gray-500 px-3 py-1">Manage</div>
-                <button
-                  onClick={() => navigate(`/user/${currentUser.uid}`)}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
-                >
-                  👤 View Profile
-                </button>
+                <div className="text-xs font-semibold text-gray-500 px-3 py-1">Manage Photo</div>
                 <button
                   onClick={() => {
                     fileInputRef.current?.click();
@@ -370,38 +436,41 @@ const ProfilePage = () => {
             />
           </div>
 
-          <div className="mt-4"></div>
-
-          <h1 className="text-3xl font-display text-gray-800 mb-2">
+          <h1 className="text-3xl font-display text-gray-800 mb-2 mt-4">
             {userData?.displayName || 'User'}
           </h1>
 
-          <p className="text-gray-700 mb-4">{currentUser?.email}</p>
-
           {userData?.profile?.bio && (
-            <p className="text-gray-700 italic max-w-md mx-auto mb-4">
+            <p className="text-gray-700 italic max-w-md mx-auto mt-4">
               "{userData.profile.bio}"
             </p>
           )}
 
-          <div className="flex gap-2 justify-center flex-wrap">
-            <button
-              onClick={() => navigate('/edit-profile')}
-              className="btn btn-secondary"
-            >
-              ✏️ Edit Profile
-            </button>
-
+          {/* Social Sharing Buttons */}
+          <div className="mt-6 flex gap-3 justify-center flex-wrap">
             <button
               onClick={() => setShowShareModal(true)}
-              className="btn bg-white text-primary hover:bg-gray-50"
+              className="btn bg-white text-primary hover:bg-gray-50 flex items-center gap-2"
             >
-              📤 Share Profile
+              <span className="text-xl">📱</span>
+              Share Profile
+            </button>
+            <button
+              onClick={() => {
+                // Copy invite link
+                const inviteLink = `${window.location.origin}/login?invite=${currentUser.uid}`;
+                navigator.clipboard.writeText(inviteLink);
+                toast.success('Invite link copied to clipboard!');
+              }}
+              className="btn bg-white text-secondary hover:bg-gray-50 flex items-center gap-2"
+            >
+              <span className="text-xl">🔗</span>
+              Copy Invite Link
             </button>
           </div>
         </div>
 
-        {/* Profile Completion Bar */}
+        {/* Profile Completion Bar with Clickable Tasks */}
         <div className="card p-6 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-display text-text-primary">Profile Completion</h2>
@@ -418,16 +487,26 @@ const ProfilePage = () => {
             ></div>
           </div>
 
-          {/* Task List */}
+          {/* Task List with Navigation */}
           <div className="space-y-2">
             {profileCompletion.tasks.map((task, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="text-lg">
-                  {task.completed ? '✅' : '⭕'}
-                </span>
-                <span className={`text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-700 font-semibold'}`}>
-                  {task.name}
-                </span>
+              <div key={index} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-lg">
+                    {task.completed ? '✅' : '⭕'}
+                  </span>
+                  <span className={`text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-700 font-semibold'}`}>
+                    {task.name}
+                  </span>
+                </div>
+                {!task.completed && task.path && (
+                  <button
+                    onClick={() => navigate(task.path)}
+                    className="btn btn-sm btn-primary text-xs px-3 py-1"
+                  >
+                    Go →
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -454,16 +533,18 @@ const ProfilePage = () => {
                 <p className="text-sm text-gray-600 mb-2">
                   💡 {weeklySummary.tip}
                 </p>
-                <div className="flex gap-4 text-sm">
-                  <div>
-                    <span className="font-semibold text-primary">{userData?.stats?.totalCheckIns || 0}</span>
-                    <span className="text-gray-600"> check-ins</span>
+                {hasWeekOfActivity() && (
+                  <div className="flex gap-4 text-sm">
+                    <div>
+                      <span className="font-semibold text-primary">{userData?.stats?.totalCheckIns || 0}</span>
+                      <span className="text-gray-600"> check-ins</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-secondary">{bestiesCount}</span>
+                      <span className="text-gray-600"> besties</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-semibold text-secondary">{bestiesCount}</span>
-                    <span className="text-gray-600"> besties</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -488,8 +569,8 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Featured Badges */}
-        <div className="mb-6">
+        {/* Featured Badges with Sticky View All */}
+        <div className="mb-6 relative">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-display text-text-primary">Featured Badges</h2>
             <button
@@ -501,14 +582,24 @@ const ProfilePage = () => {
           </div>
 
           {featuredBadges.length > 0 ? (
-            <div className="grid grid-cols-3 gap-4">
-              {featuredBadges.map((badge) => (
-                <div key={badge.id} className="card p-4 text-center bg-gradient-to-br from-yellow-50 to-orange-50">
-                  <div className="text-4xl mb-2">{badge.icon}</div>
-                  <div className="font-semibold text-sm text-text-primary">{badge.name}</div>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-3 gap-4">
+                {featuredBadges.map((badge) => (
+                  <div key={badge.id} className="card p-4 text-center bg-gradient-to-br from-yellow-50 to-orange-50">
+                    <div className="text-4xl mb-2">{badge.icon}</div>
+                    <div className="font-semibold text-sm text-text-primary">{badge.name}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sticky View All Button */}
+              <button
+                onClick={() => navigate('/badges')}
+                className="fixed bottom-24 right-4 md:bottom-6 md:right-6 btn btn-primary shadow-lg text-sm px-4 py-2 z-20"
+              >
+                🏆 View All
+              </button>
+            </>
           ) : (
             <div className="card p-8 text-center">
               <div className="text-4xl mb-2">🏆</div>
@@ -525,41 +616,76 @@ const ProfilePage = () => {
           )}
         </div>
 
-        {/* Modern Stats Grid with CountUp */}
-        <div className="card p-6 mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">Your Impact</h2>
+        {/* Enhanced Your Impact - Modern Luxury Design */}
+        <div className="card p-8 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+          <h2 className="text-3xl font-display text-gradient mb-6 text-center">Your Impact ✨</h2>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Completed Check-ins */}
-            <div className="text-center p-5 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl">
-              <div className="text-4xl font-display text-pink-700 mb-1">
-                <CountUp end={userData?.stats?.completedCheckIns || 0} duration={1500} />
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Besties Count */}
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 text-6xl opacity-10">💜</div>
+              <div className="relative z-10">
+                <div className="text-4xl font-display bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                  <CountUp end={bestiesCount} duration={1500} />
+                </div>
+                <div className="text-sm font-semibold text-gray-600">Besties</div>
               </div>
-              <div className="text-sm text-gray-700 font-semibold">Completed Check-ins</div>
             </div>
 
-            {/* Total Besties */}
-            <div className="text-center p-5 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl">
-              <div className="text-4xl font-display text-purple-700 mb-1">
-                <CountUp end={bestiesCount} duration={1500} />
+            {/* Emergency Contact Count */}
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 text-6xl opacity-10">🛡️</div>
+              <div className="relative z-10">
+                <div className="text-4xl font-display bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+                  <CountUp end={emergencyContactCount} duration={1500} />
+                </div>
+                <div className="text-sm font-semibold text-gray-600">Times Selected</div>
+                <div className="text-xs text-gray-500">as Emergency Contact</div>
               </div>
-              <div className="text-sm text-gray-700 font-semibold">Total Besties</div>
+            </div>
+
+            {/* Days Active */}
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 text-6xl opacity-10">📅</div>
+              <div className="relative z-10">
+                <div className="text-4xl font-display bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                  <CountUp end={getDaysActive()} duration={1500} />
+                </div>
+                <div className="text-sm font-semibold text-gray-600">Days Active</div>
+              </div>
+            </div>
+
+            {/* Completed Check-ins */}
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 text-6xl opacity-10">✅</div>
+              <div className="relative z-10">
+                <div className="text-4xl font-display bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-2">
+                  <CountUp end={userData?.stats?.completedCheckIns || 0} duration={1500} />
+                </div>
+                <div className="text-sm font-semibold text-gray-600">Safe Check-ins</div>
+              </div>
             </div>
 
             {/* Badges Earned */}
-            <div className="text-center p-5 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl">
-              <div className="text-4xl font-display text-yellow-700 mb-1">
-                <CountUp end={badges.length} duration={1500} />
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 text-6xl opacity-10">🏆</div>
+              <div className="relative z-10">
+                <div className="text-4xl font-display bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">
+                  <CountUp end={badges.length} duration={1500} />
+                </div>
+                <div className="text-sm font-semibold text-gray-600">Badges Earned</div>
               </div>
-              <div className="text-sm text-gray-700 font-semibold">Badges Earned</div>
             </div>
 
-            {/* Total Check-ins */}
-            <div className="text-center p-5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
-              <div className="text-4xl font-display text-blue-700 mb-1">
-                <CountUp end={userData?.stats?.totalCheckIns || 0} duration={1500} />
+            {/* Login Streak */}
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 text-6xl opacity-10">🔥</div>
+              <div className="relative z-10">
+                <div className="text-4xl font-display bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+                  <CountUp end={loginStreak} duration={1500} />
+                </div>
+                <div className="text-sm font-semibold text-gray-600">Day Streak</div>
               </div>
-              <div className="text-sm text-gray-700 font-semibold">Total Check-ins</div>
             </div>
           </div>
         </div>
@@ -591,15 +717,8 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Settings Button */}
         <div className="space-y-3">
-          <button
-            onClick={() => navigate('/badges')}
-            className="w-full btn btn-primary"
-          >
-            🏆 View All Badges
-          </button>
-
           <button
             onClick={() => navigate('/settings')}
             className="w-full btn btn-secondary"
@@ -614,7 +733,7 @@ const ProfilePage = () => {
         <SocialShareCardsModal onClose={() => setShowShareModal(false)} />
       )}
 
-      {/* Badge Selector Modal */}
+      {/* Badge Selector Modal - Updated */}
       {showBadgeSelector && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
@@ -622,7 +741,8 @@ const ProfilePage = () => {
               <h2 className="text-2xl font-display text-text-primary">Choose Featured Badges</h2>
               <button
                 onClick={() => setShowBadgeSelector(false)}
-                className="text-3xl text-gray-400 hover:text-gray-600"
+                className="w-8 h-8 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center text-xl font-bold transition-colors"
+                title="Close"
               >
                 ×
               </button>
@@ -656,16 +776,16 @@ const ProfilePage = () => {
             ) : (
               <div className="text-center py-12">
                 <div className="text-5xl mb-3">🏆</div>
-                <p className="text-gray-600">No badges yet! Complete check-ins to earn them.</p>
+                <p className="text-gray-600 mb-4">No badges yet! Complete tasks to earn them.</p>
               </div>
             )}
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-center">
               <button
-                onClick={() => setShowBadgeSelector(false)}
+                onClick={() => navigate('/badges')}
                 className="btn btn-primary"
               >
-                Done
+                See How to Earn Badges →
               </button>
             </div>
           </div>
