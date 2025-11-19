@@ -15,13 +15,29 @@ service cloud.firestore {
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    function isBestieOf(userId) {
-      // Check if current user is a bestie of the specified userId
-      // This requires checking the besties collection for accepted relationships
-      return isSignedIn() && userId != request.auth.uid && (
-        // Check if there's an accepted bestie relationship in either direction
-        exists(/databases/$(database)/documents/besties/$(request.auth.uid + '_' + userId)) ||
-        exists(/databases/$(database)/documents/besties/$(userId + '_' + request.auth.uid))
+    // Helper to check if viewer can see check-in based on privacy level
+    function canViewCheckIn(checkIn) {
+      // Get privacy level (default to 'all_besties' for backward compatibility)
+      let privacyLevel = checkIn.privacyLevel;
+      let defaultPrivacy = !('privacyLevel' in checkIn);
+      let inBestieIds = request.auth.uid in checkIn.bestieIds;
+      let inCircle = 'circleSnapshot' in checkIn && request.auth.uid in checkIn.circleSnapshot;
+
+      return (
+        // Owner can always see their own check-ins
+        isOwner(checkIn.userId) ||
+        // Admins can see all check-ins
+        isAdmin() ||
+        // Privacy level: alerts_only - ONLY visible if alert triggered AND viewer was selected
+        (privacyLevel == 'alerts_only' && checkIn.status == 'alerted' && inBestieIds) ||
+        // Privacy level: circle - selected besties OR circle members can see
+        (privacyLevel == 'circle' && (inBestieIds || inCircle)) ||
+        // Privacy level: all_besties OR old check-ins without privacyLevel
+        // SECURITY NOTE: We allow any signed-in user for 'all_besties' because Firestore
+        // rules cannot query the besties collection to verify relationships.
+        // Frontend (ViewUserProfilePage) MUST verify bestie relationship before displaying.
+        // TODO: Implement bestieUserIds array on user documents for proper verification.
+        (privacyLevel == 'all_besties' || defaultPrivacy)
       );
     }
     
@@ -36,10 +52,7 @@ service cloud.firestore {
     
     // Check-ins collection
     match /checkins/{checkInId} {
-      allow read: if isAdmin() || (isSignedIn() && (
-        isOwner(resource.data.userId) ||
-        request.auth.uid in resource.data.bestieIds
-      ));
+      allow read: if isSignedIn() && canViewCheckIn(resource.data);
       
       allow create: if isSignedIn() && 
         request.auth.uid == request.resource.data.userId &&

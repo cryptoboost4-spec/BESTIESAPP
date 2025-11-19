@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage } from '../services/firebase';
-import { collection, query, where, getDocs, addDoc, getDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, getDoc, doc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
@@ -68,9 +68,109 @@ const CreateCheckInPage = () => {
 
   // Load besties when currentUser is available
   useEffect(() => {
-    if (currentUser && !authLoading) {
-      loadBesties();
-    }
+    if (!currentUser || authLoading) return;
+
+    console.group('🔍 Setting up Bestie Circle Listener');
+
+    // Set up real-time listener for user's featuredCircle
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
+      try {
+        if (!userDoc.exists()) {
+          console.error('❌ User document does not exist');
+          console.groupEnd();
+          setBesties([]);
+          return;
+        }
+
+        const userData = userDoc.data();
+        const featuredIds = userData.featuredCircle || [];
+
+        console.log('🔄 Real-time update - featuredCircle:', featuredIds);
+        console.log('featuredCircle length:', featuredIds.length);
+
+        if (featuredIds.length === 0) {
+          console.warn('⚠️ featuredCircle is empty - no besties to load');
+          setBesties([]);
+          return;
+        }
+
+        // Get all accepted besties to find the ones in the circle
+        console.log('📡 Querying besties collection...');
+        const [requesterQuery, recipientQuery] = await Promise.all([
+          getDocs(
+            query(
+              collection(db, 'besties'),
+              where('requesterId', '==', currentUser.uid),
+              where('status', '==', 'accepted')
+            )
+          ),
+          getDocs(
+            query(
+              collection(db, 'besties'),
+              where('recipientId', '==', currentUser.uid),
+              where('status', '==', 'accepted')
+            )
+          ),
+        ]);
+
+        console.log('Requester query results:', requesterQuery.size);
+        console.log('Recipient query results:', recipientQuery.size);
+
+        const allBestiesList = [];
+
+        requesterQuery.forEach((doc) => {
+          const data = doc.data();
+          allBestiesList.push({
+            id: data.recipientId,
+            name: data.recipientName || 'Bestie',
+            phone: data.recipientPhone,
+          });
+        });
+
+        recipientQuery.forEach((doc) => {
+          const data = doc.data();
+          allBestiesList.push({
+            id: data.requesterId,
+            name: data.requesterName || 'Bestie',
+            phone: data.requesterPhone,
+          });
+        });
+
+        console.log('All besties found:', allBestiesList);
+        console.log('Filtering for featuredCircle IDs:', featuredIds);
+
+        // Filter to only show besties in the featured circle
+        const circleBesties = allBestiesList.filter(b => {
+          const inCircle = featuredIds.includes(b.id);
+          console.log(`Bestie ${b.name} (${b.id}): ${inCircle ? 'IN' : 'NOT IN'} circle`);
+          return inCircle;
+        });
+
+        console.log('✅ Circle besties after filtering:', circleBesties);
+
+        setBesties(circleBesties);
+
+        // Auto-select all besties in circle when they load (only if not loading from template)
+        if (!location.state?.template && circleBesties.length > 0) {
+          setSelectedBesties(circleBesties.map(b => b.id));
+        }
+      } catch (error) {
+        console.error('Error loading besties:', error);
+        toast.error('Failed to load besties');
+      }
+    }, (error) => {
+      console.error('Error in featuredCircle listener:', error);
+      toast.error('Failed to load besties');
+    });
+
+    console.groupEnd();
+
+    // Cleanup listener on unmount
+    return () => {
+      console.log('🔌 Cleaning up featuredCircle listener');
+      unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, authLoading]);
 
@@ -220,105 +320,6 @@ const CreateCheckInPage = () => {
       console.error('Error updating map with GPS:', error);
     }
   }, [gpsCoords]);
-
-  const loadBesties = async () => {
-    if (!currentUser) return;
-
-    try {
-      console.group('🔍 Loading Bestie Circle');
-
-      // Get user's bestie circle (featuredCircle)
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        console.error('❌ User document does not exist');
-        console.groupEnd();
-        setBesties([]);
-        return;
-      }
-
-      const userData = userDoc.data();
-      const featuredIds = userData.featuredCircle || [];
-
-      console.log('User document data:', userData);
-      console.log('featuredCircle field:', featuredIds);
-      console.log('featuredCircle length:', featuredIds.length);
-
-      if (featuredIds.length === 0) {
-        console.warn('⚠️ featuredCircle is empty - no besties to load');
-        console.groupEnd();
-        setBesties([]);
-        return;
-      }
-
-      // Get all accepted besties to find the ones in the circle
-      console.log('📡 Querying besties collection...');
-      const [requesterQuery, recipientQuery] = await Promise.all([
-        getDocs(
-          query(
-            collection(db, 'besties'),
-            where('requesterId', '==', currentUser.uid),
-            where('status', '==', 'accepted')
-          )
-        ),
-        getDocs(
-          query(
-            collection(db, 'besties'),
-            where('recipientId', '==', currentUser.uid),
-            where('status', '==', 'accepted')
-          )
-        ),
-      ]);
-
-      console.log('Requester query results:', requesterQuery.size);
-      console.log('Recipient query results:', recipientQuery.size);
-
-      const allBestiesList = [];
-
-      requesterQuery.forEach((doc) => {
-        const data = doc.data();
-        allBestiesList.push({
-          id: data.recipientId,
-          name: data.recipientName || 'Bestie',
-          phone: data.recipientPhone,
-        });
-      });
-
-      recipientQuery.forEach((doc) => {
-        const data = doc.data();
-        allBestiesList.push({
-          id: data.requesterId,
-          name: data.requesterName || 'Bestie',
-          phone: data.requesterPhone,
-        });
-      });
-
-      console.log('All besties found:', allBestiesList);
-      console.log('Filtering for featuredCircle IDs:', featuredIds);
-
-      // Filter to only show besties in the featured circle
-      const circleBesties = allBestiesList.filter(b => {
-        const inCircle = featuredIds.includes(b.id);
-        console.log(`Bestie ${b.name} (${b.id}): ${inCircle ? 'IN' : 'NOT IN'} circle`);
-        return inCircle;
-      });
-
-      console.log('✅ Circle besties after filtering:', circleBesties);
-      console.groupEnd();
-
-      setBesties(circleBesties);
-
-      // Auto-select all besties in circle when they load (only if not loading from template)
-      if (!location.state?.template && circleBesties.length > 0) {
-        setSelectedBesties(circleBesties.map(b => b.id));
-      }
-    } catch (error) {
-      console.error('Error loading besties:', error);
-      console.groupEnd();
-      toast.error('Failed to load besties');
-    }
-  };
 
   const handleGetLocation = () => {
     if (!isEnabled('gpsLocation')) {
@@ -501,6 +502,10 @@ const CreateCheckInPage = () => {
         }
       }
 
+      // Get current privacy setting and circle snapshot
+      const privacyLevel = userData?.privacySettings?.checkInVisibility || 'all_besties';
+      const circleSnapshot = userData?.featuredCircle || [];
+
       const checkInData = {
         userId: currentUser.uid,
         location: locationInput,
@@ -511,6 +516,8 @@ const CreateCheckInPage = () => {
         meetingWith: meetingWith || null,
         photoURLs: photoURLs,
         status: 'active',
+        privacyLevel: privacyLevel,
+        circleSnapshot: circleSnapshot,
         createdAt: Timestamp.now(),
         lastUpdate: Timestamp.now(),
       };
