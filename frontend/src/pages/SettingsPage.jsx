@@ -576,13 +576,21 @@ const SettingsPage = () => {
               <li>✓ Priority delivery</li>
               <li>✓ No weekly limits</li>
             </ul>
-            <button
-              onClick={handleSMSSubscription}
-              disabled={loading}
-              className="btn btn-primary"
-            >
-              Subscribe for $1/month
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSMSSubscription}
+                disabled={loading}
+                className="btn btn-primary flex-1"
+              >
+                Subscribe for $1/month
+              </button>
+              <button
+                onClick={() => navigate('/about')}
+                className="btn btn-secondary"
+              >
+                Learn More
+              </button>
+            </div>
           </div>
         ) : (
           <div className="card p-6 mb-6 bg-green-50 border-2 border-green-300">
@@ -615,7 +623,91 @@ const SettingsPage = () => {
           </div>
         )}
 
-        {/* Data Retention */}
+        {/* Privacy Settings */}
+        <div className="card p-6 mb-6">
+          <h2 className="text-xl font-display text-text-primary mb-2">Privacy</h2>
+          <p className="text-sm text-text-secondary mb-4">Control what your besties can see on your profile</p>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold text-text-primary">Show Stats to Besties</div>
+                <div className="text-sm text-text-secondary">
+                  {userData?.privacySettings?.showStatsToBesties !== false
+                    ? 'Besties can see your stats'
+                    : 'Stats are private'}
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const newValue = !(userData?.privacySettings?.showStatsToBesties !== false);
+                    await updateDoc(doc(db, 'users', currentUser.uid), {
+                      'privacySettings.showStatsToBesties': newValue,
+                    });
+                    toast.success(newValue ? 'Stats now visible to besties' : 'Stats are now private');
+                  } catch (error) {
+                    console.error('Error updating privacy:', error);
+                    toast.error('Failed to update privacy setting');
+                  }
+                }}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  userData?.privacySettings?.showStatsToBesties !== false
+                    ? 'bg-primary'
+                    : 'bg-gray-300'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                    userData?.privacySettings?.showStatsToBesties !== false
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold text-text-primary">Show Check-ins to Besties</div>
+                <div className="text-sm text-text-secondary">
+                  {userData?.privacySettings?.showCheckInsToBesties !== false
+                    ? 'Besties can see your last 7 days of check-ins'
+                    : 'Check-ins are private'}
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const newValue = !(userData?.privacySettings?.showCheckInsToBesties !== false);
+                    await updateDoc(doc(db, 'users', currentUser.uid), {
+                      'privacySettings.showCheckInsToBesties': newValue,
+                    });
+                    toast.success(newValue ? 'Check-ins now visible to besties' : 'Check-ins are now private');
+                  } catch (error) {
+                    console.error('Error updating privacy:', error);
+                    toast.error('Failed to update privacy setting');
+                  }
+                }}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  userData?.privacySettings?.showCheckInsToBesties !== false
+                    ? 'bg-primary'
+                    : 'bg-gray-300'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                    userData?.privacySettings?.showCheckInsToBesties !== false
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Preferences */}
         <div className="card p-6 mb-6">
           <h2 className="text-xl font-display text-text-primary mb-4">Preferences</h2>
 
@@ -679,7 +771,7 @@ const SettingsPage = () => {
             <p className="text-text-secondary mb-4">
               Help us keep Besties free for everyone
             </p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 mb-3">
               <button
                 onClick={() => handleDonation(1)}
                 disabled={loading}
@@ -702,6 +794,12 @@ const SettingsPage = () => {
                 $10/mo
               </button>
             </div>
+            <button
+              onClick={() => navigate('/about')}
+              className="w-full btn bg-white border-2 border-primary text-primary hover:bg-primary/5"
+            >
+              Learn More About Besties →
+            </button>
           </div>
         )}
 

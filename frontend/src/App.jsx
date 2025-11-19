@@ -27,6 +27,7 @@ import ErrorDashboard from './pages/ErrorDashboard';
 import AlertViewPage from './pages/AlertViewPage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import SubscriptionCancelPage from './pages/SubscriptionCancelPage';
+import AboutBestiesPage from './pages/AboutBestiesPage';
 
 // Context
 import { AuthProvider } from './contexts/AuthContext';
@@ -187,6 +188,10 @@ function App() {
             <Route
               path="/social-feed"
               element={user ? <SocialFeedPage /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/about"
+              element={user ? <AboutBestiesPage /> : <Navigate to="/login" />}
             />
 
             {/* Admin-only routes */}
