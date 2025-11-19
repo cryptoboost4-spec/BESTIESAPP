@@ -130,7 +130,7 @@ const ViewUserProfilePage = () => {
             <div className="text-6xl mb-4">🔒</div>
             <h2 className="text-2xl font-display text-text-primary mb-2">{error}</h2>
             <p className="text-text-secondary mb-6">
-              You can only view profiles of people in your Bestie Circle
+              You can only view profiles of your accepted besties
             </p>
             <button onClick={() => navigate('/besties')} className="btn btn-primary">
               Manage Besties

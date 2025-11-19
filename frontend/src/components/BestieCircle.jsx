@@ -68,12 +68,20 @@ const BestieCircle = ({ userId, onAddClick }) => {
         .filter(Boolean);
 
       // If less than what user has, auto-fill with first few besties
-      if (featured.length < bestiesList.length && featured.length < 5) {
+      const needsAutoFill = featured.length < bestiesList.length && featured.length < 5;
+      if (needsAutoFill) {
         const remaining = bestiesList.filter(b => !featuredIds.includes(b.id));
         featured.push(...remaining.slice(0, 5 - featured.length));
       }
 
-      setCircleBesties(featured.slice(0, 5));
+      const finalCircle = featured.slice(0, 5);
+      setCircleBesties(finalCircle);
+
+      // CRITICAL: Save auto-filled circle to Firestore
+      if (needsAutoFill && finalCircle.length > 0) {
+        await saveFeaturedCircle(finalCircle);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading besties:', error);
@@ -94,6 +102,13 @@ const BestieCircle = ({ userId, onAddClick }) => {
   };
 
   const handleRemoveFromCircle = async (index) => {
+    // Only allow removal if circle is full (5 members)
+    if (circleBesties.length < 5) {
+      toast.error('Circle must be full to remove members. Use Replace instead.');
+      setSelectedSlot(null);
+      return;
+    }
+
     const newCircle = circleBesties.filter((_, i) => i !== index);
     setCircleBesties(newCircle);
     await saveFeaturedCircle(newCircle);
