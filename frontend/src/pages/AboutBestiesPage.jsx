@@ -61,29 +61,381 @@ const AboutBestiesPage = () => {
         </div>
 
         {/* SVG STYLE TEST GALLERY - Testing different illustration styles */}
-        <div className="card p-8 mb-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-4 border-yellow-300">
+        <div className="card p-8 mb-6 bg-gradient-to-br from-pink-50 to-purple-50 border-4 border-pink-300">
           <h2 className="text-2xl font-display text-text-primary mb-2 text-center">
-            🎨 SVG Style Gallery - Pick Your Vibe! 🎨
+            ✨ SVG Style Gallery - Pick Your Perfect Vibe! ✨
           </h2>
           <p className="text-center text-sm text-gray-600 mb-6">
-            Each style is bigger, more detailed, and tells a story. Which feels right for Besties?
+            10 girly styles that match Besties' vibe. Which one captures the feeling you want?
           </p>
 
-          {/* Style 1: Kawaii Cute Style */}
+          {/* Style 1: Soft Pastel Clouds */}
           <div className="mb-8 p-6 bg-white rounded-xl border-2 border-pink-200">
-            <h3 className="font-semibold text-lg text-pink-900 mb-3">Style 1: Kawaii Cute 💕</h3>
-            <p className="text-xs text-gray-600 mb-4">Big eyes, sparkles, super girly, tells emotional stories</p>
+            <h3 className="font-semibold text-lg text-pink-900 mb-3">Style 1: Soft Pastel Clouds</h3>
+            <p className="text-xs text-gray-600 mb-4">Dreamy gradients, soft edges, gentle floating elements</p>
             <div className="flex items-center justify-center gap-8">
-              {/* Kawaii Heart with Face */}
+              {/* Soft cloud heart */}
               <div className="flex flex-col items-center">
                 <svg viewBox="0 0 120 120" className="w-32 h-32">
                   <defs>
-                    <linearGradient id="kawaiiHeartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#ff6b9d" />
-                      <stop offset="50%" stopColor="#ffa6c9" />
-                      <stop offset="100%" stopColor="#ffc2e0" />
+                    <linearGradient id="cloudHeart1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fce7f3" />
+                      <stop offset="50%" stopColor="#fbcfe8" />
+                      <stop offset="100%" stopColor="#f9a8d4" />
                     </linearGradient>
-                    <filter id="softGlow">
+                    <filter id="softBlur1">
+                      <feGaussianBlur stdDeviation="0.5" />
+                    </filter>
+                  </defs>
+
+                  {/* Soft heart shape */}
+                  <path d="M60,85 C60,85 35,70 35,50 C35,40 42,33 50,33 C55,33 58,36 60,42 C62,36 65,33 70,33 C78,33 85,40 85,50 C85,70 60,85 60,85 Z"
+                        fill="url(#cloudHeart1)"
+                        filter="url(#softBlur1)"
+                        opacity="0.9"
+                        className="animate-pulse"
+                        style={{animationDuration: '3s'}} />
+
+                  {/* Inner glow */}
+                  <path d="M60,78 C60,78 42,66 42,52 C42,44 47,39 53,39 C56,39 58,41 60,45 C62,41 64,39 67,39 C73,39 78,44 78,52 C78,66 60,78 60,78 Z"
+                        fill="#fff"
+                        opacity="0.4" />
+
+                  {/* Soft sparkles */}
+                  <g className="animate-pulse" style={{animationDuration: '2s'}}>
+                    <circle cx="45" cy="35" r="3" fill="#fbbf24" opacity="0.6" />
+                    <circle cx="75" cy="38" r="2" fill="#fbbf24" opacity="0.6" />
+                    <circle cx="50" cy="75" r="2.5" fill="#ec4899" opacity="0.5" />
+                  </g>
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Gentle Love</p>
+              </div>
+
+              {/* Soft protective bubble */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <radialGradient id="bubble1">
+                      <stop offset="0%" stopColor="#ddd6fe" />
+                      <stop offset="70%" stopColor="#c4b5fd" />
+                      <stop offset="100%" stopColor="#a78bfa" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Protective bubble */}
+                  <circle cx="60" cy="60" r="35"
+                          fill="url(#bubble1)"
+                          opacity="0.3"
+                          className="animate-pulse"
+                          style={{animationDuration: '4s'}} />
+
+                  {/* Person inside - simple and contained */}
+                  <g opacity="0.8">
+                    <circle cx="60" cy="55" r="10" fill="#f9a8d4" />
+                    <ellipse cx="60" cy="72" rx="12" ry="15" fill="#f9a8d4" />
+                  </g>
+
+                  {/* Shimmer effect */}
+                  <ellipse cx="48" cy="45" rx="8" ry="12"
+                           fill="#fff"
+                           opacity="0.4"
+                           transform="rotate(-30 48 45)" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Safe Space</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 2: Delicate Floral Lines */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-rose-200">
+            <h3 className="font-semibold text-lg text-rose-900 mb-3">Style 2: Delicate Floral Lines</h3>
+            <p className="text-xs text-gray-600 mb-4">Elegant line work, botanical touches, feminine details</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Floral frame with heart */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="floralPink" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fda4af" />
+                      <stop offset="100%" stopColor="#fb7185" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Delicate flower petals in corners */}
+                  <g className="animate-pulse" style={{animationDuration: '3s'}}>
+                    <path d="M25,25 Q20,20 25,15 Q30,20 25,25" fill="#fda4af" opacity="0.4" />
+                    <path d="M95,25 Q100,20 95,15 Q90,20 95,25" fill="#fda4af" opacity="0.4" />
+                    <path d="M25,95 Q20,100 25,105 Q30,100 25,95" fill="#fda4af" opacity="0.4" />
+                    <path d="M95,95 Q100,100 95,105 Q90,100 95,95" fill="#fda4af" opacity="0.4" />
+                  </g>
+
+                  {/* Center heart - line art */}
+                  <path d="M60,75 C60,75 42,62 42,48 C42,40 46,35 51,35 C55,35 58,38 60,43 C62,38 65,35 69,35 C74,35 78,40 78,48 C78,62 60,75 60,75 Z"
+                        fill="none"
+                        stroke="url(#floralPink)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="animate-pulse"
+                        style={{animationDuration: '2s'}} />
+
+                  {/* Inner heart fill - subtle */}
+                  <path d="M60,70 C60,70 46,60 46,50 C46,44 49,40 53,40 C56,40 58,42 60,46 C62,42 64,40 67,40 C71,40 74,44 74,50 C74,60 60,70 60,70 Z"
+                        fill="#fce7f3"
+                        opacity="0.5" />
+
+                  {/* Tiny leaf accents */}
+                  <g stroke="#86efac" strokeWidth="1" fill="none">
+                    <path d="M35,60 Q32,58 30,60" opacity="0.6" />
+                    <path d="M85,60 Q88,58 90,60" opacity="0.6" />
+                  </g>
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Blooming Care</p>
+              </div>
+
+              {/* Connected flowers */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <radialGradient id="flower1">
+                      <stop offset="0%" stopColor="#fde047" />
+                      <stop offset="100%" stopColor="#fbbf24" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Connecting vine */}
+                  <path d="M30,60 Q45,50 60,55 Q75,60 90,55"
+                        fill="none"
+                        stroke="#86efac"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.6"
+                        className="animate-pulse"
+                        style={{animationDuration: '3s'}} />
+
+                  {/* Three flowers */}
+                  <g className="animate-pulse" style={{animationDuration: '2s'}}>
+                    <circle cx="30" cy="60" r="8" fill="#f9a8d4" opacity="0.7" />
+                    <circle cx="30" cy="60" r="4" fill="url(#flower1)" />
+                  </g>
+
+                  <g className="animate-pulse" style={{animationDuration: '2s', animationDelay: '0.3s'}}>
+                    <circle cx="60" cy="55" r="10" fill="#c4b5fd" opacity="0.7" />
+                    <circle cx="60" cy="55" r="5" fill="url(#flower1)" />
+                  </g>
+
+                  <g className="animate-pulse" style={{animationDuration: '2s', animationDelay: '0.6s'}}>
+                    <circle cx="90" cy="55" r="8" fill="#fda4af" opacity="0.7" />
+                    <circle cx="90" cy="55" r="4" fill="url(#flower1)" />
+                  </g>
+
+                  {/* Small leaves */}
+                  <ellipse cx="45" cy="52" rx="4" ry="6" fill="#d1fae5" opacity="0.6" transform="rotate(30 45 52)" />
+                  <ellipse cx="75" cy="57" rx="4" ry="6" fill="#d1fae5" opacity="0.6" transform="rotate(-30 75 57)" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Growing Together</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 3: Watercolor Dream */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-purple-200">
+            <h3 className="font-semibold text-lg text-purple-900 mb-3">Style 3: Watercolor Dream</h3>
+            <p className="text-xs text-gray-600 mb-4">Soft washes, blended colors, artistic and organic</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Watercolor heart splash */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <radialGradient id="watercolor1">
+                      <stop offset="0%" stopColor="#f9a8d4" opacity="0.8" />
+                      <stop offset="70%" stopColor="#f472b6" opacity="0.4" />
+                      <stop offset="100%" stopColor="#ec4899" opacity="0.1" />
+                    </radialGradient>
+                    <radialGradient id="watercolor2">
+                      <stop offset="0%" stopColor="#c4b5fd" opacity="0.6" />
+                      <stop offset="100%" stopColor="#a78bfa" opacity="0.1" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Background wash */}
+                  <circle cx="60" cy="60" r="40" fill="url(#watercolor2)" />
+
+                  {/* Heart shape with watercolor effect */}
+                  <path d="M60,80 C60,80 38,68 38,50 C38,42 43,37 49,37 C54,37 57,40 60,46 C63,40 66,37 71,37 C77,37 82,42 82,50 C82,68 60,80 60,80 Z"
+                        fill="url(#watercolor1)"
+                        className="animate-pulse"
+                        style={{animationDuration: '4s'}} />
+
+                  {/* Overlapping wash layers */}
+                  <ellipse cx="55" cy="52" rx="15" ry="12" fill="#fda4af" opacity="0.3" />
+                  <ellipse cx="65" cy="55" rx="12" ry="15" fill="#f9a8d4" opacity="0.2" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Painted Love</p>
+              </div>
+
+              {/* Watercolor figures holding hands */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <radialGradient id="person1wash">
+                      <stop offset="0%" stopColor="#fbbf24" opacity="0.7" />
+                      <stop offset="100%" stopColor="#fbbf24" opacity="0.1" />
+                    </radialGradient>
+                    <radialGradient id="person2wash">
+                      <stop offset="0%" stopColor="#c4b5fd" opacity="0.7" />
+                      <stop offset="100%" stopColor="#c4b5fd" opacity="0.1" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Two figures - watercolor style */}
+                  <g className="animate-pulse" style={{animationDuration: '3s'}}>
+                    <circle cx="40" cy="50" r="20" fill="url(#person1wash)" />
+                    <circle cx="40" cy="48" r="10" fill="#fbbf24" opacity="0.6" />
+                    <ellipse cx="40" cy="65" rx="12" ry="18" fill="#fbbf24" opacity="0.5" />
+                  </g>
+
+                  <g className="animate-pulse" style={{animationDuration: '3s', animationDelay: '0.5s'}}>
+                    <circle cx="80" cy="50" r="20" fill="url(#person2wash)" />
+                    <circle cx="80" cy="48" r="10" fill="#c4b5fd" opacity="0.6" />
+                    <ellipse cx="80" cy="65" rx="12" ry="18" fill="#c4b5fd" opacity="0.5" />
+                  </g>
+
+                  {/* Connection between them */}
+                  <ellipse cx="60" cy="65" rx="25" ry="8" fill="#f9a8d4" opacity="0.3" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Together Always</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 4: Minimal with Sparkle */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-fuchsia-200">
+            <h3 className="font-semibold text-lg text-fuchsia-900 mb-3">Style 4: Minimal with Sparkle</h3>
+            <p className="text-xs text-gray-600 mb-4">Clean lines, strategic color pops, modern elegance</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Minimal shield with accent */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="minimalAccent1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f9a8d4" />
+                      <stop offset="100%" stopColor="#ec4899" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Simple shield outline */}
+                  <path d="M60,25 L85,35 L85,60 C85,75 72,88 60,95 C48,88 35,75 35,60 L35,35 Z"
+                        fill="none"
+                        stroke="#e5e7eb"
+                        strokeWidth="2" />
+
+                  {/* Inner shield with gradient */}
+                  <path d="M60,32 L78,40 L78,58 C78,70 69,80 60,86 C51,80 42,70 42,58 L42,40 Z"
+                        fill="url(#minimalAccent1)"
+                        opacity="0.2"
+                        className="animate-pulse"
+                        style={{animationDuration: '3s'}} />
+
+                  {/* Minimal checkmark */}
+                  <path d="M50,58 L56,65 L70,48"
+                        fill="none"
+                        stroke="url(#minimalAccent1)"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round" />
+
+                  {/* Small sparkle accent */}
+                  <circle cx="75" cy="45" r="2" fill="#f9a8d4" className="animate-pulse" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Simply Safe</p>
+              </div>
+
+              {/* Minimal connection icon */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="minimalLine" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#c4b5fd" />
+                      <stop offset="50%" stopColor="#f9a8d4" />
+                      <stop offset="100%" stopColor="#fda4af" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Three connected circles */}
+                  <line x1="40" y1="45" x2="60" y2="60"
+                        stroke="url(#minimalLine)"
+                        strokeWidth="2"
+                        className="animate-pulse"
+                        style={{animationDuration: '2s'}} />
+                  <line x1="60" y1="60" x2="80" y2="45"
+                        stroke="url(#minimalLine)"
+                        strokeWidth="2"
+                        className="animate-pulse"
+                        style={{animationDuration: '2s'}} />
+
+                  <circle cx="40" cy="45" r="8" fill="#fff" stroke="#c4b5fd" strokeWidth="2" />
+                  <circle cx="40" cy="45" r="4" fill="#c4b5fd" />
+
+                  <circle cx="60" cy="60" r="10" fill="#fff" stroke="#f9a8d4" strokeWidth="2" />
+                  <circle cx="60" cy="60" r="5" fill="#f9a8d4" />
+
+                  <circle cx="80" cy="45" r="8" fill="#fff" stroke="#fda4af" strokeWidth="2" />
+                  <circle cx="80" cy="45" r="4" fill="#fda4af" />
+
+                  {/* Small heart accent */}
+                  <path d="M60,80 C60,80 52,75 52,70 C52,67 54,65 56,65 C57,65 58,66 60,68 C62,66 63,65 64,65 C66,65 68,67 68,70 C68,75 60,80 60,80 Z"
+                        fill="#ec4899"
+                        opacity="0.6" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Connected Dots</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 5: Soft Neon Glow */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-pink-200">
+            <h3 className="font-semibold text-lg text-pink-900 mb-3">Style 5: Soft Neon Glow</h3>
+            <p className="text-xs text-gray-600 mb-4">Gentle glows, luminous edges, dreamy atmosphere</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Glowing heart */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <filter id="softGlow2">
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                    <linearGradient id="neonPink" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f9a8d4" />
+                      <stop offset="100%" stopColor="#ec4899" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Glowing heart */}
+                  <path d="M60,82 C60,82 36,68 36,48 C36,38 42,32 50,32 C55,32 58,35 60,42 C62,35 65,32 70,32 C78,32 84,38 84,48 C84,68 60,82 60,82 Z"
+                        fill="url(#neonPink)"
+                        filter="url(#softGlow2)"
+                        opacity="0.8"
+                        className="animate-pulse"
+                        style={{animationDuration: '2.5s'}} />
+
+                  {/* Inner glow */}
+                  <path d="M60,75 C60,75 43,64 43,50 C43,42 48,37 54,37 C58,37 60,40 60,45 C60,40 62,37 66,37 C72,37 77,42 77,50 C77,64 60,75 60,75 Z"
+                        fill="#fff"
+                        opacity="0.4" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Glowing Care</p>
+              </div>
+
+              {/* Glowing stars circle */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <filter id="starGlow">
                       <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
                       <feMerge>
                         <feMergeNode in="coloredBlur"/>
@@ -92,649 +444,412 @@ const AboutBestiesPage = () => {
                     </filter>
                   </defs>
 
-                  {/* Main heart body */}
-                  <path d="M60,100 C60,100 25,75 25,50 C25,35 35,25 45,25 C52,25 57,28 60,35 C63,28 68,25 75,25 C85,25 95,35 95,50 C95,75 60,100 60,100 Z"
-                        fill="url(#kawaiiHeartGrad)"
-                        stroke="#ff1493"
-                        strokeWidth="2"
-                        filter="url(#softGlow)"
-                        className="animate-pulse" />
+                  {/* Center circle with glow */}
+                  <circle cx="60" cy="60" r="18"
+                          fill="#c4b5fd"
+                          filter="url(#starGlow)"
+                          opacity="0.6"
+                          className="animate-pulse"
+                          style={{animationDuration: '3s'}} />
 
-                  {/* Cheek blushes */}
-                  <ellipse cx="40" cy="55" rx="8" ry="6" fill="#ff69b4" opacity="0.4" className="animate-pulse" />
-                  <ellipse cx="80" cy="55" rx="8" ry="6" fill="#ff69b4" opacity="0.4" className="animate-pulse" />
-
-                  {/* Eyes */}
-                  <g className="animate-bounce" style={{animationDuration: '2s'}}>
-                    <ellipse cx="45" cy="48" rx="4" ry="6" fill="#000" />
-                    <ellipse cx="75" cy="48" rx="4" ry="6" fill="#000" />
-                    <circle cx="46" cy="46" r="1.5" fill="#fff" />
-                    <circle cx="76" cy="46" r="1.5" fill="#fff" />
+                  {/* Orbiting sparkles */}
+                  <g className="animate-pulse" style={{animationDuration: '2s'}}>
+                    <circle cx="60" cy="35" r="3" fill="#f9a8d4" filter="url(#starGlow)" />
+                    <circle cx="85" cy="60" r="3" fill="#fda4af" filter="url(#starGlow)" />
+                    <circle cx="60" cy="85" r="3" fill="#fbbf24" filter="url(#starGlow)" />
+                    <circle cx="35" cy="60" r="3" fill="#c4b5fd" filter="url(#starGlow)" />
                   </g>
 
-                  {/* Happy mouth */}
-                  <path d="M50,62 Q60,70 70,62" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-
-                  {/* Sparkles around it */}
-                  <g className="animate-pulse" style={{animationDuration: '1.5s'}}>
-                    <path d="M20,30 L22,35 L27,37 L22,39 L20,44 L18,39 L13,37 L18,35 Z" fill="#ffd700" />
-                    <path d="M100,35 L102,40 L107,42 L102,44 L100,49 L98,44 L93,42 L98,40 Z" fill="#ffd700" />
-                    <path d="M105,70 L107,75 L112,77 L107,79 L105,84 L103,79 L98,77 L103,75 Z" fill="#ff69b4" />
-                    <path d="M15,65 L17,70 L22,72 L17,74 L15,79 L13,74 L8,72 L13,70 Z" fill="#ff69b4" />
-                  </g>
-
-                  {/* Little hearts floating */}
-                  <g className="animate-bounce" style={{animationDuration: '3s'}}>
-                    <path d="M30,20 C30,20 22,15 22,10 C22,7 24,5 26,5 C27.5,5 28.5,6 30,8 C31.5,6 32.5,5 34,5 C36,5 38,7 38,10 C38,15 30,20 30,20 Z"
-                          fill="#ff69b4" opacity="0.6" />
-                    <path d="M90,20 C90,20 82,15 82,10 C82,7 84,5 86,5 C87.5,5 88.5,6 90,8 C91.5,6 92.5,5 94,5 C96,5 98,7 98,10 C98,15 90,20 90,20 Z"
-                          fill="#ff69b4" opacity="0.6" />
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Happy & Protected</p>
-              </div>
-
-              {/* Kawaii Safety Shield Character */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="kawaiiShieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#a78bfa" />
-                      <stop offset="50%" stopColor="#c4b5fd" />
-                      <stop offset="100%" stopColor="#ddd6fe" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Shield body */}
-                  <path d="M60,15 L90,25 L90,55 C90,75 75,95 60,105 C45,95 30,75 30,55 L30,25 Z"
-                        fill="url(#kawaiiShieldGrad)"
-                        stroke="#7c3aed"
-                        strokeWidth="3"
-                        filter="url(#softGlow)"
-                        className="animate-pulse" />
-
-                  {/* Face */}
-                  <circle cx="50" cy="50" rx="3" ry="5" fill="#000" />
-                  <circle cx="70" cy="50" rx="3" ry="5" fill="#000" />
-                  <circle cx="51" cy="48" r="1" fill="#fff" />
-                  <circle cx="71" cy="48" r="1" fill="#fff" />
-
-                  {/* Smile */}
-                  <path d="M52,62 Q60,68 68,62" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-
-                  {/* Cheeks */}
-                  <circle cx="42" cy="58" r="6" fill="#f472b6" opacity="0.3" />
-                  <circle cx="78" cy="58" r="6" fill="#f472b6" opacity="0.3" />
-
-                  {/* Arms holding/protecting */}
-                  <g className="animate-bounce" style={{animationDuration: '2.5s'}}>
-                    <path d="M25,45 Q20,50 25,55" fill="none" stroke="#7c3aed" strokeWidth="4" strokeLinecap="round" />
-                    <path d="M95,45 Q100,50 95,55" fill="none" stroke="#7c3aed" strokeWidth="4" strokeLinecap="round" />
-                  </g>
-
-                  {/* Sparkle effects */}
-                  <g className="animate-pulse">
-                    <circle cx="60" cy="30" r="2" fill="#ffd700" />
-                    <circle cx="45" cy="35" r="1.5" fill="#ffd700" />
-                    <circle cx="75" cy="35" r="1.5" fill="#ffd700" />
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Safety Guardian</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Style 2: Flat Modern Illustration */}
-          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-purple-200">
-            <h3 className="font-semibold text-lg text-purple-900 mb-3">Style 2: Flat Modern 🎨</h3>
-            <p className="text-xs text-gray-600 mb-4">Clean geometric shapes, bold colors, professional but friendly</p>
-            <div className="flex items-center justify-center gap-8">
-              {/* Modern flat phone */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="flatPhoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#60a5fa" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Phone body */}
-                  <rect x="35" y="15" width="50" height="90" rx="8" fill="url(#flatPhoneGrad)" />
-                  <rect x="40" y="22" width="40" height="70" rx="4" fill="#1e40af" opacity="0.2" />
-
-                  {/* Screen content - check-in interface */}
-                  <circle cx="50" cy="40" r="8" fill="#10b981" className="animate-pulse" />
-                  <rect x="62" y="35" width="15" height="3" rx="1.5" fill="#e0e7ff" />
-                  <rect x="62" y="42" width="10" height="2" rx="1" fill="#e0e7ff" opacity="0.6" />
-
-                  <circle cx="50" cy="60" r="8" fill="#10b981" className="animate-pulse" style={{animationDelay: '0.3s'}} />
-                  <rect x="62" y="55" width="15" height="3" rx="1.5" fill="#e0e7ff" />
-                  <rect x="62" y="62" width="10" height="2" rx="1" fill="#e0e7ff" opacity="0.6" />
-
-                  {/* Home button */}
-                  <circle cx="60" cy="98" r="3" fill="#1e40af" opacity="0.3" />
-
-                  {/* Notification dots */}
-                  <g className="animate-bounce" style={{animationDuration: '2s'}}>
-                    <circle cx="75" cy="20" r="4" fill="#ef4444" />
-                    <text x="75" y="22" fontSize="6" fill="#fff" textAnchor="middle" fontWeight="bold">3</text>
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Always Connected</p>
-              </div>
-
-              {/* Flat people network */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="person1" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#ec4899" />
-                      <stop offset="100%" stopColor="#f472b6" />
-                    </linearGradient>
-                    <linearGradient id="person2" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#8b5cf6" />
-                      <stop offset="100%" stopColor="#a78bfa" />
-                    </linearGradient>
-                    <linearGradient id="person3" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#06b6d4" />
-                      <stop offset="100%" stopColor="#22d3ee" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Connection lines */}
-                  <line x1="35" y1="60" x2="60" y2="40" stroke="#e0e7ff" strokeWidth="2" className="animate-pulse" />
-                  <line x1="85" y1="60" x2="60" y2="40" stroke="#e0e7ff" strokeWidth="2" className="animate-pulse" />
-                  <line x1="35" y1="60" x2="60" y2="85" stroke="#e0e7ff" strokeWidth="2" className="animate-pulse" />
-                  <line x1="85" y1="60" x2="60" y2="85" stroke="#e0e7ff" strokeWidth="2" className="animate-pulse" />
-
-                  {/* People */}
-                  <g className="animate-bounce" style={{animationDuration: '2s'}}>
-                    <circle cx="60" cy="35" r="12" fill="url(#person1)" />
-                    <path d="M60,47 L60,65 M52,53 L60,53 L68,53 M60,65 L52,80 M60,65 L68,80"
-                          stroke="url(#person1)" strokeWidth="4" strokeLinecap="round" />
-                  </g>
-
-                  <g className="animate-bounce" style={{animationDuration: '2s', animationDelay: '0.3s'}}>
-                    <circle cx="35" cy="55" r="10" fill="url(#person2)" />
-                    <path d="M35,65 L35,78 M28,70 L35,70 L42,70 M35,78 L28,88 M35,78 L42,88"
-                          stroke="url(#person2)" strokeWidth="3.5" strokeLinecap="round" />
-                  </g>
-
-                  <g className="animate-bounce" style={{animationDuration: '2s', animationDelay: '0.6s'}}>
-                    <circle cx="85" cy="55" r="10" fill="url(#person3)" />
-                    <path d="M85,65 L85,78 M78,70 L85,70 L92,70 M85,78 L78,88 M85,78 L92,88"
-                          stroke="url(#person3)" strokeWidth="3.5" strokeLinecap="round" />
-                  </g>
-
-                  <g className="animate-bounce" style={{animationDuration: '2s', animationDelay: '0.9s'}}>
-                    <circle cx="60" cy="80" r="10" fill="url(#person1)" />
-                    <path d="M60,90 L60,103 M53,95 L60,95 L67,95 M60,103 L53,113 M60,103 L67,113"
-                          stroke="url(#person1)" strokeWidth="3.5" strokeLinecap="round" />
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Circle of Care</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Style 3: Whimsical Playful */}
-          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-fuchsia-200">
-            <h3 className="font-semibold text-lg text-fuchsia-900 mb-3">Style 3: Whimsical Playful ✨</h3>
-            <p className="text-xs text-gray-600 mb-4">Bouncy, exaggerated, fun, makes you smile</p>
-            <div className="flex items-center justify-center gap-8">
-              {/* Bouncy safety umbrella */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="umbrellaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#f43f5e" />
-                      <stop offset="33%" stopColor="#ec4899" />
-                      <stop offset="66%" stopColor="#a855f7" />
-                      <stop offset="100%" stopColor="#3b82f6" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Umbrella top - wavy and fun */}
-                  <g className="animate-bounce" style={{animationDuration: '1.5s'}}>
-                    <path d="M60,25 Q40,15 25,30 Q30,40 35,35 Q45,25 60,30 Q75,25 85,35 Q90,40 95,30 Q80,15 60,25 Z"
-                          fill="url(#umbrellaGrad)"
-                          stroke="#dc2626"
-                          strokeWidth="2" />
-
-                    {/* Scalloped edge details */}
-                    <circle cx="35" cy="32" r="3" fill="#fecdd3" opacity="0.8" />
-                    <circle cx="60" cy="28" r="3" fill="#fecdd3" opacity="0.8" />
-                    <circle cx="85" cy="32" r="3" fill="#fecdd3" opacity="0.8" />
-                  </g>
-
-                  {/* Handle/pole */}
-                  <path d="M60,30 L60,85 Q60,95 68,95"
-                        fill="none"
-                        stroke="#7c3aed"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        className="animate-pulse" />
-
-                  {/* Person under umbrella */}
-                  <g className="animate-bounce" style={{animationDuration: '2s', animationDelay: '0.3s'}}>
-                    <circle cx="60" cy="55" r="10" fill="#fde047" />
-                    <circle cx="56" cy="52" r="2" fill="#000" />
-                    <circle cx="64" cy="52" r="2" fill="#000" />
-                    <path d="M56,60 Q60,63 64,60" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
-
-                    {/* Body */}
-                    <ellipse cx="60" cy="75" rx="12" ry="15" fill="#a78bfa" />
-                  </g>
-
-                  {/* Rain drops bouncing off */}
-                  <g className="animate-pulse">
-                    <path d="M20,45 L22,50 L20,55" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-                    <path d="M100,45 L98,50 L100,55" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-                    <path d="M30,60 L32,65 L30,70" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-                    <path d="M90,60 L88,65 L90,70" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-                  </g>
-
-                  {/* Stars/sparkles */}
-                  <g className="animate-pulse" style={{animationDuration: '1.5s'}}>
-                    <path d="M15,25 L17,30 L22,32 L17,34 L15,39 L13,34 L8,32 L13,30 Z" fill="#fbbf24" />
-                    <path d="M105,25 L107,30 L112,32 L107,34 L105,39 L103,34 L98,32 L103,30 Z" fill="#fbbf24" />
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Protected & Dry</p>
-              </div>
-
-              {/* Playful buddy characters holding hands */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="buddy1" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#f472b6" />
-                      <stop offset="100%" stopColor="#fb923c" />
-                    </linearGradient>
-                    <linearGradient id="buddy2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#a78bfa" />
-                      <stop offset="100%" stopColor="#60a5fa" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Left buddy */}
-                  <g className="animate-bounce" style={{animationDuration: '2s'}}>
-                    <ellipse cx="35" cy="65" rx="18" ry="22" fill="url(#buddy1)" />
-                    <circle cx="35" cy="45" r="15" fill="url(#buddy1)" />
-                    <circle cx="30" cy="42" r="3" fill="#000" />
-                    <circle cx="40" cy="42" r="3" fill="#000" />
-                    <circle cx="31" cy="41" r="1" fill="#fff" />
-                    <circle cx="41" cy="41" r="1" fill="#fff" />
-                    <path d="M30,50 Q35,54 40,50" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                    <circle cx="25" cy="48" r="5" fill="#f472b6" opacity="0.4" />
-                    <circle cx="45" cy="48" r="5" fill="#f472b6" opacity="0.4" />
-                  </g>
-
-                  {/* Right buddy */}
-                  <g className="animate-bounce" style={{animationDuration: '2s', animationDelay: '0.5s'}}>
-                    <ellipse cx="85" cy="65" rx="18" ry="22" fill="url(#buddy2)" />
-                    <circle cx="85" cy="45" r="15" fill="url(#buddy2)" />
-                    <circle cx="80" cy="42" r="3" fill="#000" />
-                    <circle cx="90" cy="42" r="3" fill="#000" />
-                    <circle cx="81" cy="41" r="1" fill="#fff" />
-                    <circle cx="91" cy="41" r="1" fill="#fff" />
-                    <path d="M80,50 Q85,54 90,50" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                    <circle cx="75" cy="48" r="5" fill="#a78bfa" opacity="0.4" />
-                    <circle cx="95" cy="48" r="5" fill="#a78bfa" opacity="0.4" />
-                  </g>
-
-                  {/* Holding hands - curved connection */}
-                  <path d="M50,70 Q60,65 70,70"
-                        fill="none"
-                        stroke="#fbbf24"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        className="animate-pulse" />
-
-                  {/* Hearts above them */}
-                  <g className="animate-bounce" style={{animationDuration: '3s'}}>
-                    <path d="M60,20 C60,20 52,15 52,10 C52,7 54,5 56,5 C57.5,5 58.5,6 60,8 C61.5,6 62.5,5 64,5 C66,5 68,7 68,10 C68,15 60,20 60,20 Z"
-                          fill="#f87171" />
-                  </g>
-
-                  {/* Sparkles */}
-                  <g className="animate-pulse">
-                    <circle cx="20" cy="60" r="2" fill="#fbbf24" />
-                    <circle cx="100" cy="60" r="2" fill="#fbbf24" />
-                    <circle cx="60" cy="90" r="2" fill="#fbbf24" />
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Together Forever</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Style 4: Elegant Minimalist */}
-          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-gray-200">
-            <h3 className="font-semibold text-lg text-gray-900 mb-3">Style 4: Elegant Minimalist 🌸</h3>
-            <p className="text-xs text-gray-600 mb-4">Delicate, sophisticated, subtle gradients, refined</p>
-            <div className="flex items-center justify-center gap-8">
-              {/* Minimal lotus/flower */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="petalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#fce7f3" />
-                      <stop offset="50%" stopColor="#fbcfe8" />
-                      <stop offset="100%" stopColor="#f9a8d4" />
-                    </linearGradient>
-                    <radialGradient id="centerGrad">
-                      <stop offset="0%" stopColor="#fde047" />
-                      <stop offset="100%" stopColor="#fbbf24" />
-                    </radialGradient>
-                  </defs>
-
-                  {/* Petals - elegant curves */}
-                  <g className="animate-pulse" style={{animationDuration: '4s'}}>
-                    <ellipse cx="60" cy="45" rx="15" ry="25" fill="url(#petalGrad)" opacity="0.9"
-                             transform="rotate(-30 60 60)" />
-                    <ellipse cx="60" cy="45" rx="15" ry="25" fill="url(#petalGrad)" opacity="0.9"
-                             transform="rotate(30 60 60)" />
-                    <ellipse cx="60" cy="45" rx="15" ry="25" fill="url(#petalGrad)" opacity="0.9"
-                             transform="rotate(90 60 60)" />
-                    <ellipse cx="60" cy="45" rx="15" ry="25" fill="url(#petalGrad)" opacity="0.9"
-                             transform="rotate(150 60 60)" />
-                    <ellipse cx="60" cy="45" rx="15" ry="25" fill="url(#petalGrad)" opacity="0.9"
-                             transform="rotate(210 60 60)" />
-                    <ellipse cx="60" cy="45" rx="15" ry="25" fill="url(#petalGrad)" opacity="0.9"
-                             transform="rotate(270 60 60)" />
-                  </g>
-
-                  {/* Center */}
-                  <circle cx="60" cy="60" r="12" fill="url(#centerGrad)" opacity="0.8" />
-
-                  {/* Delicate details */}
-                  <g opacity="0.3">
-                    <circle cx="60" cy="60" r="8" fill="none" stroke="#ec4899" strokeWidth="0.5" />
-                    <circle cx="60" cy="60" r="6" fill="none" stroke="#ec4899" strokeWidth="0.5" />
-                  </g>
-
-                  {/* Stem */}
-                  <path d="M60,75 Q58,90 60,105" fill="none" stroke="#86efac" strokeWidth="2" opacity="0.6" />
-
-                  {/* Subtle leaves */}
-                  <path d="M60,85 Q45,88 42,95" fill="#d1fae5" stroke="#86efac" strokeWidth="1" opacity="0.4" />
-                  <path d="M60,85 Q75,88 78,95" fill="#d1fae5" stroke="#86efac" strokeWidth="1" opacity="0.4" />
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Gentle Bloom</p>
-              </div>
-
-              {/* Minimal moon & stars scene */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#fef3c7" />
-                      <stop offset="100%" stopColor="#fde68a" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Crescent moon */}
-                  <g className="animate-pulse" style={{animationDuration: '5s'}}>
-                    <circle cx="55" cy="55" r="25" fill="url(#moonGrad)" opacity="0.9" />
-                    <circle cx="65" cy="50" r="22" fill="#fafafa" />
-                  </g>
-
-                  {/* Stars - elegant and simple */}
-                  <g className="animate-pulse" style={{animationDuration: '3s'}}>
-                    <circle cx="30" cy="30" r="2" fill="#fde047" opacity="0.8" />
-                    <circle cx="85" cy="25" r="1.5" fill="#fde047" opacity="0.8" />
-                    <circle cx="95" cy="50" r="2" fill="#fde047" opacity="0.8" />
-                    <circle cx="25" cy="70" r="1.5" fill="#fde047" opacity="0.8" />
-                    <circle cx="90" cy="80" r="2" fill="#fde047" opacity="0.8" />
-                  </g>
-
-                  {/* Delicate constellation lines */}
-                  <g opacity="0.2" className="animate-pulse" style={{animationDuration: '4s'}}>
-                    <line x1="30" y1="30" x2="85" y2="25" stroke="#fde047" strokeWidth="0.5" />
-                    <line x1="85" y1="25" x2="95" y2="50" stroke="#fde047" strokeWidth="0.5" />
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Night Watch</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Style 5: Line Art Botanical */}
-          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-green-200">
-            <h3 className="font-semibold text-lg text-green-900 mb-3">Style 5: Line Art Botanical 🌿</h3>
-            <p className="text-xs text-gray-600 mb-4">Delicate lines, natural, organic, hand-drawn feel</p>
-            <div className="flex items-center justify-center gap-8">
-              {/* Botanical wreath with heart */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#86efac" />
-                      <stop offset="100%" stopColor="#4ade80" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Circular wreath base */}
-                  <circle cx="60" cy="60" r="40" fill="none" stroke="#d1fae5" strokeWidth="1" opacity="0.3" />
-
-                  {/* Leaves around circle - delicate line art */}
-                  <g className="animate-pulse" style={{animationDuration: '4s'}}>
-                    {/* Top leaves */}
-                    <path d="M60,15 Q50,20 55,25" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M60,15 Q70,20 65,25" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-
-                    {/* Right leaves */}
-                    <path d="M100,60 Q95,50 90,55" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M100,60 Q95,70 90,65" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-
-                    {/* Bottom leaves */}
-                    <path d="M60,105 Q50,100 55,95" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M60,105 Q70,100 65,95" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-
-                    {/* Left leaves */}
-                    <path d="M20,60 Q25,50 30,55" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M20,60 Q25,70 30,65" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-
-                    {/* Diagonal leaves */}
-                    <path d="M30,30 Q35,32 35,37" fill="none" stroke="#22c55e" strokeWidth="1" strokeLinecap="round" />
-                    <path d="M90,30 Q85,32 85,37" fill="none" stroke="#22c55e" strokeWidth="1" strokeLinecap="round" />
-                    <path d="M30,90 Q35,88 35,83" fill="none" stroke="#22c55e" strokeWidth="1" strokeLinecap="round" />
-                    <path d="M90,90 Q85,88 85,83" fill="none" stroke="#22c55e" strokeWidth="1" strokeLinecap="round" />
-                  </g>
-
-                  {/* Small flowers */}
-                  <g className="animate-pulse" style={{animationDuration: '3s'}}>
-                    <circle cx="60" cy="20" r="3" fill="#fbbf24" opacity="0.8" />
-                    <circle cx="95" cy="60" r="3" fill="#fbbf24" opacity="0.8" />
-                    <circle cx="60" cy="100" r="3" fill="#fbbf24" opacity="0.8" />
-                    <circle cx="25" cy="60" r="3" fill="#fbbf24" opacity="0.8" />
-                  </g>
-
-                  {/* Heart in center - line art style */}
-                  <path d="M60,75 C60,75 45,65 45,55 C45,50 48,47 51,47 C54,47 56,49 60,53 C64,49 66,47 69,47 C72,47 75,50 75,55 C75,65 60,75 60,75 Z"
-                        fill="none"
-                        stroke="#f43f5e"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="animate-pulse" />
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Natural Growth</p>
-              </div>
-
-              {/* Line art bird carrying message */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="birdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#c084fc" />
-                      <stop offset="100%" stopColor="#e9d5ff" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Bird body - delicate lines */}
-                  <g className="animate-bounce" style={{animationDuration: '2s'}}>
-                    <ellipse cx="60" cy="50" rx="15" ry="12" fill="url(#birdGrad)" opacity="0.6" />
-                    <circle cx="65" cy="48" r="8" fill="url(#birdGrad)" opacity="0.6" />
-
-                    {/* Eye */}
-                    <circle cx="68" cy="47" r="2" fill="#000" />
-                    <circle cx="69" cy="46" r="0.5" fill="#fff" />
-
-                    {/* Beak */}
-                    <path d="M73,48 L78,48" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
-
-                    {/* Wings - elegant curved lines */}
-                    <path d="M55,45 Q40,35 35,40" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"
-                          className="animate-pulse" style={{animationDuration: '1s'}} />
-                    <path d="M55,50 Q35,50 30,55" fill="none" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round"
-                          className="animate-pulse" style={{animationDuration: '1s', animationDelay: '0.2s'}} />
-
-                    {/* Tail */}
-                    <path d="M48,55 Q40,60 42,65" fill="none" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round" />
-                  </g>
-
-                  {/* Message/envelope in beak */}
-                  <g className="animate-bounce" style={{animationDuration: '2.5s'}}>
-                    <rect x="78" y="44" width="18" height="12" rx="1" fill="#fef3c7" stroke="#fbbf24" strokeWidth="1" />
-                    <path d="M78,44 L87,52 L96,44" fill="none" stroke="#fbbf24" strokeWidth="1" />
-                    <line x1="80" y1="50" x2="85" y2="50" stroke="#fbbf24" strokeWidth="0.5" />
-                    <line x1="80" y1="53" x2="94" y2="53" stroke="#fbbf24" strokeWidth="0.5" />
-                  </g>
-
-                  {/* Flight path/motion lines */}
-                  <g className="animate-pulse" style={{animationDuration: '3s'}}>
-                    <path d="M20,70 Q30,72 40,70" fill="none" stroke="#e9d5ff" strokeWidth="1" strokeDasharray="2,2" opacity="0.5" />
-                    <path d="M15,80 Q25,82 35,80" fill="none" stroke="#e9d5ff" strokeWidth="1" strokeDasharray="2,2" opacity="0.5" />
-                  </g>
-                </svg>
-                <p className="text-xs text-gray-600 mt-2">Safe Delivery</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Style 6: 3D Gradient Depth */}
-          <div className="p-6 bg-white rounded-xl border-2 border-blue-200">
-            <h3 className="font-semibold text-lg text-blue-900 mb-3">Style 6: 3D Gradient Depth 💎</h3>
-            <p className="text-xs text-gray-600 mb-4">Layered, shadowed, dimensional, premium feel</p>
-            <div className="flex items-center justify-center gap-8">
-              {/* 3D Shield with layers */}
-              <div className="flex flex-col items-center">
-                <svg viewBox="0 0 120 120" className="w-32 h-32">
-                  <defs>
-                    <linearGradient id="shield3D" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#3b82f6" />
-                      <stop offset="50%" stopColor="#2563eb" />
-                      <stop offset="100%" stopColor="#1e40af" />
-                    </linearGradient>
-                    <linearGradient id="shieldHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#ffffff" opacity="0.8" />
-                      <stop offset="100%" stopColor="#ffffff" opacity="0" />
-                    </linearGradient>
-                    <filter id="shadow3D">
-                      <feDropShadow dx="0" dy="4" stdDeviation="4" floodOpacity="0.3"/>
-                    </filter>
-                  </defs>
-
-                  {/* Shadow layer */}
-                  <path d="M60,20 L95,32 L95,62 C95,82 78,100 60,108 C42,100 25,82 25,62 L25,32 Z"
-                        fill="#000"
-                        opacity="0.1"
-                        transform="translate(2, 4)" />
-
-                  {/* Main shield */}
-                  <path d="M60,20 L95,32 L95,62 C95,82 78,100 60,108 C42,100 25,82 25,62 L25,32 Z"
-                        fill="url(#shield3D)"
-                        filter="url(#shadow3D)"
-                        className="animate-pulse"
-                        style={{animationDuration: '4s'}} />
-
-                  {/* Highlight layer */}
-                  <path d="M60,20 L95,32 L95,62 C95,82 78,100 60,108 L60,20 Z"
-                        fill="url(#shieldHighlight)"
-                        opacity="0.3" />
-
-                  {/* Inner detail layer */}
-                  <path d="M60,30 L85,38 L85,60 C85,75 72,88 60,94 C48,88 35,75 35,60 L35,38 Z"
-                        fill="none"
-                        stroke="#60a5fa"
-                        strokeWidth="2"
-                        opacity="0.6" />
-
-                  {/* Checkmark with depth */}
-                  <g className="animate-bounce" style={{animationDuration: '2s'}}>
-                    <path d="M45,58 L54,68 L75,45"
+                  {/* Subtle connecting lines */}
+                  <circle cx="60" cy="60" r="25"
                           fill="none"
-                          stroke="#fff"
-                          strokeWidth="6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                          stroke="#e9d5ff"
+                          strokeWidth="1"
                           opacity="0.3"
-                          transform="translate(1, 2)" />
-                    <path d="M45,58 L54,68 L75,45"
-                          fill="none"
-                          stroke="#fff"
-                          strokeWidth="5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round" />
-                  </g>
+                          strokeDasharray="2,3" />
                 </svg>
-                <p className="text-xs text-gray-600 mt-2">Protected</p>
+                <p className="text-xs text-gray-600 mt-2">Magic Circle</p>
               </div>
+            </div>
+          </div>
 
-              {/* 3D Layered hearts */}
+          {/* Style 6: Bubbly & Round */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-rose-200">
+            <h3 className="font-semibold text-lg text-rose-900 mb-3">Style 6: Bubbly & Round</h3>
+            <p className="text-xs text-gray-600 mb-4">Rounded shapes, soft circles, friendly and approachable</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Bubble heart stack */}
               <div className="flex flex-col items-center">
                 <svg viewBox="0 0 120 120" className="w-32 h-32">
                   <defs>
-                    <linearGradient id="heart3D1" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#f87171" />
-                      <stop offset="100%" stopColor="#dc2626" />
+                    <linearGradient id="bubble2" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fda4af" />
+                      <stop offset="100%" stopColor="#fb7185" />
                     </linearGradient>
-                    <linearGradient id="heart3D2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#fb923c" />
-                      <stop offset="100%" stopColor="#ea580c" />
-                    </linearGradient>
-                    <linearGradient id="heart3D3" x1="0%" y1="0%" x2="100%" y2="100%">
+                  </defs>
+
+                  {/* Bubble heart made of circles */}
+                  <g className="animate-pulse" style={{animationDuration: '2s'}}>
+                    <circle cx="48" cy="48" r="14" fill="url(#bubble2)" opacity="0.7" />
+                    <circle cx="72" cy="48" r="14" fill="url(#bubble2)" opacity="0.7" />
+                    <circle cx="60" cy="56" r="16" fill="url(#bubble2)" opacity="0.7" />
+                    <circle cx="60" cy="70" r="12" fill="url(#bubble2)" opacity="0.7" />
+                  </g>
+
+                  {/* Shine effects */}
+                  <circle cx="52" cy="44" r="4" fill="#fff" opacity="0.6" />
+                  <circle cx="68" cy="46" r="3" fill="#fff" opacity="0.6" />
+
+                  {/* Small floating bubbles */}
+                  <g className="animate-pulse" style={{animationDuration: '3s', animationDelay: '0.5s'}}>
+                    <circle cx="40" cy="70" r="4" fill="#fbbf24" opacity="0.5" />
+                    <circle cx="80" cy="75" r="5" fill="#f9a8d4" opacity="0.5" />
+                    <circle cx="60" cy="30" r="3" fill="#c4b5fd" opacity="0.5" />
+                  </g>
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Bubble Love</p>
+              </div>
+
+              {/* Bubbly people group */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="bubblePerson1" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="#fbbf24" />
                       <stop offset="100%" stopColor="#f59e0b" />
                     </linearGradient>
+                    <linearGradient id="bubblePerson2" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#f9a8d4" />
+                      <stop offset="100%" stopColor="#f472b6" />
+                    </linearGradient>
+                    <linearGradient id="bubblePerson3" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#c4b5fd" />
+                      <stop offset="100%" stopColor="#a78bfa" />
+                    </linearGradient>
                   </defs>
 
-                  {/* Back heart - smallest */}
-                  <g className="animate-pulse" style={{animationDuration: '3s', animationDelay: '0.6s'}}>
-                    <path d="M80,55 C80,55 65,45 65,35 C65,30 68,27 71,27 C73,27 75,28 80,32 C85,28 87,27 89,27 C92,27 95,30 95,35 C95,45 80,55 80,55 Z"
-                          fill="url(#heart3D3)"
-                          filter="url(#shadow3D)" />
+                  {/* Three round figures */}
+                  <g className="animate-pulse" style={{animationDuration: '2s'}}>
+                    <circle cx="35" cy="55" r="12" fill="url(#bubblePerson1)" />
+                    <circle cx="35" cy="73" r="14" fill="url(#bubblePerson1)" opacity="0.8" />
                   </g>
 
-                  {/* Middle heart */}
-                  <g className="animate-pulse" style={{animationDuration: '3s', animationDelay: '0.3s'}}>
-                    <path d="M60,70 C60,70 40,55 40,40 C40,33 44,29 48,29 C51,29 54,31 60,37 C66,31 69,29 72,29 C76,33 80,33 80,40 C80,55 60,70 60,70 Z"
-                          fill="url(#heart3D2)"
-                          filter="url(#shadow3D)" />
+                  <g className="animate-pulse" style={{animationDuration: '2s', animationDelay: '0.3s'}}>
+                    <circle cx="60" cy="48" r="14" fill="url(#bubblePerson2)" />
+                    <circle cx="60" cy="68" r="16" fill="url(#bubblePerson2)" opacity="0.8" />
                   </g>
 
-                  {/* Front heart - largest */}
-                  <g className="animate-pulse" style={{animationDuration: '3s'}}>
-                    <path d="M45,85 C45,85 20,65 20,45 C20,36 25,31 30,31 C34,31 38,33 45,41 C52,33 56,31 60,31 C65,31 70,36 70,45 C70,65 45,85 45,85 Z"
-                          fill="url(#heart3D1)"
-                          filter="url(#shadow3D)" />
-
-                    {/* Highlight */}
-                    <ellipse cx="35" cy="42" rx="6" ry="4" fill="#fff" opacity="0.4" />
+                  <g className="animate-pulse" style={{animationDuration: '2s', animationDelay: '0.6s'}}>
+                    <circle cx="85" cy="55" r="12" fill="url(#bubblePerson3)" />
+                    <circle cx="85" cy="73" r="14" fill="url(#bubblePerson3)" opacity="0.8" />
                   </g>
+
+                  {/* Connecting bubbles */}
+                  <circle cx="47" cy="62" r="3" fill="#fff" opacity="0.5" />
+                  <circle cx="73" cy="62" r="3" fill="#fff" opacity="0.5" />
                 </svg>
-                <p className="text-xs text-gray-600 mt-2">Love Layers</p>
+                <p className="text-xs text-gray-600 mt-2">Bubble Squad</p>
               </div>
             </div>
           </div>
 
-          <div className="text-center mt-6 p-4 bg-yellow-100 rounded-lg">
-            <p className="font-semibold text-gray-900 mb-2">Which style speaks to you?</p>
+          {/* Style 7: Soft Geometry */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-purple-200">
+            <h3 className="font-semibold text-lg text-purple-900 mb-3">Style 7: Soft Geometry</h3>
+            <p className="text-xs text-gray-600 mb-4">Geometric shapes with rounded corners, modern meets gentle</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Geometric heart */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="geoHeart" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f472b6" />
+                      <stop offset="100%" stopColor="#ec4899" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Geometric heart shape with soft edges */}
+                  <path d="M60,75 L40,55 Q35,50 35,45 Q35,38 42,38 Q48,38 52,42 L60,50 L68,42 Q72,38 78,38 Q85,38 85,45 Q85,50 80,55 L60,75 Z"
+                        fill="url(#geoHeart)"
+                        opacity="0.8"
+                        className="animate-pulse"
+                        style={{animationDuration: '3s'}} />
+
+                  {/* Inner geometric detail */}
+                  <path d="M60,68 L46,54 Q43,51 43,48 Q43,44 48,44 Q51,44 54,47 L60,53 L66,47 Q69,44 72,44 Q77,44 77,48 Q77,51 74,54 L60,68 Z"
+                        fill="#fff"
+                        opacity="0.3" />
+
+                  {/* Corner accents */}
+                  <rect x="35" y="35" width="4" height="4" rx="1" fill="#fbbf24" opacity="0.6" />
+                  <rect x="81" y="35" width="4" height="4" rx="1" fill="#fbbf24" opacity="0.6" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Structured Love</p>
+              </div>
+
+              {/* Geometric connection */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="geoGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#a78bfa" />
+                      <stop offset="100%" stopColor="#c4b5fd" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Rounded rectangles connected */}
+                  <rect x="30" y="45" width="20" height="20" rx="6" fill="#f9a8d4" opacity="0.7" />
+                  <rect x="70" y="45" width="20" height="20" rx="6" fill="#c4b5fd" opacity="0.7" />
+                  <rect x="48" y="60" width="24" height="24" rx="6" fill="#fda4af" opacity="0.7" />
+
+                  {/* Connecting lines */}
+                  <line x1="50" y1="55" x2="60" y2="72"
+                        stroke="url(#geoGrad1)"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        className="animate-pulse"
+                        style={{animationDuration: '2s'}} />
+                  <line x1="70" y1="55" x2="60" y2="72"
+                        stroke="url(#geoGrad1)"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        className="animate-pulse"
+                        style={{animationDuration: '2s'}} />
+
+                  {/* Small accent squares */}
+                  <rect x="58" y="38" width="4" height="4" rx="1" fill="#fbbf24"
+                        className="animate-pulse" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Linked Up</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 8: Stardust Dreams */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-pink-200">
+            <h3 className="font-semibold text-lg text-pink-900 mb-3">Style 8: Stardust Dreams</h3>
+            <p className="text-xs text-gray-600 mb-4">Sparkles, twinkles, magical particles, whimsical feel</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Sparkle heart constellation */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <radialGradient id="sparkle1">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="100%" stopColor="#fbbf24" opacity="0" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Heart made of sparkles */}
+                  <g className="animate-pulse" style={{animationDuration: '2s'}}>
+                    {/* Main sparkle stars forming heart shape */}
+                    <path d="M45,48 L46,51 L49,52 L46,53 L45,56 L44,53 L41,52 L44,51 Z" fill="#ec4899" />
+                    <path d="M75,48 L76,51 L79,52 L76,53 L75,56 L74,53 L71,52 L74,51 Z" fill="#ec4899" />
+                    <path d="M38,56 L39,59 L42,60 L39,61 L38,64 L37,61 L34,60 L37,59 Z" fill="#f472b6" />
+                    <path d="M82,56 L83,59 L86,60 L83,61 L82,64 L81,61 L78,60 L81,59 Z" fill="#f472b6" />
+                    <path d="M60,75 L61,78 L64,79 L61,80 L60,83 L59,80 L56,79 L59,78 Z" fill="#ec4899" />
+                    <path d="M35,68 L36,71 L39,72 L36,73 L35,76 L34,73 L31,72 L34,71 Z" fill="#f9a8d4" />
+                    <path d="M85,68 L86,71 L89,72 L86,73 L85,76 L84,73 L81,72 L84,71 Z" fill="#f9a8d4" />
+                  </g>
+
+                  {/* Tiny floating sparkles */}
+                  <g className="animate-pulse" style={{animationDuration: '3s', animationDelay: '0.5s'}}>
+                    <circle cx="50" cy="40" r="1.5" fill="#fbbf24" opacity="0.8" />
+                    <circle cx="70" cy="42" r="1" fill="#fbbf24" opacity="0.8" />
+                    <circle cx="60" cy="35" r="1.5" fill="#fbbf24" opacity="0.8" />
+                    <circle cx="45" cy="80" r="1" fill="#c4b5fd" opacity="0.8" />
+                    <circle cx="75" cy="82" r="1.5" fill="#c4b5fd" opacity="0.8" />
+                  </g>
+
+                  {/* Glow effect */}
+                  <circle cx="60" cy="60" r="30" fill="url(#sparkle1)" opacity="0.1" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Starry Heart</p>
+              </div>
+
+              {/* Magical protection circle */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  {/* Circle of sparkles */}
+                  <g className="animate-pulse" style={{animationDuration: '3s'}}>
+                    <path d="M60,25 L61,28 L64,29 L61,30 L60,33 L59,30 L56,29 L59,28 Z" fill="#a78bfa" />
+                    <path d="M85,45 L86,48 L89,49 L86,50 L85,53 L84,50 L81,49 L84,48 Z" fill="#f9a8d4" />
+                    <path d="M90,70 L91,73 L94,74 L91,75 L90,78 L89,75 L86,74 L89,73 Z" fill="#fda4af" />
+                    <path d="M70,90 L71,93 L74,94 L71,95 L70,98 L69,95 L66,94 L69,93 Z" fill="#fbbf24" />
+                    <path d="M40,90 L41,93 L44,94 L41,95 L40,98 L39,95 L36,94 L39,93 Z" fill="#c4b5fd" />
+                    <path d="M25,70 L26,73 L29,74 L26,75 L25,78 L24,75 L21,74 L24,73 Z" fill="#f472b6" />
+                    <path d="M30,45 L31,48 L34,49 L31,50 L30,53 L29,50 L26,49 L29,48 Z" fill="#fbbf24" />
+                  </g>
+
+                  {/* Center protected person - simple shape */}
+                  <circle cx="60" cy="60" r="15" fill="#f9a8d4" opacity="0.3" />
+                  <circle cx="60" cy="58" r="8" fill="#f9a8d4" opacity="0.6" />
+
+                  {/* Subtle stardust particles */}
+                  <g className="animate-pulse" style={{animationDuration: '2s', animationDelay: '1s'}}>
+                    <circle cx="50" cy="50" r="1" fill="#fbbf24" opacity="0.6" />
+                    <circle cx="70" cy="55" r="1" fill="#c4b5fd" opacity="0.6" />
+                    <circle cx="55" cy="70" r="1" fill="#fda4af" opacity="0.6" />
+                  </g>
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Magic Shield</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 9: Sketchy & Sweet */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-rose-200">
+            <h3 className="font-semibold text-lg text-rose-900 mb-3">Style 9: Sketchy & Sweet</h3>
+            <p className="text-xs text-gray-600 mb-4">Hand-drawn lines, imperfect charm, personal touch</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Sketchy heart */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="sketchFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fce7f3" />
+                      <stop offset="100%" stopColor="#fbcfe8" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Sketchy heart outline - slightly wobbly */}
+                  <path d="M60,80 C60,80 38,67 38,49 C38,41 43,36 49,36 C54,36 57,39 60,45 C63,39 66,36 71,36 C77,36 82,41 82,49 C82,67 60,80 60,80 Z"
+                        fill="url(#sketchFill)"
+                        stroke="#f472b6"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        opacity="0.8" />
+
+                  {/* Inner sketch lines for shading effect */}
+                  <g stroke="#f472b6" strokeWidth="1" opacity="0.3">
+                    <line x1="45" y1="48" x2="52" y2="48" strokeLinecap="round" />
+                    <line x1="68" y1="48" x2="75" y2="48" strokeLinecap="round" />
+                    <line x1="48" y1="55" x2="56" y2="55" strokeLinecap="round" />
+                    <line x1="64" y1="55" x2="72" y2="55" strokeLinecap="round" />
+                    <line x1="52" y1="62" x2="58" y2="62" strokeLinecap="round" />
+                    <line x1="62" y1="62" x2="68" y2="62" strokeLinecap="round" />
+                  </g>
+
+                  {/* Small sketchy sparkles */}
+                  <g className="animate-pulse" style={{animationDuration: '2s'}}>
+                    <line x1="35" y1="35" x2="38" y2="38" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="38" y1="35" x2="35" y2="38" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="82" y1="38" x2="85" y2="41" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="85" y1="38" x2="82" y2="41" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+                  </g>
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Drawn with Love</p>
+              </div>
+
+              {/* Sketchy holding hands */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  {/* Two figures holding hands - sketchy style */}
+                  <g stroke="#c4b5fd" strokeWidth="2.5" fill="none" strokeLinecap="round">
+                    {/* Left person */}
+                    <circle cx="38" cy="48" r="10" opacity="0.7" />
+                    <path d="M38,58 L38,75" />
+                    <path d="M30,65 L38,65 L46,65" />
+
+                    {/* Right person */}
+                    <circle cx="82" cy="48" r="10" opacity="0.7" />
+                    <path d="M82,58 L82,75" />
+                    <path d="M74,65 L82,65 L90,65" />
+                  </g>
+
+                  {/* Holding hands line - slightly wavy for sketch effect */}
+                  <path d="M46,65 Q55,63 60,65 Q65,67 74,65"
+                        fill="none"
+                        stroke="#f472b6"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        className="animate-pulse"
+                        style={{animationDuration: '3s'}} />
+
+                  {/* Sketchy heart above */}
+                  <path d="M60,30 C60,30 54,26 54,22 C54,20 55,19 57,19 C58,19 59,20 60,22 C61,20 62,19 63,19 C65,19 66,20 66,22 C66,26 60,30 60,30 Z"
+                        fill="#f9a8d4"
+                        stroke="#f472b6"
+                        strokeWidth="1"
+                        opacity="0.7" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Hand in Hand</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 10: Ombre Magic */}
+          <div className="p-6 bg-white rounded-xl border-2 border-purple-200">
+            <h3 className="font-semibold text-lg text-purple-900 mb-3">Style 10: Ombre Magic</h3>
+            <p className="text-xs text-gray-600 mb-4">Smooth color transitions, flowing gradients, cohesive harmony</p>
+            <div className="flex items-center justify-center gap-8">
+              {/* Ombre heart */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="ombreHeart" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#c4b5fd" />
+                      <stop offset="50%" stopColor="#f9a8d4" />
+                      <stop offset="100%" stopColor="#fda4af" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Smooth ombre heart */}
+                  <path d="M60,82 C60,82 36,68 36,48 C36,38 42,32 50,32 C55,32 58,35 60,42 C62,35 65,32 70,32 C78,32 84,38 84,48 C84,68 60,82 60,82 Z"
+                        fill="url(#ombreHeart)"
+                        opacity="0.9"
+                        className="animate-pulse"
+                        style={{animationDuration: '4s'}} />
+
+                  {/* Subtle shine */}
+                  <ellipse cx="52" cy="43" rx="8" ry="10" fill="#fff" opacity="0.2" />
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Fading Love</p>
+              </div>
+
+              {/* Ombre connection flow */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 120 120" className="w-32 h-32">
+                  <defs>
+                    <linearGradient id="ombreFlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="33%" stopColor="#f9a8d4" />
+                      <stop offset="66%" stopColor="#c4b5fd" />
+                      <stop offset="100%" stopColor="#a78bfa" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Flowing wave connecting elements */}
+                  <path d="M25,60 Q40,50 60,55 Q80,60 95,50"
+                        fill="none"
+                        stroke="url(#ombreFlow)"
+                        strokeWidth="8"
+                        strokeLinecap="round"
+                        opacity="0.6"
+                        className="animate-pulse"
+                        style={{animationDuration: '3s'}} />
+
+                  {/* Gradient circles at endpoints */}
+                  <circle cx="25" cy="60" r="8" fill="#fbbf24" opacity="0.7" />
+                  <circle cx="60" cy="55" r="10" fill="#f9a8d4" opacity="0.7" />
+                  <circle cx="95" cy="50" r="8" fill="#a78bfa" opacity="0.7" />
+
+                  {/* Small flowing particles */}
+                  <g className="animate-pulse" style={{animationDuration: '2s', animationDelay: '0.5s'}}>
+                    <circle cx="42" cy="53" r="2" fill="#fbbf24" opacity="0.5" />
+                    <circle cx="78" cy="56" r="2" fill="#c4b5fd" opacity="0.5" />
+                  </g>
+                </svg>
+                <p className="text-xs text-gray-600 mt-2">Flowing Together</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-6 p-4 bg-gradient-to-r from-pink-100 via-purple-100 to-pink-100 rounded-lg">
+            <p className="font-semibold text-gray-900 mb-2">Which style captures Besties' heart?</p>
             <p className="text-sm text-gray-700">
-              Pick your favorite and I'll redesign all the icons on the site in that style!
+              Choose your favorite and I'll redesign all the icons site-wide in that style!
             </p>
           </div>
         </div>
