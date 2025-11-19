@@ -531,12 +531,13 @@ const ProfilePage = () => {
                   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
                   if (isMobile) {
-                    // Try to open in Facebook app first, fallback to web
-                    window.location.href = `fb://facewebmodal/f?href=${encodeURIComponent(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`)}`;
-                    // Fallback to web after a delay if app doesn't open
+                    // Try to open in Facebook app first using fb:// URL scheme
+                    window.location.href = `fb://profile/${currentUser.uid}`;
+
+                    // Fallback to web after delay if app doesn't open
                     setTimeout(() => {
-                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
-                    }, 1000);
+                      window.location.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
+                    }, 1500);
                   } else {
                     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
                   }
@@ -557,12 +558,13 @@ const ProfilePage = () => {
                   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
                   if (isMobile) {
-                    // Try to open in Twitter app first
+                    // Try to open in Twitter/X app first using twitter:// URL scheme
                     window.location.href = `twitter://post?message=${encodeURIComponent(text + ' ' + url)}`;
-                    // Fallback to web after a delay if app doesn't open
+
+                    // Fallback to web after delay if app doesn't open
                     setTimeout(() => {
-                      window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
-                    }, 1000);
+                      window.location.href = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+                    }, 1500);
                   } else {
                     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
                   }

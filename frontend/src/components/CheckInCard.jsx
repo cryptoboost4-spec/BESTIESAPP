@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { db, storage } from '../services/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
 import CelebrationScreen from './CelebrationScreen';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
+import { useAuth } from '../contexts/AuthContext';
 
 const CheckInCard = ({ checkIn }) => {
+  const { userData } = useAuth();
   const [timeLeft, setTimeLeft] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,10 @@ const CheckInCard = ({ checkIn }) => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [optimisticAlertTime, setOptimisticAlertTime] = useState(null); // For optimistic updates
   const { executeOptimistic } = useOptimisticUpdate();
+
+  // Passcode verification states
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+  const [enteredPasscode, setEnteredPasscode] = useState('');
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -53,6 +59,49 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const handleComplete = async () => {
+    // Check if user has a safety passcode set
+    if (userData?.security?.safetyPasscode) {
+      setShowPasscodeModal(true);
+      return;
+    }
+
+    // If no passcode, proceed with completion
+    await completeCheckIn();
+  };
+
+  const handlePasscodeSubmit = async () => {
+    const safetyPasscode = userData?.security?.safetyPasscode;
+    const duressCode = userData?.security?.duressCode;
+
+    if (!enteredPasscode) {
+      toast.error('Please enter your passcode');
+      return;
+    }
+
+    // Check if it's the duress code
+    if (duressCode && enteredPasscode === duressCode) {
+      // Duress code entered - fake success but trigger secret alert
+      setShowPasscodeModal(false);
+      setEnteredPasscode('');
+      await handleDuressCode();
+      return;
+    }
+
+    // Check if it's the safety passcode
+    if (enteredPasscode === safetyPasscode) {
+      // Correct passcode - proceed with completion
+      setShowPasscodeModal(false);
+      setEnteredPasscode('');
+      await completeCheckIn();
+      return;
+    }
+
+    // Wrong passcode
+    toast.error('Incorrect passcode');
+    setEnteredPasscode('');
+  };
+
+  const completeCheckIn = async () => {
     // Use optimistic update - show celebration immediately
     await executeOptimistic({
       optimisticUpdate: () => {
@@ -90,6 +139,39 @@ const CheckInCard = ({ checkIn }) => {
       errorMessage: 'Failed to complete check-in. Please try again.',
       skipSuccessToast: false
     });
+  };
+
+  const handleDuressCode = async () => {
+    // Show fake success message
+    setShowCelebration(true);
+    toast.success('You\'re safe! 💜');
+    setTimeout(() => setShowCelebration(false), 3000);
+
+    // Secretly trigger emergency alert to all besties in circle
+    try {
+      // Complete the check-in normally (so it looks legitimate)
+      await apiService.completeCheckIn({ checkInId: checkIn.id });
+
+      // Create a secret emergency alert
+      const alertData = {
+        userId: checkIn.userId,
+        checkInId: checkIn.id,
+        type: 'duress_code_used',
+        message: `🚨 DURESS CODE USED - ${userData?.displayName || 'User'} may be in danger!`,
+        location: checkIn.location,
+        timestamp: Timestamp.now(),
+        priority: 'critical',
+      };
+
+      // Add to alerts collection
+      await addDoc(collection(db, 'alerts'), alertData);
+
+      // Note: The backend should handle sending notifications to besties in the circle
+      // This is done silently without showing any indication to the user
+    } catch (error) {
+      console.error('Error handling duress code:', error);
+      // Don't show error to user - maintain the illusion that everything is normal
+    }
   };
 
   const handleExtend = async (minutes) => {
@@ -478,6 +560,60 @@ const CheckInCard = ({ checkIn }) => {
       <div className="mt-4 text-xs text-text-secondary text-center">
         Started {formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
       </div>
+
+      {/* Passcode Verification Modal */}
+      {showPasscodeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-display text-text-primary mb-2">🔒 Enter Passcode</h2>
+            <p className="text-text-secondary mb-4">
+              Enter your safety passcode to mark yourself safe
+            </p>
+
+            <div className="mb-6">
+              <input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={enteredPasscode}
+                onChange={(e) => setEnteredPasscode(e.target.value.replace(/\D/g, ''))}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handlePasscodeSubmit();
+                  }
+                }}
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-center text-3xl tracking-widest"
+                placeholder="••••"
+                maxLength={6}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasscodeModal(false);
+                  setEnteredPasscode('');
+                }}
+                className="flex-1 btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasscodeSubmit}
+                disabled={!enteredPasscode}
+                className="flex-1 btn btn-success"
+              >
+                Confirm
+              </button>
+            </div>
+
+            <p className="text-xs text-text-secondary text-center mt-4">
+              Forgot your passcode? Update it in Settings
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
