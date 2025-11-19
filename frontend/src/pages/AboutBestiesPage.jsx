@@ -251,7 +251,7 @@ const AboutBestiesPage = () => {
               Want to Help Out? 💜
             </h2>
             <p className="text-text-secondary text-center mb-6">
-              Choose an amount that works for you - every bit helps us build a safer community
+              Choose an amount that works for you - every bit helps keep Besties free for everyone
             </p>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <button

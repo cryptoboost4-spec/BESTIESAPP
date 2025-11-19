@@ -31,11 +31,11 @@ const SubscriptionSuccessPage = () => {
 
           <div className="bg-primary/10 rounded-xl p-6 mb-6">
             <p className="text-text-primary mb-4">
-              <strong>You're supporting our safety mission!</strong> 💜
+              <strong>You're helping keep Besties free for everyone!</strong> 💜
             </p>
             <p className="text-sm text-text-secondary">
               Your {userData?.smsSubscription?.active ? 'SMS alerts' : 'support'} subscription
-              helps us build a safer community for everyone.
+              helps us keep Besties accessible to everyone who needs it.
               Together, we're making the world a safer place.
             </p>
           </div>

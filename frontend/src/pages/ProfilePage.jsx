@@ -905,7 +905,7 @@ const ProfilePage = () => {
           <div className="card p-6 mb-6 bg-gradient-primary text-white">
             <h3 className="font-display text-xl mb-2">💜 Thank You!</h3>
             <p className="mb-2">
-              You're supporting our mission to keep everyone safe
+              You're helping keep Besties free for everyone
             </p>
             <div className="text-2xl font-display">
               $<CountUp end={userData.donationStats.totalDonated} duration={2000} /> donated
