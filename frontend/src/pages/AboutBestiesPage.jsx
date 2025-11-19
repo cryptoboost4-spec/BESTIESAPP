@@ -1398,6 +1398,322 @@ const AboutBestiesPage = () => {
 
         </div>
 
+        {/* SECTION REDESIGNS - OUR MISSION */}
+        <div className="card p-6 mb-6 bg-gradient-to-br from-fuchsia-50 to-pink-50 border-4 border-fuchsia-300">
+          <h2 className="text-2xl font-display text-text-primary mb-6 text-center">Our Mission - 4 Style Variations</h2>
+
+          {/* Style 4: Minimal with Sparkle */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-fuchsia-200">
+            <h3 className="font-semibold text-lg text-fuchsia-900 mb-4">Style 4: Minimal with Sparkle</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission4-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f9a8d4" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M24,8 L36,12 L36,24 C36,32 30,38 24,42 C18,38 12,32 12,24 L12,12 Z" fill="none" stroke="#e5e7eb" strokeWidth="2.5" />
+                    <path d="M24,12 L32,15 L32,23 C32,29 28,34 24,37 C20,34 16,29 16,23 L16,15 Z" fill="url(#mission4-1)" opacity="0.2" />
+                    <path d="M20,23 L22,26 L28,19" fill="none" stroke="url(#mission4-1)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="32" cy="14" r="2" fill="#fbbf24" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Keep You Safe</h4>
+                  <p className="text-sm text-gray-700">Make safety simple, automatic, and always there when you need it</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission4-2" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#c4b5fd" />
+                        <stop offset="50%" stopColor="#f9a8d4" />
+                        <stop offset="100%" stopColor="#fda4af" />
+                      </linearGradient>
+                    </defs>
+                    <line x1="16" y1="20" x2="24" y2="26" stroke="url(#mission4-2)" strokeWidth="2.5" />
+                    <line x1="24" y1="26" x2="32" y2="20" stroke="url(#mission4-2)" strokeWidth="2.5" />
+                    <circle cx="16" cy="20" r="5" fill="#fff" stroke="#c4b5fd" strokeWidth="2.5" />
+                    <circle cx="16" cy="20" r="2.5" fill="#c4b5fd" />
+                    <circle cx="24" cy="26" r="6" fill="#fff" stroke="#f9a8d4" strokeWidth="2.5" />
+                    <circle cx="24" cy="26" r="3" fill="#f9a8d4" />
+                    <circle cx="32" cy="20" r="5" fill="#fff" stroke="#fda4af" strokeWidth="2.5" />
+                    <circle cx="32" cy="20" r="2.5" fill="#fda4af" />
+                    <circle cx="36" cy="14" r="2" fill="#fbbf24" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Build Community</h4>
+                  <p className="text-sm text-gray-700">Create a network of people who look out for each other</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission4-3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f9a8d4" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M24,36 L14,26 C12,24 12,21 14,19 C16,17 19,17 21,19 L24,22 L27,19 C29,17 32,17 34,19 C36,21 36,24 34,26 Z" fill="none" stroke="url(#mission4-3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M20,26 L28,26" stroke="url(#mission4-3)" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
+                    <circle cx="36" cy="14" r="2" fill="#fbbf24" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Stay Free</h4>
+                  <p className="text-sm text-gray-700">Keep Besties accessible to everyone, regardless of their ability to pay</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 5: Soft Neon Glow */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-pink-200">
+            <h3 className="font-semibold text-lg text-pink-900 mb-4">Style 5: Soft Neon Glow</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <filter id="mission5-glow1">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <linearGradient id="mission5-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f9a8d4" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M24,8 L36,12 L36,24 C36,32 30,38 24,42 C18,38 12,32 12,24 L12,12 Z" fill="url(#mission5-1)" filter="url(#mission5-glow1)" opacity="0.8" />
+                    <path d="M20,23 L22,26 L28,19" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="24" cy="24" r="3" fill="#fff" opacity="0.4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Keep You Safe</h4>
+                  <p className="text-sm text-gray-700">Make safety simple, automatic, and always there when you need it</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <filter id="mission5-glow2">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <linearGradient id="mission5-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#a78bfa" />
+                        <stop offset="100%" stopColor="#7c3aed" />
+                      </linearGradient>
+                    </defs>
+                    <circle cx="24" cy="24" r="14" fill="url(#mission5-2)" filter="url(#mission5-glow2)" opacity="0.7" />
+                    <circle cx="18" cy="20" r="3" fill="#c4b5fd" filter="url(#mission5-glow2)" />
+                    <circle cx="30" cy="20" r="3" fill="#f9a8d4" filter="url(#mission5-glow2)" />
+                    <circle cx="24" cy="28" r="3" fill="#fda4af" filter="url(#mission5-glow2)" />
+                    <circle cx="24" cy="24" r="2" fill="#fff" opacity="0.6" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Build Community</h4>
+                  <p className="text-sm text-gray-700">Create a network of people who look out for each other</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <filter id="mission5-glow3">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <linearGradient id="mission5-3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f9a8d4" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M24,36 C24,36 14,29 14,20 C14,15 17,12 21,12 C23,12 24,13 24,16 C24,13 25,12 27,12 C31,12 34,15 34,20 C34,29 24,36 24,36 Z" fill="url(#mission5-3)" filter="url(#mission5-glow3)" opacity="0.8" />
+                    <path d="M24,30 C24,30 19,25 19,20 C19,17 21,15 23,15 C24,15 24,16 24,18 C24,16 24,15 25,15 C27,15 29,17 29,20 C29,25 24,30 24,30 Z" fill="#fff" opacity="0.4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Stay Free</h4>
+                  <p className="text-sm text-gray-700">Keep Besties accessible to everyone, regardless of their ability to pay</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 7: Soft Geometry */}
+          <div className="mb-8 p-6 bg-white rounded-xl border-2 border-purple-200">
+            <h3 className="font-semibold text-lg text-purple-900 mb-4">Style 7: Soft Geometry</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission7-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fda4af" />
+                        <stop offset="100%" stopColor="#f43f5e" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="12" y="12" width="24" height="24" rx="4" fill="none" stroke="url(#mission7-1)" strokeWidth="2.5" />
+                    <rect x="16" y="16" width="16" height="16" rx="3" fill="url(#mission7-1)" opacity="0.2" />
+                    <path d="M20,24 L22,27 L28,20" fill="none" stroke="url(#mission7-1)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    <rect x="34" y="10" width="4" height="4" rx="1" fill="#fbbf24" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Keep You Safe</h4>
+                  <p className="text-sm text-gray-700">Make safety simple, automatic, and always there when you need it</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission7-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#c4b5fd" />
+                        <stop offset="100%" stopColor="#7c3aed" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="14" y="16" width="8" height="8" rx="2" fill="url(#mission7-2)" opacity="0.6" />
+                    <rect x="20" y="20" width="10" height="10" rx="2" fill="url(#mission7-2)" opacity="0.8" />
+                    <rect x="26" y="16" width="8" height="8" rx="2" fill="url(#mission7-2)" opacity="0.6" />
+                    <line x1="22" y1="20" x2="18" y2="16" stroke="url(#mission7-2)" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="28" y1="20" x2="30" y2="16" stroke="url(#mission7-2)" strokeWidth="2" strokeLinecap="round" />
+                    <rect x="34" y="10" width="4" height="4" rx="1" fill="#fbbf24" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Build Community</h4>
+                  <p className="text-sm text-gray-700">Create a network of people who look out for each other</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission7-3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f9a8d4" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M24,12 L16,20 L16,28 C16,32 19,35 24,36 C29,35 32,32 32,28 L32,20 Z" fill="none" stroke="url(#mission7-3)" strokeWidth="2.5" strokeLinejoin="round" />
+                    <rect x="20" y="22" width="8" height="8" rx="2" fill="url(#mission7-3)" opacity="0.3" />
+                    <rect x="34" y="10" width="4" height="4" rx="1" fill="#fbbf24" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Stay Free</h4>
+                  <p className="text-sm text-gray-700">Keep Besties accessible to everyone, regardless of their ability to pay</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Style 9: Sketchy & Sweet */}
+          <div className="p-6 bg-white rounded-xl border-2 border-rose-200">
+            <h3 className="font-semibold text-lg text-rose-900 mb-4">Style 9: Sketchy & Sweet</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission9-fill1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fce7f3" />
+                        <stop offset="100%" stopColor="#fbcfe8" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M24,8 L36,12 L36,24 C36,32 30,38 24,42 C18,38 12,32 12,24 L12,12 Z" fill="url(#mission9-fill1)" stroke="#f472b6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+                    <g stroke="#f472b6" strokeWidth="1.5" opacity="0.4">
+                      <line x1="18" y1="20" x2="22" y2="20" strokeLinecap="round" />
+                      <line x1="26" y1="20" x2="30" y2="20" strokeLinecap="round" />
+                      <line x1="20" y1="26" x2="28" y2="26" strokeLinecap="round" />
+                    </g>
+                    <path d="M20,24 L22,27 L28,20" fill="none" stroke="#f472b6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <line x1="34" y1="12" x2="36" y2="14" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="36" y1="12" x2="34" y2="14" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Keep You Safe</h4>
+                  <p className="text-sm text-gray-700">Make safety simple, automatic, and always there when you need it</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <g stroke="#c4b5fd" strokeWidth="3" fill="none" strokeLinecap="round">
+                      <circle cx="18" cy="20" r="6" opacity="0.7" />
+                      <line x1="18" y1="26" x2="18" y2="34" />
+                      <circle cx="30" cy="20" r="6" opacity="0.7" />
+                      <line x1="30" y1="26" x2="30" y2="34" />
+                      <circle cx="24" cy="26" r="6" opacity="0.7" />
+                      <line x1="24" y1="32" x2="24" y2="36" />
+                    </g>
+                    <path d="M18,32 Q24,30 30,32" fill="none" stroke="#f472b6" strokeWidth="3" strokeLinecap="round" />
+                    <line x1="34" y1="12" x2="36" y2="14" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="36" y1="12" x2="34" y2="14" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Build Community</h4>
+                  <p className="text-sm text-gray-700">Create a network of people who look out for each other</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="mission9-fill3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fce7f3" />
+                        <stop offset="100%" stopColor="#fbcfe8" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M24,36 C24,36 14,29 14,20 C14,15 17,12 21,12 C23,12 24,13 24,16 C24,13 25,12 27,12 C31,12 34,15 34,20 C34,29 24,36 24,36 Z" fill="url(#mission9-fill3)" stroke="#f472b6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+                    <g stroke="#f472b6" strokeWidth="1.5" opacity="0.3">
+                      <line x1="19" y1="19" x2="22" y2="19" strokeLinecap="round" />
+                      <line x1="26" y1="19" x2="29" y2="19" strokeLinecap="round" />
+                      <line x1="21" y1="24" x2="27" y2="24" strokeLinecap="round" />
+                    </g>
+                    <line x1="34" y1="12" x2="36" y2="14" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="36" y1="12" x2="34" y2="14" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Stay Free</h4>
+                  <p className="text-sm text-gray-700">Keep Besties accessible to everyone, regardless of their ability to pay</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Our Mission */}
         <div className="card p-8 mb-6 bg-gradient-to-br from-pink-50 to-purple-50">
           <h2 className="text-2xl font-display text-text-primary mb-4">Our Mission 🎯</h2>
