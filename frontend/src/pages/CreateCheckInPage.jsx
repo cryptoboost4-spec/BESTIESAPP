@@ -95,8 +95,11 @@ const CreateCheckInPage = () => {
     }
 
     // Load script
+    // Note: Using legacy Autocomplete API (not PlaceAutocompleteElement)
+    // Google will give 12+ months notice before deprecating this API
+    // Migration to PlaceAutocompleteElement can be done in a future update
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
