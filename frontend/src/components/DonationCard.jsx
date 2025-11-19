@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
 
 const DonationCard = () => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleDonation = async (amount) => {
     setLoading(true);
@@ -59,6 +61,13 @@ const DonationCard = () => {
             $10/mo
           </button>
         </div>
+
+        <button
+          onClick={() => navigate('/about')}
+          className="w-full text-primary hover:text-primary-dark font-semibold text-sm underline transition-colors"
+        >
+          Learn more about Besties →
+        </button>
 
         <div className="text-xs text-text-secondary text-center">
           100% goes to keeping the app free 💜

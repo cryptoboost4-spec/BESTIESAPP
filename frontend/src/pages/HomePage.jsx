@@ -212,23 +212,77 @@ const HomePage = () => {
               </div>
             ) : (
               <div className="card p-4 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border border-purple-100">
-                <div className="flex items-start gap-3">
-                  <div className="text-3xl">💬</div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-display text-gray-800 mb-1">
-                      Need Support?
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
-                    </p>
-                    <button
-                      onClick={() => setShowRequestAttention(true)}
-                      className="btn btn-primary w-full"
-                    >
-                      💜 Request Attention
-                    </button>
+                <h3 className="text-lg font-display text-gray-800 mb-3">
+                  Need Support?
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
+                </p>
+
+                {/* Preview Example */}
+                <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200">
+                  <p className="text-xs font-semibold text-purple-700 mb-2">Preview:</p>
+                  <div className="flex items-center gap-3">
+                    {/* User Profile Picture */}
+                    <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white text-lg font-display overflow-hidden flex-shrink-0 border-2 border-purple-300">
+                      {userData?.photoURL ? (
+                        <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
+                      )}
+                    </div>
+
+                    {/* Animated Message */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-gray-800 mb-1">
+                        {userData?.displayName || 'You'}
+                      </div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 border border-purple-300 rounded-full">
+                        <span className="text-lg">💬</span>
+                        <span className="text-xs font-semibold text-purple-900 scrolling-message">
+                          Needs to vent
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => setShowRequestAttention(true)}
+                  className="btn btn-primary w-full"
+                >
+                  💜 Request Attention
+                </button>
+
+                {/* CSS for scrolling animation */}
+                <style>{`
+                  @keyframes scrollMessages {
+                    0%, 20% { content: "Needs to vent 💬"; }
+                    25%, 45% { content: "Needs a shoulder 🫂"; }
+                    50%, 70% { content: "Could use support 💜"; }
+                    75%, 95% { content: "Having a rough day 😔"; }
+                  }
+
+                  .scrolling-message {
+                    animation: fadeText 8s ease-in-out infinite;
+                  }
+
+                  .scrolling-message::after {
+                    content: "Needs to vent";
+                    animation: scrollMessages 8s ease-in-out infinite;
+                  }
+
+                  @keyframes fadeText {
+                    0%, 18%, 100% { opacity: 1; }
+                    20%, 23% { opacity: 0; }
+                    25%, 43% { opacity: 1; }
+                    45%, 48% { opacity: 0; }
+                    50%, 68% { opacity: 1; }
+                    70%, 73% { opacity: 0; }
+                    75%, 93% { opacity: 1; }
+                    95%, 98% { opacity: 0; }
+                  }
+                `}</style>
               </div>
             )}
           </>
@@ -271,7 +325,7 @@ const HomePage = () => {
               <div className="text-3xl font-display text-primary">
                 {userData?.stats?.completedCheckIns || 0}
               </div>
-              <div className="text-sm text-text-secondary">Check-ins</div>
+              <div className="text-sm text-text-secondary">Safe Check-ins</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-display text-secondary">
@@ -281,9 +335,9 @@ const HomePage = () => {
             </div>
             <div className="text-center">
               <div className="text-3xl font-display text-accent">
-                {userData?.stats?.totalCheckIns || 0}
+                {activeCheckIns.length}
               </div>
-              <div className="text-sm text-text-secondary">Total</div>
+              <div className="text-sm text-text-secondary">Active Now</div>
             </div>
           </div>
         </div>
@@ -308,42 +362,52 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Donation Card */}
-        {!userData?.donationStats?.isActive && <DonationCard />}
-
-        {/* OR Divider */}
+        {/* Want to help us out? Section */}
         {!userData?.donationStats?.isActive && (
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-gray-300"></div>
-            <span className="text-text-secondary font-semibold">OR</span>
-            <div className="flex-1 h-px bg-gray-300"></div>
-          </div>
-        )}
-
-        {/* Invite Friends Card */}
-        {!userData?.donationStats?.isActive && (
-          <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-100">
-            <div className="text-center">
-              <div className="text-4xl mb-3">👯‍♀️</div>
-              <h3 className="font-display text-2xl text-gradient mb-3">
-                Grow the Squad!
-              </h3>
-              <p className="text-text-secondary leading-relaxed mb-4">
-                Love Besties? Invite your friends! The more people who join,
-                the stronger our safety network becomes. Plus, spreading the word
-                helps us keep the app free for everyone. Share the love! 💖
-              </p>
-              <button
-                onClick={() => navigate('/besties')}
-                className="btn btn-secondary w-full text-lg py-3"
-              >
-                🎉 Invite Friends
-              </button>
-              <p className="text-xs text-text-secondary mt-3">
-                Every new friend makes Besties better for everyone!
+          <>
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-display text-gradient mb-2">
+                Want to help us out? 💜
+              </h2>
+              <p className="text-text-secondary text-sm">
+                Here are all the ways you can support Besties and keep safety accessible for everyone
               </p>
             </div>
-          </div>
+
+            {/* Donation Card */}
+            <DonationCard />
+
+            {/* OR Divider */}
+            <div className="flex items-center gap-4 my-6">
+              <div className="flex-1 h-px bg-gray-300"></div>
+              <span className="text-text-secondary font-semibold">OR</span>
+              <div className="flex-1 h-px bg-gray-300"></div>
+            </div>
+
+            {/* Invite Friends Card */}
+            <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-100">
+              <div className="text-center">
+                <div className="text-4xl mb-3">👯‍♀️</div>
+                <h3 className="font-display text-2xl text-gradient mb-3">
+                  Grow the Squad!
+                </h3>
+                <p className="text-text-secondary leading-relaxed mb-4">
+                  Love Besties? Invite your friends! The more people who join,
+                  the stronger our safety network becomes. Plus, spreading the word
+                  helps us keep the app free for everyone. Share the love! 💖
+                </p>
+                <button
+                  onClick={() => navigate('/besties')}
+                  className="btn btn-secondary w-full text-lg py-3"
+                >
+                  🎉 Invite Friends
+                </button>
+                <p className="text-xs text-text-secondary mt-3">
+                  Every new friend makes Besties better for everyone!
+                </p>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
