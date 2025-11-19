@@ -10,6 +10,20 @@ import { isEnabled } from '../config/features';
 import errorTracker from '../services/errorTracking';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 
+// Supportive header messages that feel like a bestie talking
+const SUPPORTIVE_MESSAGES = [
+  "Let's get you checked in safely, babe! 💜",
+  "Your safety is our top priority, bestie!",
+  "We've got your back! Let's set this up together 🛡️",
+  "Quick check-in so we can keep you safe, love!",
+  "Your besties are here for you - let's do this! 💕",
+  "Let's make sure you're covered, queen! 👑",
+  "Safety first, always! Your besties will be watching out for you",
+  "You've got this! We're just making sure you're safe 💪",
+  "Let's set up your safety net, bestie!",
+  "Your peace of mind matters - let's get you protected! ✨"
+];
+
 const CreateCheckInPage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -28,6 +42,7 @@ const CreateCheckInPage = () => {
   const { executeOptimistic } = useOptimisticUpdate();
   const [gpsCoords, setGpsCoords] = useState(null); // Store GPS coordinates for map display
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [headerMessage] = useState(() => SUPPORTIVE_MESSAGES[Math.floor(Math.random() * SUPPORTIVE_MESSAGES.length)]);
 
   // Map default center (San Francisco)
   const mapCenter = { lat: 37.7749, lng: -122.4194 };
@@ -70,112 +85,122 @@ const CreateCheckInPage = () => {
 
   // Load besties when currentUser is available
   useEffect(() => {
-    if (!currentUser || authLoading) return;
+    if (!currentUser) {
+      console.log('⏳ Waiting for currentUser...');
+      return;
+    }
+
+    if (authLoading) {
+      console.log('⏳ Auth is still loading...');
+      return;
+    }
 
     console.group('🔍 Setting up Bestie Circle Listener');
+    console.log('User ID:', currentUser.uid);
 
     // Set up real-time listener for user's featuredCircle
     const userDocRef = doc(db, 'users', currentUser.uid);
-    const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
-      try {
-        if (!userDoc.exists()) {
-          console.error('❌ User document does not exist');
-          console.groupEnd();
-          setBesties([]);
-          return;
-        }
-
-        const userData = userDoc.data();
-        const featuredIds = userData.featuredCircle || [];
-
-        console.log('🔄 Real-time update - featuredCircle:', featuredIds);
-        console.log('featuredCircle length:', featuredIds.length);
-
-        if (featuredIds.length === 0) {
-          console.warn('⚠️ featuredCircle is empty - no besties to load');
-          setBesties([]);
-          return;
-        }
-
-        // Get all accepted besties to find the ones in the circle
-        console.log('📡 Querying besties collection...');
-        const [requesterQuery, recipientQuery] = await Promise.all([
-          getDocs(
-            query(
-              collection(db, 'besties'),
-              where('requesterId', '==', currentUser.uid),
-              where('status', '==', 'accepted')
-            )
-          ),
-          getDocs(
-            query(
-              collection(db, 'besties'),
-              where('recipientId', '==', currentUser.uid),
-              where('status', '==', 'accepted')
-            )
-          ),
-        ]);
-
-        console.log('Requester query results:', requesterQuery.size);
-        console.log('Recipient query results:', recipientQuery.size);
-
-        const allBestiesList = [];
-
-        requesterQuery.forEach((doc) => {
-          const data = doc.data();
-          allBestiesList.push({
-            id: data.recipientId,
-            name: data.recipientName || 'Bestie',
-            phone: data.recipientPhone,
-          });
-        });
-
-        recipientQuery.forEach((doc) => {
-          const data = doc.data();
-          allBestiesList.push({
-            id: data.requesterId,
-            name: data.requesterName || 'Bestie',
-            phone: data.requesterPhone,
-          });
-        });
-
-        console.log('All besties found:', allBestiesList);
-        console.log('Filtering for featuredCircle IDs:', featuredIds);
-
-        // Filter to only show besties in the featured circle
-        const circleBesties = allBestiesList.filter(b => {
-          const inCircle = featuredIds.includes(b.id);
-          console.log(`Bestie ${b.name} (${b.id}): ${inCircle ? 'IN' : 'NOT IN'} circle`);
-          return inCircle;
-        });
-
-        console.log('✅ Circle besties after filtering:', circleBesties);
-
-        setBesties(circleBesties);
-
-        // Auto-select only besties who have phone numbers (required for notifications)
-        if (!location.state?.template && circleBesties.length > 0) {
-          const bestiesWithPhone = circleBesties.filter(b => b.phone);
-          setSelectedBesties(bestiesWithPhone.map(b => b.id));
-
-          // Warn if some besties don't have phone numbers
-          const withoutPhone = circleBesties.filter(b => !b.phone);
-          if (withoutPhone.length > 0) {
-            console.warn('⚠️ Some circle besties missing phone numbers:', withoutPhone);
-            toast('Some besties need to add their phone number before they can be alerted', {
-              icon: 'ℹ️',
-              duration: 4000
-            });
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      async (userDoc) => {
+        try {
+          if (!userDoc.exists()) {
+            console.error('❌ User document does not exist');
+            setBesties([]);
+            return;
           }
+
+          const userData = userDoc.data();
+          const featuredIds = userData.featuredCircle || [];
+
+          console.log('🔄 Real-time update - featuredCircle:', featuredIds);
+
+          if (featuredIds.length === 0) {
+            console.warn('⚠️ featuredCircle is empty - no besties to load');
+            setBesties([]);
+            return;
+          }
+
+          // Get all accepted besties to find the ones in the circle
+          console.log('📡 Querying besties collection...');
+          const [requesterQuery, recipientQuery] = await Promise.all([
+            getDocs(
+              query(
+                collection(db, 'besties'),
+                where('requesterId', '==', currentUser.uid),
+                where('status', '==', 'accepted')
+              )
+            ),
+            getDocs(
+              query(
+                collection(db, 'besties'),
+                where('recipientId', '==', currentUser.uid),
+                where('status', '==', 'accepted')
+              )
+            ),
+          ]);
+
+          console.log('Requester query results:', requesterQuery.size);
+          console.log('Recipient query results:', recipientQuery.size);
+
+          const allBestiesList = [];
+
+          requesterQuery.forEach((doc) => {
+            const data = doc.data();
+            allBestiesList.push({
+              id: data.recipientId,
+              name: data.recipientName || 'Bestie',
+              phone: data.recipientPhone,
+            });
+          });
+
+          recipientQuery.forEach((doc) => {
+            const data = doc.data();
+            allBestiesList.push({
+              id: data.requesterId,
+              name: data.requesterName || 'Bestie',
+              phone: data.requesterPhone,
+            });
+          });
+
+          console.log('All besties found:', allBestiesList.length);
+
+          // Filter to only show besties in the featured circle
+          const circleBesties = allBestiesList.filter(b => featuredIds.includes(b.id));
+
+          console.log('✅ Circle besties after filtering:', circleBesties.length);
+
+          setBesties(circleBesties);
+
+          // Auto-select only besties who have phone numbers (required for notifications)
+          // Only auto-select on initial load, not when coming from a template
+          if (!location.state?.template && circleBesties.length > 0 && selectedBesties.length === 0) {
+            const bestiesWithPhone = circleBesties.filter(b => b.phone);
+            if (bestiesWithPhone.length > 0) {
+              setSelectedBesties(bestiesWithPhone.map(b => b.id));
+              console.log('✅ Auto-selected besties with phone numbers:', bestiesWithPhone.length);
+            }
+
+            // Warn if some besties don't have phone numbers
+            const withoutPhone = circleBesties.filter(b => !b.phone);
+            if (withoutPhone.length > 0) {
+              console.warn('⚠️ Some circle besties missing phone numbers:', withoutPhone.map(b => b.name));
+              toast('Some besties need to add their phone number before they can be alerted', {
+                icon: 'ℹ️',
+                duration: 4000
+              });
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error loading besties:', error);
+          toast.error('Failed to load besties. Please refresh the page.');
         }
-      } catch (error) {
-        console.error('Error loading besties:', error);
-        toast.error('Failed to load besties');
+      },
+      (error) => {
+        console.error('❌ Error in featuredCircle listener:', error);
+        toast.error('Failed to load besties. Please refresh the page.');
       }
-    }, (error) => {
-      console.error('Error in featuredCircle listener:', error);
-      toast.error('Failed to load besties');
-    });
+    );
 
     console.groupEnd();
 
@@ -200,43 +225,64 @@ const CreateCheckInPage = () => {
       return;
     }
 
-    // Check if script already loaded
+    // Check if script already loaded and initialized
     if (window.google && window.google.maps && window.google.maps.places) {
+      console.log('✅ Google Maps API already loaded');
       setAutocompleteLoaded(true);
+      setMapInitialized(false); // Reset to allow re-initialization
+      return;
+    }
+
+    // Check if script tag exists but not yet loaded
+    const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+    if (existingScript) {
+      console.log('⏳ Google Maps script exists, waiting for load...');
+      existingScript.addEventListener('load', () => {
+        console.log('✅ Google Maps API loaded from existing script');
+        setAutocompleteLoaded(true);
+        setMapInitialized(false);
+      });
       return;
     }
 
     // Load script
-    // Note: Using legacy Autocomplete API (not PlaceAutocompleteElement)
-    // Google will give 12+ months notice before deprecating this API
-    // Migration to PlaceAutocompleteElement can be done in a future update
+    console.log('📡 Loading Google Maps API...');
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
+      console.log('✅ Google Maps API loaded successfully');
       setAutocompleteLoaded(true);
+      setMapInitialized(false);
     };
     script.onerror = () => {
-      console.error('Failed to load Google Maps API');
+      console.error('❌ Failed to load Google Maps API');
       toast.error('Failed to load address autocomplete', { duration: 2000 });
     };
 
     document.head.appendChild(script);
 
     return () => {
-      // Cleanup: remove script on unmount
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
+      // Don't remove script on unmount to prevent reload issues
+      // The script can be reused across page navigations
     };
   }, []);
 
   // Initialize Map when API is loaded
   useEffect(() => {
-    if (!autocompleteLoaded || !mapRef.current || mapInitialized) return;
+    if (!autocompleteLoaded || !mapRef.current) {
+      console.log('⏳ Waiting for map prerequisites...', { autocompleteLoaded, hasMapRef: !!mapRef.current });
+      return;
+    }
+
+    if (mapInitialized && mapInstanceRef.current) {
+      console.log('✅ Map already initialized, skipping');
+      return;
+    }
 
     try {
+      console.log('🗺️ Initializing Google Map...');
       // Initialize Google Map with draggable enabled
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: mapCenter,
@@ -266,8 +312,10 @@ const CreateCheckInPage = () => {
       });
 
       setMapInitialized(true);
+      console.log('✅ Map initialized successfully');
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('❌ Error initializing map:', error);
+      toast.error('Map failed to initialize. Please refresh the page.');
     }
     // mapCenter is a constant, not state
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -275,9 +323,13 @@ const CreateCheckInPage = () => {
 
   // Initialize Autocomplete when API is loaded
   useEffect(() => {
-    if (!autocompleteLoaded || !locationInputRef.current) return;
+    if (!autocompleteLoaded || !locationInputRef.current) {
+      console.log('⏳ Waiting for autocomplete prerequisites...', { autocompleteLoaded, hasInputRef: !!locationInputRef.current });
+      return;
+    }
 
     try {
+      console.log('📍 Initializing Google Places Autocomplete...');
       // Initialize Google Places Autocomplete
       autocompleteRef.current = new window.google.maps.places.Autocomplete(
         locationInputRef.current,
@@ -309,13 +361,15 @@ const CreateCheckInPage = () => {
           }
         }
       });
+      console.log('✅ Autocomplete initialized successfully');
     } catch (error) {
-      console.error('Error initializing autocomplete:', error);
+      console.error('❌ Error initializing autocomplete:', error);
+      toast.error('Address search failed to initialize. Please type your address manually.');
     }
 
     return () => {
       // Cleanup autocomplete listeners
-      if (autocompleteRef.current) {
+      if (autocompleteRef.current && window.google && window.google.maps) {
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
@@ -587,7 +641,7 @@ const CreateCheckInPage = () => {
       <div className="max-w-2xl mx-auto p-4 pb-20">
         <div className="mb-6">
           <h1 className="text-3xl font-display text-text-primary mb-2">Create Check-In</h1>
-          <p className="text-text-secondary">Set up your safety check-in</p>
+          <p className="text-text-secondary text-lg">{headerMessage}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -620,18 +674,7 @@ const CreateCheckInPage = () => {
                 />
               </div>
 
-              {/* Fixed center pin - doesn't move, map moves underneath */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-10 pointer-events-none">
-                <svg
-                  className="w-12 h-12 text-primary drop-shadow-lg"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-              </div>
-
-              {/* Locate me button overlay - positioned above zoom controls (top-right) */}
+              {/* Locate me button overlay - positioned top-right, below search bar */}
               {isEnabled('gpsLocation') && (
                 <button
                   type="button"
@@ -655,69 +698,85 @@ const CreateCheckInPage = () => {
                   )}
                 </button>
               )}
+
+              {/* Fixed center pin - doesn't move, map moves underneath */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-10 pointer-events-none">
+                <svg
+                  className="w-12 h-12 text-primary drop-shadow-lg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+              </div>
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              Drag the map to adjust pin location, search for a place, or click the crosshair to use GPS
+              Drag the map to adjust your location or use the locate button
             </p>
           </div>
 
-          {/* Who You're Meeting */}
+          {/* Meeting Details & Duration Combined */}
           <div className="card p-6">
-            <label className="block text-lg font-display text-text-primary mb-3">
-              Who are you meeting? 👥 (Optional)
-            </label>
-            <input
-              type="text"
-              value={meetingWith}
-              onChange={(e) => setMeetingWith(e.target.value)}
-              className="input"
-              placeholder="e.g., Alex, Sarah, John..."
-            />
-          </div>
-
-          {/* Duration */}
-          <div className="card p-6">
-            <label className="block text-lg font-display text-text-primary mb-3">
-              How long? ⏰
-            </label>
-
-            <div className="grid grid-cols-4 gap-3 mb-4">
-              {[15, 30, 60, 120].map((mins) => (
-                <button
-                  key={mins}
-                  type="button"
-                  onClick={() => setDuration(mins)}
-                  className={`py-3 rounded-xl font-semibold transition-all ${
-                    duration === mins
-                      ? 'bg-gradient-primary text-white shadow-lg'
-                      : 'bg-gray-100 text-text-primary hover:bg-gray-200'
-                  }`}
-                >
-                  {mins < 60 ? `${mins}m` : `${mins / 60}h`}
-                </button>
-              ))}
-            </div>
-
-            <input
-              type="range"
-              min="15"
-              max="180"
-              step="15"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value))}
-              className="w-full"
-            />
-            <div className="text-center mt-3">
-              <div className="text-sm text-text-secondary">
-                {duration} minutes
+            <div className="space-y-6">
+              {/* Who You're Meeting */}
+              <div>
+                <label className="block text-lg font-display text-text-primary mb-3">
+                  Who are you meeting? 👥 (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={meetingWith}
+                  onChange={(e) => setMeetingWith(e.target.value)}
+                  className="input"
+                  placeholder="e.g., Alex, Sarah, John..."
+                />
               </div>
-              <div className="text-sm font-semibold text-primary mt-1">
-                Alert at: {new Date(Date.now() + duration * 60 * 1000).toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                })}
+
+              {/* Duration */}
+              <div>
+                <label className="block text-lg font-display text-text-primary mb-3">
+                  How long? ⏰
+                </label>
+
+                <div className="grid grid-cols-4 gap-3 mb-4">
+                  {[15, 30, 60, 120].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setDuration(mins)}
+                      className={`py-3 rounded-xl font-semibold transition-all ${
+                        duration === mins
+                          ? 'bg-gradient-primary text-white shadow-lg'
+                          : 'bg-gray-100 text-text-primary hover:bg-gray-200'
+                      }`}
+                    >
+                      {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                    </button>
+                  ))}
+                </div>
+
+                <input
+                  type="range"
+                  min="15"
+                  max="180"
+                  step="15"
+                  value={duration}
+                  onChange={(e) => setDuration(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-center mt-3">
+                  <div className="text-sm text-text-secondary">
+                    {duration} minutes
+                  </div>
+                  <div className="text-sm font-semibold text-primary mt-1">
+                    Alert at: {new Date(Date.now() + duration * 60 * 1000).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
