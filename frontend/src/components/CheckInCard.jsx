@@ -11,14 +11,17 @@ const CheckInCard = ({ checkIn }) => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [extendingButton, setExtendingButton] = useState(null); // Track which extend button is loading
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(checkIn.notes || '');
   const [photoURL, setPhotoURL] = useState(checkIn.photoURL || null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [optimisticAlertTime, setOptimisticAlertTime] = useState(null); // For optimistic updates
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const alertTime = checkIn.alertTime.toDate();
+      // Use optimistic time if available, otherwise use the actual check-in time
+      const alertTime = optimisticAlertTime || checkIn.alertTime.toDate();
       const now = new Date();
       const diff = alertTime - now;
       setTimeLeft(Math.max(0, diff));
@@ -27,7 +30,7 @@ const CheckInCard = ({ checkIn }) => {
     calculateTimeLeft();
     const interval = setInterval(calculateTimeLeft, 1000);
     return () => clearInterval(interval);
-  }, [checkIn.alertTime]);
+  }, [checkIn.alertTime, optimisticAlertTime]);
 
   const formatTime = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -82,8 +85,14 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const handleExtend = async (minutes) => {
-    setLoading(true);
-    const loadingToast = toast.loading(`Extending check-in by ${minutes} minutes...`);
+    // Optimistic update - immediately show the new time
+    const currentAlertTime = optimisticAlertTime || checkIn.alertTime.toDate();
+    const newAlertTime = new Date(currentAlertTime.getTime() + minutes * 60 * 1000);
+    setOptimisticAlertTime(newAlertTime);
+    setExtendingButton(minutes);
+
+    // Show immediate feedback
+    toast.success(`Extended by ${minutes} minutes!`, { duration: 2000 });
 
     try {
       const result = await apiService.extendCheckIn({ checkInId: checkIn.id, additionalMinutes: minutes });
@@ -94,7 +103,8 @@ const CheckInCard = ({ checkIn }) => {
         const checkInSnap = await getDoc(checkInRef);
 
         if (checkInSnap.exists()) {
-          toast.success(`Extended by ${minutes} minutes!`, { id: loadingToast });
+          // Backend confirmed - update with actual time from server
+          setOptimisticAlertTime(checkInSnap.data().alertTime.toDate());
         } else {
           throw new Error('Unable to verify extension');
         }
@@ -103,13 +113,17 @@ const CheckInCard = ({ checkIn }) => {
       }
     } catch (error) {
       console.error('Error extending check-in:', error);
+
+      // Revert optimistic update on error
+      setOptimisticAlertTime(null);
+
       if (error.code === 'unavailable') {
-        toast.error('Cannot reach server. Please check your internet connection.', { id: loadingToast });
+        toast.error('Cannot reach server. Extension cancelled.', { duration: 4000 });
       } else {
-        toast.error(error.message || 'Failed to extend check-in. Please try again.', { id: loadingToast });
+        toast.error(error.message || 'Failed to extend check-in. Extension cancelled.', { duration: 4000 });
       }
     } finally {
-      setLoading(false);
+      setExtendingButton(null);
     }
   };
 
@@ -167,7 +181,88 @@ const CheckInCard = ({ checkIn }) => {
 
   return (
     <div className={`card p-6 ${isAlerted ? 'border-2 border-danger' : ''}`}>
-      {/* Header */}
+      {/* Timer - Bigger and at top */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-base font-semibold text-text-secondary">Time remaining:</span>
+          <span className={`font-display text-3xl ${timeLeft === 0 ? 'text-danger' : 'text-primary'}`}>
+            {timeLeft === 0 ? 'EXPIRED' : formatTime(timeLeft)}
+          </span>
+        </div>
+        <div className="progress-bar h-3">
+          <div
+            className="progress-fill"
+            style={{ width: `${getProgressPercentage()}%` }}
+          />
+        </div>
+
+        {/* Extend Buttons - Right under timer */}
+        {!isAlerted && (
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <button
+              onClick={() => handleExtend(15)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 flex items-center justify-center gap-1"
+            >
+              {extendingButton === 15 && (
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              +15m
+            </button>
+            <button
+              onClick={() => handleExtend(30)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 flex items-center justify-center gap-1"
+            >
+              {extendingButton === 30 && (
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              +30m
+            </button>
+            <button
+              onClick={() => handleExtend(60)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 flex items-center justify-center gap-1"
+            >
+              {extendingButton === 60 && (
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              +1h
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* I'm Safe Button */}
+      {!isAlerted && (
+        <button
+          onClick={handleComplete}
+          disabled={loading}
+          className="w-full btn btn-success text-lg mb-6"
+        >
+          ✅ I'm Safe!
+        </button>
+      )}
+
+      {isAlerted && (
+        <div className="bg-danger/10 border border-danger rounded-xl p-4 text-center mb-6">
+          <p className="font-semibold text-danger mb-2">
+            🚨 Your besties have been alerted!
+          </p>
+          <p className="text-sm text-text-secondary mb-4">
+            They know you haven't checked in
+          </p>
+          <button
+            onClick={handleComplete}
+            disabled={loading}
+            className="btn btn-success w-full"
+          >
+            ✅ I'm Safe! (False Alarm)
+          </button>
+        </div>
+      )}
+
+      {/* Header - Address */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
@@ -283,84 +378,12 @@ const CheckInCard = ({ checkIn }) => {
         )}
       </div>
 
-      {/* Timer */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-text-secondary">Time remaining:</span>
-          <span className={`font-display text-xl ${timeLeft === 0 ? 'text-danger' : 'text-primary'}`}>
-            {timeLeft === 0 ? 'EXPIRED' : formatTime(timeLeft)}
-          </span>
-        </div>
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{ width: `${getProgressPercentage()}%` }}
-          />
-        </div>
-
-        {/* Extend Buttons - Right under timer */}
-        {!isAlerted && (
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            <button
-              onClick={() => handleExtend(15)}
-              disabled={loading}
-              className="btn btn-secondary text-sm py-2"
-            >
-              +15m
-            </button>
-            <button
-              onClick={() => handleExtend(30)}
-              disabled={loading}
-              className="btn btn-secondary text-sm py-2"
-            >
-              +30m
-            </button>
-            <button
-              onClick={() => handleExtend(60)}
-              disabled={loading}
-              className="btn btn-secondary text-sm py-2"
-            >
-              +1h
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Besties */}
       <div className="mb-4">
         <div className="text-sm text-text-secondary mb-2">
           Watching over you: {checkIn.bestieIds?.length || 0} besties
         </div>
       </div>
-
-      {/* I'm Safe Button */}
-      {!isAlerted && (
-        <button
-          onClick={handleComplete}
-          disabled={loading}
-          className="w-full btn btn-success text-lg mb-4"
-        >
-          ✅ I'm Safe!
-        </button>
-      )}
-
-      {isAlerted && (
-        <div className="bg-danger/10 border border-danger rounded-xl p-4 text-center">
-          <p className="font-semibold text-danger mb-2">
-            🚨 Your besties have been alerted!
-          </p>
-          <p className="text-sm text-text-secondary mb-4">
-            They know you haven't checked in
-          </p>
-          <button
-            onClick={handleComplete}
-            disabled={loading}
-            className="btn btn-success w-full"
-          >
-            ✅ I'm Safe! (False Alarm)
-          </button>
-        </div>
-      )}
 
       {/* Created Time */}
       <div className="mt-4 text-xs text-text-secondary text-center">
