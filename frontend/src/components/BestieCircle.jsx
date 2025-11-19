@@ -136,13 +136,49 @@ const BestieCircle = ({ userId, onAddClick }) => {
   }
 
   return (
-    <div className="card p-6">
-      {/* Circle Container - Made smaller for tighter spacing */}
-      <div className="relative w-full max-w-xs mx-auto" style={{ paddingBottom: '100%' }}>
+    <div className="card p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100">
+      <h3 className="text-center text-2xl font-display text-gradient mb-6">Your Safety Circle ⭐</h3>
+
+      {/* Circle Container - Responsive sizing */}
+      <div className="relative w-full max-w-sm mx-auto aspect-square">
         <div className="absolute inset-0">
+          {/* Connection Lines */}
+          {slots.map((bestie, index) => {
+            if (!bestie) return null;
+            const angle = (index * 72 - 90) * (Math.PI / 180);
+            const radius = 45; // Percentage-based radius
+            const x = 50 + radius * Math.cos(angle);
+            const y = 50 + radius * Math.sin(angle);
+
+            return (
+              <svg
+                key={`line-${index}`}
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                style={{ zIndex: 0 }}
+              >
+                <line
+                  x1="50%"
+                  y1="50%"
+                  x2={`${x}%`}
+                  y2={`${y}%`}
+                  stroke="url(#gradient)"
+                  strokeWidth="2"
+                  strokeDasharray="4 2"
+                  opacity="0.3"
+                />
+                <defs>
+                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            );
+          })}
+
           {/* Center Circle (YOU) */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center text-white text-lg font-display shadow-xl border-4 border-white">
+            <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-primary rounded-full flex items-center justify-center text-white text-base md:text-lg font-display shadow-2xl border-4 border-white ring-4 ring-purple-200 animate-pulse-gentle">
               YOU
             </div>
           </div>
@@ -150,7 +186,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
           {/* Bestie Slots - all equidistant from center */}
           {slots.map((bestie, index) => {
             const angle = (index * 72 - 90) * (Math.PI / 180);
-            const radius = 42; // Consistent distance from center - matches middle besties
+            const radius = 45; // Percentage-based for better responsiveness
             const x = 50 + radius * Math.cos(angle);
             const y = 50 + radius * Math.sin(angle);
 
@@ -166,22 +202,25 @@ const BestieCircle = ({ userId, onAddClick }) => {
               >
                 {bestie ? (
                   <div className="relative group">
-                    {/* Bestie Circle - clickable with unique color, full size */}
+                    {/* Bestie Circle - clickable with unique color, responsive size */}
                     <button
                       onClick={() => setSelectedSlot(selectedSlot === index ? null : index)}
-                      className={`relative w-20 h-20 ${slotColors[index]} rounded-full flex items-center justify-center text-white text-2xl font-display shadow-xl border-4 border-white hover:scale-110 transition-transform overflow-hidden`}
+                      className={`relative w-16 h-16 md:w-20 md:h-20 ${slotColors[index]} rounded-full flex items-center justify-center text-white text-xl md:text-2xl font-display shadow-xl border-4 border-white hover:scale-110 hover:shadow-2xl transition-all duration-300 overflow-hidden ring-2 ring-purple-200 hover:ring-4 hover:ring-purple-300`}
                     >
                       {bestie.photoURL ? (
                         <img src={bestie.photoURL} alt={bestie.name || 'Bestie'} className="w-full h-full object-cover" />
                       ) : (
                         bestie.name?.[0] || '?'
                       )}
+                      {/* Subtle pulse effect on hover */}
+                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity rounded-full"></div>
                     </button>
 
-                    {/* Name Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
-                      <div className="bg-text-primary text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap">
+                    {/* Name Tooltip - improved */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 transform group-hover:-translate-y-1">
+                      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-lg">
                         {bestie.name || 'Unknown'}
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-600"></div>
                       </div>
                     </div>
 
@@ -212,7 +251,8 @@ const BestieCircle = ({ userId, onAddClick }) => {
                 ) : onAddClick ? (
                   <button
                     onClick={onAddClick}
-                    className={`w-20 h-20 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-4xl font-bold hover:scale-110 hover:${slotColors[index].replace('bg-', 'bg-')}/20 transition-all shadow-lg`}
+                    className={`w-16 h-16 md:w-20 md:h-20 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-3xl md:text-4xl font-bold hover:scale-110 hover:bg-purple-100 transition-all shadow-lg hover:shadow-xl animate-pulse-slow`}
+                    title="Add a bestie to your circle"
                   >
                     +
                   </button>
@@ -223,15 +263,48 @@ const BestieCircle = ({ userId, onAddClick }) => {
         </div>
       </div>
 
-      {/* Info */}
-      <div className="text-center mt-6">
-        <div className="font-display text-base text-text-primary mb-1">
-          {circleBesties.length}/5 Besties in Circle
+      {/* Info - Enhanced */}
+      <div className="text-center mt-8">
+        <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border-2 border-purple-200 mb-2">
+          <span className="text-2xl">⭐</span>
+          <span className="font-display text-lg text-gradient font-bold">
+            {circleBesties.length}/5 Circle Members
+          </span>
         </div>
-        <div className="text-xs text-text-secondary">
-          Your featured safety network ⭐
+        <div className="text-sm text-gray-600 mt-2">
+          {circleBesties.length === 5
+            ? "Your circle is complete! 🎉"
+            : circleBesties.length === 0
+            ? "Start building your safety network"
+            : `Add ${5 - circleBesties.length} more to complete your circle`}
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes pulse-gentle {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.03);
+          }
+        }
+        .animate-pulse-gentle {
+          animation: pulse-gentle 3s ease-in-out infinite;
+        }
+        @keyframes pulse-slow {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.6;
+          }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 2s ease-in-out infinite;
+        }
+      `}</style>
 
       {/* Replace Modal */}
       {showReplaceModal && (

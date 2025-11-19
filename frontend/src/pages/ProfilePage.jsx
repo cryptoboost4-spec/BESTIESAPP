@@ -39,6 +39,7 @@ const ProfilePage = () => {
   const [firstCheckInDate, setFirstCheckInDate] = useState(null);
   const [nighttimeCheckIns, setNighttimeCheckIns] = useState(0);
   const [weekendCheckIns, setWeekendCheckIns] = useState(0);
+  const [animatedProgress, setAnimatedProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -60,6 +61,23 @@ const ProfilePage = () => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showPhotoMenu, showColorPicker]);
+
+  // Animate progress bar when profile completion changes
+  useEffect(() => {
+    const profileCompletion = calculateProfileCompletion();
+    const targetProgress = profileCompletion.percentage;
+
+    // Reset to 0 first
+    setAnimatedProgress(0);
+
+    // Animate to target after a small delay
+    const timer = setTimeout(() => {
+      setAnimatedProgress(targetProgress);
+    }, 100);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData, bestiesCount, currentUser]);
 
   const loadData = async () => {
     if (!currentUser) return;
@@ -236,49 +254,49 @@ const ProfilePage = () => {
     }
   };
 
-  // Calculate profile completion with navigation paths
+  // Calculate profile completion with navigation paths and section IDs
   const calculateProfileCompletion = () => {
     const tasks = [];
     let completed = 0;
 
     // Email (usually from auth)
     if (currentUser?.email) {
-      tasks.push({ name: 'Add email', completed: true, path: null });
+      tasks.push({ name: 'Add email', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Add email', completed: false, path: '/settings' });
+      tasks.push({ name: 'Add email', completed: false, path: '/settings', section: 'account' });
     }
 
     // Phone number
     if (userData?.phoneNumber) {
-      tasks.push({ name: 'Add phone number', completed: true, path: null });
+      tasks.push({ name: 'Add phone number', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Add phone number', completed: false, path: '/settings' });
+      tasks.push({ name: 'Add phone number', completed: false, path: '/settings', section: 'phone' });
     }
 
     // Profile photo
     if (userData?.photoURL) {
-      tasks.push({ name: 'Upload profile photo', completed: true, path: null });
+      tasks.push({ name: 'Upload profile photo', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Upload profile photo', completed: false, path: '/profile' });
+      tasks.push({ name: 'Upload profile photo', completed: false, path: null, section: 'photo', action: 'scrollToPhoto' });
     }
 
     // Bio
     if (userData?.profile?.bio) {
-      tasks.push({ name: 'Write a bio', completed: true, path: null });
+      tasks.push({ name: 'Write a bio', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Write a bio', completed: false, path: '/edit-profile' });
+      tasks.push({ name: 'Write a bio', completed: false, path: '/edit-profile', section: 'bio' });
     }
 
     // Besties (at least 5)
     if (bestiesCount >= 5) {
-      tasks.push({ name: 'Add 5 besties', completed: true, path: null });
+      tasks.push({ name: 'Add 5 besties', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: `Add 5 besties (${bestiesCount}/5)`, completed: false, path: '/besties' });
+      tasks.push({ name: `Add 5 besties (${bestiesCount}/5)`, completed: false, path: '/besties', section: null });
     }
 
     const percentage = (completed / tasks.length) * 100;
@@ -328,6 +346,26 @@ const ProfilePage = () => {
         message: 'Let\'s build your safety network!',
         tip: 'Start by adding your closest friends as besties.'
       };
+    }
+  };
+
+  // Handle profile completion task navigation with section scrolling
+  const handleTaskNavigation = (task) => {
+    if (task.action === 'scrollToPhoto') {
+      // Scroll to photo section on this page
+      const photoElement = document.querySelector('.photo-menu-container');
+      if (photoElement) {
+        photoElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Trigger photo menu
+        setShowPhotoMenu(true);
+      }
+    } else if (task.path) {
+      // Navigate to path with section hash
+      if (task.section) {
+        navigate(`${task.path}#${task.section}`);
+      } else {
+        navigate(task.path);
+      }
     }
   };
 
@@ -480,7 +518,18 @@ const ProfilePage = () => {
                 onClick={() => {
                   const url = `${window.location.origin}/user/${currentUser.uid}`;
                   const text = `Come be my bestie on Besties! 💜`;
-                  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+                  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+                  if (isMobile) {
+                    // Try to open in Facebook app first, fallback to web
+                    window.location.href = `fb://facewebmodal/f?href=${encodeURIComponent(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`)}`;
+                    // Fallback to web after a delay if app doesn't open
+                    setTimeout(() => {
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+                    }, 1000);
+                  } else {
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+                  }
                 }}
                 className="w-12 h-12 rounded-full bg-[#1877f2] hover:bg-[#1864d9] text-white flex items-center justify-center transition-colors shadow-lg"
                 title="Share on Facebook"
@@ -495,7 +544,18 @@ const ProfilePage = () => {
                 onClick={() => {
                   const url = `${window.location.origin}/user/${currentUser.uid}`;
                   const text = `Come be my bestie on Besties! 💜`;
-                  window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+                  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+                  if (isMobile) {
+                    // Try to open in Twitter app first
+                    window.location.href = `twitter://post?message=${encodeURIComponent(text + ' ' + url)}`;
+                    // Fallback to web after a delay if app doesn't open
+                    setTimeout(() => {
+                      window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+                    }, 1000);
+                  } else {
+                    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+                  }
                 }}
                 className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 text-white flex items-center justify-center transition-colors shadow-lg"
                 title="Share on X (Twitter)"
@@ -510,7 +570,15 @@ const ProfilePage = () => {
                 onClick={() => {
                   const url = `${window.location.origin}/user/${currentUser.uid}`;
                   const text = `Come be my bestie on Besties! 💜`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+                  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+                  if (isMobile) {
+                    // Open WhatsApp app directly on mobile
+                    window.location.href = `whatsapp://send?text=${encodeURIComponent(text + ' ' + url)}`;
+                  } else {
+                    // Open WhatsApp web on desktop
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+                  }
                 }}
                 className="w-12 h-12 rounded-full bg-[#25d366] hover:bg-[#20bd5a] text-white flex items-center justify-center transition-colors shadow-lg"
                 title="Share on WhatsApp"
@@ -554,20 +622,29 @@ const ProfilePage = () => {
         </div>
 
         {/* Profile Completion Bar with Clickable Tasks */}
-        <div className="card p-6 mb-6">
+        <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-display text-text-primary">Profile Completion</h2>
-            <span className="text-2xl font-bold text-text-primary">
+            <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
+            <span className="text-2xl font-bold text-gradient">
               {profileCompletion.completed}/{profileCompletion.total}
             </span>
           </div>
 
-          {/* Progress Bar */}
-          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-4">
+          {/* Animated Progress Bar with Shimmer Effect */}
+          <div className="w-full h-4 bg-white rounded-full overflow-hidden mb-4 shadow-inner relative">
             <div
-              className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-500`}
-              style={{ width: `${profileCompletion.percentage}%` }}
-            ></div>
+              className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
+              style={{ width: `${animatedProgress}%` }}
+            >
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 shimmer-effect"></div>
+            </div>
+            {/* Progress percentage text */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-bold text-gray-700 drop-shadow-sm">
+                {Math.round(profileCompletion.percentage)}%
+              </span>
+            </div>
           </div>
 
           {/* Task List with Navigation */}
@@ -582,9 +659,9 @@ const ProfilePage = () => {
                     {task.name}
                   </span>
                 </div>
-                {!task.completed && task.path && (
+                {!task.completed && (task.path || task.action) && (
                   <button
-                    onClick={() => navigate(task.path)}
+                    onClick={() => handleTaskNavigation(task)}
                     className="btn btn-sm btn-primary text-xs px-3 py-1"
                   >
                     Go →
@@ -898,6 +975,27 @@ const ProfilePage = () => {
           </div>
         </div>
       )}
+
+      {/* Shimmer Effect CSS */}
+      <style>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        .shimmer-effect {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent
+          );
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
     </div>
   );
 };
