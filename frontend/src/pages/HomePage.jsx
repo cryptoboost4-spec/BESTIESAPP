@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import Header from '../components/Header';
 import CheckInCard from '../components/CheckInCard';
 import QuickButtons from '../components/QuickButtons';
@@ -10,6 +10,7 @@ import DonationCard from '../components/DonationCard';
 import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
+import toast from 'react-hot-toast';
 
 // Dynamic supportive messages for girls 💜
 const SUPPORTIVE_MESSAGES = [
@@ -41,6 +42,10 @@ const HomePage = () => {
   const [activeCheckIns, setActiveCheckIns] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Request Attention state
+  const [showRequestAttention, setShowRequestAttention] = useState(false);
+  const [attentionTag, setAttentionTag] = useState('');
 
   // Random supportive message (changes on each page load)
   const welcomeMessage = useMemo(() => {
@@ -166,10 +171,66 @@ const HomePage = () => {
             {/* Create Custom Check-In Button - Moved here! */}
             <button
               onClick={() => navigate('/create')}
-              className="w-full btn btn-primary text-lg py-4 mb-6"
+              className="w-full btn btn-primary text-lg py-4 mb-4"
             >
               ✨ Create Custom Check-In
             </button>
+
+            {/* Request Attention Button */}
+            {userData?.requestAttention?.active ? (
+              <div className="card p-4 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl">💜</div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-display text-purple-900 mb-2">
+                      You're requesting attention
+                    </h3>
+                    <div className="inline-block px-3 py-1 bg-purple-200 text-purple-900 rounded-full text-sm font-semibold mb-2">
+                      {userData.requestAttention.tag}
+                    </div>
+                    <p className="text-sm text-purple-700 mt-2">
+                      Your besties can see this on your profile 💜
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateDoc(doc(db, 'users', currentUser.uid), {
+                          'requestAttention.active': false,
+                        });
+                        toast.success('Request removed');
+                      } catch (error) {
+                        console.error('Error canceling request:', error);
+                        toast.error('Failed to cancel request');
+                      }
+                    }}
+                    className="text-purple-700 hover:text-purple-900 font-semibold text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="card p-4 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border border-purple-100">
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl">💬</div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-display text-gray-800 mb-1">
+                      Need Support?
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
+                    </p>
+                    <button
+                      onClick={() => setShowRequestAttention(true)}
+                      className="btn btn-primary w-full"
+                    >
+                      💜 Request Attention
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -291,6 +352,134 @@ const HomePage = () => {
 
       {/* Bestie Celebration Modal */}
       <BestieCelebrationModal />
+
+      {/* Request Attention Modal */}
+      {showRequestAttention && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-display text-text-primary mb-4">
+              💜 Request Attention
+            </h2>
+            <p className="text-base text-text-secondary mb-6">
+              Let your besties know you could use some support. This is a non-urgent request - they'll see a badge on your profile throughout the app.
+            </p>
+
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
+                How can your besties help?
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setAttentionTag('Needs to vent 💬')}
+                  className={`p-3 rounded-xl border-2 text-left ${
+                    attentionTag === 'Needs to vent 💬'
+                      ? 'border-primary bg-purple-50'
+                      : 'border-gray-200 hover:border-primary'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">💬</div>
+                  <div className="text-sm font-semibold">Needs to vent</div>
+                </button>
+                <button
+                  onClick={() => setAttentionTag('Needs a shoulder 🫂')}
+                  className={`p-3 rounded-xl border-2 text-left ${
+                    attentionTag === 'Needs a shoulder 🫂'
+                      ? 'border-primary bg-purple-50'
+                      : 'border-gray-200 hover:border-primary'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">🫂</div>
+                  <div className="text-sm font-semibold">Needs a shoulder</div>
+                </button>
+                <button
+                  onClick={() => setAttentionTag('Could use support 💜')}
+                  className={`p-3 rounded-xl border-2 text-left ${
+                    attentionTag === 'Could use support 💜'
+                      ? 'border-primary bg-purple-50'
+                      : 'border-gray-200 hover:border-primary'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">💜</div>
+                  <div className="text-sm font-semibold">Could use support</div>
+                </button>
+                <button
+                  onClick={() => setAttentionTag('Having a rough day 😔')}
+                  className={`p-3 rounded-xl border-2 text-left ${
+                    attentionTag === 'Having a rough day 😔'
+                      ? 'border-primary bg-purple-50'
+                      : 'border-gray-200 hover:border-primary'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">😔</div>
+                  <div className="text-sm font-semibold">Rough day</div>
+                </button>
+                <button
+                  onClick={() => setAttentionTag("Let's do something 🎉")}
+                  className={`p-3 rounded-xl border-2 text-left ${
+                    attentionTag === "Let's do something 🎉"
+                      ? 'border-primary bg-purple-50'
+                      : 'border-gray-200 hover:border-primary'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">🎉</div>
+                  <div className="text-sm font-semibold">Let's hang out</div>
+                </button>
+                <button
+                  onClick={() => setAttentionTag('Want to chat 📱')}
+                  className={`p-3 rounded-xl border-2 text-left ${
+                    attentionTag === 'Want to chat 📱'
+                      ? 'border-primary bg-purple-50'
+                      : 'border-gray-200 hover:border-primary'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">📱</div>
+                  <div className="text-sm font-semibold">Want to chat</div>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRequestAttention(false);
+                  setAttentionTag('');
+                }}
+                className="flex-1 btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!attentionTag) {
+                    toast.error('Please select an option');
+                    return;
+                  }
+
+                  try {
+                    await updateDoc(doc(db, 'users', currentUser.uid), {
+                      requestAttention: {
+                        active: true,
+                        tag: attentionTag,
+                        timestamp: Timestamp.now(),
+                      }
+                    });
+
+                    toast.success('Your besties will see your request 💜');
+                    setShowRequestAttention(false);
+                    setAttentionTag('');
+                  } catch (error) {
+                    console.error('Error requesting attention:', error);
+                    toast.error('Failed to send request');
+                  }
+                }}
+                className="flex-1 btn btn-primary"
+              >
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

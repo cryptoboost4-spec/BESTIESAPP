@@ -32,7 +32,9 @@ const ViewUserProfilePage = () => {
     }
 
     try {
-      // Check if they're a bestie
+      // Check if they're a bestie (bidirectional check)
+      // We check both directions because a bestie relationship in Firestore can be stored
+      // with either user as requester or recipient. A relationship exists if found in either direction.
       const [requesterQuery, recipientQuery] = await Promise.all([
         getDocs(
           query(

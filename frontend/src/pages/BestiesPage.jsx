@@ -9,7 +9,6 @@ import {
   getDocs,
   doc,
   getDoc,
-  updateDoc,
   addDoc,
   orderBy,
   limit,
@@ -37,13 +36,8 @@ const BestiesPage = () => {
   const [activeFilter, setActiveFilter] = useState('all');
 
   // Modal state
-  const [showRequestAttention, setShowRequestAttention] = useState(false);
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
   const [showComments, setShowComments] = useState(false);
-
-  // Request Attention state
-  const [attentionTag, setAttentionTag] = useState('');
-  const [attentionNote, setAttentionNote] = useState('');
 
   // Load besties
   useEffect(() => {
@@ -291,47 +285,6 @@ const BestiesPage = () => {
     return indicators.slice(0, 3); // Max 3 indicators
   };
 
-  // Handle request attention
-  const handleRequestAttention = async () => {
-    if (!attentionTag) {
-      toast.error('Please select a tag');
-      return;
-    }
-
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        requestAttention: {
-          active: true,
-          tag: attentionTag,
-          note: attentionNote,
-          timestamp: Timestamp.now(),
-        }
-      });
-
-      toast.success('Your besties will see your request 💜');
-      setShowRequestAttention(false);
-      setAttentionTag('');
-      setAttentionNote('');
-    } catch (error) {
-      console.error('Error requesting attention:', error);
-      toast.error('Failed to send request');
-    }
-  };
-
-  // Cancel request attention
-  const cancelRequestAttention = async () => {
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        'requestAttention.active': false,
-      });
-
-      toast.success('Request removed');
-    } catch (error) {
-      console.error('Error canceling request:', error);
-      toast.error('Failed to cancel request');
-    }
-  };
-
   // Add reaction to check-in
   const addReaction = async (checkInId, emoji) => {
     try {
@@ -363,14 +316,6 @@ const BestiesPage = () => {
         filtered = filtered.filter(b =>
           activityFeed.some(a => a.userId === b.userId && a.timestamp > oneHourAgo && a.status === 'active')
         );
-        break;
-      case 'attention':
-        // Filter besties who need attention (missed check-ins or request attention)
-        const needsAttentionIds = [
-          ...missedCheckIns.map(m => m.userId),
-          ...requestsForAttention.map(r => r.userId)
-        ];
-        filtered = filtered.filter(b => needsAttentionIds.includes(b.userId));
         break;
       case 'reliable':
         // Sort by completion rate (would need actual data)
@@ -428,31 +373,6 @@ const BestiesPage = () => {
           <p className="text-sm md:text-base text-text-secondary">Your safety squad activity hub</p>
         </div>
 
-        {/* Action Buttons - Mobile Stacked */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-6">
-          {userData?.requestAttention?.active ? (
-            <button
-              onClick={cancelRequestAttention}
-              className="btn bg-orange-500 text-white hover:bg-orange-600 w-full sm:w-auto"
-            >
-              Cancel Request
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowRequestAttention(true)}
-              className="btn btn-primary w-full sm:w-auto"
-            >
-              💬 Request Attention
-            </button>
-          )}
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn btn-secondary w-full sm:w-auto"
-          >
-            ➕ Add Bestie
-          </button>
-        </div>
-
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
           <div className="mb-6">
@@ -463,35 +383,6 @@ const BestiesPage = () => {
               {pendingRequests.map((request) => (
                 <BestieRequestCard key={request.id} request={request} />
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* My Request Attention Banner */}
-        {userData?.requestAttention?.active && (
-          <div className="card p-4 md:p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
-            <div className="flex items-start gap-3">
-              <div className="text-3xl md:text-4xl">💜</div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg md:text-xl font-display text-purple-900 mb-2">
-                  You're requesting attention
-                </h3>
-                <div className="inline-block px-3 py-1 bg-purple-200 text-purple-900 rounded-full text-xs md:text-sm font-semibold mb-2">
-                  {userData.requestAttention.tag}
-                </div>
-                {userData.requestAttention.note && (
-                  <p className="text-sm md:text-base text-gray-700 italic break-words">"{userData.requestAttention.note}"</p>
-                )}
-                <p className="text-xs md:text-sm text-purple-700 mt-2">
-                  Your besties can see this and reach out to support you 💜
-                </p>
-              </div>
-              <button
-                onClick={cancelRequestAttention}
-                className="text-purple-700 hover:text-purple-900 font-semibold text-sm flex-shrink-0"
-              >
-                Remove
-              </button>
             </div>
           </div>
         )}
@@ -614,16 +505,6 @@ const BestiesPage = () => {
                   }`}
                 >
                   🔔 Active
-                </button>
-                <button
-                  onClick={() => setActiveFilter('attention')}
-                  className={`px-3 md:px-4 py-2 rounded-full whitespace-nowrap font-semibold text-xs md:text-sm flex-shrink-0 ${
-                    activeFilter === 'attention'
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  ⚠️ Attention
                 </button>
                 <button
                   onClick={() => setActiveFilter('reliable')}
@@ -770,57 +651,94 @@ const BestiesPage = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Power Rankings - Compact on Mobile */}
-            <div className="card p-4 md:p-6">
-              <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
-                🏆 This Week's Champions
-              </h2>
+            {/* This Week's Champions - Enhanced */}
+            <div className="card p-4 md:p-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg md:text-xl font-display text-gradient">
+                  🏆 This Week's Champions
+                </h2>
+              </div>
 
-              <div className="space-y-3 md:space-y-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1 md:mb-2">
-                    <span className="text-lg md:text-xl">🛡️</span>
-                    <span className="font-semibold text-xs md:text-sm text-gray-700">Most Reliable</span>
+              <div className="space-y-4">
+                {/* Most Reliable */}
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      🛡️
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-display text-sm font-bold text-gray-800">Most Reliable</div>
+                      <div className="text-xs text-gray-500">Always there when needed</div>
+                    </div>
                   </div>
-                  <div className="text-xs md:text-sm text-text-secondary italic">
-                    Building stats...
+                  {/* Placeholder - will show actual bestie when data available */}
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="text-xs text-center text-gray-400 italic py-2">
+                      Building stats... Check back soon!
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-2 mb-1 md:mb-2">
-                    <span className="text-lg md:text-xl">⚡</span>
-                    <span className="font-semibold text-xs md:text-sm text-gray-700">Fastest Responder</span>
+                {/* Fastest Responder */}
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      ⚡
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-display text-sm font-bold text-gray-800">Fastest Responder</div>
+                      <div className="text-xs text-gray-500">Lightning quick replies</div>
+                    </div>
                   </div>
-                  <div className="text-xs md:text-sm text-text-secondary italic">
-                    Building stats...
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-1 md:mb-2">
-                    <span className="text-lg md:text-xl">🏅</span>
-                    <span className="font-semibold text-xs md:text-sm text-gray-700">Safety Champion</span>
-                  </div>
-                  <div className="text-xs md:text-sm text-text-secondary italic">
-                    Building stats...
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="text-xs text-center text-gray-400 italic py-2">
+                      Building stats... Check back soon!
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-2 mb-1 md:mb-2">
-                    <span className="text-lg md:text-xl">🔥</span>
-                    <span className="font-semibold text-xs md:text-sm text-gray-700">Streak Master</span>
+                {/* Safety Champion */}
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      🏅
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-display text-sm font-bold text-gray-800">Safety Champion</div>
+                      <div className="text-xs text-gray-500">Most check-ins completed</div>
+                    </div>
                   </div>
-                  <div className="text-xs md:text-sm text-text-secondary italic">
-                    Building stats...
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="text-xs text-center text-gray-400 italic py-2">
+                      Building stats... Check back soon!
+                    </div>
+                  </div>
+                </div>
+
+                {/* Streak Master */}
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-yellow-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white text-xl shadow-md">
+                      🔥
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-display text-sm font-bold text-gray-800">Streak Master</div>
+                      <div className="text-xs text-gray-500">Longest active streak</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="text-xs text-center text-gray-400 italic py-2">
+                      Building stats... Check back soon!
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <p className="text-xs text-text-secondary mt-3 md:mt-4 italic">
-                Rankings reset every Monday
-              </p>
+              <div className="mt-4 pt-3 border-t border-yellow-200 text-center">
+                <p className="text-xs text-gray-600 font-semibold">
+                  🎯 Resets every Monday
+                </p>
+              </div>
             </div>
 
             {/* Besties Grid */}
@@ -829,7 +747,6 @@ const BestiesPage = () => {
                 {activeFilter === 'circle' && '💜 Bestie Circle'}
                 {activeFilter === 'all' && 'All Besties'}
                 {activeFilter === 'active' && '🔔 Active Now'}
-                {activeFilter === 'attention' && '⚠️ Needs Attention'}
                 {activeFilter === 'reliable' && '🛡️ Most Reliable'}
                 {activeFilter === 'recent' && '⏰ Recent Activity'}
               </h2>
@@ -893,104 +810,6 @@ const BestiesPage = () => {
           </div>
         )}
       </div>
-
-      {/* Request Attention Modal - Mobile Optimized */}
-      {showRequestAttention && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl md:text-2xl font-display text-text-primary mb-3 md:mb-4">
-              💜 Request Attention
-            </h2>
-            <p className="text-sm md:text-base text-text-secondary mb-4 md:mb-6">
-              Let your besties know you could use some support
-            </p>
-
-            <div className="mb-4">
-              <label className="block text-xs md:text-sm font-semibold text-text-primary mb-2">
-                How are you feeling?
-              </label>
-              <div className="grid grid-cols-2 gap-2 md:gap-3">
-                <button
-                  onClick={() => setAttentionTag('Needs to vent 💬')}
-                  className={`p-2 md:p-3 rounded-xl border-2 text-left ${
-                    attentionTag === 'Needs to vent 💬'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
-                  }`}
-                >
-                  <div className="text-xl md:text-2xl mb-1">💬</div>
-                  <div className="text-xs md:text-sm font-semibold">Needs to vent</div>
-                </button>
-                <button
-                  onClick={() => setAttentionTag('Needs a shoulder 🫂')}
-                  className={`p-2 md:p-3 rounded-xl border-2 text-left ${
-                    attentionTag === 'Needs a shoulder 🫂'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
-                  }`}
-                >
-                  <div className="text-xl md:text-2xl mb-1">🫂</div>
-                  <div className="text-xs md:text-sm font-semibold">Needs a shoulder</div>
-                </button>
-                <button
-                  onClick={() => setAttentionTag('Could use support 💜')}
-                  className={`p-2 md:p-3 rounded-xl border-2 text-left ${
-                    attentionTag === 'Could use support 💜'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
-                  }`}
-                >
-                  <div className="text-xl md:text-2xl mb-1">💜</div>
-                  <div className="text-xs md:text-sm font-semibold">Could use support</div>
-                </button>
-                <button
-                  onClick={() => setAttentionTag('Having a rough day 😔')}
-                  className={`p-2 md:p-3 rounded-xl border-2 text-left ${
-                    attentionTag === 'Having a rough day 😔'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
-                  }`}
-                >
-                  <div className="text-xl md:text-2xl mb-1">😔</div>
-                  <div className="text-xs md:text-sm font-semibold">Rough day</div>
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-4 md:mb-6">
-              <label className="block text-xs md:text-sm font-semibold text-text-primary mb-2">
-                Add a note (optional)
-              </label>
-              <textarea
-                value={attentionNote}
-                onChange={(e) => setAttentionNote(e.target.value)}
-                placeholder="Let your besties know what's going on..."
-                className="w-full p-2 md:p-3 border border-gray-300 rounded-xl resize-none text-sm md:text-base"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-              <button
-                onClick={() => {
-                  setShowRequestAttention(false);
-                  setAttentionTag('');
-                  setAttentionNote('');
-                }}
-                className="flex-1 btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRequestAttention}
-                className="flex-1 btn btn-primary"
-              >
-                Send Request
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Comments Modal - Mobile Optimized */}
       {showComments && selectedCheckIn && (
