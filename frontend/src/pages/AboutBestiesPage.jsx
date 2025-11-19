@@ -846,6 +846,134 @@ const AboutBestiesPage = () => {
             </div>
           </div>
 
+          {/* APP LOGO CONCEPTS - 5 Girls Around 1 Girl */}
+          <div className="mt-8 pt-8 border-t-4 border-pink-200">
+            <h3 className="text-xl font-display text-text-primary mb-4 text-center">
+              💗 App Logo Concepts - 5 Friends, 1 Circle 💗
+            </h3>
+            <div className="grid grid-cols-5 gap-4">
+
+              {/* Logo 1: Classic Dots */}
+              <div className="flex flex-col items-center">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-pink-400 to-pink-500 p-3 shadow-lg">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Center dot - main girl */}
+                    <circle cx="50" cy="50" r="12" fill="white" />
+                    {/* 5 surrounding dots - friends */}
+                    <circle cx="50" cy="20" r="8" fill="white" opacity="0.9" />
+                    <circle cx="75" cy="35" r="8" fill="white" opacity="0.9" />
+                    <circle cx="75" cy="65" r="8" fill="white" opacity="0.9" />
+                    <circle cx="50" cy="80" r="8" fill="white" opacity="0.9" />
+                    <circle cx="25" cy="65" r="8" fill="white" opacity="0.9" />
+                  </svg>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Classic</p>
+              </div>
+
+              {/* Logo 2: Gradient Circles */}
+              <div className="flex flex-col items-center">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-500 p-3 shadow-lg">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <radialGradient id="logoGlow1">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="100%" stopColor="#fce7f3" />
+                      </radialGradient>
+                      <filter id="logoShadow1">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#db2777" floodOpacity="0.3"/>
+                      </filter>
+                    </defs>
+                    {/* Center circle with glow */}
+                    <circle cx="50" cy="50" r="14" fill="url(#logoGlow1)" filter="url(#logoShadow1)" />
+                    {/* 5 surrounding circles */}
+                    <circle cx="50" cy="18" r="9" fill="white" opacity="0.95" filter="url(#logoShadow1)" />
+                    <circle cx="77" cy="33" r="9" fill="white" opacity="0.95" filter="url(#logoShadow1)" />
+                    <circle cx="77" cy="67" r="9" fill="white" opacity="0.95" filter="url(#logoShadow1)" />
+                    <circle cx="50" cy="82" r="9" fill="white" opacity="0.95" filter="url(#logoShadow1)" />
+                    <circle cx="23" cy="67" r="9" fill="white" opacity="0.95" filter="url(#logoShadow1)" />
+                  </svg>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Glow</p>
+              </div>
+
+              {/* Logo 3: Simple Figures */}
+              <div className="flex flex-col items-center">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-pink-400 to-pink-600 p-3 shadow-lg">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Center figure - larger */}
+                    <g>
+                      <circle cx="50" cy="45" r="8" fill="white" />
+                      <circle cx="50" cy="60" r="10" fill="white" />
+                    </g>
+                    {/* 5 surrounding figures - smaller */}
+                    <g opacity="0.9">
+                      <circle cx="50" cy="15" r="5" fill="white" />
+                      <circle cx="50" cy="25" r="6" fill="white" />
+                    </g>
+                    <g opacity="0.9">
+                      <circle cx="80" cy="30" r="5" fill="white" />
+                      <circle cx="80" cy="40" r="6" fill="white" />
+                    </g>
+                    <g opacity="0.9">
+                      <circle cx="80" cy="60" r="5" fill="white" />
+                      <circle cx="80" cy="70" r="6" fill="white" />
+                    </g>
+                    <g opacity="0.9">
+                      <circle cx="50" cy="75" r="5" fill="white" />
+                      <circle cx="50" cy="85" r="6" fill="white" />
+                    </g>
+                    <g opacity="0.9">
+                      <circle cx="20" cy="60" r="5" fill="white" />
+                      <circle cx="20" cy="70" r="6" fill="white" />
+                    </g>
+                  </svg>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Friends</p>
+              </div>
+
+              {/* Logo 4: Connected Network */}
+              <div className="flex flex-col items-center">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-500 p-3 shadow-lg">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Connection lines */}
+                    <line x1="50" y1="50" x2="50" y2="20" stroke="white" strokeWidth="2" opacity="0.4" />
+                    <line x1="50" y1="50" x2="75" y2="35" stroke="white" strokeWidth="2" opacity="0.4" />
+                    <line x1="50" y1="50" x2="75" y2="65" stroke="white" strokeWidth="2" opacity="0.4" />
+                    <line x1="50" y1="50" x2="50" y2="80" stroke="white" strokeWidth="2" opacity="0.4" />
+                    <line x1="50" y1="50" x2="25" y2="65" stroke="white" strokeWidth="2" opacity="0.4" />
+                    {/* Center node */}
+                    <circle cx="50" cy="50" r="10" fill="white" />
+                    {/* 5 surrounding nodes */}
+                    <circle cx="50" cy="20" r="7" fill="white" opacity="0.95" />
+                    <circle cx="75" cy="35" r="7" fill="white" opacity="0.95" />
+                    <circle cx="75" cy="65" r="7" fill="white" opacity="0.95" />
+                    <circle cx="50" cy="80" r="7" fill="white" opacity="0.95" />
+                    <circle cx="25" cy="65" r="7" fill="white" opacity="0.95" />
+                  </svg>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Connected</p>
+              </div>
+
+              {/* Logo 5: Hearts Pattern */}
+              <div className="flex flex-col items-center">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-pink-300 to-purple-400 p-3 shadow-lg">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Center heart - main girl */}
+                    <path d="M 50 55 C 50 50, 45 45, 40 45 C 35 45, 32 48, 32 52 C 32 58, 40 65, 50 68 C 60 65, 68 58, 68 52 C 68 48, 65 45, 60 45 C 55 45, 50 50, 50 55 Z" fill="white" />
+                    {/* 5 surrounding hearts - smaller friends */}
+                    <path d="M 50 25 C 50 22, 47 20, 45 20 C 43 20, 42 21, 42 23 C 42 26, 46 29, 50 31 C 54 29, 58 26, 58 23 C 58 21, 57 20, 55 20 C 53 20, 50 22, 50 25 Z" fill="white" opacity="0.9" />
+                    <path d="M 78 38 C 78 35, 75 33, 73 33 C 71 33, 70 34, 70 36 C 70 39, 74 42, 78 44 C 82 42, 86 39, 86 36 C 86 34, 85 33, 83 33 C 81 33, 78 35, 78 38 Z" fill="white" opacity="0.9" />
+                    <path d="M 78 68 C 78 65, 75 63, 73 63 C 71 63, 70 64, 70 66 C 70 69, 74 72, 78 74 C 82 72, 86 69, 86 66 C 86 64, 85 63, 83 63 C 81 63, 78 65, 78 68 Z" fill="white" opacity="0.9" />
+                    <path d="M 50 85 C 50 82, 47 80, 45 80 C 43 80, 42 81, 42 83 C 42 86, 46 89, 50 91 C 54 89, 58 86, 58 83 C 58 81, 57 80, 55 80 C 53 80, 50 82, 50 85 Z" fill="white" opacity="0.9" />
+                    <path d="M 22 68 C 22 65, 19 63, 17 63 C 15 63, 14 64, 14 66 C 14 69, 18 72, 22 74 C 26 72, 30 69, 30 66 C 30 64, 29 63, 27 63 C 25 63, 22 65, 22 68 Z" fill="white" opacity="0.9" />
+                  </svg>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Hearts</p>
+              </div>
+
+            </div>
+          </div>
+
           <div className="text-center mt-6 p-4 bg-gradient-to-r from-pink-100 via-purple-100 to-pink-100 rounded-lg">
             <p className="font-semibold text-gray-900 mb-2">Which style captures Besties' heart?</p>
             <p className="text-sm text-gray-700">
