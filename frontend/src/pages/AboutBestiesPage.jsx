@@ -96,8 +96,21 @@ const AboutBestiesPage = () => {
           <div className="grid md:grid-cols-2 gap-3">
             <div className="bg-gradient-to-br from-pink-100 to-purple-100 p-4 rounded-xl border border-pink-200">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center text-white text-sm shadow-sm">
-                  💖
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
+                    <defs>
+                      <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ec4899" />
+                        <stop offset="50%" stopColor="#f472b6" />
+                        <stop offset="100%" stopColor="#fbcfe8" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M16,28 C16,28 4,20 4,12 C4,8 7,5 10,5 C12,5 14,6 16,8 C18,6 20,5 22,5 C25,5 28,8 28,12 C28,20 16,28 16,28 Z"
+                          fill="url(#heartGradient)"
+                          stroke="#db2777"
+                          strokeWidth="1"
+                          className="animate-pulse-slow" />
+                  </svg>
                 </div>
                 <h3 className="font-semibold text-sm text-pink-900">Good Over Profit</h3>
               </div>
@@ -108,8 +121,23 @@ const AboutBestiesPage = () => {
 
             <div className="bg-gradient-to-br from-purple-100 to-fuchsia-100 p-4 rounded-xl border border-purple-200">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white text-sm shadow-sm">
-                  🔐
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
+                    <defs>
+                      <linearGradient id="lockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#a855f7" />
+                        <stop offset="50%" stopColor="#c084fc" />
+                        <stop offset="100%" stopColor="#e9d5ff" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="10" y="14" width="12" height="12" rx="2" fill="url(#lockGradient)" stroke="#9333ea" strokeWidth="1.5"/>
+                    <path d="M12,14 L12,10 C12,7.8 13.8,6 16,6 C18.2,6 20,7.8 20,10 L20,14"
+                          fill="none"
+                          stroke="url(#lockGradient)"
+                          strokeWidth="2"
+                          strokeLinecap="round"/>
+                    <circle cx="16" cy="20" r="1.5" fill="#f3e8ff"/>
+                  </svg>
                 </div>
                 <h3 className="font-semibold text-sm text-purple-900">Privacy First</h3>
               </div>
@@ -120,8 +148,31 @@ const AboutBestiesPage = () => {
 
             <div className="bg-gradient-to-br from-fuchsia-100 to-pink-100 p-4 rounded-xl border border-fuchsia-200">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-400 to-fuchsia-600 rounded-full flex items-center justify-center text-white text-sm shadow-sm">
-                  ✨
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
+                    <defs>
+                      <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#d946ef" />
+                        <stop offset="50%" stopColor="#e879f9" />
+                        <stop offset="100%" stopColor="#fae8ff" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M16,4 L17,12 L25,13 L17,14 L16,22 L15,14 L7,13 L15,12 Z"
+                          fill="url(#sparkleGradient)"
+                          stroke="#c026d3"
+                          strokeWidth="1"
+                          className="animate-pulse-slow" />
+                    <path d="M24,6 L25,10 L29,11 L25,12 L24,16 L23,12 L19,11 L23,10 Z"
+                          fill="url(#sparkleGradient)"
+                          stroke="#c026d3"
+                          strokeWidth="0.8"
+                          opacity="0.8"/>
+                    <path d="M8,22 L9,25 L12,26 L9,27 L8,30 L7,27 L4,26 L7,25 Z"
+                          fill="url(#sparkleGradient)"
+                          stroke="#c026d3"
+                          strokeWidth="0.8"
+                          opacity="0.8"/>
+                  </svg>
                 </div>
                 <h3 className="font-semibold text-sm text-fuchsia-900">Transparent Pricing</h3>
               </div>
@@ -132,8 +183,25 @@ const AboutBestiesPage = () => {
 
             <div className="bg-gradient-to-br from-rose-100 to-pink-100 p-4 rounded-xl border border-rose-200">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-rose-400 to-rose-600 rounded-full flex items-center justify-center text-white text-sm shadow-sm">
-                  👑
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
+                    <defs>
+                      <linearGradient id="crownGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f43f5e" />
+                        <stop offset="50%" stopColor="#fb7185" />
+                        <stop offset="100%" stopColor="#fecdd3" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M6,24 L8,12 L12,18 L16,8 L20,18 L24,12 L26,24 Z"
+                          fill="url(#crownGradient)"
+                          stroke="#e11d48"
+                          strokeWidth="1.5"
+                          strokeLinejoin="round"/>
+                    <circle cx="8" cy="12" r="2" fill="#fef2f2"/>
+                    <circle cx="16" cy="8" r="2" fill="#fef2f2"/>
+                    <circle cx="24" cy="12" r="2" fill="#fef2f2"/>
+                    <path d="M6,24 L26,24" stroke="#e11d48" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
                 </div>
                 <h3 className="font-semibold text-sm text-rose-900">Community Driven</h3>
               </div>
@@ -152,7 +220,18 @@ const AboutBestiesPage = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-purple-100">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0">
-                📱
+                <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md">
+                  <defs>
+                    <linearGradient id="phoneGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" />
+                      <stop offset="50%" stopColor="#f3e8ff" />
+                      <stop offset="100%" stopColor="#e9d5ff" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="7" y="2" width="10" height="20" rx="2" fill="url(#phoneGradient)" stroke="#ffffff" strokeWidth="1.5"/>
+                  <circle cx="12" cy="19" r="1" fill="#a855f7"/>
+                  <rect x="9" y="4" width="6" height="0.5" rx="0.5" fill="#c084fc"/>
+                </svg>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm text-gray-900">Native Mobile Apps</h3>
@@ -165,7 +244,23 @@ const AboutBestiesPage = () => {
 
             <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-pink-100">
               <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-rose-500 rounded-lg flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0">
-                💬
+                <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md">
+                  <defs>
+                    <linearGradient id="chatGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" />
+                      <stop offset="50%" stopColor="#ffe4e6" />
+                      <stop offset="100%" stopColor="#fecdd3" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M20,2 L4,2 C2.9,2 2,2.9 2,4 L2,16 C2,17.1 2.9,18 4,18 L8,18 L12,22 L16,18 L20,18 C21.1,18 22,17.1 22,16 L22,4 C22,2.9 21.1,2 20,2 Z"
+                        fill="url(#chatGradient)"
+                        stroke="#ffffff"
+                        strokeWidth="1.5"
+                        strokeLinejoin="round"/>
+                  <circle cx="8" cy="9" r="1.2" fill="#ec4899"/>
+                  <circle cx="12" cy="9" r="1.2" fill="#ec4899"/>
+                  <circle cx="16" cy="9" r="1.2" fill="#ec4899"/>
+                </svg>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm text-gray-900">WhatsApp & Facebook</h3>
@@ -178,7 +273,21 @@ const AboutBestiesPage = () => {
 
             <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-fuchsia-100">
               <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-400 to-fuchsia-600 rounded-lg flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0">
-                📍
+                <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md animate-pulse-slow">
+                  <defs>
+                    <linearGradient id="pinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" />
+                      <stop offset="50%" stopColor="#fae8ff" />
+                      <stop offset="100%" stopColor="#f5d0fe" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M12,2 C8.13,2 5,5.13 5,9 C5,14.25 12,22 12,22 C12,22 19,14.25 19,9 C19,5.13 15.87,2 12,2 Z"
+                        fill="url(#pinGradient)"
+                        stroke="#ffffff"
+                        strokeWidth="1.5"
+                        strokeLinejoin="round"/>
+                  <circle cx="12" cy="9" r="2.5" fill="#d946ef"/>
+                </svg>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm text-gray-900">Live Location Sharing</h3>
@@ -191,7 +300,19 @@ const AboutBestiesPage = () => {
 
             <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-rose-100">
               <div className="w-10 h-10 bg-gradient-to-br from-rose-400 to-rose-600 rounded-lg flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0">
-                🆘
+                <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md">
+                  <defs>
+                    <linearGradient id="sosGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" />
+                      <stop offset="50%" stopColor="#ffe4e6" />
+                      <stop offset="100%" stopColor="#fecdd3" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="12" cy="12" r="9" fill="url(#sosGradient)" stroke="#ffffff" strokeWidth="2"/>
+                  <path d="M12,7 L12,13" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round"/>
+                  <circle cx="12" cy="16.5" r="1.2" fill="#f43f5e"/>
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="#ffffff" strokeWidth="1.5" opacity="0.6"/>
+                </svg>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm text-gray-900">Quick SOS Button</h3>
@@ -204,7 +325,20 @@ const AboutBestiesPage = () => {
 
             <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-pink-100">
               <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0">
-                🌍
+                <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md">
+                  <defs>
+                    <linearGradient id="globeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" />
+                      <stop offset="50%" stopColor="#fce7f3" />
+                      <stop offset="100%" stopColor="#fbcfe8" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="12" cy="12" r="9" fill="url(#globeGradient)" stroke="#ffffff" strokeWidth="1.5"/>
+                  <ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="#ec4899" strokeWidth="1.2"/>
+                  <path d="M3,12 L21,12" stroke="#ec4899" strokeWidth="1.2"/>
+                  <path d="M12,3 Q16,6 16,12 T12,21" fill="none" stroke="#f472b6" strokeWidth="1" opacity="0.6"/>
+                  <path d="M12,3 Q8,6 8,12 T12,21" fill="none" stroke="#f472b6" strokeWidth="1" opacity="0.6"/>
+                </svg>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm text-gray-900">Global Safety Network</h3>
