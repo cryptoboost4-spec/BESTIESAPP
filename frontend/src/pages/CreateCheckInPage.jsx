@@ -151,9 +151,20 @@ const CreateCheckInPage = () => {
 
         setBesties(circleBesties);
 
-        // Auto-select all besties in circle when they load (only if not loading from template)
+        // Auto-select only besties who have phone numbers (required for notifications)
         if (!location.state?.template && circleBesties.length > 0) {
-          setSelectedBesties(circleBesties.map(b => b.id));
+          const bestiesWithPhone = circleBesties.filter(b => b.phone);
+          setSelectedBesties(bestiesWithPhone.map(b => b.id));
+
+          // Warn if some besties don't have phone numbers
+          const withoutPhone = circleBesties.filter(b => !b.phone);
+          if (withoutPhone.length > 0) {
+            console.warn('⚠️ Some circle besties missing phone numbers:', withoutPhone);
+            toast('Some besties need to add their phone number before they can be alerted', {
+              icon: 'ℹ️',
+              duration: 4000
+            });
+          }
         }
       } catch (error) {
         console.error('Error loading besties:', error);
