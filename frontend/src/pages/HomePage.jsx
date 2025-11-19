@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs } from 'firebase/firestore';
 import Header from '../components/Header';
 import CheckInCard from '../components/CheckInCard';
 import QuickButtons from '../components/QuickButtons';
@@ -11,6 +11,7 @@ import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
 import toast from 'react-hot-toast';
+import { notificationService } from '../services/notificationService';
 
 // Dynamic supportive messages for girls 💜
 const SUPPORTIVE_MESSAGES = [
@@ -527,6 +528,38 @@ const HomePage = () => {
                         timestamp: Timestamp.now(),
                       }
                     });
+
+                    // Notify all besties
+                    try {
+                      const bestiesQuery = query(
+                        collection(db, 'besties'),
+                        where('status', '==', 'accepted')
+                      );
+                      const bestiesSnapshot = await getDocs(bestiesQuery);
+                      const userBesties = [];
+
+                      bestiesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        // Get the other person's ID (not mine)
+                        if (data.requesterId === currentUser.uid) {
+                          userBesties.push({ id: data.recipientId });
+                        } else if (data.recipientId === currentUser.uid) {
+                          userBesties.push({ id: data.requesterId });
+                        }
+                      });
+
+                      // Send notification to each bestie
+                      for (const bestie of userBesties) {
+                        await notificationService.notifyRequestAttention(
+                          bestie.id,
+                          userData?.displayName || 'A bestie',
+                          currentUser.uid
+                        );
+                      }
+                    } catch (notifError) {
+                      console.error('Error sending notifications:', notifError);
+                      // Don't fail the whole operation if notifications fail
+                    }
 
                     toast.success('Your besties will see your request 💜');
                     setShowRequestAttention(false);

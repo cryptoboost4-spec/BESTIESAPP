@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
+import { notificationService } from '../services/notificationService';
 
 const AuthContext = createContext();
 
@@ -83,6 +84,17 @@ export const AuthProvider = ({ children }) => {
             requesterPhone: inviterData.phoneNumber || inviterData.email,
           });
           found = true;
+
+          // Notify both users that they're now connected
+          try {
+            await notificationService.notifyBestieAccepted(
+              inviterUID,
+              userData.displayName || user.displayName || 'Someone'
+            );
+            // Note: Don't notify the new user (they just signed up via invite)
+          } catch (err) {
+            console.error('Failed to send bestie notification:', err);
+          }
           break;
         }
       }
@@ -100,6 +112,19 @@ export const AuthProvider = ({ children }) => {
           recipientName: userData.displayName || user.displayName || 'Unknown',
           recipientPhone: user.phoneNumber || user.email,
         });
+
+        // Notify inviter that new bestie added them
+        try {
+          await notificationService.createNotification(
+            inviterUID,
+            'bestie_request',
+            'New Bestie!',
+            `${userData.displayName || user.displayName || 'Someone'} added you as a bestie!`,
+            { bestieName: userData.displayName || user.displayName || 'Someone', bestieId: user.uid }
+          );
+        } catch (err) {
+          console.error('Failed to send bestie notification:', err);
+        }
       }
 
       // Create celebration documents for BOTH users
@@ -212,6 +237,16 @@ export const AuthProvider = ({ children }) => {
             lastActive: Timestamp.now(),
             onboardingCompleted: false, // New users need onboarding
           });
+
+          // Send welcome notification
+          try {
+            await notificationService.notifyWelcome(
+              user.uid,
+              user.displayName || 'New User'
+            );
+          } catch (err) {
+            console.error('Failed to send welcome notification:', err);
+          }
         } else {
           // Returning user - update last active timestamp
           const updates = { lastActive: Timestamp.now() };
