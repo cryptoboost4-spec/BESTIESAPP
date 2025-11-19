@@ -239,7 +239,7 @@ const HomePage = () => {
               Every check-in you create, every friend you add, every safe moment you share...
               you're part of a community that's got each other's backs.
               We're building this together, and we couldn't do it without amazing people like you.
-              You're not just using an app—you're part of the squad. 💕
+              You're not just using an app—you're one of the besties. 💕
             </p>
             <p className="text-sm text-primary font-semibold">
               Keep slaying safely, queen! 👑✨

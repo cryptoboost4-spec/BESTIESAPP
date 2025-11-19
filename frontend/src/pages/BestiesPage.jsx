@@ -112,10 +112,15 @@ const BestiesPage = () => {
       <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
-        <div className="mb-6">
-          <h1 className="text-3xl font-display text-text-primary mb-2">Your Besties</h1>
+        {/* Cute Header */}
+        <div className="mb-6 text-center">
+          <div className="text-5xl mb-3">💜</div>
+          <h1 className="text-3xl font-display text-gradient mb-3">Your Besties</h1>
+          <p className="text-lg text-primary font-semibold mb-2">
+            Life is a bit safer when you have besties around
+          </p>
           <p className="text-text-secondary">
-            Manage your safety network
+            Build your safety squad - the people who've got your back
           </p>
         </div>
 
