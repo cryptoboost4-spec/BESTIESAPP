@@ -1,348 +1,199 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { sendBestieInvite } from '../services/api';
 import toast from 'react-hot-toast';
 import '../styles/AddBestieModal.css';
 
-// Common country codes with their formats
-const COUNTRY_CODES = {
-  AU: { code: '+61', pattern: /^0[2-9]\d{8}$/, format: (n) => n.replace(/^0/, '+61'), name: 'Australia' },
-  US: { code: '+1', pattern: /^[2-9]\d{9}$/, format: (n) => '+1' + n, name: 'United States' },
-  CA: { code: '+1', pattern: /^[2-9]\d{9}$/, format: (n) => '+1' + n, name: 'Canada' },
-  GB: { code: '+44', pattern: /^0[1-9]\d{9}$/, format: (n) => n.replace(/^0/, '+44'), name: 'United Kingdom' },
-  NZ: { code: '+64', pattern: /^0[2-9]\d{7,9}$/, format: (n) => n.replace(/^0/, '+64'), name: 'New Zealand' },
-  IN: { code: '+91', pattern: /^[6-9]\d{9}$/, format: (n) => '+91' + n, name: 'India' },
-  DE: { code: '+49', pattern: /^0[1-9]\d{9,10}$/, format: (n) => n.replace(/^0/, '+49'), name: 'Germany' },
-  FR: { code: '+33', pattern: /^0[1-9]\d{8}$/, format: (n) => n.replace(/^0/, '+33'), name: 'France' },
-  IT: { code: '+39', pattern: /^3\d{8,9}$/, format: (n) => '+39' + n, name: 'Italy' },
-  ES: { code: '+34', pattern: /^[6-9]\d{8}$/, format: (n) => '+34' + n, name: 'Spain' },
-  JP: { code: '+81', pattern: /^0[7-9]0\d{8}$/, format: (n) => n.replace(/^0/, '+81'), name: 'Japan' },
-  CN: { code: '+86', pattern: /^1[3-9]\d{9}$/, format: (n) => '+86' + n, name: 'China' },
-  BR: { code: '+55', pattern: /^[1-9]{2}9\d{8}$/, format: (n) => '+55' + n, name: 'Brazil' },
-  MX: { code: '+52', pattern: /^[1-9]\d{9}$/, format: (n) => '+52' + n, name: 'Mexico' },
-  ZA: { code: '+27', pattern: /^0[1-9]\d{8}$/, format: (n) => n.replace(/^0/, '+27'), name: 'South Africa' },
-  SG: { code: '+65', pattern: /^[89]\d{7}$/, format: (n) => '+65' + n, name: 'Singapore' },
-};
-
 const AddBestieModal = ({ onClose, onSuccess }) => {
-  const { currentUser } = useAuth();
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState('AU');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showShareOptions, setShowShareOptions] = useState(false);
+  const { currentUser, userData } = useAuth();
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const shareUrl = `https://bestiesapp.web.app/?invite=${currentUser?.uid}`;
-  const shareMessage = `Hey! I'm using Besties to stay safe. Join me and be my safety bestie! ${shareUrl}`;
+  const shareMessage = `Hey! ${userData?.displayName || 'Your friend'} wants you to be their safety bestie on Besties! 💜 Join them and help keep each other safe: ${shareUrl}`;
 
-  // Auto-format phone number
-  const formatPhoneNumber = (input) => {
-    // Remove spaces and dashes
-    const cleaned = input.replace(/[\s-]/g, '');
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join me on Besties!',
+          text: shareMessage,
+          url: shareUrl,
+        });
 
-    // If already has +, return as is
-    if (cleaned.startsWith('+')) {
-      return cleaned;
-    }
+        // Show celebration
+        setShowCelebration(true);
+        toast.success('Thanks for inviting your bestie! 💜');
 
-    // Try to match with selected country pattern
-    const country = COUNTRY_CODES[selectedCountry];
-    if (country && country.pattern.test(cleaned)) {
-      return country.format(cleaned);
-    }
-
-    // Return cleaned input
-    return cleaned.startsWith('+') ? cleaned : '+' + cleaned;
-  };
-
-  // Validate phone number
-  const validatePhoneNumber = (phone) => {
-    const e164Regex = /^\+[1-9]\d{1,14}$/;
-
-    if (!phone) {
-      return 'Phone number is required';
-    }
-
-    if (!phone.startsWith('+')) {
-      return 'Phone number must include country code';
-    }
-
-    if (!e164Regex.test(phone)) {
-      return 'Invalid phone number format';
-    }
-
-    return null;
-  };
-
-  const handlePhoneChange = (e) => {
-    const input = e.target.value;
-    setPhoneNumber(input);
-    setError('');
-  };
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Format the phone number
-    const formattedPhone = formatPhoneNumber(phoneNumber);
-
-    // Validate
-    const validationError = validatePhoneNumber(formattedPhone);
-    if (validationError) {
-      setError(validationError);
-      toast.error(validationError);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await sendBestieInvite({ recipientPhone: formattedPhone });
-      toast.success('Invite sent via SMS! ✓');
-      onSuccess?.();
-      onClose();
-    } catch (error) {
-      console.error('Error:', error);
-      const errorMsg = error.message || 'Failed to send invite';
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
+        setTimeout(() => {
+          onSuccess?.();
+          onClose();
+        }, 2000);
+      } catch (error) {
+        // User cancelled - that's okay!
+        if (error.name !== 'AbortError') {
+          console.error('Share failed:', error);
+          toast.error('Sharing failed. Try copy link instead!');
+        }
+      }
+    } else {
+      // Fallback: just copy to clipboard
+      handleCopyLink();
     }
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareMessage);
-    toast.success('Link copied to clipboard!');
+    toast.success('Link copied! Now paste it to your bestie! 💕');
+    setShowCelebration(true);
+
+    setTimeout(() => {
+      onSuccess?.();
+      onClose();
+    }, 2000);
   };
 
   const handleWhatsAppShare = () => {
     const encoded = encodeURIComponent(shareMessage);
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    setShowCelebration(true);
+
+    setTimeout(() => {
+      onSuccess?.();
+      onClose();
+    }, 1500);
   };
 
   const handleFacebookShare = () => {
     const encoded = encodeURIComponent(shareUrl);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encoded}`, '_blank');
+    setShowCelebration(true);
+
+    setTimeout(() => {
+      onSuccess?.();
+      onClose();
+    }, 1500);
   };
 
   const handleSMSShare = () => {
     const encoded = encodeURIComponent(shareMessage);
     window.location.href = `sms:?body=${encoded}`;
+    setShowCelebration(true);
+
+    setTimeout(() => {
+      onSuccess?.();
+      onClose();
+    }, 1500);
   };
 
-  const handleTwitterShare = () => {
-    const text = encodeURIComponent('Join me on Besties - your safety network!');
-    const url = encodeURIComponent(shareUrl);
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-  };
+  if (showCelebration) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content celebration-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="celebration-content">
+            <div className="celebration-emoji">🎉</div>
+            <h2 className="celebration-title">Amazing!</h2>
+            <p className="celebration-text">
+              You're building your safety network! Every bestie you add makes both of you safer. 💜
+            </p>
+            <div className="celebration-encouragement">
+              <p className="font-semibold text-primary">Keep going! Invite more besties:</p>
+              <p className="text-sm text-text-secondary mt-2">
+                The more people in your circle, the safer everyone is.
+                Your besties will thank you! ✨
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <h2>📱 Invite Bestie</h2>
-        <p>They'll get an SMS invite to join the app</p>
+      <div className="modal-content invite-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="invite-header">
+          <div className="invite-icon">👯‍♀️</div>
+          <h2 className="invite-title">Invite Your Bestie</h2>
+          <p className="invite-subtitle">
+            You're making such a smart choice! Adding besties means you'll both be safer when you're out. 💕
+          </p>
+        </div>
 
-        {!showShareOptions ? (
-          <form onSubmit={onSubmit}>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.875rem' }}>
-                Country
-              </label>
-              <select
-                value={selectedCountry}
-                onChange={(e) => setSelectedCountry(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e5e7eb',
-                  fontSize: '1rem',
-                }}
-              >
-                {Object.entries(COUNTRY_CODES).map(([code, data]) => (
-                  <option key={code} value={code}>
-                    {data.name} ({data.code})
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Encouraging Message */}
+        <div className="invite-encouragement-box">
+          <p className="text-sm text-text-secondary">
+            <strong>Why invite besties?</strong>
+          </p>
+          <ul className="invite-benefits">
+            <li>✓ They'll get alerts if you need help</li>
+            <li>✓ You'll know they're safe too</li>
+            <li>✓ Mutual protection = double the safety</li>
+          </ul>
+        </div>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.875rem' }}>
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                placeholder={selectedCountry === 'AU' ? '0412 345 678' : 'Enter phone number'}
-                value={phoneNumber}
-                onChange={handlePhoneChange}
-                required
-                className={error ? 'input-error' : ''}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  border: error ? '2px solid #ef4444' : '2px solid #e5e7eb',
-                  fontSize: '1rem',
-                }}
-              />
-              {error && (
-                <p className="error-message" style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                  {error}
-                </p>
-              )}
-              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
-                {selectedCountry === 'AU' ? 'e.g., 0412 345 678' :
-                 selectedCountry === 'US' || selectedCountry === 'CA' ? 'e.g., 555 123 4567' :
-                 'Enter local format or international format (+...)'}
-              </p>
-            </div>
-
-            <button type="submit" disabled={loading} style={{ width: '100%', marginBottom: '0.75rem' }}>
-              {loading ? 'Sending SMS...' : '📤 Send SMS Invite'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowShareOptions(true)}
-              style={{
-                width: '100%',
-                background: '#f3f4f6',
-                color: '#1f2937',
-                padding: '0.75rem',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-              }}
-            >
-              📤 Or Share Your Link
-            </button>
-          </form>
-        ) : (
-          <div>
-            <button
-              onClick={() => setShowShareOptions(false)}
-              style={{
-                marginBottom: '1rem',
-                background: 'none',
-                border: 'none',
-                color: '#6b7280',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              ← Back to SMS Invite
-            </button>
-
-            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                YOUR INVITE LINK:
-              </div>
-              <div style={{ fontSize: '0.875rem', wordBreak: 'break-all', color: '#1f2937' }}>
-                {shareUrl}
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-              <button
-                onClick={handleWhatsAppShare}
-                style={{
-                  padding: '0.75rem',
-                  background: '#25D366',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                WhatsApp
-              </button>
-
-              <button
-                onClick={handleFacebookShare}
-                style={{
-                  padding: '0.75rem',
-                  background: '#1877F2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                Facebook
-              </button>
-
-              <button
-                onClick={handleTwitterShare}
-                style={{
-                  padding: '0.75rem',
-                  background: '#000000',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                X (Twitter)
-              </button>
-
-              <button
-                onClick={handleSMSShare}
-                style={{
-                  padding: '0.75rem',
-                  background: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                SMS
-              </button>
-            </div>
-
-            <button
-              onClick={handleCopyLink}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                background: '#6366f1',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-              }}
-            >
-              📋 Copy Link
-            </button>
+        {/* Native Share Button (Primary) */}
+        <button
+          onClick={handleNativeShare}
+          className="share-button primary-share"
+        >
+          <span className="share-icon">🎉</span>
+          <div className="share-button-content">
+            <div className="share-button-title">Share Invite</div>
+            <div className="share-button-subtitle">Choose any app to send</div>
           </div>
-        )}
+        </button>
+
+        {/* Or Divider */}
+        <div className="share-divider">
+          <span>OR SHARE VIA</span>
+        </div>
+
+        {/* Share Options Grid */}
+        <div className="share-options-grid">
+          <button
+            onClick={handleWhatsAppShare}
+            className="share-option whatsapp"
+          >
+            <span className="share-option-emoji">💬</span>
+            <span>WhatsApp</span>
+          </button>
+
+          <button
+            onClick={handleSMSShare}
+            className="share-option sms"
+          >
+            <span className="share-option-emoji">📱</span>
+            <span>Text</span>
+          </button>
+
+          <button
+            onClick={handleFacebookShare}
+            className="share-option facebook"
+          >
+            <span className="share-option-emoji">📘</span>
+            <span>Facebook</span>
+          </button>
+
+          <button
+            onClick={handleCopyLink}
+            className="share-option copy"
+          >
+            <span className="share-option-emoji">📋</span>
+            <span>Copy Link</span>
+          </button>
+        </div>
+
+        {/* Footer Encouragement */}
+        <div className="invite-footer">
+          <p className="text-xs text-text-secondary">
+            💜 Your besties will appreciate you looking out for them!
+          </p>
+        </div>
+
+        {/* Close Button */}
+        <button onClick={onClose} className="modal-close-button">
+          ✕
+        </button>
       </div>
     </div>
   );
