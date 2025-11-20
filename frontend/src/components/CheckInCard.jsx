@@ -9,11 +9,70 @@ import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 import { useAuth } from '../contexts/AuthContext';
 
+// Cute loader for "I'm Safe" confirmation
+const SafeLoader = () => {
+  const messages = [
+    "We're so glad you're safe! 💖",
+    "Your besties will be so relieved! ✨",
+    "Taking care of yourself like a queen! 🌸",
+    "You're amazing, bestie! 💕",
+    "See you next time, stay safe! 🦋",
+  ];
+
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % messages.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
+      <div className="w-full max-w-md text-center">
+        {/* Animated celebration hearts */}
+        <div className="relative mb-8">
+          <div className="text-8xl animate-bounce">
+            💚
+          </div>
+          <div className="absolute top-0 left-1/4 text-4xl animate-float opacity-70">
+            ✨
+          </div>
+          <div className="absolute top-0 right-1/4 text-4xl animate-float delay-1s opacity-70">
+            💕
+          </div>
+        </div>
+
+        {/* Message */}
+        <h2 className="font-display text-3xl text-gradient mb-4">
+          You're Safe!
+        </h2>
+
+        <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
+          {messages[messageIndex]}
+        </p>
+
+        {/* Success checkmark animation */}
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-success rounded-full mb-6 animate-scale-up">
+          <span className="text-4xl text-white">✓</span>
+        </div>
+
+        {/* Cute message */}
+        <p className="text-text-secondary">
+          Until next time, bestie! 💜
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const CheckInCard = ({ checkIn }) => {
   const { userData } = useAuth();
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showSafeLoader, setShowSafeLoader] = useState(false);
   const [extendingButton, setExtendingButton] = useState(null); // Track which extend button is loading
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(checkIn.notes || '');
@@ -102,14 +161,8 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const completeCheckIn = async () => {
-    // Navigate home immediately, complete check-in in background
-    navigate('/');
-
-    // Show success message as popup
-    toast.success('You\'re safe! Welcome home 💜', {
-      duration: 4000,
-      icon: '✅',
-    });
+    // Show cute loader immediately
+    setShowSafeLoader(true);
 
     // Complete check-in in background
     try {
@@ -127,8 +180,18 @@ const CheckInCard = ({ checkIn }) => {
       if (!checkInSnap.exists() || checkInSnap.data().status !== 'completed') {
         throw new Error('Check-in status verification failed');
       }
+
+      // Keep loader showing for 2 seconds to let user enjoy the message
+      setTimeout(() => {
+        navigate('/');
+        toast.success('You\'re safe! Welcome home 💜', {
+          duration: 4000,
+          icon: '✅',
+        });
+      }, 2000);
     } catch (error) {
       console.error('Error completing check-in:', error);
+      setShowSafeLoader(false);
       toast.error('Failed to complete check-in. Please try again.');
     } finally {
       setLoading(false);
@@ -136,14 +199,8 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const handleDuressCode = async () => {
-    // Navigate home immediately to look normal
-    navigate('/');
-
-    // Show fake success message
-    toast.success('You\'re safe! Welcome home 💜', {
-      duration: 4000,
-      icon: '✅',
-    });
+    // Show same loader to look normal
+    setShowSafeLoader(true);
 
     // Secretly trigger emergency alert to all besties in circle
     try {
@@ -166,9 +223,26 @@ const CheckInCard = ({ checkIn }) => {
 
       // Note: The backend should handle sending notifications to besties in the circle
       // This is done silently without showing any indication to the user
+
+      // Keep loader showing for 2 seconds then navigate to maintain normal appearance
+      setTimeout(() => {
+        navigate('/');
+        toast.success('You\'re safe! Welcome home 💜', {
+          duration: 4000,
+          icon: '✅',
+        });
+      }, 2000);
     } catch (error) {
       console.error('Error handling duress code:', error);
       // Don't show error to user - maintain the illusion that everything is normal
+      // Navigate anyway to not raise suspicion
+      setTimeout(() => {
+        navigate('/');
+        toast.success('You\'re safe! Welcome home 💜', {
+          duration: 4000,
+          icon: '✅',
+        });
+      }, 2000);
     }
   };
 
@@ -334,6 +408,11 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const isAlerted = checkIn.status === 'alerted';
+
+  // Show safe loader when completing check-in
+  if (showSafeLoader) {
+    return <SafeLoader />;
+  }
 
   return (
     <div className={`card p-6 ${isAlerted ? 'border-2 border-danger' : ''}`}>
