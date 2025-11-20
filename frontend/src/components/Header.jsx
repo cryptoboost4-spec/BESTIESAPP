@@ -5,6 +5,7 @@ import { useDarkMode } from '../contexts/DarkModeContext';
 import { authService } from '../services/firebase';
 import toast from 'react-hot-toast';
 import NotificationBell from './NotificationBell';
+import ProfileWithBubble from './ProfileWithBubble';
 
 const Header = () => {
   const { userData } = useAuth();
@@ -88,17 +89,15 @@ const Header = () => {
               <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display overflow-hidden hover:opacity-90 transition-opacity"
+                className="hover:opacity-90 transition-opacity"
               >
-                {userData?.photoURL ? (
-                  <img
-                    src={userData.photoURL}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span>{userData?.displayName?.[0] || 'U'}</span>
-                )}
+                <ProfileWithBubble
+                  photoURL={userData?.photoURL}
+                  name={userData?.displayName || 'User'}
+                  requestAttention={userData?.requestAttention}
+                  size="md"
+                  showBubble={true}
+                />
               </button>
 
               {/* Dropdown Menu */}

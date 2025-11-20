@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/firebase';
 import toast from 'react-hot-toast';
@@ -6,14 +6,14 @@ import errorTracker from '../services/errorTracking';
 
 // Skeleton Loader Component
 const SkeletonLoader = () => {
-  const supportiveMessages = [
+  const supportiveMessages = useMemo(() => [
     "You're amazing for being here! 💖",
     "Your besties are waiting for you! ✨",
     "Taking care of yourself is so important! 🌸",
     "We're so glad you're here, bestie! 💕",
     "You deserve to feel safe and supported! 🦋",
     "Your safety matters, and we've got your back! 💜"
-  ];
+  ], []);
 
   const [message, setMessage] = useState(supportiveMessages[0]);
 
@@ -22,7 +22,7 @@ const SkeletonLoader = () => {
       setMessage(supportiveMessages[Math.floor(Math.random() * supportiveMessages.length)]);
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [supportiveMessages]);
 
   return (
     <div className="min-h-screen bg-pattern flex items-center justify-center p-4 relative overflow-hidden">
