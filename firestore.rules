@@ -135,26 +135,27 @@ service cloud.firestore {
     }
     
     // Analytics collections (admin-only read)
+    // Allow unauthenticated writes for analytics to track signup funnel
     match /errors/{errorId} {
-      allow create: if isSignedIn();
+      allow create: if true; // Allow anonymous tracking
       allow read: if isAdmin();
       allow update, delete: if false;
     }
-    
+
     match /performance/{perfId} {
-      allow create: if isSignedIn();
+      allow create: if true; // Allow anonymous tracking
       allow read: if isAdmin();
       allow update, delete: if false;
     }
-    
+
     match /user_actions/{actionId} {
-      allow create: if isSignedIn();
+      allow create: if true; // Allow anonymous tracking
       allow read: if isAdmin();
       allow update, delete: if false;
     }
-    
+
     match /funnel_events/{eventId} {
-      allow create: if isSignedIn();
+      allow create: if true; // Allow anonymous tracking
       allow read: if isAdmin();
       allow update, delete: if false;
     }
