@@ -283,13 +283,15 @@ const LoginPage = () => {
                           setPhoneNumber(formatted);
                         }}
                         className="input flex-1"
-                        placeholder={countryCode === '+61' ? '435 853 854' : '412345678'}
+                        placeholder={
+                          countryCode === '+61' ? '412 345 678' :
+                          countryCode === '+1' ? '555 123 4567' :
+                          countryCode === '+44' ? '7911 123456' :
+                          '98765 43210'
+                        }
                         required
                       />
                     </div>
-                    <p className="text-xs text-text-secondary mt-1">
-                      Example: {countryCode} {countryCode === '+61' ? '435 853 854' : countryCode === '+1' ? '555 123 4567' : '412345678'}
-                    </p>
                   </div>
                   <button
                     type="submit"
