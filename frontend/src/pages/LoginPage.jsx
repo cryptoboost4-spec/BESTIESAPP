@@ -164,24 +164,53 @@ const LoginPage = () => {
                       <select
                         value={countryCode}
                         onChange={(e) => setCountryCode(e.target.value)}
-                        className="input w-24"
+                        className="input w-20"
                       >
-                        <option value="+1">🇺🇸 +1</option>
-                        <option value="+44">🇬🇧 +44</option>
-                        <option value="+61">🇦🇺 +61</option>
-                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+1">+1</option>
+                        <option value="+44">+44</option>
+                        <option value="+61">+61</option>
+                        <option value="+91">+91</option>
                       </select>
                       <input
                         type="tel"
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        onChange={(e) => {
+                          // Format with spaces as user types
+                          const value = e.target.value.replace(/\s/g, ''); // Remove existing spaces
+                          let formatted = value;
+
+                          // Format Australian numbers: 435 853 854
+                          if (countryCode === '+61' && value.length > 3) {
+                            formatted = value.slice(0, 3);
+                            if (value.length > 3) formatted += ' ' + value.slice(3, 6);
+                            if (value.length > 6) formatted += ' ' + value.slice(6, 9);
+                          }
+                          // Format US/Canada numbers: (435) 853-8540
+                          else if (countryCode === '+1' && value.length > 3) {
+                            formatted = value.slice(0, 3);
+                            if (value.length > 3) formatted += ' ' + value.slice(3, 6);
+                            if (value.length > 6) formatted += ' ' + value.slice(6, 10);
+                          }
+                          // Format UK numbers: 7911 123456
+                          else if (countryCode === '+44' && value.length > 4) {
+                            formatted = value.slice(0, 4);
+                            if (value.length > 4) formatted += ' ' + value.slice(4, 10);
+                          }
+                          // Format Indian numbers: 98765 43210
+                          else if (countryCode === '+91' && value.length > 5) {
+                            formatted = value.slice(0, 5);
+                            if (value.length > 5) formatted += ' ' + value.slice(5, 10);
+                          }
+
+                          setPhoneNumber(formatted);
+                        }}
                         className="input flex-1"
-                        placeholder="412345678"
+                        placeholder={countryCode === '+61' ? '435 853 854' : '412345678'}
                         required
                       />
                     </div>
                     <p className="text-xs text-text-secondary mt-1">
-                      Enter your phone number without the country code
+                      Example: {countryCode} {countryCode === '+61' ? '435 853 854' : countryCode === '+1' ? '555 123 4567' : '412345678'}
                     </p>
                   </div>
                   <button
