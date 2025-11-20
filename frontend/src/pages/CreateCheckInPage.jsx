@@ -10,6 +10,62 @@ import { isEnabled } from '../config/features';
 import errorTracker from '../services/errorTracking';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 
+// Cute skeleton loader for check-in creation
+const CheckInLoader = () => {
+  const messages = [
+    "Setting up your safety net... 💖",
+    "Notifying your besties... ✨",
+    "Your safety is our priority! 🛡️",
+    "Almost there, bestie! 💕",
+    "Getting everything ready... 🌸",
+  ];
+
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % messages.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
+      <div className="w-full max-w-md text-center">
+        {/* Animated heart */}
+        <div className="text-8xl mb-6 animate-pulse">
+          💖
+        </div>
+
+        {/* Message */}
+        <h2 className="font-display text-3xl text-gradient mb-4">
+          Creating your check-in!
+        </h2>
+
+        <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
+          {messages[messageIndex]}
+        </p>
+
+        {/* Cute loading animation */}
+        <div className="flex justify-center gap-2 mb-8">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-4 h-4 bg-gradient-primary rounded-full animate-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            ></div>
+          ))}
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="h-full bg-gradient-primary animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CreateCheckInPage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -24,6 +80,7 @@ const CreateCheckInPage = () => {
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [besties, setBesties] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showingLoader, setShowingLoader] = useState(false);
   const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
   const { executeOptimistic } = useOptimisticUpdate();
   const [gpsCoords, setGpsCoords] = useState(null); // Store GPS coordinates for map display
@@ -144,6 +201,7 @@ const CreateCheckInPage = () => {
             id: data.recipientId,
             name: data.recipientName || 'Bestie',
             phone: data.recipientPhone,
+            email: data.recipientEmail,
           });
         });
 
@@ -153,6 +211,7 @@ const CreateCheckInPage = () => {
             id: data.requesterId,
             name: data.requesterName || 'Bestie',
             phone: data.requesterPhone,
+            email: data.requesterEmail,
           });
         });
 
@@ -168,15 +227,38 @@ const CreateCheckInPage = () => {
 
         console.log('✅ Circle besties after filtering:', circleBesties);
 
-        setBesties(circleBesties);
+        // Fetch full user data for each bestie to get displayName and photoURL
+        const bestiesWithUserData = await Promise.all(
+          circleBesties.map(async (bestie) => {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', bestie.id));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                return {
+                  ...bestie,
+                  name: userData.displayName || bestie.name || bestie.email || 'Bestie',
+                  photoURL: userData.photoURL || null,
+                  email: userData.email || bestie.email,
+                  phone: userData.phoneNumber || bestie.phone,
+                };
+              }
+              return bestie;
+            } catch (error) {
+              console.error(`Error fetching user data for ${bestie.id}:`, error);
+              return bestie;
+            }
+          })
+        );
+
+        setBesties(bestiesWithUserData);
 
         // Auto-select only besties who have phone numbers (required for notifications)
-        if (!location.state?.template && circleBesties.length > 0) {
-          const bestiesWithPhone = circleBesties.filter(b => b.phone);
+        if (!location.state?.template && bestiesWithUserData.length > 0) {
+          const bestiesWithPhone = bestiesWithUserData.filter(b => b.phone);
           setSelectedBesties(bestiesWithPhone.map(b => b.id));
 
           // Warn if some besties don't have phone numbers
-          const withoutPhone = circleBesties.filter(b => !b.phone);
+          const withoutPhone = bestiesWithUserData.filter(b => !b.phone);
           if (withoutPhone.length > 0) {
             console.warn('⚠️ Some circle besties missing phone numbers:', withoutPhone);
             toast('Some besties need to add their phone number before they can be alerted', {
@@ -527,11 +609,13 @@ const CreateCheckInPage = () => {
       hasNotes: !!notes,
     });
 
-    // Use optimistic update - navigate immediately and process in background
+    // Show cute loader immediately
+    setShowingLoader(true);
+
+    // Use optimistic update - show loader and process in background
     await executeOptimistic({
       optimisticUpdate: () => {
-        // Navigate immediately - user sees instant response
-        navigate('/');
+        // Loader is already showing - no immediate navigation
       },
       serverUpdate: async () => {
         setLoading(true);
@@ -599,25 +683,37 @@ const CreateCheckInPage = () => {
           }
 
           errorTracker.trackFunnelStep('checkin', 'complete_checkin');
+
+          // Navigate after successful creation
+          setTimeout(() => {
+            navigate('/');
+          }, 1000); // Small delay to show success message
+
           return docRef;
         } finally {
           setLoading(false);
         }
       },
       rollback: () => {
-        // Navigate back to creation page on error
-        // User is already navigated away, so we don't need to do anything
+        // Hide loader and stay on page on error
+        setShowingLoader(false);
       },
       onError: (error) => {
         console.error('Error creating check-in:', error);
         errorTracker.logCustomError('Failed to create check-in', { error: error.message });
+        setShowingLoader(false);
       },
       successMessage: 'Check-in created! Stay safe! 💜',
       errorMessage: 'Failed to create check-in. Please try creating it again.',
-      showLoadingToast: true,
+      showLoadingToast: false, // We're showing the loader instead
       loadingMessage: 'Creating your check-in...'
     });
   };
+
+  // Show loader while creating check-in
+  if (showingLoader) {
+    return <CheckInLoader />;
+  }
 
   return (
     <div className="min-h-screen bg-pattern">
@@ -800,13 +896,28 @@ const CreateCheckInPage = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display">
-                          {bestie.name?.[0] || bestie.phone?.[0] || '?'}
+                        {bestie.photoURL ? (
+                          <img
+                            src={bestie.photoURL}
+                            alt={bestie.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                            onError={(e) => {
+                              // Fallback to gradient circle if image fails to load
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display"
+                          style={{ display: bestie.photoURL ? 'none' : 'flex' }}
+                        >
+                          {bestie.name?.[0]?.toUpperCase() || bestie.email?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div>
-                          <div className="font-semibold text-text-primary">{bestie.name || bestie.phone || 'Unknown'}</div>
+                          <div className="font-semibold text-text-primary">{bestie.name || bestie.email || 'Unknown'}</div>
                           <div className="text-sm text-text-secondary">
-                            {bestie.phone || '⚠️ No phone number - ask them to add one'}
+                            {bestie.phone ? bestie.email || bestie.phone : '⚠️ No phone number - ask them to add one'}
                           </div>
                         </div>
                       </div>
