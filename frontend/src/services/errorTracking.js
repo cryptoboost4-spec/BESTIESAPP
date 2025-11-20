@@ -51,6 +51,8 @@ class ErrorTracker {
   logError(error) {
     const errorData = {
       ...error,
+      // Ensure stack is always a string or null, never undefined
+      stack: error.stack || null,
       sessionId: this.sessionId,
       userId: this.userId,
       timestamp: Date.now(),
