@@ -71,6 +71,8 @@ const LoginPage = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(''); // For showing progress
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,6 +84,31 @@ const LoginPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Preload reCAPTCHA when phone auth section opens
+  useEffect(() => {
+    if (showPhoneAuth && !recaptchaReady) {
+      const setupRecaptcha = async () => {
+        try {
+          setLoadingStep('Setting up verification... 🔐');
+          const result = authService.setupRecaptcha('recaptcha-container');
+          if (result.success) {
+            setRecaptchaReady(true);
+            setLoadingStep('');
+          } else {
+            setLoadingStep('');
+            toast.error('Verification setup failed. Please refresh the page.');
+          }
+        } catch (error) {
+          setLoadingStep('');
+          console.error('reCAPTCHA setup error:', error);
+        }
+      };
+
+      // Small delay to let the UI render first
+      setTimeout(setupRecaptcha, 100);
+    }
+  }, [showPhoneAuth, recaptchaReady]);
+
   // Show skeleton loader
   if (pageLoading) {
     return <SkeletonLoader />;
@@ -89,19 +116,27 @@ const LoginPage = () => {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    setLoadingStep('Opening Google sign-in... ✨');
     errorTracker.trackFunnelStep('signup', 'click_google_signin');
 
-    const result = await authService.signInWithGoogle();
-    setLoading(false);
+    try {
+      const result = await authService.signInWithGoogle();
+      setLoading(false);
+      setLoadingStep('');
 
-    if (result.success) {
-      errorTracker.trackFunnelStep('signup', 'complete_google_signin');
-      toast.success('Welcome to Besties!');
-      // Navigate to home - HomePage will handle onboarding redirect if needed
-      navigate('/');
-    } else {
-      errorTracker.logCustomError('Google sign-in failed', { error: result.error });
-      toast.error(result.error || 'Sign in failed');
+      if (result.success) {
+        errorTracker.trackFunnelStep('signup', 'complete_google_signin');
+        toast.success('Welcome to Besties!');
+        // Navigate to home - HomePage will handle onboarding redirect if needed
+        navigate('/');
+      } else {
+        errorTracker.logCustomError('Google sign-in failed', { error: result.error });
+        toast.error(result.error || 'Sign in failed');
+      }
+    } catch (error) {
+      setLoading(false);
+      setLoadingStep('');
+      toast.error('Sign in failed. Please try again.');
     }
   };
 
@@ -133,50 +168,74 @@ const LoginPage = () => {
 
   const handleSendCode = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    errorTracker.trackFunnelStep('signup', 'click_phone_send_code');
 
-    // Format phone number with selected country code
-    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `${countryCode}${phoneNumber}`;
-
-    // Set up reCAPTCHA (invisible - auto-executes)
-    const recaptchaResult = authService.setupRecaptcha('recaptcha-container');
-    if (!recaptchaResult.success) {
-      toast.error('Failed to set up verification. Please refresh the page.');
-      setLoading(false);
+    if (!recaptchaReady) {
+      toast.error('Please wait for verification to be ready...');
       return;
     }
 
-    // Send verification code (reCAPTCHA auto-executes in background)
-    const result = await authService.sendPhoneVerification(formattedPhone, recaptchaResult.verifier);
-    setLoading(false);
+    setLoading(true);
+    setLoadingStep('Sending verification code... 💌');
+    errorTracker.trackFunnelStep('signup', 'click_phone_send_code');
 
-    if (result.success) {
-      setConfirmationResult(result.confirmationResult);
-      toast.success('Verification code sent!');
-      errorTracker.trackFunnelStep('signup', 'phone_code_sent');
-    } else {
-      errorTracker.logCustomError('Phone verification failed', { error: result.error });
-      toast.error(result.error || 'Failed to send code');
+    try {
+      // Format phone number with selected country code
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `${countryCode}${phoneNumber.replace(/\s/g, '')}`;
+
+      // Get the pre-loaded reCAPTCHA verifier
+      const recaptchaResult = authService.setupRecaptcha('recaptcha-container');
+      if (!recaptchaResult.success) {
+        toast.error('Verification not ready. Please try again.');
+        setLoading(false);
+        setLoadingStep('');
+        return;
+      }
+
+      // Send verification code
+      const result = await authService.sendPhoneVerification(formattedPhone, recaptchaResult.verifier);
+      setLoading(false);
+      setLoadingStep('');
+
+      if (result.success) {
+        setConfirmationResult(result.confirmationResult);
+        toast.success('Code sent! Check your phone 📱');
+        errorTracker.trackFunnelStep('signup', 'phone_code_sent');
+      } else {
+        errorTracker.logCustomError('Phone verification failed', { error: result.error });
+        toast.error(result.error || 'Failed to send code');
+      }
+    } catch (error) {
+      setLoading(false);
+      setLoadingStep('');
+      errorTracker.logCustomError('Phone send code error', { error: error.message });
+      toast.error('Failed to send code. Please try again.');
     }
   };
 
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoadingStep('Verifying code... 🔍');
     errorTracker.trackFunnelStep('signup', 'click_phone_verify_code');
 
-    const result = await authService.verifyPhoneCode(confirmationResult, verificationCode);
-    setLoading(false);
+    try {
+      const result = await authService.verifyPhoneCode(confirmationResult, verificationCode);
+      setLoading(false);
+      setLoadingStep('');
 
-    if (result.success) {
-      errorTracker.trackFunnelStep('signup', 'complete_phone_signin');
-      toast.success('Welcome to Besties!');
-      // Navigate to home - HomePage will handle onboarding redirect if needed
-      navigate('/');
-    } else {
-      errorTracker.logCustomError('Phone code verification failed', { error: result.error });
-      toast.error(result.error || 'Invalid code');
+      if (result.success) {
+        errorTracker.trackFunnelStep('signup', 'complete_phone_signin');
+        toast.success('Welcome to Besties! 💖');
+        // Navigate to home - HomePage will handle onboarding redirect if needed
+        navigate('/');
+      } else {
+        errorTracker.logCustomError('Phone code verification failed', { error: result.error });
+        toast.error(result.error || 'Invalid code. Please try again.');
+      }
+    } catch (error) {
+      setLoading(false);
+      setLoadingStep('');
+      toast.error('Verification failed. Please try again.');
     }
   };
 
@@ -203,6 +262,17 @@ const LoginPage = () => {
         <div className="relative">
           <div className="absolute -inset-0.5 bg-gradient-primary rounded-2xl opacity-20 blur"></div>
           <div className="card p-8 animate-slide-up relative bg-white">
+
+          {/* Loading Progress Indicator */}
+          {loadingStep && (
+            <div className="mb-4 p-3 bg-gradient-to-r from-pink-100 to-purple-100 rounded-xl text-center animate-pulse">
+              <p className="text-sm font-semibold text-primary flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                {loadingStep}
+              </p>
+            </div>
+          )}
+
           {/* Google Sign In */}
           <button
             onClick={handleGoogleSignIn}
@@ -293,10 +363,25 @@ const LoginPage = () => {
                       />
                     </div>
                   </div>
+
+                  {/* reCAPTCHA Ready Indicator */}
+                  {!recaptchaReady && (
+                    <div className="flex items-center justify-center gap-2 text-xs text-text-secondary">
+                      <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      <span>Preparing verification...</span>
+                    </div>
+                  )}
+                  {recaptchaReady && (
+                    <div className="flex items-center justify-center gap-2 text-xs text-success">
+                      <span>✅</span>
+                      <span>Ready to send code!</span>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full btn btn-primary flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                    disabled={loading || !recaptchaReady}
+                    className="w-full btn btn-primary flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading && (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
