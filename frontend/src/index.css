@@ -249,6 +249,31 @@ h1, h2, h3, h4, h5, h6 {
   animation: float 3s ease-in-out infinite;
 }
 
+/* Animation delays */
+.delay-1s {
+  animation-delay: 0.5s;
+}
+
+.delay-2s {
+  animation-delay: 1s;
+}
+
+.delay-3s {
+  animation-delay: 1.5s;
+}
+
+.delay-4s {
+  animation-delay: 2s;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .fab {
