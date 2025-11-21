@@ -1,50 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
-import { db, storage } from '../services/firebase';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import toast from 'react-hot-toast';
-import html2canvas from 'html2canvas';
+import { db } from '../services/firebase';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Header from '../components/Header';
 import BestieCircle from '../components/BestieCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
-import CountUp from '../components/CountUp';
 import ConfettiCelebration from '../components/ConfettiCelebration';
-
-const GRADIENT_OPTIONS = [
-  { id: 'pink', name: 'Pink Dream', gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)' },
-  { id: 'purple', name: 'Purple Magic', gradient: 'linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%)' },
-  { id: 'blue', name: 'Ocean Blue', gradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' },
-  { id: 'green', name: 'Fresh Green', gradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' },
-  { id: 'sunset', name: 'Sunset Glow', gradient: 'linear-gradient(135deg, #fed7aa 0%, #fca5a5 100%)' },
-  { id: 'lavender', name: 'Lavender Fields', gradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)' },
-  { id: 'peach', name: 'Peachy Keen', gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
-  { id: 'mint', name: 'Mint Fresh', gradient: 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)' }
-];
-
-const AURA_OPTIONS = [
-  { id: 'none', name: 'None', emoji: '🚫', description: 'No animation' },
-  { id: 'shimmer', name: 'Shimmer', emoji: '✨', description: 'Subtle shimmering effect' },
-  { id: 'glow', name: 'Glow', emoji: '🌟', description: 'Soft pulsing glow' },
-  { id: 'sparkle', name: 'Sparkle', emoji: '💫', description: 'Sparkling particles' },
-  { id: 'pulse', name: 'Pulse', emoji: '💗', description: 'Gentle pulsing' },
-  { id: 'rainbow', name: 'Rainbow', emoji: '🌈', description: 'Rainbow border effect' }
-];
+import ProfileCard from '../components/profile/ProfileCard';
+import ProfileCompletion from '../components/profile/ProfileCompletion';
+import WeeklySummary from '../components/profile/WeeklySummary';
+import LoginStreak from '../components/profile/LoginStreak';
+import BadgesSection from '../components/profile/BadgesSection';
+import StatsSection from '../components/profile/StatsSection';
+import DonationStatus from '../components/profile/DonationStatus';
+import ProfileAuraStyles from '../components/profile/ProfileAuraStyles';
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
-  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showAuraPicker, setShowAuraPicker] = useState(false);
-  const [showBadgeSelector, setShowBadgeSelector] = useState(false);
   const [featuredBadgeIds, setFeaturedBadgeIds] = useState([]);
   const [bestiesCount, setBestiesCount] = useState(0);
   const [confettiTrigger, setConfettiTrigger] = useState(false);
@@ -53,37 +30,16 @@ const ProfilePage = () => {
   const [nighttimeCheckIns, setNighttimeCheckIns] = useState(0);
   const [weekendCheckIns, setWeekendCheckIns] = useState(0);
   const [animatedProgress, setAnimatedProgress] = useState(0);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (showPhotoMenu && !e.target.closest('.photo-menu-container')) {
-        setShowPhotoMenu(false);
-      }
-      if (showColorPicker && !e.target.closest('.color-picker-container')) {
-        setShowColorPicker(false);
-      }
-      if (showAuraPicker && !e.target.closest('.aura-picker-container')) {
-        setShowAuraPicker(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showPhotoMenu, showColorPicker, showAuraPicker]);
-
   // Animate progress bar when profile completion changes
   useEffect(() => {
     const profileCompletion = calculateProfileCompletion();
     const targetProgress = profileCompletion.percentage;
-
-    // Set progress directly without animation from 0
     setAnimatedProgress(targetProgress);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userData, bestiesCount, currentUser]);
@@ -149,18 +105,15 @@ const ProfilePage = () => {
           const date = data.createdAt?.toDate();
 
           if (date) {
-            // Track earliest date
             if (!earliestDate || date < earliestDate) {
               earliestDate = date;
             }
 
-            // Count nighttime check-ins (9 PM - 6 AM)
             const hour = date.getHours();
             if (hour >= 21 || hour < 6) {
               nightCount++;
             }
 
-            // Count weekend check-ins (Saturday = 6, Sunday = 0)
             const day = date.getDay();
             if (day === 0 || day === 6) {
               weekendCount++;
@@ -180,170 +133,10 @@ const ProfilePage = () => {
     }
   };
 
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Photo must be less than 5MB');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const storageRef = ref(storage, `profile-pictures/${currentUser.uid}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        photoURL: downloadURL,
-      });
-
-      toast.success('Profile picture updated!');
-      setShowPhotoMenu(false);
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleRemovePhoto = async () => {
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        photoURL: currentUser?.photoURL || null,
-      });
-
-      toast.success('Profile picture removed');
-      setShowPhotoMenu(false);
-    } catch (error) {
-      console.error('Error removing photo:', error);
-      toast.error('Failed to remove photo');
-    }
-  };
-
-  const handleColorChange = async (gradient) => {
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        'profile.backgroundGradient': gradient.gradient,
-      });
-      toast.success(`Background changed to ${gradient.name}!`);
-      setShowColorPicker(false);
-    } catch (error) {
-      console.error('Error updating background:', error);
-      toast.error('Failed to update background');
-    }
-  };
-
-  const handleAuraChange = async (aura) => {
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        'profile.aura': aura.id,
-      });
-      toast.success(`Aura changed to ${aura.name}! ${aura.emoji}`);
-      setShowAuraPicker(false);
-    } catch (error) {
-      console.error('Error updating aura:', error);
-      toast.error('Failed to update aura');
-    }
-  };
-
-  const handleShareProfileCard = async () => {
-    const profileCard = document.getElementById('profile-card-shareable');
-    if (!profileCard) {
-      toast.error('Could not capture profile card');
-      return;
-    }
-
-    try {
-      toast('Generating image...', { icon: '📸' });
-
-      // Capture the profile card as canvas
-      const canvas = await html2canvas(profileCard, {
-        backgroundColor: null,
-        scale: 2, // Higher quality
-        logging: false,
-      });
-
-      // Convert to blob
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          toast.error('Failed to generate image');
-          return;
-        }
-
-        // Try to share via Web Share API if available
-        if (navigator.share && navigator.canShare({ files: [new File([blob], 'profile.png', { type: 'image/png' })] })) {
-          const file = new File([blob], 'my-besties-profile.png', { type: 'image/png' });
-          navigator.share({
-            title: 'My Besties Profile',
-            text: 'Check out my Besties profile! 💜',
-            files: [file],
-          }).then(() => {
-            toast.success('Profile card shared! 💜');
-          }).catch((err) => {
-            if (err.name !== 'AbortError') {
-              // User cancelled, fallback to download
-              downloadImage(blob);
-            }
-          });
-        } else {
-          // Fallback: download the image
-          downloadImage(blob);
-        }
-      }, 'image/png');
-    } catch (error) {
-      console.error('Error sharing profile card:', error);
-      toast.error('Failed to share profile card');
-    }
-  };
-
-  const downloadImage = (blob) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'my-besties-profile.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success('Profile card downloaded! 📥');
-  };
-
-  const handleToggleFeaturedBadge = async (badgeId) => {
-    let newFeaturedBadges = [...featuredBadgeIds];
-
-    if (newFeaturedBadges.includes(badgeId)) {
-      newFeaturedBadges = newFeaturedBadges.filter(id => id !== badgeId);
-    } else {
-      if (newFeaturedBadges.length >= 3) {
-        toast.error('You can only feature up to 3 badges');
-        return;
-      }
-      newFeaturedBadges.push(badgeId);
-      setConfettiTrigger(true);
-      setTimeout(() => setConfettiTrigger(false), 100);
-    }
-
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        featuredBadges: newFeaturedBadges,
-      });
-      setFeaturedBadgeIds(newFeaturedBadges);
-      toast.success('Featured badges updated!');
-    } catch (error) {
-      console.error('Error updating featured badges:', error);
-      toast.error('Failed to update badges');
-    }
-  };
-
-  // Calculate profile completion with navigation paths and section IDs
   const calculateProfileCompletion = () => {
     const tasks = [];
     let completed = 0;
 
-    // Email (usually from auth)
     if (currentUser?.email) {
       tasks.push({ name: 'Add email', completed: true, path: null, section: null });
       completed++;
@@ -351,7 +144,6 @@ const ProfilePage = () => {
       tasks.push({ name: 'Add email', completed: false, path: '/settings', section: 'account' });
     }
 
-    // Phone number
     if (userData?.phoneNumber) {
       tasks.push({ name: 'Add phone number', completed: true, path: null, section: null });
       completed++;
@@ -359,7 +151,6 @@ const ProfilePage = () => {
       tasks.push({ name: 'Add phone number', completed: false, path: '/settings', section: 'phone' });
     }
 
-    // Profile photo
     if (userData?.photoURL) {
       tasks.push({ name: 'Upload profile photo', completed: true, path: null, section: null });
       completed++;
@@ -367,7 +158,6 @@ const ProfilePage = () => {
       tasks.push({ name: 'Upload profile photo', completed: false, path: null, section: 'photo', action: 'scrollToPhoto' });
     }
 
-    // Bio
     if (userData?.profile?.bio) {
       tasks.push({ name: 'Write a bio', completed: true, path: null, section: null });
       completed++;
@@ -375,7 +165,6 @@ const ProfilePage = () => {
       tasks.push({ name: 'Write a bio', completed: false, path: '/edit-profile', section: 'bio' });
     }
 
-    // Besties (at least 5)
     if (bestiesCount >= 5) {
       tasks.push({ name: 'Add 5 besties', completed: true, path: null, section: null });
       completed++;
@@ -387,7 +176,6 @@ const ProfilePage = () => {
     return { tasks, percentage, completed, total: tasks.length };
   };
 
-  // Check if user has been active for at least a week
   const hasWeekOfActivity = () => {
     if (!firstCheckInDate) return false;
     const weekAgo = new Date();
@@ -395,7 +183,6 @@ const ProfilePage = () => {
     return firstCheckInDate <= weekAgo;
   };
 
-  // Get weekly summary
   const getWeeklySummary = () => {
     if (!hasWeekOfActivity()) {
       return {
@@ -433,24 +220,18 @@ const ProfilePage = () => {
     }
   };
 
-  // Handle profile completion task navigation with section scrolling
   const handleTaskNavigation = (task) => {
     if (task.action === 'scrollToPhoto') {
-      // Scroll to photo section on this page
       const photoElement = document.querySelector('.photo-menu-container');
       if (photoElement) {
         photoElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Trigger photo menu
-        setShowPhotoMenu(true);
       }
     } else if (task.action === 'scrollToBestieCircle') {
-      // Scroll to bestie circle on this page
       const bestieCircleElement = document.querySelector('.bestie-circle-section');
       if (bestieCircleElement) {
         bestieCircleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } else if (task.path) {
-      // Navigate to path with section hash
       if (task.section) {
         navigate(`${task.path}#${task.section}`);
       } else {
@@ -459,24 +240,6 @@ const ProfilePage = () => {
     }
   };
 
-  const profileCompletion = calculateProfileCompletion();
-  const weeklySummary = getWeeklySummary();
-  const currentGradient = userData?.profile?.backgroundGradient || GRADIENT_OPTIONS[0].gradient;
-  const currentAura = userData?.profile?.aura || 'none';
-  const loginStreak = userData?.loginStreak || 0;
-  // Show all badges, but put featured ones first
-  const featuredBadges = badges.filter(b => featuredBadgeIds.includes(b.id));
-  const otherBadges = badges.filter(b => !featuredBadgeIds.includes(b.id));
-  const allBadgesToShow = [...featuredBadges, ...otherBadges];
-
-  // Get progress bar color
-  const getProgressColor = (percentage) => {
-    if (percentage === 100) return 'bg-green-500';
-    if (percentage >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  // Calculate days active
   const getDaysActive = () => {
     if (!firstCheckInDate) return 0;
     const now = new Date();
@@ -484,6 +247,10 @@ const ProfilePage = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  const profileCompletion = calculateProfileCompletion();
+  const weeklySummary = getWeeklySummary();
+  const loginStreak = userData?.loginStreak || 0;
 
   if (loading) {
     return (
@@ -500,567 +267,50 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-pattern">
       <Header />
       <ConfettiCelebration trigger={confettiTrigger} type="badge" />
+      <ProfileAuraStyles />
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
-        {/* Profile Header - Beautiful Profile Card */}
-        <div
-          id="profile-card-shareable"
-          className={`card p-8 mb-6 text-center relative overflow-hidden shadow-2xl profile-card-aura-${currentAura}`}
-          style={{ background: currentGradient }}
-        >
-          {/* Floating decorative elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-6 left-6 text-3xl animate-float opacity-30">💖</div>
-            <div className="absolute top-10 right-8 text-2xl animate-float delay-1s opacity-30">✨</div>
-            <div className="absolute bottom-10 left-10 text-2xl animate-float delay-2s opacity-30">🌸</div>
-            <div className="absolute bottom-6 right-6 text-3xl animate-float delay-3s opacity-30">💫</div>
-          </div>
+        {/* Profile Card */}
+        <ProfileCard currentUser={currentUser} userData={userData} />
 
-          {/* Edit Profile Button - Above Color Picker */}
-          <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
-            <button
-              onClick={() => navigate('/edit-profile')}
-              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
-              title="Edit profile"
-            >
-              ✏️
-            </button>
-
-            {/* Share Profile Card as Image */}
-            <button
-              onClick={handleShareProfileCard}
-              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
-              title="Share profile card as image"
-            >
-              📸
-            </button>
-
-            {/* Color Picker Button */}
-            <button
-              onClick={() => setShowColorPicker(!showColorPicker)}
-              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
-              title="Change background color"
-            >
-              🎨
-            </button>
-
-            {/* Aura Picker Button */}
-            <button
-              onClick={() => setShowAuraPicker(!showAuraPicker)}
-              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
-              title="Change profile aura"
-            >
-              ✨
-            </button>
-
-            {showColorPicker && (
-              <>
-                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowColorPicker(false)} />
-                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-gray-200 dark:border-gray-600 p-4 z-50 w-80 max-h-[500px] overflow-y-auto">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-display text-gray-800 dark:text-gray-200">Choose Background</h3>
-                    <button
-                      onClick={() => setShowColorPicker(false)}
-                      className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {GRADIENT_OPTIONS.map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => handleColorChange(option)}
-                        className="h-16 rounded-lg shadow-md hover:scale-105 transition-transform border-2 border-transparent hover:border-primary"
-                        style={{ background: option.gradient }}
-                        title={option.name}
-                      >
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 drop-shadow-sm">
-                          {option.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {showAuraPicker && (
-              <div className="aura-picker-container">
-                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowAuraPicker(false)} />
-                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-gray-200 dark:border-gray-600 p-4 z-50 w-80 max-h-[500px] overflow-y-auto">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-display text-gray-800 dark:text-gray-200">Choose Profile Aura ✨</h3>
-                    <button
-                      onClick={() => setShowAuraPicker(false)}
-                      className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {AURA_OPTIONS.map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => handleAuraChange(option)}
-                        className={`w-full p-3 rounded-lg shadow-md hover:scale-105 transition-transform border-2 text-left ${
-                          (userData?.profile?.aura || 'none') === option.id
-                            ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
-                            : 'border-transparent hover:border-primary bg-gray-50 dark:bg-gray-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{option.emoji}</span>
-                          <div className="flex-1">
-                            <div className="font-semibold text-gray-800 dark:text-gray-200">{option.name}</div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">{option.description}</div>
-                          </div>
-                          {(userData?.profile?.aura || 'none') === option.id && (
-                            <span className="text-primary">✓</span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Profile Photo */}
-          <div className="relative inline-block photo-menu-container z-10">
-            <button
-              onClick={() => setShowPhotoMenu(!showPhotoMenu)}
-              className="w-36 h-36 bg-gradient-primary rounded-full flex items-center justify-center text-white text-5xl font-display overflow-hidden hover:opacity-90 transition-all hover:scale-105 border-4 border-white shadow-2xl ring-4 ring-purple-200"
-            >
-              {userData?.photoURL ? (
-                <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
-              )}
-            </button>
-
-            {/* Photo Management Menu */}
-            {showPhotoMenu && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-gray-200 dark:border-gray-600 p-2 z-30 w-48">
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Manage Photo</div>
-                <button
-                  onClick={() => {
-                    fileInputRef.current?.click();
-                    setShowPhotoMenu(false);
-                  }}
-                  disabled={uploading}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm font-semibold text-gray-700 dark:text-gray-300"
-                >
-                  🔄 Replace
-                </button>
-                <button
-                  onClick={handleRemovePhoto}
-                  className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-sm font-semibold text-red-600 dark:text-red-400"
-                >
-                  ❌ Remove
-                </button>
-              </div>
-            )}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              className="hidden"
-            />
-          </div>
-
-          <h1 className="text-4xl font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-3 mt-4">
-            {userData?.displayName || 'User'}
-          </h1>
-
-          {userData?.profile?.bio && (
-            <p className="text-gray-800 dark:text-gray-200 italic max-w-md mx-auto mt-4 text-lg">
-              "{userData.profile.bio}"
-            </p>
-          )}
-
-          {/* Social Sharing Icons - Cute & Small */}
-          <div className="mt-6 relative z-10">
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Share your profile:</p>
-            <div className="flex gap-2 justify-center flex-wrap">
-              {/* Facebook */}
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/user/${currentUser.uid}`;
-                  const text = `Come be my bestie on Besties! 💜`;
-                  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank');
-                }}
-                className="w-8 h-8 rounded-full bg-[#1877f2] hover:bg-[#1864d9] text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
-                title="Share on Facebook"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-              </button>
-
-              {/* Twitter/X */}
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/user/${currentUser.uid}`;
-                  const text = `Come be my bestie on Besties! 💜`;
-                  window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
-                }}
-                className="w-8 h-8 rounded-full bg-black hover:bg-gray-800 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
-                title="Share on X (Twitter)"
-              >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-              </button>
-
-              {/* WhatsApp */}
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/user/${currentUser.uid}`;
-                  const text = `Come be my bestie on Besties! 💜`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
-                }}
-                className="w-8 h-8 rounded-full bg-[#25d366] hover:bg-[#20bd5a] text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
-                title="Share on WhatsApp"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                </svg>
-              </button>
-
-              {/* Instagram - Copy Link */}
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/user/${currentUser.uid}`;
-                  navigator.clipboard.writeText(url);
-                  toast.success('Profile link copied! Share it on Instagram 💜');
-                }}
-                className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] hover:opacity-90 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
-                title="Copy link for Instagram"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                </svg>
-              </button>
-
-              {/* Copy Link Button */}
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/user/${currentUser.uid}`;
-                  navigator.clipboard.writeText(url);
-                  toast.success('Profile link copied to clipboard!');
-                }}
-                className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-700 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
-                title="Copy link"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Completion Bar with Clickable Tasks - Hide when 100% complete */}
-        {profileCompletion.percentage < 100 && (
-          <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-100 dark:border-gray-600">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
-              <span className="text-2xl font-bold text-gradient">
-                {profileCompletion.completed}/{profileCompletion.total}
-              </span>
-            </div>
-
-            {/* Animated Progress Bar with Shimmer Effect */}
-            <div className="w-full h-4 bg-white dark:bg-gray-700 rounded-full overflow-hidden mb-4 shadow-inner relative">
-              <div
-                className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
-                style={{ width: `${animatedProgress}%` }}
-              >
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 shimmer-effect"></div>
-              </div>
-              {/* Progress percentage text */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 drop-shadow-sm">
-                  {Math.round(profileCompletion.percentage)}%
-                </span>
-              </div>
-            </div>
-
-            {/* Task List with Navigation */}
-            <div className="space-y-2">
-              {profileCompletion.tasks.map((task, index) => (
-                <div key={index} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="text-lg">
-                      {task.completed ? '✅' : '⭕'}
-                    </span>
-                    <span className={`text-sm ${task.completed ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300 font-semibold'}`}>
-                      {task.name}
-                    </span>
-                  </div>
-                  {!task.completed && (task.path || task.action) && (
-                    <button
-                      onClick={() => handleTaskNavigation(task)}
-                      className="btn btn-sm btn-primary text-xs px-3 py-1"
-                    >
-                      Go →
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Profile Completion */}
+        <ProfileCompletion
+          profileCompletion={profileCompletion}
+          animatedProgress={animatedProgress}
+          onTaskNavigation={handleTaskNavigation}
+        />
 
         {/* Weekly Summary */}
-        <div className="card p-6 mb-6">
-          <h2 className="text-xl font-display text-gray-800 dark:text-gray-200 mb-4">Weekly Summary</h2>
-
-          <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 rounded-xl p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-4xl">{weeklySummary.emoji}</span>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200 mb-1">
-                  {weeklySummary.message}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  💡 {weeklySummary.tip}
-                </p>
-                {hasWeekOfActivity() && (
-                  <div className="flex gap-4 text-sm">
-                    <div>
-                      <span className="font-semibold text-primary">{userData?.stats?.totalCheckIns || 0}</span>
-                      <span className="text-gray-600 dark:text-gray-400"> check-ins</span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-secondary">{bestiesCount}</span>
-                      <span className="text-gray-600 dark:text-gray-400"> besties</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <WeeklySummary
+          weeklySummary={weeklySummary}
+          hasWeekOfActivity={hasWeekOfActivity()}
+          userData={userData}
+          bestiesCount={bestiesCount}
+        />
 
         {/* Login Streak */}
-        {loginStreak > 0 && (
-          <div className="card p-6 mb-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/30 dark:to-red-900/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-display text-gray-800 dark:text-gray-200 mb-1">Daily Login Streak</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Keep it going! 💪</p>
-              </div>
-              <div className="text-center">
-                <div className="text-5xl mb-1">🔥</div>
-                <div className="text-3xl font-display text-orange-600 dark:text-orange-400">
-                  <CountUp end={loginStreak} duration={1500} />
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">days</div>
-              </div>
-            </div>
-          </div>
-        )}
+        <LoginStreak loginStreak={loginStreak} />
 
-        {/* Your Badges - Show All Earned */}
-        <div className="mb-6 relative">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Badges</h2>
-            <button
-              onClick={() => navigate('/badges')}
-              className="text-primary font-semibold hover:underline text-sm"
-            >
-              View All →
-            </button>
-          </div>
+        {/* Badges Section */}
+        <BadgesSection
+          currentUser={currentUser}
+          badges={badges}
+          featuredBadgeIds={featuredBadgeIds}
+          setFeaturedBadgeIds={setFeaturedBadgeIds}
+          setConfettiTrigger={setConfettiTrigger}
+        />
 
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
-            {featuredBadgeIds.length > 0
-              ? `⭐ ${featuredBadgeIds.length} featured badge${featuredBadgeIds.length > 1 ? 's' : ''} shown first • `
-              : ''}
-            <button
-              onClick={() => setShowBadgeSelector(true)}
-              className="text-primary hover:underline"
-            >
-              Choose your top 3 to feature
-            </button>
-          </p>
-
-          {allBadgesToShow.length > 0 ? (
-            <>
-              {/* Featured Badges - Show prominently */}
-              {featuredBadges.length > 0 && (
-                <div className="mb-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {featuredBadges.map((badge) => (
-                      <div
-                        key={badge.id}
-                        className="card p-4 text-center transition-all bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg"
-                      >
-                        <div className="text-4xl mb-2">{badge.icon}</div>
-                        <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
-                        <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">⭐ Featured</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Other Badges - Scrollable horizontal list if many */}
-              {otherBadges.length > 0 && (
-                <div>
-                  {otherBadges.length > 6 ? (
-                    <>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Scroll to see all badges →</p>
-                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                        {otherBadges.map((badge) => (
-                          <div
-                            key={badge.id}
-                            className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-28"
-                          >
-                            <div className="text-3xl mb-2">{badge.icon}</div>
-                            <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {otherBadges.map((badge) => (
-                        <div
-                          key={badge.id}
-                          className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700"
-                        >
-                          <div className="text-4xl mb-2">{badge.icon}</div>
-                          <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="card p-8 text-center">
-              <div className="text-5xl mb-3">🏆</div>
-              <p className="text-gray-800 dark:text-gray-200 font-semibold mb-2">
-                Start earning badges!
-              </p>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                Complete check-ins, invite friends, and stay safe to unlock achievements
-              </p>
-              <button
-                onClick={() => navigate('/badges')}
-                className="btn btn-primary text-sm"
-              >
-                See All Available Badges
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Enhanced Your Impact - Modern Luxury Design */}
-        <div className="card p-8 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-orange-900/30">
-          <h2 className="text-3xl font-display text-gradient mb-6 text-center">Your Impact ✨</h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Besties Count */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">💜</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={bestiesCount} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Besties</div>
-              </div>
-            </div>
-
-            {/* Emergency Contact Count */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">🛡️</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={emergencyContactCount} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Times Selected</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">as Emergency Contact</div>
-              </div>
-            </div>
-
-            {/* Days Active */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">📅</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={getDaysActive()} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Days Active</div>
-              </div>
-            </div>
-
-            {/* Completed Check-ins */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">✅</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={userData?.stats?.completedCheckIns || 0} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Safe Check-ins</div>
-              </div>
-            </div>
-
-            {/* Badges Earned */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">🏆</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={badges.length} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Badges Earned</div>
-              </div>
-            </div>
-
-            {/* Login Streak */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">🔥</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={loginStreak} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Day Streak</div>
-              </div>
-            </div>
-
-            {/* Nighttime Check-ins */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">🌙</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={nighttimeCheckIns} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Night Check-ins</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">9 PM - 6 AM</div>
-              </div>
-            </div>
-
-            {/* Weekend Check-ins */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="absolute top-0 right-0 text-6xl opacity-10">🎉</div>
-              <div className="relative z-10">
-                <div className="text-4xl font-display bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent mb-2">
-                  <CountUp end={weekendCheckIns} duration={1500} />
-                </div>
-                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Weekend Check-ins</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Sat & Sun</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Stats Section */}
+        <StatsSection
+          bestiesCount={bestiesCount}
+          emergencyContactCount={emergencyContactCount}
+          daysActive={getDaysActive()}
+          userData={userData}
+          badges={badges}
+          loginStreak={loginStreak}
+          nighttimeCheckIns={nighttimeCheckIns}
+          weekendCheckIns={weekendCheckIns}
+        />
 
         {/* Bestie Circle */}
         <div className="mb-6 bestie-circle-section">
@@ -1077,17 +327,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Donation Status */}
-        {userData?.donationStats?.isActive && (
-          <div className="card p-6 mb-6 bg-gradient-primary text-white">
-            <h3 className="font-display text-xl mb-2">💜 Thank You!</h3>
-            <p className="mb-2">
-              You're helping keep Besties free for everyone
-            </p>
-            <div className="text-2xl font-display">
-              $<CountUp end={userData.donationStats.totalDonated} duration={2000} /> donated
-            </div>
-          </div>
-        )}
+        <DonationStatus userData={userData} />
 
         {/* Settings Button */}
         <div className="space-y-3">
@@ -1104,162 +344,6 @@ const ProfilePage = () => {
       {showShareModal && (
         <SocialShareCardsModal onClose={() => setShowShareModal(false)} />
       )}
-
-      {/* Badge Selector Modal - Updated */}
-      {showBadgeSelector && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Choose Featured Badges</h2>
-              <button
-                onClick={() => setShowBadgeSelector(false)}
-                className="w-8 h-8 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center text-xl font-bold transition-colors"
-                title="Close"
-              >
-                ×
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Select up to 3 badges to showcase on your profile ({featuredBadgeIds.length}/3 selected)
-            </p>
-
-            {badges.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-                {badges.map((badge) => {
-                  const isSelected = featuredBadgeIds.includes(badge.id);
-                  return (
-                    <button
-                      key={badge.id}
-                      onClick={() => handleToggleFeaturedBadge(badge.id)}
-                      className={`p-4 rounded-xl text-center transition-all ${
-                        isSelected
-                          ? 'bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-primary shadow-lg scale-105'
-                          : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent'
-                      }`}
-                    >
-                      <div className="text-4xl mb-2">{badge.icon}</div>
-                      <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
-                      {isSelected && <div className="text-xs text-primary mt-1">✓ Featured</div>}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-5xl mb-3">🏆</div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">No badges yet! Complete tasks to earn them.</p>
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={() => navigate('/badges')}
-                className="btn btn-primary"
-              >
-                See How to Earn Badges →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Shimmer Effect and Aura Animations CSS */}
-      <style>{`
-        /* Hide scrollbar for horizontal badge scroll */
-        .scrollbar-hide {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;  /* Chrome, Safari, Opera */
-        }
-
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        .shimmer-effect {
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.4),
-            transparent
-          );
-          animation: shimmer 2s infinite;
-        }
-
-        /* Aura Animations */
-        @keyframes aura-shimmer {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        @keyframes aura-glow {
-          0%, 100% {
-            box-shadow: 0 0 20px rgba(219, 39, 119, 0.3), 0 0 40px rgba(139, 92, 246, 0.2);
-          }
-          50% {
-            box-shadow: 0 0 40px rgba(219, 39, 119, 0.5), 0 0 80px rgba(139, 92, 246, 0.4);
-          }
-        }
-        @keyframes aura-pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.02); }
-        }
-        @keyframes rainbow-border {
-          0% { border-color: #ff0000; }
-          16% { border-color: #ff7f00; }
-          33% { border-color: #ffff00; }
-          50% { border-color: #00ff00; }
-          66% { border-color: #0000ff; }
-          83% { border-color: #8b00ff; }
-          100% { border-color: #ff0000; }
-        }
-        @keyframes sparkle {
-          0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-          50% { opacity: 1; transform: scale(1) rotate(180deg); }
-        }
-
-        /* Aura Classes */
-        .profile-card-aura-shimmer::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-          animation: shimmer 3s infinite;
-          pointer-events: none;
-        }
-
-        .profile-card-aura-glow {
-          animation: aura-glow 3s ease-in-out infinite;
-        }
-
-        .profile-card-aura-pulse {
-          animation: aura-pulse 2s ease-in-out infinite;
-        }
-
-        .profile-card-aura-rainbow {
-          border: 4px solid;
-          animation: rainbow-border 6s linear infinite;
-        }
-
-        .profile-card-aura-sparkle::after {
-          content: '✨';
-          position: absolute;
-          top: 10%;
-          right: 10%;
-          font-size: 2rem;
-          animation: sparkle 2s ease-in-out infinite;
-          pointer-events: none;
-        }
-      `}</style>
     </div>
   );
 };
