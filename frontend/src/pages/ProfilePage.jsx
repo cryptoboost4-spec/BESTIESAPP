@@ -769,11 +769,11 @@ const ProfilePage = () => {
                       <button
                         key={badge.id}
                         onClick={() => handleToggleFeaturedBadge(badge.id)}
-                        className="card p-4 text-center bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 hover:border-yellow-400 transition-all hover:scale-105"
+                        className="card p-4 md:p-5 text-center bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 hover:border-yellow-400 transition-all hover:scale-105 min-h-[120px] flex flex-col items-center justify-center"
                       >
-                        <div className="text-4xl mb-2">{badge.icon}</div>
-                        <div className="font-semibold text-xs text-text-primary">{badge.name}</div>
-                        <div className="text-xs text-yellow-700 mt-1">★ Featured</div>
+                        <div className="text-4xl md:text-5xl mb-2">{badge.icon}</div>
+                        <div className="font-semibold text-xs md:text-sm text-text-primary line-clamp-2">{badge.name}</div>
+                        <div className="text-xs text-yellow-700 mt-1 font-semibold">★ Featured</div>
                       </button>
                     ))}
                   </div>
@@ -783,15 +783,17 @@ const ProfilePage = () => {
               {/* All Other Badges */}
               {badges.filter(b => !featuredBadgeIds.includes(b.id)).length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-2">All Badges</p>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">
+                    {featuredBadges.length > 0 ? 'Other Badges (Tap to Feature)' : 'Tap to Feature Your Top 3'}
+                  </p>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                     {badges.filter(b => !featuredBadgeIds.includes(b.id)).map((badge) => (
                       <button
                         key={badge.id}
                         onClick={() => handleToggleFeaturedBadge(badge.id)}
-                        className="card p-3 text-center hover:shadow-lg transition-all hover:scale-105 hover:border-purple-300"
+                        className="card p-4 text-center hover:shadow-lg transition-all hover:scale-105 hover:border-purple-300 min-h-[100px] flex flex-col items-center justify-center bg-white"
                       >
-                        <div className="text-3xl mb-1">{badge.icon}</div>
+                        <div className="text-3xl md:text-4xl mb-1">{badge.icon}</div>
                         <div className="font-semibold text-xs text-text-primary line-clamp-2">{badge.name}</div>
                       </button>
                     ))}

@@ -744,13 +744,15 @@ const BestiesPage = () => {
                             <p className="text-xs md:text-sm text-text-secondary">
                               {getTimeAgo(activity.timestamp)}
                             </p>
+                            {activity.badge.description && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                {activity.badge.description}
+                              </p>
+                            )}
                           </div>
-                          <button
-                            onClick={() => addReaction(activity.id, '🎉')}
-                            className="text-xl md:text-2xl hover:scale-110 transition-transform flex-shrink-0"
-                          >
+                          <div className="text-3xl flex-shrink-0 animate-bounce-gentle">
                             🎉
-                          </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -906,23 +908,23 @@ const BestiesPage = () => {
               </h2>
 
               {filteredBesties.length === 0 ? (
-                <div className="card p-6 md:p-8 text-center">
-                  <div className="text-3xl md:text-4xl mb-2">💜</div>
-                  <p className="text-sm md:text-base text-text-secondary">No besties in this filter</p>
-                  {activeFilter === 'circle' && (
-                    <p className="text-xs md:text-sm text-text-secondary mt-2">
-                      Add besties to your circle by favoriting them
-                    </p>
-                  )}
+                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50">
+                  <div className="text-5xl md:text-6xl mb-3">💜</div>
+                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties in this filter</p>
+                  <p className="text-sm md:text-base text-text-secondary">
+                    {activeFilter === 'circle' && 'Add besties to your circle by tapping their profile picture'}
+                    {activeFilter === 'all' && 'Start adding besties to see them here'}
+                    {activeFilter === 'active' && 'No one is currently checked in'}
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                   {filteredBesties.map((bestie) => {
                     const indicators = getBestieIndicators(bestie);
                     return (
                       <div key={bestie.id} className="relative group">
-                        {/* Main card with hover effect */}
-                        <div className="h-full">
+                        {/* Main card with improved styling */}
+                        <div className="h-full transform transition-all duration-300 hover:scale-[1.02]">
                           <BestieCard bestie={bestie} />
                         </div>
 
