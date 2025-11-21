@@ -11,6 +11,7 @@ import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
 import ProfileWithBubble from '../components/ProfileWithBubble';
+import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -399,6 +400,9 @@ const HomePage = () => {
 
       {/* Bestie Celebration Modal */}
       <BestieCelebrationModal />
+
+      {/* Add to Home Screen Prompt */}
+      <AddToHomeScreenPrompt currentUser={currentUser} userData={userData} />
 
       {/* Request Attention Modal */}
       {showRequestAttention && (

@@ -1651,22 +1651,8 @@ exports.checkBirthdays = functions.pubsub
                 notificationsSent++;
               }
 
-              // Send SMS if user prefers SMS notifications
-              if (bestieData.phoneNumber && bestieData.notificationSettings?.sms) {
-                try {
-                  await twilioClient.messages.create({
-                    body: `🎂 It's ${birthdayName}'s birthday today! Send them some love 💕`,
-                    to: bestieData.phoneNumber,
-                    from: twilioPhone,
-                  });
-                  notificationsSent++;
-                } catch (smsError) {
-                  console.error('Failed to send birthday SMS:', smsError);
-                }
-              }
-
-              // Send email if user prefers email notifications
-              if (bestieData.email && bestieData.notificationSettings?.email) {
+              // Send email notification
+              if (bestieData.email) {
                 try {
                   await sgMail.send({
                     to: bestieData.email,
