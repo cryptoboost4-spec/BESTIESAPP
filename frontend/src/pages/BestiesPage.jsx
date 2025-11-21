@@ -549,7 +549,7 @@ const BestiesPage = () => {
                     {rankingsPeriod === 'monthly' && "This Month's Queens"}
                     {rankingsPeriod === 'yearly' && "This Year's Queens"}
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Besties who slayed! 💅</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Your amazing squad! 💕</p>
                 </div>
 
                 {/* Period Tabs - Compact */}
@@ -604,7 +604,7 @@ const BestiesPage = () => {
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
                             Most Reliable
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Earning crowns... 👑</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Always there for you 💕</div>
                         </div>
                       </div>
                     </div>
@@ -625,9 +625,9 @@ const BestiesPage = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
-                            Lightning Fast
+                            Super Speedy
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Collecting sparkles... ✨</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Quick to the rescue 💜</div>
                         </div>
                       </div>
                     </div>
@@ -648,9 +648,9 @@ const BestiesPage = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
-                            Safety Superstar
+                            Guardian Angel
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Building streaks... 🔥</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Keeping you safe 🌸</div>
                         </div>
                       </div>
                     </div>
@@ -673,7 +673,7 @@ const BestiesPage = () => {
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
                             Streak Queen
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Tracking victories... 💪</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">On fire lately! ✨</div>
                         </div>
                       </div>
                     </div>

@@ -103,7 +103,7 @@ const BestieCard = ({ bestie, onRemove }) => {
         {/* Gradient glow effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-pink-300 via-purple-300 to-pink-300 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
 
-        <div className="relative card p-5 bg-gradient-to-br from-pink-50/50 via-purple-50/50 to-pink-50/50 dark:from-pink-900/10 dark:via-purple-900/10 dark:to-pink-900/10 border-2 border-pink-200 dark:border-pink-600 hover:shadow-xl transition-all hover:transform hover:-translate-y-1">
+        <div className="relative card p-5 bg-gradient-to-br from-pink-50/50 via-purple-50/50 to-pink-50/50 dark:from-pink-900/10 dark:via-purple-900/10 dark:to-pink-900/10 border-2 border-pink-200 dark:border-pink-600 hover:shadow-xl transition-all hover:transform hover:-translate-y-1 min-h-[280px] flex flex-col">
           {/* Circle badge - top right */}
           {bestie.isFavorite && (
             <div className="absolute top-3 right-3">
@@ -114,7 +114,7 @@ const BestieCard = ({ bestie, onRemove }) => {
           )}
 
           {/* Profile section */}
-          <div className="text-center mb-4">
+          <div className="text-center mb-4 flex-1 flex flex-col justify-center">
             {loading ? (
               <div className="w-20 h-20 bg-gradient-to-br from-pink-200 to-purple-200 animate-pulse rounded-full mx-auto mb-3"></div>
             ) : (

@@ -356,40 +356,43 @@ const HomePage = () => {
                 </div>
               </div>
             ) : (
-              <div className="card p-4 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-purple-100 dark:border-purple-700">
-                {/* Compact header with profile preview on right */}
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-display text-gray-800 dark:text-gray-200 inline">
-                      Need Support?
-                    </h3>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                      "{exampleMessages[currentMessageIndex]}"
-                    </span>
-                  </div>
-                  <div className="flex-shrink-0">
+              <div className="card p-6 mb-6 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-700">
+                {/* Header with sparkle emoji */}
+                <div className="text-center mb-4">
+                  <div className="text-3xl mb-2">✨</div>
+                  <h3 className="text-xl font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                    Need a Little Support?
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    We all have those days. Let your besties know you could use some extra love right now 💕
+                  </p>
+                </div>
+
+                {/* Preview card - centered */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border-2 border-purple-200 dark:border-purple-600 shadow-sm">
+                  <div className="flex flex-col items-center gap-3">
+                    <p className="text-xs font-semibold text-purple-600 dark:text-purple-400">Preview:</p>
                     <ProfileWithBubble
                       photoURL={userData?.photoURL}
                       name={userData?.displayName || currentUser?.email || 'You'}
                       requestAttention={{ active: true, tag: exampleMessages[currentMessageIndex] }}
-                      size="md"
+                      size="lg"
                       showBubble={true}
                     />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center italic">
+                      Your besties will see "{exampleMessages[currentMessageIndex]}" on your profile
+                    </p>
                   </div>
                 </div>
-
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
-                </p>
 
                 <button
                   onClick={() => {
                     haptic.light();
                     setShowRequestAttention(true);
                   }}
-                  className="btn btn-primary w-full"
+                  className="btn bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white w-full shadow-lg"
                 >
-                  💜 Request Attention
+                  💜 Request Support
                 </button>
               </div>
             )}
