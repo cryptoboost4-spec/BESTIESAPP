@@ -148,7 +148,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Add phone number', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Add phone number', completed: false, path: '/settings', section: 'phone' });
+      tasks.push({ name: 'Add phone number', completed: false, path: '/edit-profile', section: 'phone' });
     }
 
     if (userData?.photoURL) {

@@ -355,16 +355,28 @@ const EditProfilePage = () => {
                 <label className="block text-sm font-semibold text-text-primary mb-2">
                   Phone Number
                 </label>
-                <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="input"
-                  placeholder="+61 400 000 000 or 0400 000 000"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="input flex-1"
+                    placeholder="+61 400 000 000 or 0400 000 000"
+                  />
+                  {phoneNumber !== userData?.phoneNumber && phoneNumber && (
+                    <button
+                      type="button"
+                      onClick={handleSendPhoneVerification}
+                      disabled={loading}
+                      className="btn btn-primary whitespace-nowrap"
+                    >
+                      {loading ? 'Sending...' : 'Verify Now'}
+                    </button>
+                  )}
+                </div>
                 {phoneNumber !== userData?.phoneNumber && phoneNumber && (
                   <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                    ⚠️ You'll need to verify this number via SMS before saving
+                    ⚠️ Click "Verify Now" to verify this number via SMS
                   </div>
                 )}
               </div>
