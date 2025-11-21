@@ -356,9 +356,6 @@ const LoginPage = () => {
                       maxLength={6}
                       autoComplete="one-time-code"
                     />
-                    <p className="text-xs text-text-secondary mt-1">
-                      Enter the 6-digit code sent to your phone
-                    </p>
                   </div>
                   <button
                     type="submit"
