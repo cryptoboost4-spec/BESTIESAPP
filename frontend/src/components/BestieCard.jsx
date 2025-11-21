@@ -98,125 +98,125 @@ const BestieCard = ({ bestie, onRemove }) => {
 
   return (
     <>
-      <div
-        className="card p-4 hover:shadow-lg transition-all hover:transform hover:-translate-y-1 relative"
-      >
-        <div className="flex items-center gap-3 mb-3">
-          {loading ? (
-            <div className="w-12 h-12 bg-gray-200 animate-pulse rounded-full flex-shrink-0"></div>
-          ) : (
-            <div className="relative" ref={menuRef}>
-              {/* Click on profile picture to show menu */}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowProfileMenu(!showProfileMenu);
-                }}
-                className="cursor-pointer"
-              >
-                <ProfileWithBubble
-                  photoURL={userPhoto}
-                  name={bestie.name || bestie.phone || 'Unknown'}
-                  requestAttention={requestAttention}
-                  size="lg"
-                  showBubble={true}
-                />
-              </div>
+      {/* Redesigned Bestie Card with gradient aesthetic */}
+      <div className="relative group">
+        {/* Gradient glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-300 via-purple-300 to-pink-300 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
 
-              {/* Dropdown Menu - appears below profile picture */}
-              {showProfileMenu && (
-                <div className={`absolute top-full left-0 mt-2 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg shadow-xl border-2 z-50 min-w-[180px]`}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowProfileMenu(false);
-                      navigate(`/user/${bestie.userId}`);
-                    }}
-                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold first:rounded-t-lg`}
-                  >
-                    👤 View Profile
-                  </button>
-                  <button
-                    onClick={handleToggleCircle}
-                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold`}
-                  >
-                    {bestie.isFavorite ? '💔 Remove from Circle' : '💜 Add to Circle'}
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const phone = bestie.phone;
-                      if (phone) {
-                        window.location.href = `sms:${phone}`;
-                      } else {
-                        toast.error('No phone number available');
-                      }
-                      setShowProfileMenu(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold`}
-                  >
-                    💬 Send Message
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowProfileMenu(false);
-                      setShowDeleteModal(true);
-                    }}
-                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-red-900/30' : 'hover:bg-red-50'} text-sm font-semibold text-red-600 last:rounded-b-lg`}
-                  >
-                    🗑️ Delete Bestie
-                  </button>
-                </div>
-              )}
+        <div className="relative card p-5 bg-gradient-to-br from-pink-50/50 via-purple-50/50 to-pink-50/50 dark:from-pink-900/10 dark:via-purple-900/10 dark:to-pink-900/10 border-2 border-pink-200 dark:border-pink-600 hover:shadow-xl transition-all hover:transform hover:-translate-y-1">
+          {/* Circle badge - top right */}
+          {bestie.isFavorite && (
+            <div className="absolute top-3 right-3">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1">
+                ⭐ Circle
+              </div>
             </div>
           )}
-          <div
-            className="flex-1 min-w-0 cursor-pointer"
-            onClick={() => bestie.userId && navigate(`/user/${bestie.userId}`)}
-          >
-            <div className="font-semibold text-text-primary truncate">
-              {bestie.name || bestie.phone || 'Unknown'}
-            </div>
 
-            {/* Bestie Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className={`font-bold text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'} truncate`}>
-                    {bestie.name || bestie.phone || 'Unknown'}
-                  </h3>
-                  {bestie.phone && (
-                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} truncate`}>{bestie.phone}</p>
-                  )}
+          {/* Profile section */}
+          <div className="text-center mb-4">
+            {loading ? (
+              <div className="w-20 h-20 bg-gradient-to-br from-pink-200 to-purple-200 animate-pulse rounded-full mx-auto mb-3"></div>
+            ) : (
+              <div className="relative inline-block" ref={menuRef}>
+                {/* Click on profile picture to show menu */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowProfileMenu(!showProfileMenu);
+                  }}
+                  className="cursor-pointer"
+                >
+                  <ProfileWithBubble
+                    photoURL={userPhoto}
+                    name={bestie.name || bestie.phone || 'Unknown'}
+                    requestAttention={requestAttention}
+                    size="xl"
+                    showBubble={true}
+                  />
                 </div>
-                {bestie.isFavorite && (
-                  <div className="flex-shrink-0">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
-                      ⭐ Circle
-                    </div>
+
+                {/* Dropdown Menu - appears below profile picture */}
+                {showProfileMenu && (
+                  <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-2xl border-2 z-50 min-w-[180px]`}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowProfileMenu(false);
+                        navigate(`/user/${bestie.userId}`);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold first:rounded-t-xl`}
+                    >
+                      👤 View Profile
+                    </button>
+                    <button
+                      onClick={handleToggleCircle}
+                      className={`w-full text-left px-4 py-2.5 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold`}
+                    >
+                      {bestie.isFavorite ? '💔 Remove from Circle' : '💜 Add to Circle'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const phone = bestie.phone;
+                        if (phone) {
+                          window.location.href = `sms:${phone}`;
+                        } else {
+                          toast.error('No phone number available');
+                        }
+                        setShowProfileMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold`}
+                    >
+                      💬 Send Message
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowProfileMenu(false);
+                        setShowDeleteModal(true);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 ${isDark ? 'hover:bg-red-900/30' : 'hover:bg-red-50'} text-sm font-semibold text-red-600 last:rounded-b-xl`}
+                    >
+                      🗑️ Delete Bestie
+                    </button>
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Status badges */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="badge bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold">
-                  💜 Bestie
-                </div>
-                {bestie.role === 'guardian' && (
-                  <div className="badge bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold">
-                    🛡️ Guardian
-                  </div>
-                )}
-              </div>
+            {/* Name */}
+            <div
+              className="cursor-pointer mt-3"
+              onClick={() => bestie.userId && navigate(`/user/${bestie.userId}`)}
+            >
+              <h3 className="font-display text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent truncate">
+                {bestie.name || 'Unknown'}
+              </h3>
+              {bestie.phone && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                  {bestie.phone}
+                </p>
+              )}
             </div>
           </div>
 
+          {/* Status badges */}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <div className="badge bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/40 dark:to-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-600 text-xs font-semibold">
+              💜 Bestie
+            </div>
+            {bestie.role === 'guardian' && (
+              <div className="badge bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-600 text-xs font-semibold">
+                🛡️ Guardian
+              </div>
+            )}
+          </div>
+
           {/* Hover hint */}
-          <div className={`mt-3 pt-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} text-center`}>
-              💡 Tap profile picture for options
+          <div className="mt-4 pt-3 border-t border-pink-200 dark:border-pink-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
+              💡 Tap profile for options
             </p>
           </div>
         </div>
