@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
@@ -19,30 +19,6 @@ import PullToRefresh from '../components/PullToRefresh';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
-
-// Dynamic supportive messages for girls 💜
-const SUPPORTIVE_MESSAGES = [
-  "Stay safe out there, queen! 👑",
-  "Your besties have your back! 💜",
-  "Looking out for you, babe! ✨",
-  "Let's keep you safe, hun! 🛡️",
-  "Ready to slay safely? 💅",
-  "Your safety squad is here! 🌟",
-  "Go live your life, we got you! 💕",
-  "Be bold, be safe, be you! ⚡",
-  "Adventure awaits safely! 🌸",
-  "Your crew is watching out! 👯‍♀️",
-  "Stay fierce, stay safe! 🔥",
-  "We're here if you need us! 🤗",
-  "Go make memories safely! 📸",
-  "Your safety, your way! 💖",
-  "Protected and empowered! ⭐",
-  "Living your best life safely! 🦋",
-  "Your peace of mind matters! 🌺",
-  "Safe vibes only! ✌️",
-  "Let's keep you covered, sis! 💪",
-  "Confidence + Safety = You! 💎"
-];
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -69,11 +45,6 @@ const HomePage = () => {
     "🎉 Let's do something",
     '📱 Want to chat'
   ];
-
-  // Random supportive message (changes on each page load)
-  const welcomeMessage = useMemo(() => {
-    return SUPPORTIVE_MESSAGES[Math.floor(Math.random() * SUPPORTIVE_MESSAGES.length)];
-  }, []); // Empty deps = only runs once on mount
 
   // Rotate through example messages every 2 seconds
   useEffect(() => {
@@ -255,18 +226,6 @@ const HomePage = () => {
         <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
-        {/* Welcome Message */}
-        <div className="mb-6 animate-fade-in">
-          <h1 className="text-3xl font-display text-text-primary mb-2">
-            Hey {userData?.displayName || 'there'}! 👋
-          </h1>
-          <p className="text-text-secondary">
-            {activeCheckIns.length > 0
-              ? `You have ${activeCheckIns.length} active check-in${activeCheckIns.length > 1 ? 's' : ''}`
-              : welcomeMessage}
-          </p>
-        </div>
-
         {/* Needs Attention Section - Featured Circle Only */}
         <NeedsAttentionSection
           missedCheckIns={missedCheckIns}
@@ -274,16 +233,9 @@ const HomePage = () => {
           besties={besties}
         />
 
-        {/* Quick Check-In Buttons */}
+        {/* Stats Card - Moved above Quick Check-In */}
         {activeCheckIns.length === 0 && (
-          <>
-            <QuickCheckInButtons />
-
-            {/* Bestie Circle Status */}
-            <BestieCircleStatus userId={currentUser?.uid} />
-
-            {/* Stats Card */}
-            <div className="card p-6 mb-6">
+          <div className="card p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
                 <button
@@ -308,18 +260,27 @@ const HomePage = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-display text-orange-500">
-                    {userData?.stats?.currentStreak || 0} 🔥
+                    {userData?.stats?.currentStreak || 0}
                   </div>
                   <div className="text-sm text-text-secondary">Current Streak</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-display text-accent">
-                    {userData?.stats?.longestStreak || 0} 👑
+                    {userData?.stats?.longestStreak || 0}
                   </div>
                   <div className="text-sm text-text-secondary">Longest Streak</div>
                 </div>
               </div>
             </div>
+        )}
+
+        {/* Quick Check-In Buttons - Moved to middle */}
+        {activeCheckIns.length === 0 && (
+          <>
+            <QuickCheckInButtons />
+
+            {/* Bestie Circle Status */}
+            <BestieCircleStatus userId={currentUser?.uid} />
 
             {/* Request Attention Button */}
             {userData?.requestAttention?.active ? (

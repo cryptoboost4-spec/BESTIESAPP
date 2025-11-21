@@ -21,8 +21,6 @@ import BestieCard from '../components/BestieCard';
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
-import ActivityFilters from '../components/besties/ActivityFilters';
-import ActivityFeed from '../components/besties/ActivityFeed';
 import EmptyState from '../components/besties/EmptyState';
 import toast from 'react-hot-toast';
 
@@ -35,12 +33,8 @@ const BestiesPage = () => {
   const [loading, setLoading] = useState(true);
 
   // Activity feed state
-  const [activityFeed, setActivityFeed] = useState([]);
   const [missedCheckIns, setMissedCheckIns] = useState([]);
   const [requestsForAttention, setRequestsForAttention] = useState([]);
-
-  // Filter state
-  const [activeFilter, setActiveFilter] = useState('all');
 
   // Rankings period state (weekly, monthly, yearly)
   const [rankingsPeriod, setRankingsPeriod] = useState('weekly');
@@ -50,7 +44,6 @@ const BestiesPage = () => {
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
-  const [reactions, setReactions] = useState({}); // { checkInId: [reactions] }
 
   // Load besties
   useEffect(() => {
@@ -125,15 +118,14 @@ const BestiesPage = () => {
     };
   }, [currentUser]);
 
-  // Load activity feed - only when page is visible
+  // Load needs attention data - only when page is visible
   useEffect(() => {
     if (!currentUser || besties.length === 0) return;
 
-    const loadActivityFeed = async () => {
+    const loadNeedsAttention = async () => {
       // Only load if page is visible
       if (document.hidden) return;
 
-      const activities = [];
       const missed = [];
       const attentionRequests = [];
 
@@ -146,7 +138,7 @@ const BestiesPage = () => {
 
       for (const bestieId of bestieIds) {
         try {
-          // Get recent check-ins
+          // Get recent check-ins to find missed ones
           const checkInsQuery = query(
             collection(db, 'checkins'),
             where('userId', '==', bestieId),
@@ -157,24 +149,14 @@ const BestiesPage = () => {
 
           const checkInsSnapshot = await getDocs(checkInsQuery);
 
-          checkInsSnapshot.forEach((doc) => {
-            const data = doc.data();
+          checkInsSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
             const bestie = besties.find(b => b.userId === bestieId);
-
-            activities.push({
-              id: doc.id,
-              type: 'checkin',
-              checkInData: data,
-              userName: bestie?.name || 'Bestie',
-              userId: bestieId,
-              timestamp: data.createdAt?.toDate() || new Date(),
-              status: data.status,
-            });
 
             // Check for missed check-ins
             if (data.status === 'alerted') {
               missed.push({
-                id: doc.id,
+                id: docSnap.id,
                 userName: bestie?.name || 'Bestie',
                 userId: bestieId,
                 checkInData: data,
@@ -198,35 +180,10 @@ const BestiesPage = () => {
               });
             }
           }
-
-          // Load recent achievements/badges
-          const badgesDoc = await getDoc(doc(db, 'badges', bestieId));
-          if (badgesDoc.exists()) {
-            const badgesData = badgesDoc.data();
-            const recentBadges = badgesData.badges?.filter(b => {
-              const earnedDate = b.earnedAt?.toDate();
-              return earnedDate && earnedDate > twoDaysAgo;
-            }) || [];
-
-            recentBadges.forEach(badge => {
-              const bestie = besties.find(b => b.userId === bestieId);
-              activities.push({
-                id: `badge-${bestieId}-${badge.id}`,
-                type: 'badge',
-                userName: bestie?.name || 'Bestie',
-                userId: bestieId,
-                badge: badge,
-                timestamp: badge.earnedAt?.toDate() || new Date(),
-              });
-            });
-          }
         } catch (error) {
           console.error('Error loading activity for bestie:', error);
         }
       }
-
-      // Sort activities by timestamp (newest first)
-      activities.sort((a, b) => b.timestamp - a.timestamp);
 
       // Filter alerts to only show selected besties (featured circle)
       const featuredCircle = userData?.featuredCircle || [];
@@ -237,18 +194,17 @@ const BestiesPage = () => {
         ? attentionRequests.filter(a => featuredCircle.includes(a.userId))
         : attentionRequests;
 
-      setActivityFeed(activities);
       setMissedCheckIns(filteredMissed);
       setRequestsForAttention(filteredAttention);
     };
 
     // Initial load
-    loadActivityFeed();
+    loadNeedsAttention();
 
     // Refresh when page becomes visible
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        loadActivityFeed();
+        loadNeedsAttention();
       }
     };
 
@@ -274,68 +230,10 @@ const BestiesPage = () => {
   }; */
 
   // Get visual indicators for a bestie
-  const getBestieIndicators = (bestie) => {
-    const indicators = [];
-
-    // Check recent activity for indicators
-    const bestieActivities = activityFeed.filter(a => a.userId === bestie.userId);
-
-    // Fast responder - if they have activity in last 5 min
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
-    if (bestieActivities.some(a => a.timestamp > fiveMinAgo)) {
-      indicators.push({ icon: '⚡', tooltip: 'Fast responder' });
-    }
-
-    // Reliable - if they have high completion rate (would need to calculate from Firestore)
-    const completedCount = bestieActivities.filter(a => a.status === 'completed').length;
-    if (completedCount > 5) {
-      indicators.push({ icon: '🛡️', tooltip: 'Very reliable' });
-    }
-
-    // Active streak - if they have check-ins multiple days in a row
-    indicators.push({ icon: '🔥', tooltip: '7-day streak' });
-
-    // Night check-ins - if they often check in at night
-    const nightCheckIns = bestieActivities.filter(a => {
-      const hour = a.timestamp.getHours();
-      return hour >= 21 || hour <= 6;
-    });
-    if (nightCheckIns.length > 2) {
-      indicators.push({ icon: '🌙', tooltip: 'Night owl' });
-    }
-
-    return indicators.slice(0, 3); // Max 3 indicators
+  const getBestieIndicators = () => {
+    // Simplified - can be expanded later with real metrics
+    return [];
   };
-
-  // Load reactions for check-ins
-  useEffect(() => {
-    if (activityFeed.length === 0) return;
-
-    const loadReactions = async () => {
-      const reactionsData = {};
-
-      for (const activity of activityFeed) {
-        if (activity.type === 'checkin') {
-          try {
-            const reactionsSnapshot = await getDocs(
-              collection(db, 'checkins', activity.id, 'reactions')
-            );
-            reactionsData[activity.id] = reactionsSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-          } catch (error) {
-            console.error('Error loading reactions:', error);
-            reactionsData[activity.id] = [];
-          }
-        }
-      }
-
-      setReactions(reactionsData);
-    };
-
-    loadReactions();
-  }, [activityFeed]);
 
   // Load comments for selected check-in
   useEffect(() => {
@@ -361,45 +259,6 @@ const BestiesPage = () => {
 
     loadComments();
   }, [selectedCheckIn, showComments]);
-
-  // Add reaction to check-in
-  const addReaction = async (checkInId, emoji) => {
-    try {
-      // Check if user already reacted with this emoji
-      const existingReaction = reactions[checkInId]?.find(
-        r => r.userId === currentUser.uid && r.emoji === emoji
-      );
-
-      if (existingReaction) {
-        toast('You already reacted with this!', { icon: emoji });
-        return;
-      }
-
-      await addDoc(collection(db, 'checkins', checkInId, 'reactions'), {
-        userId: currentUser.uid,
-        userName: userData?.displayName || 'Anonymous',
-        emoji: emoji,
-        timestamp: Timestamp.now(),
-      });
-
-      // Reload reactions for this check-in
-      const reactionsSnapshot = await getDocs(
-        collection(db, 'checkins', checkInId, 'reactions')
-      );
-      setReactions(prev => ({
-        ...prev,
-        [checkInId]: reactionsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      }));
-
-      toast.success('Reaction added!');
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-      toast.error('Failed to add reaction');
-    }
-  };
 
   // Add comment to check-in
   const addComment = async () => {
@@ -433,50 +292,18 @@ const BestiesPage = () => {
     }
   };
 
-  // Filter besties
+  // Filter besties - simplified version
   const getFilteredBesties = () => {
-    let filtered = [...besties];
-
-    switch (activeFilter) {
-      case 'circle':
-        filtered = filtered.filter(b => b.isFavorite);
-        break;
-      case 'active':
-        // Filter besties with check-ins in last hour
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-        filtered = filtered.filter(b =>
-          activityFeed.some(a => a.userId === b.userId && a.timestamp > oneHourAgo && a.status === 'active')
-        );
-        break;
-      default:
-        // Sort by most recent activity first, then favorites, then alphabetical
-        filtered.sort((a, b) => {
-          // Check for recent activity
-          const aRecent = activityFeed.find(f => f.userId === a.userId);
-          const bRecent = activityFeed.find(f => f.userId === b.userId);
-
-          // If both have recent activity, sort by timestamp
-          if (aRecent && bRecent) {
-            return bRecent.timestamp - aRecent.timestamp;
-          }
-
-          // If one has recent activity and the other doesn't
-          if (aRecent && !bRecent) return -1;
-          if (!aRecent && bRecent) return 1;
-
-          // If neither has recent activity, favorites first
-          if (a.isFavorite && !b.isFavorite) return -1;
-          if (!a.isFavorite && b.isFavorite) return 1;
-
-          // Finally, alphabetical
-          return (a.name || '').localeCompare(b.name || '');
-        });
-    }
-
+    const filtered = [...besties];
+    // Sort: favorites first, then alphabetical
+    filtered.sort((a, b) => {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
     return filtered;
   };
 
-  // const rankings = getPowerRankings(); // TODO: Implement rankings when metrics are available
   const filteredBesties = getFilteredBesties();
 
   if (loading) {
@@ -495,10 +322,9 @@ const BestiesPage = () => {
       <Header />
 
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
-        {/* Mobile Header - Simplified */}
-        <div className="mb-4">
-          <h1 className="text-2xl md:text-3xl font-display text-gradient mb-2">💜 Your Besties</h1>
-          <p className="text-sm md:text-base text-text-secondary">Your safety squad activity hub</p>
+        {/* Mobile Header - Centered */}
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl md:text-3xl font-display text-gradient">Your Besties</h1>
         </div>
 
         {/* Pending Requests */}
@@ -515,41 +341,120 @@ const BestiesPage = () => {
         <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Filters - Horizontal Scroll on Mobile */}
-            <ActivityFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+            {/* Besties Grid - Moved from sidebar to main content */}
+            <div>
+              {filteredBesties.length === 0 ? (
+                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
+                  <div className="text-5xl md:text-6xl mb-3">💜</div>
+                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties yet</p>
+                  <p className="text-sm md:text-base text-text-secondary">
+                    Start adding besties to see them here
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+                  {filteredBesties.map((bestie) => {
+                    const indicators = getBestieIndicators(bestie);
+                    return (
+                      <div key={bestie.id} className="relative group">
+                        {/* Main card with improved styling and fixed height */}
+                        <div className="h-full min-h-[200px] transform transition-all duration-300 hover:scale-[1.02]">
+                          <BestieCard bestie={bestie} />
+                        </div>
 
-            {/* Activity Feed */}
-            <ActivityFeed
-              activityFeed={activityFeed}
-              reactions={reactions}
-              addReaction={addReaction}
-              setSelectedCheckIn={setSelectedCheckIn}
-              setShowComments={setShowComments}
-              getTimeAgo={getTimeAgo}
-            />
+                        {/* Visual Indicators - Top Left */}
+                        {indicators.length > 0 && (
+                          <div className="absolute top-3 left-3 flex gap-1 z-10">
+                            {indicators.map((indicator, idx) => (
+                              <span
+                                key={idx}
+                                className="text-base bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-md border border-purple-200 dark:border-purple-600"
+                                title={indicator.tooltip}
+                              >
+                                {indicator.icon}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Quick Action Overlay - Shows on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/95 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 pointer-events-none group-hover:pointer-events-auto">
+                          <div className="w-full space-y-2">
+                            <button
+                              onClick={() => navigate(`/user/${bestie.userId}`)}
+                              className="w-full bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900 text-purple-900 dark:text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                            >
+                              <span>👤</span>
+                              <span>View Profile</span>
+                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const bestieDoc = await getDoc(doc(db, 'besties', bestie.id));
+                                    if (bestieDoc.exists()) {
+                                      await updateDoc(doc(db, 'besties', bestie.id), {
+                                        isFavorite: !bestieDoc.data().isFavorite
+                                      });
+                                      toast.success(bestieDoc.data().isFavorite ? 'Removed from circle' : 'Added to circle! 💜');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error toggling circle:', error);
+                                    toast.error('Failed to update');
+                                  }
+                                }}
+                                className={`flex-1 ${bestie.isFavorite ? 'bg-pink-500 hover:bg-pink-600' : 'bg-purple-500 hover:bg-purple-600'} text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg`}
+                              >
+                                <span>{bestie.isFavorite ? '💔' : '💜'}</span>
+                                <span className="text-sm">{bestie.isFavorite ? 'Remove' : 'Add to Circle'}</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (bestie.phone) {
+                                    window.location.href = `sms:${bestie.phone}`;
+                                  } else {
+                                    toast.error('No phone number available');
+                                  }
+                                }}
+                                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                              >
+                                <span>💬</span>
+                                <span className="text-sm">Message</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* This Week's Champions - Soft & Girly Version */}
+            {/* This Week's Queens - Ultra Feminine Version */}
             <div className="relative overflow-hidden">
-              {/* Subtle sparkly background */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-                <div className="absolute top-2 left-2 text-pink-200 text-sm">✨</div>
-                <div className="absolute top-3 right-3 text-purple-200 text-sm">💫</div>
-                <div className="absolute bottom-2 left-3 text-pink-200 text-sm">⭐</div>
+              {/* Enhanced sparkly background with more elements */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+                <div className="absolute top-2 left-2 text-pink-300 text-lg animate-pulse">✨</div>
+                <div className="absolute top-3 right-3 text-purple-300 text-lg animate-pulse delay-100">💫</div>
+                <div className="absolute bottom-2 left-3 text-pink-300 text-lg animate-pulse delay-200">⭐</div>
+                <div className="absolute top-1/2 right-4 text-rose-300 text-sm animate-pulse delay-300">🌸</div>
+                <div className="absolute bottom-4 right-2 text-fuchsia-300 text-sm animate-pulse">🦋</div>
               </div>
 
-              <div className="card p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-600 shadow-lg relative">
-                {/* Cute header with crown */}
-                <div className="text-center mb-3">
-                  <div className="text-3xl mb-1">👑</div>
-                  <h2 className="text-lg font-display bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <div className="card p-5 bg-gradient-to-br from-pink-100 via-rose-100 via-purple-100 to-pink-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-2 border-pink-300 dark:border-pink-500 shadow-xl relative">
+                {/* Cute header with sparkly crown */}
+                <div className="text-center mb-4">
+                  <div className="text-4xl mb-2 drop-shadow-lg animate-bounce-slow">👑✨</div>
+                  <h2 className="text-xl font-display bg-gradient-to-r from-pink-500 via-rose-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-bold tracking-wide">
                     {rankingsPeriod === 'weekly' && "This Week's Queens"}
                     {rankingsPeriod === 'monthly' && "This Month's Queens"}
                     {rankingsPeriod === 'yearly' && "This Year's Queens"}
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Your amazing squad! 💕</p>
+                  <p className="text-xs font-semibold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent mt-1">Your amazing squad! 💕✨</p>
                 </div>
 
                 {/* Period Tabs - Compact */}
@@ -689,104 +594,6 @@ const BestiesPage = () => {
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Besties Grid */}
-            <div>
-              <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
-                {activeFilter === 'circle' && '💜 Bestie Circle'}
-                {activeFilter === 'all' && 'All Besties'}
-                {activeFilter === 'active' && '🔔 Active Now'}
-              </h2>
-
-              {filteredBesties.length === 0 ? (
-                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
-                  <div className="text-5xl md:text-6xl mb-3">💜</div>
-                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties in this filter</p>
-                  <p className="text-sm md:text-base text-text-secondary">
-                    {activeFilter === 'circle' && 'Add besties to your circle by tapping their profile picture'}
-                    {activeFilter === 'all' && 'Start adding besties to see them here'}
-                    {activeFilter === 'active' && 'No one is currently checked in'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
-                  {filteredBesties.map((bestie) => {
-                    const indicators = getBestieIndicators(bestie);
-                    return (
-                      <div key={bestie.id} className="relative group">
-                        {/* Main card with improved styling */}
-                        <div className="h-full transform transition-all duration-300 hover:scale-[1.02]">
-                          <BestieCard bestie={bestie} />
-                        </div>
-
-                        {/* Visual Indicators - Top Left */}
-                        {indicators.length > 0 && (
-                          <div className="absolute top-3 left-3 flex gap-1 z-10">
-                            {indicators.map((indicator, idx) => (
-                              <span
-                                key={idx}
-                                className="text-base bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-md border border-purple-200 dark:border-purple-600"
-                                title={indicator.tooltip}
-                              >
-                                {indicator.icon}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Quick Action Overlay - Shows on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/95 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 pointer-events-none group-hover:pointer-events-auto">
-                          <div className="w-full space-y-2">
-                            <button
-                              onClick={() => navigate(`/user/${bestie.userId}`)}
-                              className="w-full bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900 text-purple-900 dark:text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
-                            >
-                              <span>👤</span>
-                              <span>View Profile</span>
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const bestieDoc = await getDoc(doc(db, 'besties', bestie.id));
-                                    if (bestieDoc.exists()) {
-                                      await updateDoc(doc(db, 'besties', bestie.id), {
-                                        isFavorite: !bestieDoc.data().isFavorite
-                                      });
-                                      toast.success(bestieDoc.data().isFavorite ? 'Removed from circle' : 'Added to circle! 💜');
-                                    }
-                                  } catch (error) {
-                                    console.error('Error toggling circle:', error);
-                                    toast.error('Failed to update');
-                                  }
-                                }}
-                                className={`flex-1 ${bestie.isFavorite ? 'bg-pink-500 hover:bg-pink-600' : 'bg-purple-500 hover:bg-purple-600'} text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg`}
-                              >
-                                <span>{bestie.isFavorite ? '💔' : '💜'}</span>
-                                <span className="text-sm">{bestie.isFavorite ? 'Remove' : 'Add to Circle'}</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (bestie.phone) {
-                                    window.location.href = `sms:${bestie.phone}`;
-                                  } else {
-                                    toast.error('No phone number available');
-                                  }
-                                }}
-                                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
-                              >
-                                <span>💬</span>
-                                <span className="text-sm">Message</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>
