@@ -58,11 +58,6 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     toast('Vibe applied! ✨', { icon: vibe.emoji });
   };
 
-  const getBackgroundById = (id) => {
-    const allBackgrounds = Object.values(BACKGROUNDS).flat();
-    return allBackgrounds.find(bg => bg.id === id);
-  };
-
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
       <div className="bg-white dark:bg-gray-900 w-full md:max-w-2xl md:rounded-2xl shadow-2xl flex flex-col max-h-screen md:max-h-[90vh] overflow-hidden">
