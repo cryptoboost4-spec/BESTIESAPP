@@ -228,6 +228,32 @@ const CreateCheckInPage = () => {
       setDuration(location.state.quickMinutes);
     }
 
+    // Load from new quick check-in types
+    if (location.state?.quickType) {
+      const { quickType, duration: quickDuration, rego, meetingWith: meetingWithParam } = location.state;
+
+      errorTracker.trackFunnelStep('checkin', `use_quick_${quickType}`, { duration: quickDuration });
+
+      if (quickDuration) {
+        setDuration(quickDuration);
+      }
+
+      // Handle rideshare - add rego to notes
+      if (quickType === 'rideshare' && rego) {
+        setNotes(`🚗 Rideshare - Vehicle: ${rego}`);
+      }
+
+      // Handle quick meet - set meeting with
+      if (quickType === 'quickmeet' && meetingWithParam) {
+        setMeetingWith(meetingWithParam);
+      }
+
+      // Handle walking - add note
+      if (quickType === 'walking') {
+        setNotes('🚶‍♀️ Walking alone');
+      }
+    }
+
     if (location.state?.template) {
       errorTracker.trackFunnelStep('checkin', 'use_template');
       const template = location.state.template;

@@ -84,6 +84,8 @@
 | `completedCheckIns` | number | `0` | Successfully completed check-ins |
 | `alertedCheckIns` | number | `0` | Check-ins that triggered alerts |
 | `totalBesties` | number | `0` | Total accepted besties |
+| `currentStreak` | number | `0` | Current consecutive days with check-ins |
+| `longestStreak` | number | `0` | Longest consecutive days with check-ins achieved |
 | `joinedAt` | Timestamp | ✅ | Account creation timestamp |
 
 ### Nested: profile
@@ -333,6 +335,9 @@
 ---
 
 ## 📝 Changelog
+
+### 2025-11-21
+- Added `currentStreak` and `longestStreak` fields to users.stats
 
 ### 2025-11-19
 - Initial schema documentation created

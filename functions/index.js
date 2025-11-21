@@ -380,6 +380,61 @@ exports.onCheckInCountUpdate = functions.firestore
       } else {
         await badgesRef.set({ userId: newData.userId, badges, createdAt: admin.firestore.Timestamp.now() });
       }
+
+      // Update streak tracking
+      const userDoc = await userRef.get();
+      const userData = userDoc.data();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      // Get all completed check-ins from today
+      const todayCheckIns = await db.collection('checkins')
+        .where('userId', '==', newData.userId)
+        .where('status', '==', 'completed')
+        .where('completedAt', '>=', admin.firestore.Timestamp.fromDate(today))
+        .get();
+
+      // Only update streak if this is the first completion today
+      if (todayCheckIns.size === 1) {
+        // Get yesterday's date range
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayEnd = new Date(yesterday);
+        yesterdayEnd.setDate(yesterdayEnd.getDate() + 1);
+
+        // Check if user completed a check-in yesterday
+        const yesterdayCheckIns = await db.collection('checkins')
+          .where('userId', '==', newData.userId)
+          .where('status', '==', 'completed')
+          .where('completedAt', '>=', admin.firestore.Timestamp.fromDate(yesterday))
+          .where('completedAt', '<', admin.firestore.Timestamp.fromDate(yesterdayEnd))
+          .get();
+
+        let newStreak = 1;
+        if (yesterdayCheckIns.size > 0) {
+          // Consecutive day - increment streak
+          newStreak = (userData.stats?.currentStreak || 0) + 1;
+        }
+
+        // Update longest streak if current streak is higher
+        const longestStreak = userData.stats?.longestStreak || 0;
+        const newLongestStreak = Math.max(newStreak, longestStreak);
+
+        await userRef.update({
+          'stats.currentStreak': newStreak,
+          'stats.longestStreak': newLongestStreak
+        });
+
+        // Award streak badge if 7+ days
+        if (newStreak >= 7 && !badges.includes('streak_master')) {
+          badges.push('streak_master');
+          if (badgesDoc.exists) {
+            await badgesRef.update({ badges });
+          } else {
+            await badgesRef.set({ userId: newData.userId, badges, createdAt: admin.firestore.Timestamp.now() });
+          }
+        }
+      }
     }
 
     // Update stats when status changes to 'alerted'
