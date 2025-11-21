@@ -60,10 +60,10 @@ const InfoButton = ({ message }) => {
       {showTooltip && (
         <div
           ref={tooltipRef}
-          className={`absolute ${tooltipPosition === 'right' ? 'right-0' : 'left-0'} top-full mt-2 z-50 animate-scale-up`}
+          className={`absolute ${tooltipPosition === 'right' ? 'right-0' : 'left-0'} top-full mt-2 z-50 animate-scale-up opacity-100`}
           style={{ minWidth: '160px', maxWidth: '200px' }}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-2.5">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-2.5 opacity-100">
             <div className="flex items-start gap-1.5">
               <span className="text-sm flex-shrink-0">ℹ️</span>
               <div className="flex-1">
