@@ -25,13 +25,6 @@ const QuickMeetModal = ({ onClose }) => {
     });
   };
 
-  const timePresets = [
-    { label: '10m', minutes: 10 },
-    { label: '15m', minutes: 15 },
-    { label: '30m', minutes: 30 },
-    { label: '45m', minutes: 45 },
-  ];
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
@@ -58,25 +51,23 @@ const QuickMeetModal = ({ onClose }) => {
           />
         </div>
 
-        {/* Time Preset Buttons */}
+        {/* Time Slider */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
-            Duration
+            Duration: {duration} minutes
           </label>
-          <div className="grid grid-cols-4 gap-2">
-            {timePresets.map((preset) => (
-              <button
-                key={preset.minutes}
-                onClick={() => setDuration(preset.minutes)}
-                className={`py-3 px-4 rounded-lg text-sm font-semibold transition-colors ${
-                  duration === preset.minutes
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
+          <input
+            type="range"
+            min="10"
+            max="90"
+            step="5"
+            value={duration}
+            onChange={(e) => setDuration(parseInt(e.target.value))}
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+          />
+          <div className="flex justify-between text-xs text-text-secondary mt-1">
+            <span>10 min</span>
+            <span>90 min</span>
           </div>
         </div>
 
