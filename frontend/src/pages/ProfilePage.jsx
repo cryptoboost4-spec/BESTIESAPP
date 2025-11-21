@@ -372,7 +372,10 @@ const ProfilePage = () => {
   const weeklySummary = getWeeklySummary();
   const currentGradient = userData?.profile?.backgroundGradient || GRADIENT_OPTIONS[0].gradient;
   const loginStreak = userData?.loginStreak || 0;
-  const featuredBadges = badges.filter(b => featuredBadgeIds.includes(b.id)).slice(0, 3);
+  // Show all badges, but put featured ones first
+  const featuredBadges = badges.filter(b => featuredBadgeIds.includes(b.id));
+  const otherBadges = badges.filter(b => !featuredBadgeIds.includes(b.id));
+  const allBadgesToShow = [...featuredBadges, ...otherBadges];
 
   // Get progress bar color
   const getProgressColor = (percentage) => {
@@ -742,64 +745,45 @@ const ProfilePage = () => {
             <h2 className="text-2xl font-display text-text-primary">Your Badges</h2>
             <button
               onClick={() => navigate('/badges')}
-              className="text-primary font-semibold hover:underline text-sm flex items-center gap-1"
+              className="text-primary font-semibold hover:underline text-sm"
             >
-              View All
-              <span className="text-xs bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center">
-                {badges.length}
-              </span>
+              View All →
             </button>
           </div>
 
-          {/* Help text about featuring */}
-          {badges.length > 0 && (
-            <p className="text-xs text-gray-500 mb-4">
-              💡 Tap badges to choose your top 3 to display on your profile
-            </p>
-          )}
+          <p className="text-xs text-text-secondary mb-4">
+            {featuredBadgeIds.length > 0
+              ? `⭐ ${featuredBadgeIds.length} featured badge${featuredBadgeIds.length > 1 ? 's' : ''} shown first • `
+              : ''}
+            <button
+              onClick={() => setShowBadgeSelector(true)}
+              className="text-primary hover:underline"
+            >
+              Choose your top 3 to feature
+            </button>
+          </p>
 
-          {badges.length > 0 ? (
+          {allBadgesToShow.length > 0 ? (
             <>
-              {/* Featured Badges - Highlighted */}
-              {featuredBadges.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-semibold text-purple-700 mb-2">⭐ Featured on Profile</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {featuredBadges.map((badge) => (
-                      <button
-                        key={badge.id}
-                        onClick={() => handleToggleFeaturedBadge(badge.id)}
-                        className="card p-4 md:p-5 text-center bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 hover:border-yellow-400 transition-all hover:scale-105 min-h-[120px] flex flex-col items-center justify-center"
-                      >
-                        <div className="text-4xl md:text-5xl mb-2">{badge.icon}</div>
-                        <div className="font-semibold text-xs md:text-sm text-text-primary line-clamp-2">{badge.name}</div>
-                        <div className="text-xs text-yellow-700 mt-1 font-semibold">★ Featured</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* All Other Badges */}
-              {badges.filter(b => !featuredBadgeIds.includes(b.id)).length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-2">
-                    {featuredBadges.length > 0 ? 'Other Badges (Tap to Feature)' : 'Tap to Feature Your Top 3'}
-                  </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                    {badges.filter(b => !featuredBadgeIds.includes(b.id)).map((badge) => (
-                      <button
-                        key={badge.id}
-                        onClick={() => handleToggleFeaturedBadge(badge.id)}
-                        className="card p-4 text-center hover:shadow-lg transition-all hover:scale-105 hover:border-purple-300 min-h-[100px] flex flex-col items-center justify-center bg-white"
-                      >
-                        <div className="text-3xl md:text-4xl mb-1">{badge.icon}</div>
-                        <div className="font-semibold text-xs text-text-primary line-clamp-2">{badge.name}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="grid grid-cols-3 gap-4">
+                {allBadgesToShow.map((badge) => {
+                  const isFeatured = featuredBadgeIds.includes(badge.id);
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`card p-4 text-center transition-all ${
+                        isFeatured
+                          ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 shadow-lg scale-105'
+                          : 'bg-gradient-to-br from-gray-50 to-gray-100'
+                      }`}
+                    >
+                      <div className="text-4xl mb-2">{badge.icon}</div>
+                      <div className="font-semibold text-sm text-text-primary">{badge.name}</div>
+                      {isFeatured && <div className="text-xs text-yellow-600 mt-1">⭐ Featured</div>}
+                    </div>
+                  );
+                })}
+              </div>
             </>
           ) : (
             <div className="card p-8 text-center">

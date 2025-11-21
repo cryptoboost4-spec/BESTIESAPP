@@ -1021,9 +1021,8 @@ const BestiesPage = () => {
 
       {/* Comments Modal - Mobile Optimized with Bottom Menu Bar Clearance */}
       {showComments && selectedCheckIn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center pb-0 md:pb-0">
-          {/* Modal Container - Adjusted for mobile menu bar */}
-          <div className="bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full flex flex-col mb-20 md:mb-0 max-h-[calc(100vh-88px)] md:max-h-[600px] shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-end md:items-center justify-center">
+          <div className="bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
             {/* Header */}
             <div className="p-4 md:p-6 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-pink-50 to-purple-50">
               <div className="flex items-center justify-between">

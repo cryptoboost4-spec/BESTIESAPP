@@ -10,6 +10,7 @@ import DonationCard from '../components/DonationCard';
 import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
+import ProfileWithBubble from '../components/ProfileWithBubble';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -220,50 +221,31 @@ const HomePage = () => {
                   Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
                 </p>
 
-                {/* Preview Example - Split Layout */}
-                <div className="bg-white rounded-xl p-5 mb-4 border-2 border-purple-200">
-                  <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
-                    {/* Left Side - Preview */}
-                    <div className="flex-shrink-0">
-                      <p className="text-xs font-semibold text-purple-700 mb-3 text-center">Live Preview:</p>
-                      <div className="relative inline-block">
-                        {/* Profile Picture */}
-                        <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-display overflow-hidden border-4 border-white shadow-lg">
-                          {userData?.photoURL ? (
-                            <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                          ) : (
-                            userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
-                          )}
-                        </div>
-
-                        {/* Animated Speech Bubble - Top Right */}
-                        <div className="absolute -top-2 -right-2 z-10">
-                          <div className="bg-purple-500 text-white rounded-full px-3 py-2 font-semibold whitespace-nowrap shadow-lg relative text-xs animate-bounce-gentle">
-                            <span className="bubble-message">Needs to vent</span>
-                            {/* Triangle pointer */}
-                            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-purple-500"></div>
-                          </div>
-                          {/* Pulse ring */}
-                          <div className="absolute inset-0 rounded-full bg-purple-300 animate-ping opacity-75"></div>
-                        </div>
-                      </div>
-                      <p className="text-center text-xs text-gray-600 font-medium mt-2">
-                        {userData?.displayName || 'You'}
-                      </p>
-                    </div>
-
-                    {/* Right Side - Explanation */}
-                    <div className="flex-1 text-center md:text-left">
-                      <p className="text-sm font-semibold text-gray-800 mb-2">
-                        Your besties will see this everywhere
-                      </p>
-                      <p className="text-xs text-gray-600 leading-relaxed mb-2">
-                        The message bubble appears on your profile across the entire app. Your chosen support tag will cycle through to let your besties know how they can help.
-                      </p>
-                      <div className="inline-flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-full">
-                        <span className="text-xs text-purple-700 font-medium">✨ Message cycles automatically</span>
-                      </div>
-                    </div>
+                {/* Preview Example - Compact */}
+                <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200">
+                  <p className="text-xs font-semibold text-purple-700 mb-3">Example messages:</p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <ProfileWithBubble
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || currentUser?.email || 'You'}
+                      requestAttention={{ active: true, tag: '💬 Needs to vent' }}
+                      size="lg"
+                      showBubble={true}
+                    />
+                    <ProfileWithBubble
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || currentUser?.email || 'You'}
+                      requestAttention={{ active: true, tag: '🫂 Need a shoulder' }}
+                      size="lg"
+                      showBubble={true}
+                    />
+                    <ProfileWithBubble
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || currentUser?.email || 'You'}
+                      requestAttention={{ active: true, tag: '💜 Could use support' }}
+                      size="lg"
+                      showBubble={true}
+                    />
                   </div>
                 </div>
 
@@ -273,48 +255,6 @@ const HomePage = () => {
                 >
                   💜 Request Attention
                 </button>
-
-                {/* CSS for bubble message animation */}
-                <style>{`
-                  @keyframes bounce-gentle {
-                    0%, 100% {
-                      transform: translateY(0);
-                    }
-                    50% {
-                      transform: translateY(-4px);
-                    }
-                  }
-
-                  .animate-bounce-gentle {
-                    animation: bounce-gentle 2s ease-in-out infinite;
-                  }
-
-                  @keyframes cycleBubbleMessages {
-                    0%, 24% { content: "Needs to vent"; }
-                    25%, 49% { content: "Needs a shoulder"; }
-                    50%, 74% { content: "Could use support"; }
-                    75%, 100% { content: "Having a rough day"; }
-                  }
-
-                  .bubble-message {
-                    animation: fadeBubble 8s ease-in-out infinite;
-                  }
-
-                  .bubble-message::after {
-                    content: "Needs to vent";
-                    animation: cycleBubbleMessages 8s ease-in-out infinite;
-                  }
-
-                  @keyframes fadeBubble {
-                    0%, 23%, 100% { opacity: 1; }
-                    24%, 25% { opacity: 0.3; }
-                    26%, 48% { opacity: 1; }
-                    49%, 50% { opacity: 0.3; }
-                    51%, 73% { opacity: 1; }
-                    74%, 75% { opacity: 0.3; }
-                    76%, 99% { opacity: 1; }
-                  }
-                `}</style>
               </div>
             )}
           </>

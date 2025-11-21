@@ -20,8 +20,8 @@ const CheckInLoader = () => {
     { text: "Preparing your safety net...", subtext: "Because you deserve to feel secure 💕" },
   ];
 
-  // Pick one random message and stick with it
-  const [selectedMessage] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
+  // Pick one random message for this check-in
+  const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -46,68 +46,25 @@ const CheckInLoader = () => {
         ))}
       </div>
 
-      {/* Luxury card with silk texture effect */}
-      <div className="w-full max-w-lg text-center relative z-10">
-        <div className="relative bg-white/95 backdrop-blur-xl rounded-[2rem] p-10 shadow-[0_20px_60px_rgba(219,39,119,0.3)] border border-pink-200/50">
-          {/* Decorative corner accents */}
-          <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-pink-300/50 rounded-tl-xl"></div>
-          <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-purple-300/50 rounded-tr-xl"></div>
-          <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-purple-300/50 rounded-bl-xl"></div>
-          <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-pink-300/50 rounded-br-xl"></div>
+        {/* Message */}
+        <h2 className="font-display text-3xl text-gradient mb-4">
+          Creating your check-in!
+        </h2>
 
-          {/* Elegant animated icon */}
-          <div className="relative w-28 h-28 mx-auto mb-8">
-            {/* Pulsing glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-pink-300 via-purple-300 to-fuchsia-300 rounded-full animate-pulse-slow opacity-40 blur-xl"></div>
+        <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
+          {message}
+        </p>
 
-            {/* Main shield/heart icon */}
-            <div className="relative w-28 h-28 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-24 h-24">
-                <defs>
-                  <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#f472b6" />
-                    <stop offset="50%" stopColor="#c084fc" />
-                    <stop offset="100%" stopColor="#e879f9" />
-                  </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-
-                {/* Heart-shield hybrid */}
-                <path
-                  d="M50,25 C40,15 25,20 25,35 C25,50 50,70 50,70 C50,70 75,50 75,35 C75,20 60,15 50,25 Z"
-                  fill="url(#shieldGradient)"
-                  filter="url(#glow)"
-                  className="animate-pulse-gentle"
-                />
-
-                {/* Checkmark inside */}
-                <path
-                  d="M42,45 L47,52 L60,38"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="animate-draw-check"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Supportive message */}
-          <h2 className="font-display text-3xl md:text-4xl bg-gradient-to-r from-pink-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent mb-3 leading-tight">
-            {selectedMessage.text}
-          </h2>
-
-          <p className="text-base md:text-lg text-purple-600/80 font-medium mb-8 leading-relaxed">
-            {selectedMessage.subtext}
-          </p>
+        {/* Cute loading animation */}
+        <div className="flex justify-center gap-2 mb-8">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-4 h-4 bg-gradient-primary rounded-full animate-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            ></div>
+          ))}
+        </div>
 
           {/* Elegant loading animation */}
           <div className="flex justify-center items-center gap-2 mb-8">

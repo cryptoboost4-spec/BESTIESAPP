@@ -19,15 +19,16 @@ const SafeLoader = () => {
     { text: "You're home safe! 💕", subtext: "That's all that matters" },
   ];
 
-  // Pick one random message and stick with it
-  const [selectedMessage] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
+  // Pick one random message
+  const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
   // Redirect to home after 2 seconds
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    // Navigate to home after 2 seconds
+    const timer = setTimeout(() => {
       navigate('/');
     }, 2000);
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
@@ -114,9 +115,9 @@ const SafeLoader = () => {
             {selectedMessage.text}
           </h2>
 
-          <p className="text-base md:text-lg text-green-600/80 font-medium mb-8 leading-relaxed">
-            {selectedMessage.subtext}
-          </p>
+        <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
+          {message}
+        </p>
 
           {/* Celebrating animation */}
           <div className="flex justify-center items-center gap-3 mb-6">

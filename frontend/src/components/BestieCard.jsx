@@ -96,85 +96,85 @@ const BestieCard = ({ bestie, onRemove }) => {
 
   return (
     <>
-      <div className="relative group">
-        {/* Redesigned Bestie Card - Beautiful gradient borders */}
-        <div className={`card p-5 transition-all duration-300 hover:shadow-2xl border-2 ${
-          bestie.isFavorite
-            ? 'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50'
-            : 'border-gray-200 hover:border-purple-200'
-        }`}>
-          <div className="flex items-center gap-4">
-            {/* Profile Picture - Clickable */}
-            <div className="relative flex-shrink-0" ref={menuRef}>
-              <button
+      <div
+        className="card p-4 hover:shadow-lg transition-all hover:transform hover:-translate-y-1 relative"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          {loading ? (
+            <div className="w-12 h-12 bg-gray-200 animate-pulse rounded-full flex-shrink-0"></div>
+          ) : (
+            <div className="relative" ref={menuRef}>
+              {/* Click on profile picture to show menu */}
+              <div
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowProfileMenu(!showProfileMenu);
+                  setShowMenu(!showMenu);
                 }}
-                className="relative focus:outline-none focus:ring-4 focus:ring-purple-300 rounded-full transition-all hover:scale-105"
+                className="cursor-pointer"
               >
-                {loading ? (
-                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 animate-pulse rounded-full"></div>
-                ) : (
-                  <ProfileWithBubble
-                    photoURL={userPhoto}
-                    name={bestie.name || bestie.phone || 'Unknown'}
-                    requestAttention={requestAttention}
-                    size="xl"
-                    showBubble={true}
-                  />
-                )}
-                {/* Click indicator */}
-                <div className="absolute inset-0 rounded-full border-2 border-purple-400 opacity-0 group-hover:opacity-30 pointer-events-none animate-ping"></div>
-              </button>
+                <ProfileWithBubble
+                  photoURL={userPhoto}
+                  name={bestie.name || bestie.phone || 'Unknown'}
+                  requestAttention={requestAttention}
+                  size="lg"
+                  showBubble={true}
+                />
+              </div>
 
-              {/* Profile Picture Menu - Opens below profile */}
-              {showProfileMenu && (
-                <div className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-2xl border-2 border-purple-200 z-50 min-w-[200px] overflow-hidden animate-scale-up">
+              {/* Dropdown Menu - appears below profile picture */}
+              {showMenu && (
+                <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 z-50 min-w-[180px]">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowProfileMenu(false);
+                      setShowMenu(false);
                       navigate(`/user/${bestie.userId}`);
                     }}
-                    className="w-full text-left px-4 py-3 hover:bg-purple-50 text-sm font-semibold text-gray-700 flex items-center gap-2 transition-colors first:rounded-t-xl"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700 first:rounded-t-lg"
                   >
-                    <span className="text-lg">👤</span>
-                    <span>View Profile</span>
+                    👤 View Profile
                   </button>
                   <button
                     onClick={handleToggleCircle}
-                    className="w-full text-left px-4 py-3 hover:bg-purple-50 text-sm font-semibold text-gray-700 flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
                   >
-                    <span className="text-lg">{bestie.isFavorite ? '💔' : '💜'}</span>
-                    <span>{bestie.isFavorite ? 'Remove from Circle' : 'Add to Circle'}</span>
+                    {bestie.isFavorite ? '💔 Remove from Circle' : '💜 Add to Circle'}
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (bestie.phone) {
-                        window.location.href = `sms:${bestie.phone}`;
+                      const phone = bestie.phone;
+                      if (phone) {
+                        window.location.href = `sms:${phone}`;
+                      } else {
+                        toast.error('No phone number available');
                       }
+                      setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-3 hover:bg-green-50 text-sm font-semibold text-green-700 flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
                   >
-                    <span className="text-lg">💬</span>
-                    <span>Send Message</span>
+                    💬 Send Message
                   </button>
-                  <div className="border-t border-gray-200"></div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowProfileMenu(false);
+                      setShowMenu(false);
                       setShowDeleteModal(true);
                     }}
-                    className="w-full text-left px-4 py-3 hover:bg-red-50 text-sm font-semibold text-red-600 flex items-center gap-2 transition-colors last:rounded-b-xl"
+                    className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-semibold text-red-600 last:rounded-b-lg"
                   >
-                    <span className="text-lg">🗑️</span>
-                    <span>Remove Bestie</span>
+                    🗑️ Delete Bestie
                   </button>
                 </div>
               )}
+            </div>
+          )}
+          <div
+            className="flex-1 min-w-0 cursor-pointer"
+            onClick={() => bestie.userId && navigate(`/user/${bestie.userId}`)}
+          >
+            <div className="font-semibold text-text-primary truncate">
+              {bestie.name || bestie.phone || 'Unknown'}
             </div>
 
             {/* Bestie Info */}
