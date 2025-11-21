@@ -41,26 +41,48 @@ const BestieCircle = ({ userId, onAddClick }) => {
 
       for (const docSnap of requesterQuery.docs) {
         const data = docSnap.data();
-        const userDoc = await getDoc(doc(db, 'users', data.recipientId));
-        const userData = userDoc.exists() ? userDoc.data() : {};
-        bestiesList.push({
-          id: data.recipientId,
-          name: userData.displayName || 'Bestie',
-          photoURL: userData.photoURL || null,
-          requestAttention: userData.requestAttention || null,
-        });
+        try {
+          const userDoc = await getDoc(doc(db, 'users', data.recipientId));
+          const userData = userDoc.exists() ? userDoc.data() : {};
+          bestiesList.push({
+            id: data.recipientId,
+            name: userData.displayName || 'Bestie',
+            photoURL: userData.photoURL || null,
+            requestAttention: userData.requestAttention || null,
+          });
+        } catch (error) {
+          // Handle permission errors gracefully - bestie data may not be accessible
+          console.warn(`Could not load profile for bestie ${data.recipientId}:`, error.code);
+          bestiesList.push({
+            id: data.recipientId,
+            name: 'Bestie',
+            photoURL: null,
+            requestAttention: null,
+          });
+        }
       }
 
       for (const docSnap of recipientQuery.docs) {
         const data = docSnap.data();
-        const userDoc = await getDoc(doc(db, 'users', data.requesterId));
-        const userData = userDoc.exists() ? userDoc.data() : {};
-        bestiesList.push({
-          id: data.requesterId,
-          name: userData.displayName || 'Bestie',
-          photoURL: userData.photoURL || null,
-          requestAttention: userData.requestAttention || null,
-        });
+        try {
+          const userDoc = await getDoc(doc(db, 'users', data.requesterId));
+          const userData = userDoc.exists() ? userDoc.data() : {};
+          bestiesList.push({
+            id: data.requesterId,
+            name: userData.displayName || 'Bestie',
+            photoURL: userData.photoURL || null,
+            requestAttention: userData.requestAttention || null,
+          });
+        } catch (error) {
+          // Handle permission errors gracefully - bestie data may not be accessible
+          console.warn(`Could not load profile for bestie ${data.requesterId}:`, error.code);
+          bestiesList.push({
+            id: data.requesterId,
+            name: 'Bestie',
+            photoURL: null,
+            requestAttention: null,
+          });
+        }
       }
 
       setAllBesties(bestiesList);

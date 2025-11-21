@@ -49,81 +49,101 @@ const ProfilePage = () => {
 
     try {
       // Load badges
-      const badgesDoc = await getDoc(doc(db, 'badges', currentUser.uid));
-      if (badgesDoc.exists()) {
-        const badgesData = badgesDoc.data().badges || [];
-        setBadges(badgesData);
+      try {
+        const badgesDoc = await getDoc(doc(db, 'badges', currentUser.uid));
+        if (badgesDoc.exists()) {
+          const badgesData = badgesDoc.data().badges || [];
+          setBadges(badgesData);
+        }
+      } catch (error) {
+        console.warn('Error loading badges:', error.code);
       }
 
       // Load featured badge preferences
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        setFeaturedBadgeIds(data.featuredBadges || []);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setFeaturedBadgeIds(data.featuredBadges || []);
+        }
+      } catch (error) {
+        console.warn('Error loading user preferences:', error.code);
       }
 
       // Load besties count
-      const bestiesQuery = query(
-        collection(db, 'besties'),
-        where('requesterId', '==', currentUser.uid),
-        where('status', '==', 'accepted')
-      );
-      const bestiesQuery2 = query(
-        collection(db, 'besties'),
-        where('recipientId', '==', currentUser.uid),
-        where('status', '==', 'accepted')
-      );
+      try {
+        const bestiesQuery = query(
+          collection(db, 'besties'),
+          where('requesterId', '==', currentUser.uid),
+          where('status', '==', 'accepted')
+        );
+        const bestiesQuery2 = query(
+          collection(db, 'besties'),
+          where('recipientId', '==', currentUser.uid),
+          where('status', '==', 'accepted')
+        );
 
-      const [snapshot1, snapshot2] = await Promise.all([
-        getDocs(bestiesQuery),
-        getDocs(bestiesQuery2)
-      ]);
+        const [snapshot1, snapshot2] = await Promise.all([
+          getDocs(bestiesQuery),
+          getDocs(bestiesQuery2)
+        ]);
 
-      setBestiesCount(snapshot1.size + snapshot2.size);
+        setBestiesCount(snapshot1.size + snapshot2.size);
+      } catch (error) {
+        console.warn('Error loading besties count:', error.code);
+      }
 
       // Count how many times user is an emergency contact
-      const emergencyContactQuery = query(
-        collection(db, 'checkins'),
-        where('selectedBesties', 'array-contains', currentUser.uid)
-      );
-      const emergencySnapshot = await getDocs(emergencyContactQuery);
-      setEmergencyContactCount(emergencySnapshot.size);
+      try {
+        const emergencyContactQuery = query(
+          collection(db, 'checkins'),
+          where('selectedBesties', 'array-contains', currentUser.uid)
+        );
+        const emergencySnapshot = await getDocs(emergencyContactQuery);
+        setEmergencyContactCount(emergencySnapshot.size);
+      } catch (error) {
+        console.warn('Error loading emergency contact count:', error.code);
+      }
 
       // Get first check-in date
-      const checkInsQuery = query(
-        collection(db, 'checkins'),
-        where('userId', '==', currentUser.uid)
-      );
-      const checkInsSnapshot = await getDocs(checkInsQuery);
-      if (!checkInsSnapshot.empty) {
-        let earliestDate = null;
-        let nightCount = 0;
-        let weekendCount = 0;
+      try {
+        const checkInsQuery = query(
+          collection(db, 'checkins'),
+          where('userId', '==', currentUser.uid)
+        );
+        const checkInsSnapshot = await getDocs(checkInsQuery);
+        if (!checkInsSnapshot.empty) {
+          let earliestDate = null;
+          let nightCount = 0;
+          let weekendCount = 0;
 
-        checkInsSnapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const date = data.createdAt?.toDate();
+          checkInsSnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const date = data.createdAt?.toDate();
 
-          if (date) {
-            if (!earliestDate || date < earliestDate) {
-              earliestDate = date;
+            if (date) {
+              if (!earliestDate || date < earliestDate) {
+                earliestDate = date;
+              }
+
+              const hour = date.getHours();
+              if (hour >= 21 || hour < 6) {
+                nightCount++;
+              }
+
+              const day = date.getDay();
+              if (day === 0 || day === 6) {
+                weekendCount++;
+              }
             }
+          });
 
-            const hour = date.getHours();
-            if (hour >= 21 || hour < 6) {
-              nightCount++;
-            }
-
-            const day = date.getDay();
-            if (day === 0 || day === 6) {
-              weekendCount++;
-            }
-          }
-        });
-
-        setFirstCheckInDate(earliestDate);
-        setNighttimeCheckIns(nightCount);
-        setWeekendCheckIns(weekendCount);
+          setFirstCheckInDate(earliestDate);
+          setNighttimeCheckIns(nightCount);
+          setWeekendCheckIns(weekendCount);
+        }
+      } catch (error) {
+        console.warn('Error loading check-in history:', error.code);
       }
 
       setLoading(false);
