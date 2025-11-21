@@ -1,11 +1,11 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
 import { BACKGROUNDS, getCategoryName, BACKGROUND_CATEGORIES } from './themes/backgrounds';
-import { TYPOGRAPHY_STYLES, loadGoogleFonts, getTypographyById, getNameStyle, getBioStyle } from './themes/typography';
-import { LAYOUT_OPTIONS, getLayoutById } from './layouts';
-import { VIBE_PRESETS, getPresetById } from './themes/vibePresets';
+import { TYPOGRAPHY_STYLES, loadGoogleFonts, getTypographyById } from './themes/typography';
+import { LAYOUT_OPTIONS } from './layouts';
+import { VIBE_PRESETS } from './themes/vibePresets';
 import './themes/backgroundPatterns.css';
 
 const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
@@ -57,15 +57,6 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     setPhotoBorder(vibe.photoBorder);
     toast('Vibe applied! ✨', { icon: vibe.emoji });
   };
-
-  const getBackgroundById = (id) => {
-    const allBackgrounds = Object.values(BACKGROUNDS).flat();
-    return allBackgrounds.find(bg => bg.id === id);
-  };
-
-  const currentBackground = getBackgroundById(selectedBackground);
-  const currentTypography = getTypographyById(selectedTypography);
-  const LayoutComponent = getLayoutById(selectedLayout);
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
