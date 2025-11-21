@@ -470,7 +470,19 @@ const CreateCheckInPage = () => {
   useEffect(() => {
     if (!autocompleteLoaded || !mapRef.current || mapInitialized) return;
 
+    // Add extra validation that API is actually ready
+    if (!window.google || !window.google.maps || !window.google.maps.Map) {
+      console.warn('Google Maps API not fully ready yet, retrying...');
+      // Retry after a short delay
+      const retryTimeout = setTimeout(() => {
+        setAutocompleteLoaded(false);
+        setTimeout(() => setAutocompleteLoaded(true), 100);
+      }, 500);
+      return () => clearTimeout(retryTimeout);
+    }
+
     try {
+      console.log('Initializing Google Map...');
       // Initialize Google Map - locked by default
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: mapCenter,
@@ -531,8 +543,13 @@ const CreateCheckInPage = () => {
       });
 
       setMapInitialized(true);
+      console.log('Google Map initialized successfully');
     } catch (error) {
       console.error('Error initializing map:', error);
+      toast.error('Failed to initialize map. Please refresh the page.', {
+        duration: 4000,
+        id: 'map-init-error'
+      });
     }
     // mapCenter is a constant, not state
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -542,16 +559,19 @@ const CreateCheckInPage = () => {
   useEffect(() => {
     if (!autocompleteLoaded || !locationInputRef.current) return;
 
+    // Add extra validation that Places API is actually ready
+    if (!window.google || !window.google.maps || !window.google.maps.places || !window.google.maps.places.Autocomplete) {
+      console.warn('Google Places API not fully ready yet, retrying...');
+      // Retry after a short delay
+      const retryTimeout = setTimeout(() => {
+        setAutocompleteLoaded(false);
+        setTimeout(() => setAutocompleteLoaded(true), 100);
+      }, 500);
+      return () => clearTimeout(retryTimeout);
+    }
+
     try {
-      // Verify Google Maps API is fully available
-      if (!window.google || !window.google.maps || !window.google.maps.places) {
-        console.error('Google Maps API not fully loaded');
-        toast.error('Address autocomplete temporarily unavailable. Please type your location manually.', {
-          duration: 4000,
-          id: 'autocomplete-unavailable'
-        });
-        return;
-      }
+      console.log('Initializing Google Places Autocomplete...');
 
       // Initialize Google Places Autocomplete
       autocompleteRef.current = new window.google.maps.places.Autocomplete(
