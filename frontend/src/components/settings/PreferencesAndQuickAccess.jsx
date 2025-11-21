@@ -66,51 +66,47 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
       {/* Quick Access */}
       <div className="card p-6 mb-6">
         <h2 className="text-xl font-display text-text-primary mb-4">Quick Access</h2>
-
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={() => navigate('/profile')}
-            className="btn btn-secondary text-left"
+            onClick={() => navigate('/templates')}
+            className="btn btn-secondary text-left px-4 py-3"
           >
-            <span className="text-2xl mr-2">👤</span>
-            <div>
-              <div className="text-sm font-semibold">Profile</div>
-              <div className="text-xs opacity-70">View your profile</div>
-            </div>
+            <div className="text-sm">📋 Templates</div>
           </button>
-
           <button
-            onClick={() => navigate('/besties')}
-            className="btn btn-secondary text-left"
+            onClick={() => navigate('/favorites')}
+            className="btn btn-secondary text-left px-4 py-3"
           >
-            <span className="text-2xl mr-2">💜</span>
-            <div>
-              <div className="text-sm font-semibold">Besties</div>
-              <div className="text-xs opacity-70">Manage besties</div>
-            </div>
+            <div className="text-sm">📍 Favorites</div>
           </button>
-
           <button
             onClick={() => navigate('/history')}
-            className="btn btn-secondary text-left"
+            className="btn btn-secondary text-left px-4 py-3"
           >
-            <span className="text-2xl mr-2">📜</span>
-            <div>
-              <div className="text-sm font-semibold">History</div>
-              <div className="text-xs opacity-70">Check-in history</div>
-            </div>
+            <div className="text-sm">📊 History</div>
           </button>
-
           <button
-            onClick={() => navigate('/badges')}
-            className="btn btn-secondary text-left"
+            onClick={() => navigate('/export-data')}
+            className="btn btn-secondary text-left px-4 py-3"
           >
-            <span className="text-2xl mr-2">🏆</span>
-            <div>
-              <div className="text-sm font-semibold">Badges</div>
-              <div className="text-xs opacity-70">Achievements</div>
-            </div>
+            <div className="text-sm">📥 Export Data</div>
           </button>
+          {userData?.isAdmin && (
+            <>
+              <button
+                onClick={() => navigate('/dev-analytics')}
+                className="btn btn-secondary text-left px-4 py-3"
+              >
+                <div className="text-sm">📈 Analytics</div>
+              </button>
+              <button
+                onClick={() => navigate('/monitoring')}
+                className="btn bg-gradient-primary text-white text-left px-4 py-3"
+              >
+                <div className="text-sm">🔍 Monitoring</div>
+              </button>
+            </>
+          )}
         </div>
       </div>
     </>
