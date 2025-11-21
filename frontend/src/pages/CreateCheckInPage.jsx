@@ -198,23 +198,6 @@ const CreateCheckInPage = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
-  // Get supportive, girl-best-friend message
-  const getSupportiveMessage = () => {
-    const messages = [
-      "Let's make sure you're safe out there, babe! 💕",
-      "Your safety is everything to us! Let's set this up together 🤗",
-      "We've got your back, bestie! Let's get you protected ✨",
-      "Setting up your safety net - because you matter so much! 💜",
-      "Let's make sure you can have fun worry-free, love! 🌟",
-      "Your besties are here to watch over you! Let's do this 💪",
-      "Keep yourself safe while living your best life! 🦋",
-      "We're all about keeping our girl protected! Let's go 💝",
-    ];
-    // Use hour of day to get consistent but varied messages
-    const hour = new Date().getHours();
-    return messages[hour % messages.length];
-  };
-
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
     if (authLoading) return;

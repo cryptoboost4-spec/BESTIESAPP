@@ -495,10 +495,9 @@ const BestiesPage = () => {
       <Header />
 
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
-        {/* Mobile Header - Simplified */}
-        <div className="mb-4">
-          <h1 className="text-2xl md:text-3xl font-display text-gradient mb-2">💜 Your Besties</h1>
-          <p className="text-sm md:text-base text-text-secondary">Your safety squad activity hub</p>
+        {/* Mobile Header - Centered */}
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl md:text-3xl font-display text-gradient">Your Besties</h1>
         </div>
 
         {/* Pending Requests */}
@@ -515,41 +514,120 @@ const BestiesPage = () => {
         <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Filters - Horizontal Scroll on Mobile */}
-            <ActivityFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+            {/* Besties Grid - Moved from sidebar to main content */}
+            <div>
+              {filteredBesties.length === 0 ? (
+                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
+                  <div className="text-5xl md:text-6xl mb-3">💜</div>
+                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties yet</p>
+                  <p className="text-sm md:text-base text-text-secondary">
+                    Start adding besties to see them here
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+                  {filteredBesties.map((bestie) => {
+                    const indicators = getBestieIndicators(bestie);
+                    return (
+                      <div key={bestie.id} className="relative group">
+                        {/* Main card with improved styling and fixed height */}
+                        <div className="h-full min-h-[200px] transform transition-all duration-300 hover:scale-[1.02]">
+                          <BestieCard bestie={bestie} />
+                        </div>
 
-            {/* Activity Feed */}
-            <ActivityFeed
-              activityFeed={activityFeed}
-              reactions={reactions}
-              addReaction={addReaction}
-              setSelectedCheckIn={setSelectedCheckIn}
-              setShowComments={setShowComments}
-              getTimeAgo={getTimeAgo}
-            />
+                        {/* Visual Indicators - Top Left */}
+                        {indicators.length > 0 && (
+                          <div className="absolute top-3 left-3 flex gap-1 z-10">
+                            {indicators.map((indicator, idx) => (
+                              <span
+                                key={idx}
+                                className="text-base bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-md border border-purple-200 dark:border-purple-600"
+                                title={indicator.tooltip}
+                              >
+                                {indicator.icon}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Quick Action Overlay - Shows on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/95 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 pointer-events-none group-hover:pointer-events-auto">
+                          <div className="w-full space-y-2">
+                            <button
+                              onClick={() => navigate(`/user/${bestie.userId}`)}
+                              className="w-full bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900 text-purple-900 dark:text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                            >
+                              <span>👤</span>
+                              <span>View Profile</span>
+                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const bestieDoc = await getDoc(doc(db, 'besties', bestie.id));
+                                    if (bestieDoc.exists()) {
+                                      await updateDoc(doc(db, 'besties', bestie.id), {
+                                        isFavorite: !bestieDoc.data().isFavorite
+                                      });
+                                      toast.success(bestieDoc.data().isFavorite ? 'Removed from circle' : 'Added to circle! 💜');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error toggling circle:', error);
+                                    toast.error('Failed to update');
+                                  }
+                                }}
+                                className={`flex-1 ${bestie.isFavorite ? 'bg-pink-500 hover:bg-pink-600' : 'bg-purple-500 hover:bg-purple-600'} text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg`}
+                              >
+                                <span>{bestie.isFavorite ? '💔' : '💜'}</span>
+                                <span className="text-sm">{bestie.isFavorite ? 'Remove' : 'Add to Circle'}</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (bestie.phone) {
+                                    window.location.href = `sms:${bestie.phone}`;
+                                  } else {
+                                    toast.error('No phone number available');
+                                  }
+                                }}
+                                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                              >
+                                <span>💬</span>
+                                <span className="text-sm">Message</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* This Week's Champions - Soft & Girly Version */}
+            {/* This Week's Queens - Ultra Feminine Version */}
             <div className="relative overflow-hidden">
-              {/* Subtle sparkly background */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-                <div className="absolute top-2 left-2 text-pink-200 text-sm">✨</div>
-                <div className="absolute top-3 right-3 text-purple-200 text-sm">💫</div>
-                <div className="absolute bottom-2 left-3 text-pink-200 text-sm">⭐</div>
+              {/* Enhanced sparkly background with more elements */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+                <div className="absolute top-2 left-2 text-pink-300 text-lg animate-pulse">✨</div>
+                <div className="absolute top-3 right-3 text-purple-300 text-lg animate-pulse delay-100">💫</div>
+                <div className="absolute bottom-2 left-3 text-pink-300 text-lg animate-pulse delay-200">⭐</div>
+                <div className="absolute top-1/2 right-4 text-rose-300 text-sm animate-pulse delay-300">🌸</div>
+                <div className="absolute bottom-4 right-2 text-fuchsia-300 text-sm animate-pulse">🦋</div>
               </div>
 
-              <div className="card p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-600 shadow-lg relative">
-                {/* Cute header with crown */}
-                <div className="text-center mb-3">
-                  <div className="text-3xl mb-1">👑</div>
-                  <h2 className="text-lg font-display bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <div className="card p-5 bg-gradient-to-br from-pink-100 via-rose-100 via-purple-100 to-pink-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-2 border-pink-300 dark:border-pink-500 shadow-xl relative">
+                {/* Cute header with sparkly crown */}
+                <div className="text-center mb-4">
+                  <div className="text-4xl mb-2 drop-shadow-lg animate-bounce-slow">👑✨</div>
+                  <h2 className="text-xl font-display bg-gradient-to-r from-pink-500 via-rose-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-bold tracking-wide">
                     {rankingsPeriod === 'weekly' && "This Week's Queens"}
                     {rankingsPeriod === 'monthly' && "This Month's Queens"}
                     {rankingsPeriod === 'yearly' && "This Year's Queens"}
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Your amazing squad! 💕</p>
+                  <p className="text-xs font-semibold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent mt-1">Your amazing squad! 💕✨</p>
                 </div>
 
                 {/* Period Tabs - Compact */}
@@ -689,104 +767,6 @@ const BestiesPage = () => {
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Besties Grid */}
-            <div>
-              <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
-                {activeFilter === 'circle' && '💜 Bestie Circle'}
-                {activeFilter === 'all' && 'All Besties'}
-                {activeFilter === 'active' && '🔔 Active Now'}
-              </h2>
-
-              {filteredBesties.length === 0 ? (
-                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
-                  <div className="text-5xl md:text-6xl mb-3">💜</div>
-                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties in this filter</p>
-                  <p className="text-sm md:text-base text-text-secondary">
-                    {activeFilter === 'circle' && 'Add besties to your circle by tapping their profile picture'}
-                    {activeFilter === 'all' && 'Start adding besties to see them here'}
-                    {activeFilter === 'active' && 'No one is currently checked in'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
-                  {filteredBesties.map((bestie) => {
-                    const indicators = getBestieIndicators(bestie);
-                    return (
-                      <div key={bestie.id} className="relative group">
-                        {/* Main card with improved styling */}
-                        <div className="h-full transform transition-all duration-300 hover:scale-[1.02]">
-                          <BestieCard bestie={bestie} />
-                        </div>
-
-                        {/* Visual Indicators - Top Left */}
-                        {indicators.length > 0 && (
-                          <div className="absolute top-3 left-3 flex gap-1 z-10">
-                            {indicators.map((indicator, idx) => (
-                              <span
-                                key={idx}
-                                className="text-base bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-md border border-purple-200 dark:border-purple-600"
-                                title={indicator.tooltip}
-                              >
-                                {indicator.icon}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Quick Action Overlay - Shows on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/95 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 pointer-events-none group-hover:pointer-events-auto">
-                          <div className="w-full space-y-2">
-                            <button
-                              onClick={() => navigate(`/user/${bestie.userId}`)}
-                              className="w-full bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900 text-purple-900 dark:text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
-                            >
-                              <span>👤</span>
-                              <span>View Profile</span>
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const bestieDoc = await getDoc(doc(db, 'besties', bestie.id));
-                                    if (bestieDoc.exists()) {
-                                      await updateDoc(doc(db, 'besties', bestie.id), {
-                                        isFavorite: !bestieDoc.data().isFavorite
-                                      });
-                                      toast.success(bestieDoc.data().isFavorite ? 'Removed from circle' : 'Added to circle! 💜');
-                                    }
-                                  } catch (error) {
-                                    console.error('Error toggling circle:', error);
-                                    toast.error('Failed to update');
-                                  }
-                                }}
-                                className={`flex-1 ${bestie.isFavorite ? 'bg-pink-500 hover:bg-pink-600' : 'bg-purple-500 hover:bg-purple-600'} text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg`}
-                              >
-                                <span>{bestie.isFavorite ? '💔' : '💜'}</span>
-                                <span className="text-sm">{bestie.isFavorite ? 'Remove' : 'Add to Circle'}</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (bestie.phone) {
-                                    window.location.href = `sms:${bestie.phone}`;
-                                  } else {
-                                    toast.error('No phone number available');
-                                  }
-                                }}
-                                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
-                              >
-                                <span>💬</span>
-                                <span className="text-sm">Message</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>
