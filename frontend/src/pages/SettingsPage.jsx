@@ -341,7 +341,7 @@ const SettingsPage = () => {
                   Facebook Messenger
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Coming Soon</span>
                 </div>
-                <div className="text-sm text-text-secondary">Facebook integration in development</div>
+                <div className="text-sm text-text-secondary">Facebook Messenger integration in development</div>
               </div>
               <button
                 onClick={() => toggleNotification('facebook')}
@@ -647,7 +647,7 @@ const SettingsPage = () => {
                   <div className="flex-1">
                     <div className="font-semibold text-text-primary">All Besties</div>
                     <div className="text-sm text-text-secondary">
-                      All your besties can see your check-ins. Only selected besties get notifications.
+                      All your besties can see your check-ins.
                     </div>
                   </div>
                 </label>
@@ -678,7 +678,7 @@ const SettingsPage = () => {
                   <div className="flex-1">
                     <div className="font-semibold text-text-primary">Bestie Circle Only</div>
                     <div className="text-sm text-text-secondary">
-                      Only your top 5 circle besties can see your check-ins. Only selected besties get notifications.
+                      Only your top 5 circle besties can see your check-ins.
                     </div>
                   </div>
                 </label>
@@ -709,7 +709,7 @@ const SettingsPage = () => {
                   <div className="flex-1">
                     <div className="font-semibold text-text-primary">Alerts Only (Most Private)</div>
                     <div className="text-sm text-text-secondary">
-                      Check-ins are hidden until an alert goes off. Only selected besties get notifications.
+                      Check-ins are hidden until an alert goes off.
                     </div>
                   </div>
                 </label>
@@ -749,31 +749,22 @@ const SettingsPage = () => {
             {/* Safety Passcode */}
             <div className="border-2 border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <div>
+                <div className="flex items-center gap-3">
                   <div className="font-semibold text-text-primary">🔒 Safety Passcode</div>
-                  <div className="text-sm text-text-secondary">
-                    {userData?.security?.safetyPasscode ? 'Passcode is set' : 'Not set'}
-                  </div>
+                  {userData?.security?.safetyPasscode && (
+                    <div className="text-green-600 text-xl">✓</div>
+                  )}
                 </div>
                 {userData?.security?.safetyPasscode ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setPasscodeType('safety');
-                        setShowPasscodeModal(true);
-                      }}
-                      className="btn btn-secondary btn-sm"
-                    >
-                      Change
-                    </button>
-                    <button
-                      onClick={() => handleRemovePasscode('safety')}
-                      disabled={loading}
-                      className="btn bg-red-500 text-white hover:bg-red-600 btn-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setPasscodeType('safety');
+                      setShowPasscodeModal(true);
+                    }}
+                    className="text-primary text-sm font-semibold hover:underline"
+                  >
+                    Edit
+                  </button>
                 ) : (
                   <button
                     onClick={() => {
@@ -786,6 +777,9 @@ const SettingsPage = () => {
                   </button>
                 )}
               </div>
+              <div className="text-sm text-text-secondary mb-1">
+                {userData?.security?.safetyPasscode ? 'Passcode is set' : 'Not set'}
+              </div>
               <p className="text-xs text-text-secondary">
                 Required to end check-ins and cancel alerts
               </p>
@@ -794,34 +788,25 @@ const SettingsPage = () => {
             {/* Duress Code */}
             <div className="border-2 border-orange-200 bg-orange-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <div>
+                <div className="flex items-center gap-3">
                   <div className="font-semibold text-orange-900 flex items-center gap-2">
                     ⚠️ Duress Code
                     <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full">Advanced</span>
                   </div>
-                  <div className="text-sm text-orange-700">
-                    {userData?.security?.duressCode ? 'Duress code is set' : 'Not set'}
-                  </div>
+                  {userData?.security?.duressCode && (
+                    <div className="text-green-600 text-xl">✓</div>
+                  )}
                 </div>
                 {userData?.security?.duressCode ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setPasscodeType('duress');
-                        setShowPasscodeModal(true);
-                      }}
-                      className="btn btn-secondary btn-sm"
-                    >
-                      Change
-                    </button>
-                    <button
-                      onClick={() => handleRemovePasscode('duress')}
-                      disabled={loading}
-                      className="btn bg-red-500 text-white hover:bg-red-600 btn-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setPasscodeType('duress');
+                      setShowPasscodeModal(true);
+                    }}
+                    className="text-orange-900 text-sm font-semibold hover:underline"
+                  >
+                    Edit
+                  </button>
                 ) : (
                   <button
                     onClick={() => {
@@ -833,6 +818,9 @@ const SettingsPage = () => {
                     Set Duress Code
                   </button>
                 )}
+              </div>
+              <div className="text-sm text-orange-700 mb-1">
+                {userData?.security?.duressCode ? 'Duress code is set' : 'Not set'}
               </div>
               <p className="text-xs text-orange-800">
                 Fake cancellation that secretly alerts your besties
@@ -1070,26 +1058,43 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowPasscodeModal(false);
-                  setPasscode('');
-                  setConfirmPasscode('');
-                  setPasscodeType(null);
-                }}
-                className="flex-1 btn btn-secondary"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSavePasscode}
-                disabled={loading || !passcode || !confirmPasscode}
-                className={`flex-1 btn ${passcodeType === 'duress' ? 'bg-orange-600 hover:bg-orange-700' : 'btn-primary'} text-white`}
-              >
-                {loading ? 'Saving...' : 'Save'}
-              </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowPasscodeModal(false);
+                    setPasscode('');
+                    setConfirmPasscode('');
+                    setPasscodeType(null);
+                  }}
+                  className="flex-1 btn btn-secondary"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSavePasscode}
+                  disabled={loading || !passcode || !confirmPasscode}
+                  className={`flex-1 btn ${passcodeType === 'duress' ? 'bg-orange-600 hover:bg-orange-700' : 'btn-primary'} text-white`}
+                >
+                  {loading ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+              {(passcodeType === 'safety' && userData?.security?.safetyPasscode) || (passcodeType === 'duress' && userData?.security?.duressCode) ? (
+                <button
+                  onClick={() => {
+                    handleRemovePasscode(passcodeType);
+                    setShowPasscodeModal(false);
+                    setPasscode('');
+                    setConfirmPasscode('');
+                    setPasscodeType(null);
+                  }}
+                  disabled={loading}
+                  className="w-full btn bg-red-500 text-white hover:bg-red-600 text-sm"
+                >
+                  Remove {passcodeType === 'safety' ? 'Safety Passcode' : 'Duress Code'}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

@@ -49,10 +49,31 @@ const HomePage = () => {
   const [showRequestAttention, setShowRequestAttention] = useState(false);
   const [attentionTag, setAttentionTag] = useState('');
 
+  // Scrolling bubble example messages
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const exampleMessages = [
+    '💬 Needs to vent',
+    '🫂 Need a shoulder',
+    '💜 Could use support',
+    '😔 Having a rough day',
+    "🎉 Let's do something",
+    '📱 Want to chat'
+  ];
+
   // Random supportive message (changes on each page load)
   const welcomeMessage = useMemo(() => {
     return SUPPORTIVE_MESSAGES[Math.floor(Math.random() * SUPPORTIVE_MESSAGES.length)];
   }, []); // Empty deps = only runs once on mount
+
+  // Rotate through example messages every 2 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMessageIndex((prev) => (prev + 1) % exampleMessages.length);
+    }, 2000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -221,29 +242,15 @@ const HomePage = () => {
                   Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
                 </p>
 
-                {/* Preview Example - Compact */}
+                {/* Preview Example - Single rotating bubble */}
                 <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200">
-                  <p className="text-xs font-semibold text-purple-700 mb-3">Example messages:</p>
-                  <div className="flex flex-wrap gap-4 justify-center">
+                  <p className="text-xs font-semibold text-purple-700 mb-3">Example messages (auto-scrolling):</p>
+                  <div className="flex justify-center">
                     <ProfileWithBubble
                       photoURL={userData?.photoURL}
                       name={userData?.displayName || currentUser?.email || 'You'}
-                      requestAttention={{ active: true, tag: '💬 Needs to vent' }}
-                      size="lg"
-                      showBubble={true}
-                    />
-                    <ProfileWithBubble
-                      photoURL={userData?.photoURL}
-                      name={userData?.displayName || currentUser?.email || 'You'}
-                      requestAttention={{ active: true, tag: '🫂 Need a shoulder' }}
-                      size="lg"
-                      showBubble={true}
-                    />
-                    <ProfileWithBubble
-                      photoURL={userData?.photoURL}
-                      name={userData?.displayName || currentUser?.email || 'You'}
-                      requestAttention={{ active: true, tag: '💜 Could use support' }}
-                      size="lg"
+                      requestAttention={{ active: true, tag: exampleMessages[currentMessageIndex] }}
+                      size="xl"
                       showBubble={true}
                     />
                   </div>
