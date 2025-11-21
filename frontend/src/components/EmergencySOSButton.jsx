@@ -8,13 +8,29 @@ import haptic from '../utils/hapticFeedback';
 
 // Emergency numbers by country
 const EMERGENCY_NUMBERS = [
-  { country: 'Australia', police: '000', ambulance: '000', fire: '000', flag: '🇦🇺' },
-  { country: 'USA', police: '911', ambulance: '911', fire: '911', flag: '🇺🇸' },
-  { country: 'UK', police: '999', ambulance: '999', fire: '999', flag: '🇬🇧' },
-  { country: 'Canada', police: '911', ambulance: '911', fire: '911', flag: '🇨🇦' },
-  { country: 'NZ', police: '111', ambulance: '111', fire: '111', flag: '🇳🇿' },
-  { country: 'Europe', police: '112', ambulance: '112', fire: '112', flag: '🇪🇺' },
+  { country: 'Australia', code: 'AU', police: '000', ambulance: '000', fire: '000', flag: '🇦🇺', timezones: ['Australia/'] },
+  { country: 'USA', code: 'US', police: '911', ambulance: '911', fire: '911', flag: '🇺🇸', timezones: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'] },
+  { country: 'UK', code: 'GB', police: '999', ambulance: '999', fire: '999', flag: '🇬🇧', timezones: ['Europe/London'] },
+  { country: 'Canada', code: 'CA', police: '911', ambulance: '911', fire: '911', flag: '🇨🇦', timezones: ['America/Toronto', 'America/Vancouver'] },
+  { country: 'NZ', code: 'NZ', police: '111', ambulance: '111', fire: '111', flag: '🇳🇿', timezones: ['Pacific/Auckland'] },
+  { country: 'Europe (EU)', code: 'EU', police: '112', ambulance: '112', fire: '112', flag: '🇪🇺', timezones: ['Europe/'] },
 ];
+
+// Detect user's country from timezone
+const detectUserCountry = () => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  for (const country of EMERGENCY_NUMBERS) {
+    for (const tz of country.timezones) {
+      if (timezone.includes(tz)) {
+        return country;
+      }
+    }
+  }
+
+  // Default to showing all if can't detect
+  return null;
+};
 
 const EmergencySOSButton = () => {
   const { currentUser, userData } = useAuth();
@@ -22,10 +38,14 @@ const EmergencySOSButton = () => {
   const [countdown, setCountdown] = useState(null);
   const [alertSent, setAlertSent] = useState(false); // Show orange alert screen after SOS sent
   const [holdProgress, setHoldProgress] = useState(0); // Progress for hold-to-cancel (0-100)
+  const [showAllCountries, setShowAllCountries] = useState(false);
   const countdownInterval = useRef(null);
   const holdIntervalRef = useRef(null);
   const holdStartTimeRef = useRef(null);
   const { executeOptimistic } = useOptimisticUpdate();
+
+  // Detect user's country
+  const userCountry = detectUserCountry();
 
   // Prevent navigation away from orange alert screen
   useEffect(() => {
@@ -181,19 +201,51 @@ const EmergencySOSButton = () => {
           {/* Emergency Numbers */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-6">
             <h3 className="text-white font-bold text-lg mb-3">📞 Emergency Numbers</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {EMERGENCY_NUMBERS.map((country) => (
+
+            {/* Show user's country first if detected, or all countries */}
+            {userCountry && !showAllCountries ? (
+              <>
                 <a
-                  key={country.country}
-                  href={`tel:${country.police}`}
-                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-3 transition-all"
+                  href={`tel:${userCountry.police}`}
+                  className="bg-white/30 hover:bg-white/40 backdrop-blur-sm rounded-lg p-4 transition-all block mb-3"
                 >
-                  <div className="text-2xl mb-1">{country.flag}</div>
-                  <div className="text-white text-xs font-semibold">{country.country}</div>
-                  <div className="text-white text-lg font-bold">{country.police}</div>
+                  <div className="text-4xl mb-2">{userCountry.flag}</div>
+                  <div className="text-white text-sm font-semibold mb-1">{userCountry.country} Emergency</div>
+                  <div className="text-white text-3xl font-bold">{userCountry.police}</div>
                 </a>
-              ))}
-            </div>
+                <button
+                  onClick={() => setShowAllCountries(true)}
+                  className="text-white/80 text-sm underline hover:text-white"
+                >
+                  Not in {userCountry.country}? Show all countries →
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {EMERGENCY_NUMBERS.map((country) => (
+                    <a
+                      key={country.country}
+                      href={`tel:${country.police}`}
+                      className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-3 transition-all"
+                    >
+                      <div className="text-2xl mb-1">{country.flag}</div>
+                      <div className="text-white text-xs font-semibold">{country.country}</div>
+                      <div className="text-white text-lg font-bold">{country.police}</div>
+                    </a>
+                  ))}
+                </div>
+                {userCountry && (
+                  <button
+                    onClick={() => setShowAllCountries(false)}
+                    className="text-white/80 text-sm underline hover:text-white mt-2"
+                  >
+                    ← Show only my country ({userCountry.country})
+                  </button>
+                )}
+              </>
+            )}
+
             <p className="text-white/80 text-xs mt-3">Tap to call emergency services</p>
           </div>
 
