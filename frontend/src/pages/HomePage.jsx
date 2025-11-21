@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
+import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs } from 'firebase/firestore';
 import Header from '../components/Header';
@@ -44,6 +46,7 @@ const SUPPORTIVE_MESSAGES = [
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
+  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [activeCheckIns, setActiveCheckIns] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -211,7 +214,10 @@ const HomePage = () => {
 
             {/* Create Custom Check-In Button - Moved here! */}
             <button
-              onClick={() => navigate('/create')}
+              onClick={() => {
+                haptic.light();
+                navigate('/create');
+              }}
               className="w-full btn btn-primary text-lg py-4 mb-4"
             >
               ✨ Create Custom Check-In
@@ -219,17 +225,17 @@ const HomePage = () => {
 
             {/* Request Attention Button */}
             {userData?.requestAttention?.active ? (
-              <div className="card p-4 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
+              <div className="card p-4 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-700">
                 <div className="flex items-start gap-3">
                   <div className="text-3xl">💜</div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-display text-purple-900 mb-2">
+                    <h3 className="text-lg font-display text-purple-900 dark:text-purple-100 mb-2">
                       You're requesting attention
                     </h3>
-                    <div className="inline-block px-3 py-1 bg-purple-200 text-purple-900 rounded-full text-sm font-semibold mb-2">
+                    <div className="inline-block px-3 py-1 bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100 rounded-full text-sm font-semibold mb-2">
                       {userData.requestAttention.tag}
                     </div>
-                    <p className="text-sm text-purple-700 mt-2">
+                    <p className="text-sm text-purple-700 dark:text-purple-300 mt-2">
                       Your besties can see this on your profile 💜
                     </p>
                   </div>
@@ -245,26 +251,26 @@ const HomePage = () => {
                         toast.error('Failed to cancel request');
                       }
                     }}
-                    className="text-purple-700 hover:text-purple-900 font-semibold text-sm"
+                    className="text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-100 font-semibold text-sm"
                   >
                     Remove
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="card p-4 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border border-purple-100">
-                <h3 className="text-lg font-display text-gray-800 mb-3">
+              <div className="card p-4 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-purple-100 dark:border-purple-700">
+                <h3 className="text-lg font-display text-gray-800 dark:text-gray-200 mb-3">
                   Need Support?
                 </h3>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
                 </p>
 
                 {/* Preview Example */}
-                <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200 flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border-2 border-purple-200 dark:border-purple-700 flex items-center justify-between gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-purple-700 mb-1">Preview:</p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-1">Preview:</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       Your besties will see you need support with a special badge
                     </p>
                   </div>
@@ -280,7 +286,10 @@ const HomePage = () => {
                 </div>
 
                 <button
-                  onClick={() => setShowRequestAttention(true)}
+                  onClick={() => {
+                    haptic.light();
+                    setShowRequestAttention(true);
+                  }}
                   className="btn btn-primary w-full"
                 >
                   💜 Request Attention
@@ -301,11 +310,11 @@ const HomePage = () => {
             </div>
 
             {/* Get Me Out Button - Only shows during active check-ins */}
-            <div className="card p-6 mb-6 bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200">
-              <h3 className="text-lg font-display text-orange-900 mb-2 text-center">
+            <div className="card p-6 mb-6 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/30 dark:to-red-900/30 border-2 border-orange-200 dark:border-orange-700">
+              <h3 className="text-lg font-display text-orange-900 dark:text-orange-100 mb-2 text-center">
                 🆘 Need an Exit Strategy?
               </h3>
-              <p className="text-sm text-orange-700 mb-4 text-center">
+              <p className="text-sm text-orange-700 dark:text-orange-300 mb-4 text-center">
                 Feeling uncomfortable? Hold the button for 3 seconds and your besties will call you to help you get out of there.
               </p>
               <GetMeOutButton currentUser={currentUser} userData={userData} />
@@ -358,7 +367,7 @@ const HomePage = () => {
         </div>
 
         {/* You're Part of Something Special - Appreciation Card */}
-        <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100">
+        <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-100 dark:border-purple-700">
           <div className="text-center">
             <div className="text-4xl mb-3">💜</div>
             <h3 className="font-display text-2xl text-gradient mb-3">
@@ -400,7 +409,7 @@ const HomePage = () => {
             </div>
 
             {/* Invite Friends Card */}
-            <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-100">
+            <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-2 border-blue-100 dark:border-blue-700">
               <div className="text-center">
                 <div className="text-4xl mb-3">👯‍♀️</div>
                 <h3 className="font-display text-2xl text-gradient mb-3">
@@ -412,7 +421,10 @@ const HomePage = () => {
                   the app free for everyone. Share the love! 💖
                 </p>
                 <button
-                  onClick={() => navigate('/besties')}
+                  onClick={() => {
+                    haptic.light();
+                    navigate('/besties');
+                  }}
                   className="btn btn-secondary w-full text-lg py-3"
                 >
                   🎉 Invite Friends
@@ -438,7 +450,7 @@ const HomePage = () => {
       {/* Request Attention Modal */}
       {showRequestAttention && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-display text-text-primary mb-4">
               💜 Request Attention
             </h2>
@@ -455,67 +467,67 @@ const HomePage = () => {
                   onClick={() => setAttentionTag('Needs to vent 💬')}
                   className={`p-3 rounded-xl border-2 text-left ${
                     attentionTag === 'Needs to vent 💬'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
+                      ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-primary'
                   }`}
                 >
                   <div className="text-2xl mb-1">💬</div>
-                  <div className="text-sm font-semibold">Needs to vent</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Needs to vent</div>
                 </button>
                 <button
                   onClick={() => setAttentionTag('Needs a shoulder 🫂')}
                   className={`p-3 rounded-xl border-2 text-left ${
                     attentionTag === 'Needs a shoulder 🫂'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
+                      ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-primary'
                   }`}
                 >
                   <div className="text-2xl mb-1">🫂</div>
-                  <div className="text-sm font-semibold">Needs a shoulder</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Needs a shoulder</div>
                 </button>
                 <button
                   onClick={() => setAttentionTag('Could use support 💜')}
                   className={`p-3 rounded-xl border-2 text-left ${
                     attentionTag === 'Could use support 💜'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
+                      ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-primary'
                   }`}
                 >
                   <div className="text-2xl mb-1">💜</div>
-                  <div className="text-sm font-semibold">Could use support</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Could use support</div>
                 </button>
                 <button
                   onClick={() => setAttentionTag('Having a rough day 😔')}
                   className={`p-3 rounded-xl border-2 text-left ${
                     attentionTag === 'Having a rough day 😔'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
+                      ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-primary'
                   }`}
                 >
                   <div className="text-2xl mb-1">😔</div>
-                  <div className="text-sm font-semibold">Rough day</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Rough day</div>
                 </button>
                 <button
                   onClick={() => setAttentionTag("Let's do something 🎉")}
                   className={`p-3 rounded-xl border-2 text-left ${
                     attentionTag === "Let's do something 🎉"
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
+                      ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-primary'
                   }`}
                 >
                   <div className="text-2xl mb-1">🎉</div>
-                  <div className="text-sm font-semibold">Let's hang out</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Let's hang out</div>
                 </button>
                 <button
                   onClick={() => setAttentionTag('Want to chat 📱')}
                   className={`p-3 rounded-xl border-2 text-left ${
                     attentionTag === 'Want to chat 📱'
-                      ? 'border-primary bg-purple-50'
-                      : 'border-gray-200 hover:border-primary'
+                      ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-primary'
                   }`}
                 >
                   <div className="text-2xl mb-1">📱</div>
-                  <div className="text-sm font-semibold">Want to chat</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Want to chat</div>
                 </button>
               </div>
             </div>

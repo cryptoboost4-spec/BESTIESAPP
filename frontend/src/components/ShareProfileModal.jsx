@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
 
 const ShareProfileModal = ({ onClose }) => {
   const { userData, currentUser } = useAuth();
+  const { isDark } = useDarkMode();
   const [copied, setCopied] = useState(false);
 
   const shareUrl = `https://bestiesapp.web.app/?invite=${currentUser?.uid}`;
@@ -38,19 +40,19 @@ const ShareProfileModal = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="card max-w-md w-full p-6 animate-scale-up">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="card max-w-md w-full p-6 animate-scale-up bg-white dark:bg-gray-800">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-display text-text-primary">Share Besties</h2>
+          <h2 className="text-2xl font-display text-text-primary dark:text-white">Share Besties</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors text-gray-700 dark:text-gray-300"
           >
             ✕
           </button>
         </div>
 
-        <p className="text-text-secondary mb-6">
+        <p className="text-text-secondary dark:text-gray-300 mb-6">
           Invite friends to join your safety network!
         </p>
 
@@ -98,9 +100,9 @@ const ShareProfileModal = ({ onClose }) => {
         </div>
 
         {/* Copy Link */}
-        <div className="p-4 bg-gray-50 rounded-xl mb-4">
-          <div className="text-sm text-text-secondary mb-2">Your invite link:</div>
-          <div className="text-sm text-text-primary break-all">{shareUrl}</div>
+        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl mb-4 border border-gray-200 dark:border-gray-600">
+          <div className="text-sm text-text-secondary dark:text-gray-400 mb-2">Your invite link:</div>
+          <div className="text-sm text-text-primary dark:text-gray-200 break-all">{shareUrl}</div>
         </div>
 
         <button

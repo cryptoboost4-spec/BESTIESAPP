@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, orderBy, limit, startAfter } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,6 +10,7 @@ const ITEMS_PER_PAGE = 20;
 
 const CheckInHistoryPage = () => {
   const { currentUser, userData } = useAuth();
+  const { isDark } = useDarkMode();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -117,7 +119,7 @@ const CheckInHistoryPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern">
+      <div className="min-h-screen bg-pattern dark:bg-dark-pattern">
         <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
@@ -127,14 +129,14 @@ const CheckInHistoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-pattern">
+    <div className="min-h-screen bg-pattern dark:bg-dark-pattern">
       <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-display text-text-primary mb-2">Check-in History</h1>
-          <p className="text-text-secondary">
+          <h1 className="text-3xl font-display text-text-primary dark:text-dark-text-primary mb-2">Check-in History</h1>
+          <p className="text-text-secondary dark:text-dark-text-secondary">
             View all your past check-ins
           </p>
         </div>
@@ -146,7 +148,7 @@ const CheckInHistoryPage = () => {
             className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-all ${
               filter === 'all'
                 ? 'bg-primary text-white'
-                : 'bg-white text-text-primary hover:bg-gray-50'
+                : 'bg-white dark:bg-dark-card text-text-primary dark:text-dark-text-primary hover:bg-gray-50 dark:hover:bg-dark-hover'
             }`}
           >
             All
@@ -156,7 +158,7 @@ const CheckInHistoryPage = () => {
             className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-all ${
               filter === 'completed'
                 ? 'bg-success text-white'
-                : 'bg-white text-text-primary hover:bg-gray-50'
+                : 'bg-white dark:bg-dark-card text-text-primary dark:text-dark-text-primary hover:bg-gray-50 dark:hover:bg-dark-hover'
             }`}
           >
             ✅ Safe
@@ -166,7 +168,7 @@ const CheckInHistoryPage = () => {
             className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-all ${
               filter === 'alerted'
                 ? 'bg-warning text-white'
-                : 'bg-white text-text-primary hover:bg-gray-50'
+                : 'bg-white dark:bg-dark-card text-text-primary dark:text-dark-text-primary hover:bg-gray-50 dark:hover:bg-dark-hover'
             }`}
           >
             🚨 Alerted
@@ -174,37 +176,37 @@ const CheckInHistoryPage = () => {
         </div>
 
         {/* Stats Summary - loads from user document (efficient!) */}
-        <div className="card p-6 mb-6">
+        <div className="card dark:bg-dark-card p-6 mb-6">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-display text-primary">
+              <div className="text-2xl font-display text-primary dark:text-dark-primary">
                 {userData?.stats?.totalCheckIns || 0}
               </div>
-              <div className="text-sm text-text-secondary">Total</div>
+              <div className="text-sm text-text-secondary dark:text-dark-text-secondary">Total</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-display text-success">
+              <div className="text-2xl font-display text-success dark:text-dark-success">
                 {userData?.stats?.completedCheckIns || 0}
               </div>
-              <div className="text-sm text-text-secondary">Completed</div>
+              <div className="text-sm text-text-secondary dark:text-dark-text-secondary">Completed</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-display text-warning">
+              <div className="text-2xl font-display text-warning dark:text-dark-warning">
                 {userData?.stats?.alertedCheckIns || 0}
               </div>
-              <div className="text-sm text-text-secondary">Alerted</div>
+              <div className="text-sm text-text-secondary dark:text-dark-text-secondary">Alerted</div>
             </div>
           </div>
         </div>
 
         {/* History List */}
         {history.length === 0 ? (
-          <div className="card p-12 text-center">
+          <div className="card dark:bg-dark-card p-12 text-center">
             <div className="text-6xl mb-4">📋</div>
-            <h2 className="text-2xl font-display text-text-primary mb-2">
+            <h2 className="text-2xl font-display text-text-primary dark:text-dark-text-primary mb-2">
               No check-ins yet
             </h2>
-            <p className="text-text-secondary">
+            <p className="text-text-secondary dark:text-dark-text-secondary">
               Your check-in history will appear here
             </p>
           </div>
@@ -212,16 +214,16 @@ const CheckInHistoryPage = () => {
           <>
             <div className="space-y-4">
               {history.map((checkIn) => (
-                <div key={checkIn.id} className="card p-6">
+                <div key={checkIn.id} className="card dark:bg-dark-card p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-display text-lg text-text-primary">
+                        <h3 className="font-display text-lg text-text-primary dark:text-dark-text-primary">
                           {checkIn.location}
                         </h3>
                         {getStatusBadge(checkIn.status)}
                       </div>
-                      <div className="text-sm text-text-secondary">
+                      <div className="text-sm text-text-secondary dark:text-dark-text-secondary">
                         {checkIn.createdAt && formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
                       </div>
                     </div>
@@ -229,35 +231,35 @@ const CheckInHistoryPage = () => {
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <div className="text-text-secondary">Duration</div>
-                      <div className="font-semibold text-text-primary">
+                      <div className="text-text-secondary dark:text-dark-text-secondary">Duration</div>
+                      <div className="font-semibold text-text-primary dark:text-dark-text-primary">
                         {formatDuration(checkIn.duration)}
                       </div>
                     </div>
                     <div>
-                      <div className="text-text-secondary">Besties Notified</div>
-                      <div className="font-semibold text-text-primary">
+                      <div className="text-text-secondary dark:text-dark-text-secondary">Besties Notified</div>
+                      <div className="font-semibold text-text-primary dark:text-dark-text-primary">
                         {checkIn.bestieIds?.length || 0}
                       </div>
                     </div>
                   </div>
 
                   {checkIn.notes && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="text-sm text-text-secondary italic">
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-dark-border">
+                      <div className="text-sm text-text-secondary dark:text-dark-text-secondary italic">
                         "{checkIn.notes}"
                       </div>
                     </div>
                   )}
 
                   {checkIn.completedAt && (
-                    <div className="mt-3 text-xs text-success">
+                    <div className="mt-3 text-xs text-success dark:text-dark-success">
                       ✅ Completed {formatDistanceToNow(checkIn.completedAt.toDate(), { addSuffix: true })}
                     </div>
                   )}
 
                   {checkIn.alertedAt && (
-                    <div className="mt-3 text-xs text-warning">
+                    <div className="mt-3 text-xs text-warning dark:text-dark-warning">
                       🚨 Alert sent {formatDistanceToNow(checkIn.alertedAt.toDate(), { addSuffix: true })}
                     </div>
                   )}
@@ -286,7 +288,7 @@ const CheckInHistoryPage = () => {
             )}
 
             {!hasMore && history.length > 0 && (
-              <div className="mt-6 text-center text-text-secondary text-sm">
+              <div className="mt-6 text-center text-text-secondary dark:text-dark-text-secondary text-sm">
                 You've reached the end of your check-in history
               </div>
             )}

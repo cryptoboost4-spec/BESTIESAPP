@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, storage, authService } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -13,6 +14,7 @@ import ProfileCompletionModal from '../components/ProfileCompletionModal';
 const EditProfilePage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
+  const { isDark } = useDarkMode();
 
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [bio, setBio] = useState(userData?.profile?.bio || '');
@@ -363,7 +365,7 @@ const EditProfilePage = () => {
                   placeholder="+61 400 000 000 or 0400 000 000"
                 />
                 {phoneNumber !== userData?.phoneNumber && phoneNumber && (
-                  <div className="text-xs text-orange-600 mt-1">
+                  <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
                     ⚠️ You'll need to verify this number via SMS before saving
                   </div>
                 )}
@@ -414,8 +416,8 @@ const EditProfilePage = () => {
 
         {/* Phone Verification Modal */}
         {showPhoneVerification && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="card p-6 max-w-md w-full animate-scale-up">
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="card dark:bg-gray-800 p-6 max-w-md w-full animate-scale-up">
               <h2 className="text-2xl font-display text-text-primary mb-2">Verify Phone Number</h2>
               <p className="text-text-secondary mb-4">
                 We sent a 6-digit code to <strong>{pendingPhoneNumber}</strong>

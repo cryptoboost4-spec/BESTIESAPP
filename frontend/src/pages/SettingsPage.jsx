@@ -312,16 +312,16 @@ const SettingsPage = () => {
               <div>
                 <div className="font-semibold text-text-primary flex items-center gap-2">
                   WhatsApp
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Coming Soon</span>
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">Coming Soon</span>
                 </div>
                 <div className="text-sm text-text-secondary">WhatsApp integration in development</div>
               </div>
               <button
                 onClick={() => toggleNotification('whatsapp')}
-                className="w-12 h-6 rounded-full transition-colors bg-gray-300 cursor-not-allowed"
+                className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
                 disabled
               >
-                <div className="w-5 h-5 bg-white rounded-full transition-transform translate-x-1" />
+                <div className="w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform translate-x-1" />
               </button>
             </div>
 
@@ -329,16 +329,16 @@ const SettingsPage = () => {
               <div>
                 <div className="font-semibold text-text-primary flex items-center gap-2">
                   Facebook Messenger
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Coming Soon</span>
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">Coming Soon</span>
                 </div>
                 <div className="text-sm text-text-secondary">Facebook Messenger integration in development</div>
               </div>
               <button
                 onClick={() => toggleNotification('facebook')}
-                className="w-12 h-6 rounded-full transition-colors bg-gray-300 cursor-not-allowed"
+                className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
                 disabled
               >
-                <div className="w-5 h-5 bg-white rounded-full transition-transform translate-x-1" />
+                <div className="w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform translate-x-1" />
               </button>
             </div>
 
@@ -352,11 +352,11 @@ const SettingsPage = () => {
                 className={`w-12 h-6 rounded-full transition-colors ${
                   userData?.notificationPreferences?.email
                     ? 'bg-primary'
-                    : 'bg-gray-300'
+                    : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                  className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
                     userData?.notificationPreferences?.email
                       ? 'translate-x-6'
                       : 'translate-x-1'
@@ -383,7 +383,7 @@ const SettingsPage = () => {
                         <button onClick={() => toast.dismiss(t.id)} className="mt-2 text-primary text-xs underline">Close</button>
                       </div>
                     ), { duration: 8000 })}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
                     title="Learn more about push notifications"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -402,14 +402,14 @@ const SettingsPage = () => {
                 disabled={!pushNotificationsSupported || loading}
                 className={`w-12 h-6 rounded-full transition-colors ${
                   !pushNotificationsSupported
-                    ? 'bg-gray-200 cursor-not-allowed'
+                    ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
                     : pushNotificationsEnabled
                     ? 'bg-primary'
-                    : 'bg-gray-300'
+                    : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                  className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
                     pushNotificationsEnabled
                       ? 'translate-x-6'
                       : 'translate-x-1'
@@ -419,7 +419,7 @@ const SettingsPage = () => {
             </div>
 
             {pushNotificationsSupported && !pushNotificationsEnabled && (
-              <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded-lg">
+              <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg">
                 💡 Tip: Email, WhatsApp, and Facebook are more reliable for critical safety alerts
               </div>
             )}
@@ -428,7 +428,7 @@ const SettingsPage = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-text-primary">SMS Alerts</span>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">
+                  <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-semibold">
                     Free - Limited Time
                   </span>
                   <button
@@ -445,7 +445,7 @@ const SettingsPage = () => {
                         <button onClick={() => toast.dismiss(t.id)} className="mt-2 text-primary text-xs underline">Close</button>
                       </div>
                     ), { duration: 10000 })}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
                     title="Learn more about SMS alerts"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -464,11 +464,11 @@ const SettingsPage = () => {
                 className={`w-12 h-6 rounded-full transition-colors ${
                   userData?.notificationPreferences?.sms
                     ? 'bg-primary'
-                    : 'bg-gray-300'
+                    : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                  className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
                     userData?.notificationPreferences?.sms
                       ? 'translate-x-6'
                       : 'translate-x-1'
@@ -478,14 +478,14 @@ const SettingsPage = () => {
             </div>
 
             {userData?.notificationPreferences?.sms && smsWeeklyCount >= 4 && (
-              <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded-lg">
+              <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg">
                 ⚠️ You're approaching the weekly limit of 5 SMS alerts. Consider using email or WhatsApp for unlimited free alerts.
               </div>
             )}
           </div>
 
           {/* Test Alert Button */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
             <button
               onClick={handleSendTestAlert}
               disabled={loading}
@@ -501,7 +501,7 @@ const SettingsPage = () => {
 
         {/* SMS Subscription */}
         {!userData?.smsSubscription?.active ? (
-          <div className="card p-6 mb-6 bg-gradient-secondary">
+          <div className="card p-6 mb-6 bg-gradient-secondary dark:from-purple-900/30 dark:to-pink-900/30">
             <h2 className="text-xl font-display text-text-primary mb-2">Premium SMS Alerts</h2>
             <p className="text-text-secondary mb-4">
               Get up to 20 SMS alerts per month for just $1/month
@@ -528,7 +528,7 @@ const SettingsPage = () => {
             </div>
           </div>
         ) : (
-          <div className="card p-6 mb-6 bg-green-50 border-2 border-green-300">
+          <div className="card p-6 mb-6 bg-green-50 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600">
             <h2 className="text-xl font-display text-text-primary mb-2">✅ Premium SMS Active</h2>
             <p className="text-text-secondary mb-4">
               You're subscribed to premium SMS alerts - up to 20 SMS per month
@@ -589,11 +589,11 @@ const SettingsPage = () => {
                 className={`w-12 h-6 rounded-full transition-colors ${
                   userData?.privacySettings?.showStatsToBesties !== false
                     ? 'bg-primary'
-                    : 'bg-gray-300'
+                    : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                  className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
                     userData?.privacySettings?.showStatsToBesties !== false
                       ? 'translate-x-6'
                       : 'translate-x-1'
@@ -612,7 +612,7 @@ const SettingsPage = () => {
 
               <div className="space-y-2">
                 {/* Option 1: All Besties */}
-                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
+                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
                   style={{
                     borderColor: (userData?.privacySettings?.checkInVisibility || 'all_besties') === 'all_besties' ? '#FF6B9D' : '#e5e7eb'
                   }}>
@@ -643,7 +643,7 @@ const SettingsPage = () => {
                 </label>
 
                 {/* Option 2: Circle Only */}
-                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
+                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
                   style={{
                     borderColor: (userData?.privacySettings?.checkInVisibility || 'all_besties') === 'circle' ? '#FF6B9D' : '#e5e7eb'
                   }}>
@@ -674,7 +674,7 @@ const SettingsPage = () => {
                 </label>
 
                 {/* Option 3: Alerts Only */}
-                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
+                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
                   style={{
                     borderColor: (userData?.privacySettings?.checkInVisibility || 'all_besties') === 'alerts_only' ? '#FF6B9D' : '#e5e7eb'
                   }}>
@@ -724,9 +724,9 @@ const SettingsPage = () => {
           </p>
 
           {showPasscodeInfo && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-blue-900 mb-2">How Passcodes Work:</h3>
-              <ul className="text-sm text-blue-800 space-y-2 list-disc ml-4">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">How Passcodes Work:</h3>
+              <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-2 list-disc ml-4">
                 <li><strong>Safety Passcode:</strong> Required to end check-ins or cancel SOS alerts. This ensures only you can mark yourself safe.</li>
                 <li><strong>Duress Code:</strong> A special code that <em>appears</em> to cancel the alert, but secretly triggers an emergency alert to all besties in your circle. Use this if you're in danger and being forced to cancel.</li>
                 <li>Both codes must be different and at least 4 digits.</li>
@@ -737,7 +737,7 @@ const SettingsPage = () => {
 
           <div className="space-y-4">
             {/* Safety Passcode */}
-            <div className="border-2 border-gray-200 rounded-lg p-4">
+            <div className="border-2 border-gray-200 dark:border-gray-600 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <div className="font-semibold text-text-primary">🔒 Safety Passcode</div>
@@ -776,12 +776,12 @@ const SettingsPage = () => {
             </div>
 
             {/* Duress Code */}
-            <div className="border-2 border-orange-200 bg-orange-50 rounded-lg p-4">
+            <div className="border-2 border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/30 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="font-semibold text-orange-900 flex items-center gap-2">
+                  <div className="font-semibold text-orange-900 dark:text-orange-300 flex items-center gap-2">
                     ⚠️ Duress Code
-                    <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full">Advanced</span>
+                    <span className="text-xs bg-orange-200 dark:bg-orange-800/50 text-orange-800 dark:text-orange-200 px-2 py-0.5 rounded-full">Advanced</span>
                   </div>
                   {userData?.security?.duressCode && (
                     <div className="text-green-600 text-xl">✓</div>
@@ -793,7 +793,7 @@ const SettingsPage = () => {
                       setPasscodeType('duress');
                       setShowPasscodeModal(true);
                     }}
-                    className="text-orange-900 text-sm font-semibold hover:underline"
+                    className="text-orange-900 dark:text-orange-300 text-sm font-semibold hover:underline"
                   >
                     Edit
                   </button>
@@ -809,10 +809,10 @@ const SettingsPage = () => {
                   </button>
                 )}
               </div>
-              <div className="text-sm text-orange-700 mb-1">
+              <div className="text-sm text-orange-700 dark:text-orange-400 mb-1">
                 {userData?.security?.duressCode ? 'Duress code is set' : 'Not set'}
               </div>
-              <p className="text-xs text-orange-800">
+              <p className="text-xs text-orange-800 dark:text-orange-300">
                 Fake cancellation that secretly alerts your besties
               </p>
             </div>
@@ -834,11 +834,11 @@ const SettingsPage = () => {
               <button
                 onClick={toggleDarkMode}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  isDark ? 'bg-primary' : 'bg-gray-300'
+                  isDark ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                  className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
                     isDark ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
@@ -859,11 +859,11 @@ const SettingsPage = () => {
                 className={`w-12 h-6 rounded-full transition-colors ${
                   userData?.settings?.holdData
                     ? 'bg-primary'
-                    : 'bg-gray-300'
+                    : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                  className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
                     userData?.settings?.holdData
                       ? 'translate-x-6'
                       : 'translate-x-1'
@@ -908,7 +908,7 @@ const SettingsPage = () => {
             </div>
             <button
               onClick={() => navigate('/about')}
-              className="w-full btn bg-white border-2 border-primary text-primary hover:bg-primary/5"
+              className="w-full btn bg-white dark:bg-gray-800 border-2 border-primary text-primary hover:bg-primary/5 dark:hover:bg-primary/10"
             >
               Learn More About Besties →
             </button>
@@ -991,7 +991,7 @@ const SettingsPage = () => {
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🔒</span>
@@ -1000,14 +1000,14 @@ const SettingsPage = () => {
                   <div className="text-xs text-text-secondary">How we protect your data</div>
                 </div>
               </div>
-              <span className="text-gray-400">→</span>
+              <span className="text-gray-400 dark:text-gray-500">→</span>
             </a>
 
             <a
               href="/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">📜</span>
@@ -1016,12 +1016,12 @@ const SettingsPage = () => {
                   <div className="text-xs text-text-secondary">Terms and conditions</div>
                 </div>
               </div>
-              <span className="text-gray-400">→</span>
+              <span className="text-gray-400 dark:text-gray-500">→</span>
             </a>
 
             <a
               href="/about"
-              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">💕</span>
@@ -1030,7 +1030,7 @@ const SettingsPage = () => {
                   <div className="text-xs text-text-secondary">Learn about our mission</div>
                 </div>
               </div>
-              <span className="text-gray-400">→</span>
+              <span className="text-gray-400 dark:text-gray-500">→</span>
             </a>
           </div>
         </div>
@@ -1038,8 +1038,8 @@ const SettingsPage = () => {
 
       {/* Passcode Modal */}
       {showPasscodeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
             <h2 className="text-2xl font-display text-text-primary mb-2">
               {passcodeType === 'safety' ? '🔒 Set Safety Passcode' : '⚠️ Set Duress Code'}
             </h2>
@@ -1050,8 +1050,8 @@ const SettingsPage = () => {
             </p>
 
             {passcodeType === 'duress' && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-orange-800">
+              <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-3 mb-4">
+                <p className="text-sm text-orange-800 dark:text-orange-300">
                   ⚠️ <strong>Warning:</strong> Use your duress code only in genuine emergencies when you're being forced to cancel an alert under duress.
                 </p>
               </div>
@@ -1068,7 +1068,7 @@ const SettingsPage = () => {
                   pattern="[0-9]*"
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-center text-2xl tracking-widest"
+                  className="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-primary focus:outline-none text-center text-2xl tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="••••"
                   maxLength={6}
                   autoFocus
@@ -1086,7 +1086,7 @@ const SettingsPage = () => {
                   pattern="[0-9]*"
                   value={confirmPasscode}
                   onChange={(e) => setConfirmPasscode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-center text-2xl tracking-widest"
+                  className="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-primary focus:outline-none text-center text-2xl tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="••••"
                   maxLength={6}
                 />
@@ -1137,19 +1137,19 @@ const SettingsPage = () => {
 
       {/* SMS First-Time Popup */}
       {showSMSPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
             <div className="text-center mb-4">
               <div className="text-5xl mb-3">📱</div>
               <h2 className="text-2xl font-display text-text-primary mb-2">About SMS Alerts</h2>
             </div>
 
-            <div className="space-y-3 text-sm text-gray-700 mb-6">
+            <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-6">
               <p className="font-semibold text-primary">
                 SMS alerts are currently FREE during beta testing!
               </p>
 
-              <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
                 <p className="font-semibold mb-1">Free Tier Limits:</p>
                 <ul className="list-disc ml-4 space-y-1">
                   <li>Up to 5 SMS alerts per week</li>
@@ -1158,7 +1158,7 @@ const SettingsPage = () => {
                 </ul>
               </div>
 
-              <div className="bg-orange-50 p-3 rounded-lg">
+              <div className="bg-orange-50 dark:bg-orange-900/30 p-3 rounded-lg">
                 <p className="font-semibold mb-1">Important to Know:</p>
                 <ul className="list-disc ml-4 space-y-1">
                   <li>SMS messages are expensive to send</li>
@@ -1167,7 +1167,7 @@ const SettingsPage = () => {
                 </ul>
               </div>
 
-              <p className="text-xs text-gray-600 italic">
+              <p className="text-xs text-gray-600 dark:text-gray-400 italic">
                 By enabling SMS, you understand these limitations and agree to use SMS responsibly.
               </p>
             </div>

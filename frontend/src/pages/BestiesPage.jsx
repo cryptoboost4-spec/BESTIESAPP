@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import {
   collection,
@@ -25,6 +26,7 @@ import toast from 'react-hot-toast';
 const BestiesPage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
+  const { isDark } = useDarkMode();
   const [besties, setBesties] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -515,20 +517,20 @@ const BestiesPage = () => {
             {missedCheckIns.length > 0 && (
               <div className="space-y-3 mb-4">
                 {missedCheckIns.map((missed) => (
-                  <div key={missed.id} className="card p-4 bg-red-50 border-2 border-red-400 animate-pulse-slow">
+                  <div key={missed.id} className="card p-4 bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-600 animate-pulse-slow">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                       <div className="text-3xl flex-shrink-0">🚨</div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-red-900 text-sm md:text-base">
+                        <h3 className="font-semibold text-red-900 dark:text-red-200 text-sm md:text-base">
                           {missed.userName} missed a check-in
                         </h3>
-                        <p className="text-xs md:text-sm text-red-700 break-words">
+                        <p className="text-xs md:text-sm text-red-700 dark:text-red-300 break-words">
                           {missed.checkInData.activity?.name || 'Check-in'} • {
                             new Date(missed.timestamp).toLocaleString()
                           }
                         </p>
                         {missed.checkInData.location?.address && (
-                          <p className="text-xs md:text-sm text-red-600 mt-1 break-words">
+                          <p className="text-xs md:text-sm text-red-600 dark:text-red-400 mt-1 break-words">
                             📍 {missed.checkInData.location.address}
                           </p>
                         )}
@@ -549,20 +551,20 @@ const BestiesPage = () => {
             {requestsForAttention.length > 0 && (
               <div className="space-y-3">
                 {requestsForAttention.map((request) => (
-                  <div key={request.userId} className="card p-4 bg-purple-50 border-2 border-purple-300 animate-pulse-slow">
+                  <div key={request.userId} className="card p-4 bg-purple-50 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 animate-pulse-slow">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                       <div className="text-3xl flex-shrink-0">💜</div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-purple-900 text-sm md:text-base">
+                        <h3 className="font-semibold text-purple-900 dark:text-purple-200 text-sm md:text-base">
                           {request.userName} needs support
                         </h3>
-                        <div className="inline-block px-3 py-1 bg-purple-200 text-purple-800 rounded-full text-xs md:text-sm font-semibold my-2">
+                        <div className="inline-block px-3 py-1 bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200 rounded-full text-xs md:text-sm font-semibold my-2">
                           {request.tag}
                         </div>
                         {request.note && (
-                          <p className="text-xs md:text-sm text-purple-700 italic break-words">"{request.note}"</p>
+                          <p className="text-xs md:text-sm text-purple-700 dark:text-purple-300 italic break-words">"{request.note}"</p>
                         )}
-                        <p className="text-xs text-purple-600 mt-2">
+                        <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
                           {new Date(request.timestamp).toLocaleString()}
                         </p>
                       </div>
@@ -597,7 +599,7 @@ const BestiesPage = () => {
                   className={`px-3 md:px-4 py-2 rounded-full whitespace-nowrap font-semibold text-xs md:text-sm flex-shrink-0 ${
                     activeFilter === 'all'
                       ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   All Besties
@@ -607,7 +609,7 @@ const BestiesPage = () => {
                   className={`px-3 md:px-4 py-2 rounded-full whitespace-nowrap font-semibold text-xs md:text-sm flex-shrink-0 ${
                     activeFilter === 'circle'
                       ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   💜 Circle
@@ -617,7 +619,7 @@ const BestiesPage = () => {
                   className={`px-3 md:px-4 py-2 rounded-full whitespace-nowrap font-semibold text-xs md:text-sm flex-shrink-0 ${
                     activeFilter === 'active'
                       ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   🔔 Active
@@ -669,10 +671,10 @@ const BestiesPage = () => {
                             </div>
                             <div className={`px-2 md:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 ${
                               activity.status === 'completed'
-                                ? 'bg-green-100 text-green-700'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                 : activity.status === 'alerted'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-blue-100 text-blue-700'
+                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                             }`}>
                               {activity.status === 'completed' && '✓'}
                               {activity.status === 'alerted' && '⚠️'}
@@ -717,7 +719,7 @@ const BestiesPage = () => {
                               </div>
                               {/* Show reaction counts */}
                               {reactions[activity.id] && reactions[activity.id].length > 0 && (
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                                   {/* Group reactions by emoji */}
                                   {Object.entries(
                                     reactions[activity.id].reduce((acc, r) => {
@@ -725,7 +727,7 @@ const BestiesPage = () => {
                                       return acc;
                                     }, {})
                                   ).map(([emoji, count]) => (
-                                    <span key={emoji} className="bg-gray-100 px-2 py-1 rounded-full">
+                                    <span key={emoji} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                                       {emoji} {count}
                                     </span>
                                   ))}
@@ -748,7 +750,7 @@ const BestiesPage = () => {
                               {getTimeAgo(activity.timestamp)}
                             </p>
                             {activity.badge.description && (
-                              <p className="text-xs text-gray-600 mt-1">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                 {activity.badge.description}
                               </p>
                             )}
@@ -777,7 +779,7 @@ const BestiesPage = () => {
                 <div className="absolute bottom-4 right-4 text-yellow-300 animate-pulse delay-3s text-2xl">✨</div>
               </div>
 
-              <div className="card p-6 bg-gradient-to-br from-pink-50 via-purple-50 to-yellow-50 border-4 border-pink-200 shadow-xl relative">
+              <div className="card p-6 bg-gradient-to-br from-pink-50 via-purple-50 to-yellow-50 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-yellow-900/30 border-4 border-pink-200 dark:border-pink-600 shadow-xl relative">
                 {/* Cute header with crown */}
                 <div className="text-center mb-6">
                   <div className="text-5xl mb-2 animate-bounce" style={{animationDuration: '2s'}}>👑</div>
@@ -786,7 +788,7 @@ const BestiesPage = () => {
                     {rankingsPeriod === 'monthly' && "This Month's Queens"}
                     {rankingsPeriod === 'yearly' && "This Year's Queens"}
                   </h2>
-                  <p className="text-xs text-gray-600">The besties who absolutely slayed! 💅</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">The besties who absolutely slayed! 💅</p>
                 </div>
 
                 {/* Period Tabs */}
@@ -796,7 +798,7 @@ const BestiesPage = () => {
                     className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
                       rankingsPeriod === 'weekly'
                         ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
-                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                   >
                     📅 Weekly
@@ -806,7 +808,7 @@ const BestiesPage = () => {
                     className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
                       rankingsPeriod === 'monthly'
                         ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
-                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                   >
                     🗓️ Monthly
@@ -816,7 +818,7 @@ const BestiesPage = () => {
                     className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
                       rankingsPeriod === 'yearly'
                         ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
-                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                   >
                     🎯 Yearly
@@ -827,7 +829,7 @@ const BestiesPage = () => {
                   {/* Most Reliable - Pink gradient */}
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-rose-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white rounded-2xl p-4 shadow-lg border-2 border-pink-200 hover:scale-105 transition-transform">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-pink-200 dark:border-pink-600 hover:scale-105 transition-transform">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg">
@@ -841,8 +843,8 @@ const BestiesPage = () => {
                           <div className="font-display text-base font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
                             Most Reliable
                           </div>
-                          <div className="text-xs text-gray-600 mb-1">Always there! 💕</div>
-                          <div className="text-xs text-center text-gray-400 italic py-1 bg-gray-50 rounded-lg mt-2">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Always there! 💕</div>
+                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
                             Earning crowns... 👑✨
                           </div>
                         </div>
@@ -853,7 +855,7 @@ const BestiesPage = () => {
                   {/* Fastest Responder - Purple gradient */}
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-fuchsia-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white rounded-2xl p-4 shadow-lg border-2 border-purple-200 hover:scale-105 transition-transform">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-purple-200 dark:border-purple-600 hover:scale-105 transition-transform">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-fuchsia-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg animate-pulse">
@@ -867,8 +869,8 @@ const BestiesPage = () => {
                           <div className="font-display text-base font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
                             Lightning Fast
                           </div>
-                          <div className="text-xs text-gray-600 mb-1">Instant replies! ⚡</div>
-                          <div className="text-xs text-center text-gray-400 italic py-1 bg-gray-50 rounded-lg mt-2">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Instant replies! ⚡</div>
+                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
                             Collecting sparkles... ✨
                           </div>
                         </div>
@@ -879,7 +881,7 @@ const BestiesPage = () => {
                   {/* Safety Champion - Rose gradient */}
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-rose-400 to-pink-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white rounded-2xl p-4 shadow-lg border-2 border-rose-200 hover:scale-105 transition-transform">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-rose-200 dark:border-rose-600 hover:scale-105 transition-transform">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <div className="w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg">
@@ -893,8 +895,8 @@ const BestiesPage = () => {
                           <div className="font-display text-base font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
                             Safety Superstar
                           </div>
-                          <div className="text-xs text-gray-600 mb-1">Check-in queen! 👑</div>
-                          <div className="text-xs text-center text-gray-400 italic py-1 bg-gray-50 rounded-lg mt-2">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Check-in queen! 👑</div>
+                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
                             Building streaks... 🔥
                           </div>
                         </div>
@@ -905,7 +907,7 @@ const BestiesPage = () => {
                   {/* Streak Queen - Yellow gradient */}
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-amber-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white rounded-2xl p-4 shadow-lg border-2 border-yellow-200 hover:scale-105 transition-transform">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-yellow-200 dark:border-yellow-600 hover:scale-105 transition-transform">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg">
@@ -919,8 +921,8 @@ const BestiesPage = () => {
                           <div className="font-display text-base font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
                             Streak Queen
                           </div>
-                          <div className="text-xs text-gray-600 mb-1">On fire! 🔥</div>
-                          <div className="text-xs text-center text-gray-400 italic py-1 bg-gray-50 rounded-lg mt-2">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">On fire! 🔥</div>
+                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
                             Tracking victories... 💪
                           </div>
                         </div>
@@ -930,7 +932,7 @@ const BestiesPage = () => {
                 </div>
 
                 {/* Cute footer */}
-                <div className="mt-6 pt-4 border-t-2 border-pink-200 text-center">
+                <div className="mt-6 pt-4 border-t-2 border-pink-200 dark:border-pink-600 text-center">
                   <p className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                     {rankingsPeriod === 'weekly' && '🎯 Resets every Monday • Keep slaying, queens! 👑'}
                     {rankingsPeriod === 'monthly' && '🎯 Resets on the 1st • Keep slaying, queens! 👑'}
@@ -949,7 +951,7 @@ const BestiesPage = () => {
               </h2>
 
               {filteredBesties.length === 0 ? (
-                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50">
+                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
                   <div className="text-5xl md:text-6xl mb-3">💜</div>
                   <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties in this filter</p>
                   <p className="text-sm md:text-base text-text-secondary">
@@ -975,7 +977,7 @@ const BestiesPage = () => {
                             {indicators.map((indicator, idx) => (
                               <span
                                 key={idx}
-                                className="text-base bg-white rounded-full p-1.5 shadow-md border border-purple-200"
+                                className="text-base bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-md border border-purple-200 dark:border-purple-600"
                                 title={indicator.tooltip}
                               >
                                 {indicator.icon}
@@ -989,7 +991,7 @@ const BestiesPage = () => {
                           <div className="w-full space-y-2">
                             <button
                               onClick={() => navigate(`/user/${bestie.userId}`)}
-                              className="w-full bg-white hover:bg-purple-50 text-purple-900 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                              className="w-full bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900 text-purple-900 dark:text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
                             >
                               <span>👤</span>
                               <span>View Profile</span>
@@ -1063,9 +1065,9 @@ const BestiesPage = () => {
       {/* Comments Modal - Mobile Optimized with Bottom Menu Bar Clearance */}
       {showComments && selectedCheckIn && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-end md:items-center justify-center">
-          <div className="bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
             {/* Header */}
-            <div className="p-4 md:p-6 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-pink-50 to-purple-50">
+            <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-600 flex-shrink-0 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl md:text-2xl font-display text-transparent bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text">
                   💬 Comments
@@ -1077,12 +1079,12 @@ const BestiesPage = () => {
                     setComments([]);
                     setNewComment('');
                   }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-700 text-2xl transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl transition-colors"
                 >
                   ×
                 </button>
               </div>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {selectedCheckIn.userName}'s check-in
               </p>
             </div>
@@ -1092,10 +1094,10 @@ const BestiesPage = () => {
               {comments.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-5xl mb-3">💬</div>
-                  <p className="text-gray-500 text-sm font-semibold">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm font-semibold">
                     No comments yet
                   </p>
-                  <p className="text-gray-400 text-xs mt-1">
+                  <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
                     Be the first to comment!
                   </p>
                 </div>
@@ -1108,25 +1110,25 @@ const BestiesPage = () => {
                         <img
                           src={comment.userPhoto}
                           alt={comment.userName}
-                          className="w-9 h-9 rounded-full object-cover ring-2 ring-purple-100"
+                          className="w-9 h-9 rounded-full object-cover ring-2 ring-purple-100 dark:ring-purple-600"
                         />
                       ) : (
-                        <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center text-white text-sm font-display ring-2 ring-purple-100">
+                        <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center text-white text-sm font-display ring-2 ring-purple-100 dark:ring-purple-600">
                           {comment.userName?.[0] || '?'}
                         </div>
                       )}
                     </div>
                     {/* Comment Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl px-4 py-2 shadow-sm">
-                        <p className="font-bold text-sm text-gray-900">
+                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-2xl px-4 py-2 shadow-sm">
+                        <p className="font-bold text-sm text-gray-900 dark:text-gray-200">
                           {comment.userName}
                         </p>
-                        <p className="text-sm text-gray-700 break-words leading-relaxed">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed">
                           {comment.text}
                         </p>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1 px-3">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 px-3">
                         {comment.timestamp?.toDate ? getTimeAgo(comment.timestamp.toDate()) : 'Just now'}
                       </p>
                     </div>
@@ -1136,7 +1138,7 @@ const BestiesPage = () => {
             </div>
 
             {/* Add Comment Input - Fixed at bottom with safe area */}
-            <div className="p-4 md:p-6 border-t-2 border-purple-100 flex-shrink-0 bg-white">
+            <div className="p-4 md:p-6 border-t-2 border-purple-100 dark:border-purple-600 flex-shrink-0 bg-white dark:bg-gray-800">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1149,7 +1151,7 @@ const BestiesPage = () => {
                     }
                   }}
                   placeholder="Add a comment..."
-                  className="flex-1 px-4 py-3 rounded-full border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm shadow-sm transition-colors"
+                  className="flex-1 px-4 py-3 rounded-full border-2 border-purple-200 dark:border-purple-600 focus:border-purple-400 dark:focus:border-purple-400 focus:outline-none text-sm shadow-sm transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
                 />
                 <button
                   onClick={addComment}

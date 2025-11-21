@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, storage } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast';
 
 const OnboardingPage = () => {
   const { currentUser, userData } = useAuth();
+  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [step, setStep] = useState('welcome'); // welcome, slides, name, photo, invite-welcome, bestie-circle
   const [slideIndex, setSlideIndex] = useState(0);
@@ -184,7 +186,7 @@ const OnboardingPage = () => {
           </p>
           <button
             onClick={() => setStep('slides')}
-            className="btn bg-white text-primary hover:bg-white/90 text-lg px-8 py-4"
+            className="btn bg-white dark:bg-gray-800 text-primary hover:bg-white/90 dark:hover:bg-gray-700 text-lg px-8 py-4"
           >
             Get Started →
           </button>
@@ -196,13 +198,13 @@ const OnboardingPage = () => {
   // Slides
   if (step === 'slides') {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
           <div className="text-7xl mb-6">{currentSlide.emoji}</div>
-          <h2 className="text-3xl font-display text-text-primary mb-4">
+          <h2 className="text-3xl font-display text-gray-800 dark:text-gray-200 mb-4">
             {currentSlide.title}
           </h2>
-          <p className="text-lg text-text-secondary mb-8">
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
             {currentSlide.description}
           </p>
 
@@ -212,7 +214,7 @@ const OnboardingPage = () => {
               <div
                 key={index}
                 className={`w-2 h-2 rounded-full transition-all ${
-                  index === slideIndex ? 'bg-primary w-6' : 'bg-gray-300'
+                  index === slideIndex ? 'bg-primary w-6' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               />
             ))}
@@ -252,14 +254,14 @@ const OnboardingPage = () => {
   // Name Edit
   if (step === 'name') {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">👤</div>
-            <h2 className="text-3xl font-display text-text-primary mb-2">
+            <h2 className="text-3xl font-display text-gray-800 dark:text-gray-200 mb-2">
               Is this name correct?
             </h2>
-            <p className="text-text-secondary">
+            <p className="text-gray-600 dark:text-gray-400">
               This is how your besties will see you
             </p>
           </div>
@@ -268,7 +270,7 @@ const OnboardingPage = () => {
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full p-4 border-2 border-gray-300 rounded-xl focus:border-primary focus:outline-none text-lg mb-6"
+            className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl focus:border-primary focus:outline-none text-lg mb-6"
             placeholder="Your name"
           />
 
@@ -286,14 +288,14 @@ const OnboardingPage = () => {
   // Photo Upload
   if (step === 'photo') {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">📷</div>
-            <h2 className="text-3xl font-display text-text-primary mb-2">
+            <h2 className="text-3xl font-display text-gray-800 dark:text-gray-200 mb-2">
               Add a Profile Picture?
             </h2>
-            <p className="text-text-secondary">
+            <p className="text-gray-600 dark:text-gray-400">
               Help your besties recognize you (optional)
             </p>
           </div>
@@ -374,7 +376,7 @@ const OnboardingPage = () => {
               setInviterInfo(null);
               setStep('bestie-circle');
             }}
-            className="btn bg-white text-primary hover:bg-white/90 text-lg px-8 py-4"
+            className="btn bg-white dark:bg-gray-800 text-primary hover:bg-white/90 dark:hover:bg-gray-700 text-lg px-8 py-4"
           >
             Continue →
           </button>
@@ -387,35 +389,35 @@ const OnboardingPage = () => {
   if (step === 'bestie-circle') {
     if (checkingBesties) {
       return (
-        <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center">
           <div className="spinner"></div>
         </div>
       );
     }
 
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4 overflow-y-auto">
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 overflow-y-auto">
         <div className="max-w-2xl w-full py-8">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">⭐</div>
-            <h2 className="text-3xl font-display text-text-primary mb-2">
+            <h2 className="text-3xl font-display text-gray-800 dark:text-gray-200 mb-2">
               Your Bestie Circle
             </h2>
-            <p className="text-text-secondary mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               These are the 5 besties who get notified if you miss a check-in.
             </p>
 
             {!hasBesties && (
-              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 mb-6">
-                <p className="text-sm font-semibold text-yellow-800">
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-300 dark:border-yellow-600 rounded-xl p-4 mb-6">
+                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
                   ⚠️ You need at least one bestie to create a check-in
                 </p>
               </div>
             )}
 
             {hasBesties && (
-              <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4 mb-6">
-                <p className="text-sm font-semibold text-green-800">
+              <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded-xl p-4 mb-6">
+                <p className="text-sm font-semibold text-green-800 dark:text-green-200">
                   ✅ Great! You already have a bestie in your circle
                 </p>
               </div>
@@ -423,8 +425,8 @@ const OnboardingPage = () => {
           </div>
 
           <div className="card p-6 mb-6">
-            <h3 className="font-display text-lg mb-4 text-center">How It Works:</h3>
-            <ul className="space-y-3 text-sm text-text-secondary">
+            <h3 className="font-display text-lg mb-4 text-center text-gray-800 dark:text-gray-200">How It Works:</h3>
+            <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
               <li className="flex gap-3">
                 <span className="text-2xl">1️⃣</span>
                 <span>Choose up to 5 besties for your safety circle</span>
@@ -456,7 +458,7 @@ const OnboardingPage = () => {
                 ➕ Add Your First Bestie
               </button>
 
-              <p className="text-xs text-center text-text-secondary">
+              <p className="text-xs text-center text-gray-600 dark:text-gray-400">
                 You'll be taken to your profile. Click on a + button in your bestie circle to continue
               </p>
             </>

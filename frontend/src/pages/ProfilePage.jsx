@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, storage } from '../services/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -33,6 +34,7 @@ const AURA_OPTIONS = [
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
+  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -454,7 +456,7 @@ const ProfilePage = () => {
           <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
             <button
               onClick={() => navigate('/edit-profile')}
-              className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white text-xl"
+              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
               title="Edit profile"
             >
               ✏️
@@ -463,7 +465,7 @@ const ProfilePage = () => {
             {/* Color Picker Button */}
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white"
+              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
               title="Change background color"
             >
               🎨
@@ -472,7 +474,7 @@ const ProfilePage = () => {
             {/* Aura Picker Button */}
             <button
               onClick={() => setShowAuraPicker(!showAuraPicker)}
-              className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white"
+              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
               title="Change profile aura"
             >
               ✨
@@ -480,13 +482,13 @@ const ProfilePage = () => {
 
             {showColorPicker && (
               <>
-                <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowColorPicker(false)} />
-                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-50 w-80 max-h-[500px] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowColorPicker(false)} />
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-gray-200 dark:border-gray-600 p-4 z-50 w-80 max-h-[500px] overflow-y-auto">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-display text-text-primary">Choose Background</h3>
+                    <h3 className="text-lg font-display text-gray-800 dark:text-gray-200">Choose Background</h3>
                     <button
                       onClick={() => setShowColorPicker(false)}
-                      className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
+                      className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400"
                     >
                       ✕
                     </button>
@@ -500,7 +502,7 @@ const ProfilePage = () => {
                         style={{ background: option.gradient }}
                         title={option.name}
                       >
-                        <span className="text-xs font-semibold text-gray-700 drop-shadow-sm">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 drop-shadow-sm">
                           {option.name}
                         </span>
                       </button>
@@ -512,13 +514,13 @@ const ProfilePage = () => {
 
             {showAuraPicker && (
               <div className="aura-picker-container">
-                <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowAuraPicker(false)} />
-                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 p-4 z-50 w-80 max-h-[500px] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowAuraPicker(false)} />
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-gray-200 dark:border-gray-600 p-4 z-50 w-80 max-h-[500px] overflow-y-auto">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-display text-text-primary">Choose Profile Aura ✨</h3>
+                    <h3 className="text-lg font-display text-gray-800 dark:text-gray-200">Choose Profile Aura ✨</h3>
                     <button
                       onClick={() => setShowAuraPicker(false)}
-                      className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
+                      className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400"
                     >
                       ✕
                     </button>
@@ -530,15 +532,15 @@ const ProfilePage = () => {
                         onClick={() => handleAuraChange(option)}
                         className={`w-full p-3 rounded-lg shadow-md hover:scale-105 transition-transform border-2 text-left ${
                           (userData?.profile?.aura || 'none') === option.id
-                            ? 'border-primary bg-purple-50'
-                            : 'border-transparent hover:border-primary bg-gray-50'
+                            ? 'border-primary bg-purple-50 dark:bg-purple-900/30'
+                            : 'border-transparent hover:border-primary bg-gray-50 dark:bg-gray-700'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{option.emoji}</span>
                           <div className="flex-1">
-                            <div className="font-semibold text-gray-800">{option.name}</div>
-                            <div className="text-xs text-gray-600">{option.description}</div>
+                            <div className="font-semibold text-gray-800 dark:text-gray-200">{option.name}</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">{option.description}</div>
                           </div>
                           {(userData?.profile?.aura || 'none') === option.id && (
                             <span className="text-primary">✓</span>
@@ -567,21 +569,21 @@ const ProfilePage = () => {
 
             {/* Photo Management Menu */}
             {showPhotoMenu && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-2 z-30 w-48">
-                <div className="text-xs font-semibold text-gray-500 px-3 py-1">Manage Photo</div>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-gray-200 dark:border-gray-600 p-2 z-30 w-48">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Manage Photo</div>
                 <button
                   onClick={() => {
                     fileInputRef.current?.click();
                     setShowPhotoMenu(false);
                   }}
                   disabled={uploading}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
                   🔄 Replace
                 </button>
                 <button
                   onClick={handleRemovePhoto}
-                  className="w-full text-left px-3 py-2 hover:bg-red-50 rounded text-sm font-semibold text-red-600"
+                  className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-sm font-semibold text-red-600 dark:text-red-400"
                 >
                   ❌ Remove
                 </button>
@@ -602,14 +604,14 @@ const ProfilePage = () => {
           </h1>
 
           {userData?.profile?.bio && (
-            <p className="text-gray-800 italic max-w-md mx-auto mt-4 text-lg">
+            <p className="text-gray-800 dark:text-gray-200 italic max-w-md mx-auto mt-4 text-lg">
               "{userData.profile.bio}"
             </p>
           )}
 
           {/* Social Sharing Icons */}
           <div className="mt-6 relative z-10">
-            <p className="text-sm text-gray-600 mb-3 font-semibold">Share your profile:</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-semibold">Share your profile:</p>
             <div className="flex gap-2 justify-center flex-wrap">
               {/* Facebook */}
               <button
@@ -739,7 +741,7 @@ const ProfilePage = () => {
 
         {/* Profile Completion Bar with Clickable Tasks - Hide when 100% complete */}
         {profileCompletion.percentage < 100 && (
-          <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100">
+          <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-100 dark:border-gray-600">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
               <span className="text-2xl font-bold text-gradient">
@@ -748,7 +750,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Animated Progress Bar with Shimmer Effect */}
-            <div className="w-full h-4 bg-white rounded-full overflow-hidden mb-4 shadow-inner relative">
+            <div className="w-full h-4 bg-white dark:bg-gray-700 rounded-full overflow-hidden mb-4 shadow-inner relative">
               <div
                 className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
                 style={{ width: `${animatedProgress}%` }}
@@ -758,7 +760,7 @@ const ProfilePage = () => {
               </div>
               {/* Progress percentage text */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold text-gray-700 drop-shadow-sm">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 drop-shadow-sm">
                   {Math.round(profileCompletion.percentage)}%
                 </span>
               </div>
@@ -772,7 +774,7 @@ const ProfilePage = () => {
                     <span className="text-lg">
                       {task.completed ? '✅' : '⭕'}
                     </span>
-                    <span className={`text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-700 font-semibold'}`}>
+                    <span className={`text-sm ${task.completed ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300 font-semibold'}`}>
                       {task.name}
                     </span>
                   </div>
@@ -792,27 +794,27 @@ const ProfilePage = () => {
 
         {/* Weekly Summary */}
         <div className="card p-6 mb-6">
-          <h2 className="text-xl font-display text-text-primary mb-4">Weekly Summary</h2>
+          <h2 className="text-xl font-display text-gray-800 dark:text-gray-200 mb-4">Weekly Summary</h2>
 
-          <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <span className="text-4xl">{weeklySummary.emoji}</span>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg text-gray-800 mb-1">
+                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200 mb-1">
                   {weeklySummary.message}
                 </h3>
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                   💡 {weeklySummary.tip}
                 </p>
                 {hasWeekOfActivity() && (
                   <div className="flex gap-4 text-sm">
                     <div>
                       <span className="font-semibold text-primary">{userData?.stats?.totalCheckIns || 0}</span>
-                      <span className="text-gray-600"> check-ins</span>
+                      <span className="text-gray-600 dark:text-gray-400"> check-ins</span>
                     </div>
                     <div>
                       <span className="font-semibold text-secondary">{bestiesCount}</span>
-                      <span className="text-gray-600"> besties</span>
+                      <span className="text-gray-600 dark:text-gray-400"> besties</span>
                     </div>
                   </div>
                 )}
@@ -823,18 +825,18 @@ const ProfilePage = () => {
 
         {/* Login Streak */}
         {loginStreak > 0 && (
-          <div className="card p-6 mb-6 bg-gradient-to-r from-orange-50 to-red-50">
+          <div className="card p-6 mb-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/30 dark:to-red-900/30">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-display text-text-primary mb-1">Daily Login Streak</h2>
-                <p className="text-sm text-gray-600">Keep it going! 💪</p>
+                <h2 className="text-xl font-display text-gray-800 dark:text-gray-200 mb-1">Daily Login Streak</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Keep it going! 💪</p>
               </div>
               <div className="text-center">
                 <div className="text-5xl mb-1">🔥</div>
-                <div className="text-3xl font-display text-orange-600">
+                <div className="text-3xl font-display text-orange-600 dark:text-orange-400">
                   <CountUp end={loginStreak} duration={1500} />
                 </div>
-                <div className="text-xs text-gray-600">days</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">days</div>
               </div>
             </div>
           </div>
@@ -843,7 +845,7 @@ const ProfilePage = () => {
         {/* Your Badges - Show All Earned */}
         <div className="mb-6 relative">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-2xl font-display text-text-primary">Your Badges</h2>
+            <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Badges</h2>
             <button
               onClick={() => navigate('/badges')}
               className="text-primary font-semibold hover:underline text-sm"
@@ -852,7 +854,7 @@ const ProfilePage = () => {
             </button>
           </div>
 
-          <p className="text-xs text-text-secondary mb-4">
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
             {featuredBadgeIds.length > 0
               ? `⭐ ${featuredBadgeIds.length} featured badge${featuredBadgeIds.length > 1 ? 's' : ''} shown first • `
               : ''}
@@ -874,13 +876,13 @@ const ProfilePage = () => {
                       key={badge.id}
                       className={`card p-4 text-center transition-all ${
                         isFeatured
-                          ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 shadow-lg scale-105'
-                          : 'bg-gradient-to-br from-gray-50 to-gray-100'
+                          ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg scale-105'
+                          : 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700'
                       }`}
                     >
                       <div className="text-4xl mb-2">{badge.icon}</div>
-                      <div className="font-semibold text-sm text-text-primary">{badge.name}</div>
-                      {isFeatured && <div className="text-xs text-yellow-600 mt-1">⭐ Featured</div>}
+                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
+                      {isFeatured && <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">⭐ Featured</div>}
                     </div>
                   );
                 })}
@@ -889,10 +891,10 @@ const ProfilePage = () => {
           ) : (
             <div className="card p-8 text-center">
               <div className="text-5xl mb-3">🏆</div>
-              <p className="text-text-primary font-semibold mb-2">
+              <p className="text-gray-800 dark:text-gray-200 font-semibold mb-2">
                 Start earning badges!
               </p>
-              <p className="text-text-secondary text-sm mb-4">
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                 Complete check-ins, invite friends, and stay safe to unlock achievements
               </p>
               <button
@@ -906,98 +908,98 @@ const ProfilePage = () => {
         </div>
 
         {/* Enhanced Your Impact - Modern Luxury Design */}
-        <div className="card p-8 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+        <div className="card p-8 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-orange-900/30">
           <h2 className="text-3xl font-display text-gradient mb-6 text-center">Your Impact ✨</h2>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* Besties Count */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">💜</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={bestiesCount} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Besties</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Besties</div>
               </div>
             </div>
 
             {/* Emergency Contact Count */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">🛡️</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={emergencyContactCount} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Times Selected</div>
-                <div className="text-xs text-gray-500">as Emergency Contact</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Times Selected</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">as Emergency Contact</div>
               </div>
             </div>
 
             {/* Days Active */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">📅</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={getDaysActive()} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Days Active</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Days Active</div>
               </div>
             </div>
 
             {/* Completed Check-ins */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">✅</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={userData?.stats?.completedCheckIns || 0} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Safe Check-ins</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Safe Check-ins</div>
               </div>
             </div>
 
             {/* Badges Earned */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">🏆</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={badges.length} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Badges Earned</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Badges Earned</div>
               </div>
             </div>
 
             {/* Login Streak */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">🔥</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={loginStreak} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Day Streak</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Day Streak</div>
               </div>
             </div>
 
             {/* Nighttime Check-ins */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">🌙</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={nighttimeCheckIns} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Night Check-ins</div>
-                <div className="text-xs text-gray-500">9 PM - 6 AM</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Night Check-ins</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">9 PM - 6 AM</div>
               </div>
             </div>
 
             {/* Weekend Check-ins */}
-            <div className="relative overflow-hidden rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow">
               <div className="absolute top-0 right-0 text-6xl opacity-10">🎉</div>
               <div className="relative z-10">
                 <div className="text-4xl font-display bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent mb-2">
                   <CountUp end={weekendCheckIns} duration={1500} />
                 </div>
-                <div className="text-sm font-semibold text-gray-600">Weekend Check-ins</div>
-                <div className="text-xs text-gray-500">Sat & Sun</div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">Weekend Check-ins</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Sat & Sun</div>
               </div>
             </div>
           </div>
@@ -1006,7 +1008,7 @@ const ProfilePage = () => {
         {/* Bestie Circle */}
         <div className="mb-6 bestie-circle-section">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-display text-text-primary">Your Bestie Circle</h2>
+            <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Bestie Circle</h2>
             <button
               onClick={() => navigate('/besties')}
               className="text-primary font-semibold hover:underline"
@@ -1048,10 +1050,10 @@ const ProfilePage = () => {
 
       {/* Badge Selector Modal - Updated */}
       {showBadgeSelector && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-display text-text-primary">Choose Featured Badges</h2>
+              <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Choose Featured Badges</h2>
               <button
                 onClick={() => setShowBadgeSelector(false)}
                 className="w-8 h-8 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center text-xl font-bold transition-colors"
@@ -1061,7 +1063,7 @@ const ProfilePage = () => {
               </button>
             </div>
 
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Select up to 3 badges to showcase on your profile ({featuredBadgeIds.length}/3 selected)
             </p>
 
@@ -1075,12 +1077,12 @@ const ProfilePage = () => {
                       onClick={() => handleToggleFeaturedBadge(badge.id)}
                       className={`p-4 rounded-xl text-center transition-all ${
                         isSelected
-                          ? 'bg-gradient-to-br from-yellow-100 to-orange-100 border-2 border-primary shadow-lg scale-105'
-                          : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                          ? 'bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-primary shadow-lg scale-105'
+                          : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent'
                       }`}
                     >
                       <div className="text-4xl mb-2">{badge.icon}</div>
-                      <div className="font-semibold text-xs text-text-primary">{badge.name}</div>
+                      <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
                       {isSelected && <div className="text-xs text-primary mt-1">✓ Featured</div>}
                     </button>
                   );
@@ -1089,7 +1091,7 @@ const ProfilePage = () => {
             ) : (
               <div className="text-center py-12">
                 <div className="text-5xl mb-3">🏆</div>
-                <p className="text-gray-600 mb-4">No badges yet! Complete tasks to earn them.</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">No badges yet! Complete tasks to earn them.</p>
               </div>
             )}
 

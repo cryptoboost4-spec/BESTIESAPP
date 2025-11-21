@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
 import html2canvas from 'html2canvas';
 
@@ -50,6 +51,7 @@ const CARD_TEMPLATES = [
 
 const BestieRequestModal = ({ onClose }) => {
   const { userData, currentUser } = useAuth();
+  const { isDark } = useDarkMode();
   const [selectedTemplate, setSelectedTemplate] = useState(CARD_TEMPLATES[0]);
   const [customMessage, setCustomMessage] = useState(CARD_TEMPLATES[0].defaultMessage);
   const [generatingImage, setGeneratingImage] = useState(false);
@@ -226,26 +228,26 @@ const BestieRequestModal = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="card max-w-2xl w-full p-6 animate-scale-up max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="card max-w-2xl w-full p-6 animate-scale-up max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-display text-text-primary">Invite a Bestie</h2>
+          <h2 className="text-2xl font-display text-text-primary dark:text-white">Invite a Bestie</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors text-gray-700 dark:text-gray-300"
           >
             ✕
           </button>
         </div>
 
-        <p className="text-text-secondary mb-6">
+        <p className="text-text-secondary dark:text-gray-300 mb-6">
           Choose a card template, customize your message, and share it with a friend!
         </p>
 
         {/* Template Selection */}
         <div className="mb-6">
-          <h3 className="text-lg font-display text-text-primary mb-3">Choose a Card</h3>
+          <h3 className="text-lg font-display text-text-primary dark:text-white mb-3">Choose a Card</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {CARD_TEMPLATES.map((template) => (
               <button
@@ -254,7 +256,7 @@ const BestieRequestModal = ({ onClose }) => {
                 className={`p-4 rounded-xl text-center transition-all ${
                   selectedTemplate.id === template.id
                     ? 'border-2 border-primary shadow-lg scale-105'
-                    : 'border-2 border-transparent hover:border-gray-300 hover:shadow-md'
+                    : 'border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
                 }`}
                 style={{ background: template.bgGradient }}
               >
@@ -269,25 +271,25 @@ const BestieRequestModal = ({ onClose }) => {
 
         {/* Message Customization */}
         <div className="mb-6">
-          <h3 className="text-lg font-display text-text-primary mb-3">Customize Your Message</h3>
+          <h3 className="text-lg font-display text-text-primary dark:text-white mb-3">Customize Your Message</h3>
           <textarea
             value={customMessage}
             onChange={(e) => {
               setCustomMessage(e.target.value);
               setGeneratedImageUrl(null); // Reset image when message changes
             }}
-            className="input min-h-[100px] resize-none w-full"
+            className="input min-h-[100px] resize-none w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
             placeholder="Edit your message..."
             maxLength={200}
           />
-          <div className="text-xs text-text-secondary mt-1 text-right">
+          <div className="text-xs text-text-secondary dark:text-gray-400 mt-1 text-right">
             {customMessage.length}/200 characters
           </div>
         </div>
 
         {/* Card Preview */}
         <div className="mb-6">
-          <h3 className="text-lg font-display text-text-primary mb-3">Preview</h3>
+          <h3 className="text-lg font-display text-text-primary dark:text-white mb-3">Preview</h3>
 
           <div
             ref={cardRef}
@@ -331,7 +333,7 @@ const BestieRequestModal = ({ onClose }) => {
 
         {/* Share Buttons */}
         <div className="mb-4">
-          <h3 className="text-lg font-display text-text-primary mb-3">Share With Friends</h3>
+          <h3 className="text-lg font-display text-text-primary dark:text-white mb-3">Share With Friends</h3>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => showShareChoicePopup('whatsapp')}
@@ -412,21 +414,21 @@ const BestieRequestModal = ({ onClose }) => {
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 text-center mt-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
           Invite your friends to join your safety network!
         </p>
       </div>
 
       {/* Share Choice Popup */}
       {showShareChoice && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4 animate-fade-in">
-          <div className="card max-w-md w-full p-6 animate-scale-up">
+        <div className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-[60] p-4 animate-fade-in">
+          <div className="card max-w-md w-full p-6 animate-scale-up bg-white dark:bg-gray-800">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4 animate-bounce-slow">🎨</div>
-              <h3 className="text-2xl font-display text-text-primary mb-2">
+              <h3 className="text-2xl font-display text-text-primary dark:text-white mb-2">
                 How do you want to share?
               </h3>
-              <p className="text-sm text-text-secondary">
+              <p className="text-sm text-text-secondary dark:text-gray-300">
                 Choose between a beautiful card or a simple link
               </p>
             </div>
@@ -435,20 +437,20 @@ const BestieRequestModal = ({ onClose }) => {
               {/* Share with Card */}
               <button
                 onClick={handleShareWithCard}
-                className="w-full p-4 border-2 border-primary bg-purple-50 rounded-xl hover:bg-purple-100 transition-all group"
+                className="w-full p-4 border-2 border-primary bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-all group"
                 disabled={generatingImage}
               >
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">🖼️</div>
                   <div className="flex-1 text-left">
-                    <div className="font-display text-lg text-primary mb-1">
+                    <div className="font-display text-lg text-primary dark:text-purple-400 mb-1">
                       Share Beautiful Card
                     </div>
-                    <div className="text-xs text-text-secondary">
+                    <div className="text-xs text-text-secondary dark:text-gray-400">
                       Custom image with your message
                     </div>
                   </div>
-                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity dark:text-white">
                     →
                   </div>
                 </div>
@@ -457,19 +459,19 @@ const BestieRequestModal = ({ onClose }) => {
               {/* Share with Link */}
               <button
                 onClick={handleShareWithLink}
-                className="w-full p-4 border-2 border-gray-300 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
+                className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">🔗</div>
                   <div className="flex-1 text-left">
-                    <div className="font-display text-lg text-gray-800 mb-1">
+                    <div className="font-display text-lg text-gray-800 dark:text-gray-200 mb-1">
                       Share Simple Link
                     </div>
-                    <div className="text-xs text-text-secondary">
+                    <div className="text-xs text-text-secondary dark:text-gray-400">
                       Quick text message with link
                     </div>
                   </div>
-                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity dark:text-white">
                     →
                   </div>
                 </div>

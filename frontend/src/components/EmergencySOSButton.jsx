@@ -4,6 +4,7 @@ import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
+import haptic from '../utils/hapticFeedback';
 
 // Emergency numbers by country
 const EMERGENCY_NUMBERS = [
@@ -45,6 +46,9 @@ const EmergencySOSButton = () => {
   }, [alertSent]);
 
   const handleSOSPress = () => {
+    // Emergency haptic feedback when button is pressed
+    haptic.emergency();
+
     // 5 second countdown before sending
     setCountdown(5);
     setActivating(true);
@@ -57,6 +61,8 @@ const EmergencySOSButton = () => {
           sendSOS();
           return null;
         }
+        // Warning haptic feedback during countdown
+        haptic.warning();
         return prev - 1;
       });
     }, 1000);

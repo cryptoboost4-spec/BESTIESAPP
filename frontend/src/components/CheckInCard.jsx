@@ -8,6 +8,8 @@ import apiService from '../services/api';
 import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
+import haptic from '../utils/hapticFeedback';
 
 // Luxury loader for "I'm Safe" confirmation
 const SafeLoader = () => {
@@ -191,6 +193,7 @@ const SafeLoader = () => {
 
 const CheckInCard = ({ checkIn }) => {
   const { userData } = useAuth();
+  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -239,14 +242,19 @@ const CheckInCard = ({ checkIn }) => {
     return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (isAlarm = false) => {
     // Check if user has a safety passcode set
     if (userData?.security?.safetyPasscode) {
       setShowPasscodeModal(true);
       return;
     }
 
-    // If no passcode, proceed with completion
+    // If no passcode, trigger haptic based on context
+    if (!isAlarm) {
+      haptic.success();
+    }
+
+    // Proceed with completion
     await completeCheckIn();
   };
 
@@ -270,7 +278,10 @@ const CheckInCard = ({ checkIn }) => {
 
     // Check if it's the safety passcode
     if (enteredPasscode === safetyPasscode) {
-      // Correct passcode - proceed with completion
+      // Correct passcode - trigger haptic for successful verification
+      haptic.success();
+
+      // Proceed with completion
       setShowPasscodeModal(false);
       setEnteredPasscode('');
       await completeCheckIn();
@@ -370,6 +381,8 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const handleExtend = async (minutes) => {
+    haptic.light();
+
     // Optimistic update - immediately show the new time
     const currentAlertTime = optimisticAlertTime || checkIn.alertTime.toDate();
     const newAlertTime = new Date(currentAlertTime.getTime() + minutes * 60 * 1000);
@@ -436,6 +449,8 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const handlePhotoUpload = async (e) => {
+    haptic.medium();
+
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -521,6 +536,8 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   const removePhoto = async (index) => {
+    haptic.light();
+
     const previousPhotoURLs = [...photoURLs];
     const updatedPhotoURLs = photoURLs.filter((_, i) => i !== index).filter(url => url !== undefined && url !== null);
 
@@ -616,7 +633,10 @@ const CheckInCard = ({ checkIn }) => {
             They know you haven't checked in
           </p>
           <button
-            onClick={handleComplete}
+            onClick={() => {
+              haptic.warning();
+              handleComplete(true);
+            }}
             disabled={loading}
             className="btn btn-success w-full"
           >
@@ -671,12 +691,12 @@ const CheckInCard = ({ checkIn }) => {
 
           {/* Add more photos */}
           {!isAlerted && photoURLs.length < 5 && (
-            <label className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
+            <label className={`border-2 border-dashed ${isDark ? 'border-gray-600 hover:bg-primary/10' : 'border-gray-300 hover:bg-primary/5'} rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-all`}>
               <div className="text-4xl mb-2">📷</div>
-              <div className="text-sm font-semibold text-gray-600">
+              <div className={`text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                 {uploadingPhoto ? 'Uploading...' : photoURLs.length > 0 ? 'Add More Photos' : 'Add Photos'}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                 Click to upload (up to 5, max 5MB each)
               </div>
               <input
@@ -699,7 +719,7 @@ const CheckInCard = ({ checkIn }) => {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:outline-none resize-none"
+              className={`w-full p-3 border-2 ${isDark ? 'border-gray-600 bg-gray-800 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} rounded-xl focus:border-primary focus:outline-none resize-none`}
               rows="3"
               placeholder="Add notes about your check-in..."
             />
@@ -724,12 +744,15 @@ const CheckInCard = ({ checkIn }) => {
         ) : (
           <div>
             {notes ? (
-              <div className="bg-gray-50 p-3 rounded-xl">
+              <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-50'} p-3 rounded-xl`}>
                 <div className="flex items-start justify-between mb-1">
-                  <div className="text-xs font-semibold text-gray-500">NOTES:</div>
+                  <div className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>NOTES:</div>
                   {!isAlerted && (
                     <button
-                      onClick={() => setEditingNotes(true)}
+                      onClick={() => {
+                        haptic.light();
+                        setEditingNotes(true);
+                      }}
                       className="text-xs text-primary font-semibold hover:underline"
                     >
                       Edit
@@ -740,8 +763,11 @@ const CheckInCard = ({ checkIn }) => {
               </div>
             ) : !isAlerted && (
               <button
-                onClick={() => setEditingNotes(true)}
-                className="w-full border-2 border-dashed border-gray-300 rounded-xl p-3 text-sm font-semibold text-gray-600 hover:border-primary hover:bg-primary/5 transition-all"
+                onClick={() => {
+                  haptic.light();
+                  setEditingNotes(true);
+                }}
+                className={`w-full border-2 border-dashed ${isDark ? 'border-gray-600 text-gray-300 hover:bg-primary/10' : 'border-gray-300 text-gray-600 hover:bg-primary/5'} rounded-xl p-3 text-sm font-semibold hover:border-primary transition-all`}
               >
                 📝 Add Notes
               </button>
@@ -765,8 +791,8 @@ const CheckInCard = ({ checkIn }) => {
       {/* Passcode Verification Modal */}
       {showPasscodeModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-display text-text-primary mb-2">🔒 Enter Passcode</h2>
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full p-6`}>
+            <h2 className={`text-2xl font-display ${isDark ? 'text-gray-100' : 'text-text-primary'} mb-2`}>🔒 Enter Passcode</h2>
             <p className="text-text-secondary mb-4">
               Enter your safety passcode to mark yourself safe
             </p>
@@ -783,7 +809,7 @@ const CheckInCard = ({ checkIn }) => {
                     handlePasscodeSubmit();
                   }
                 }}
-                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-center text-3xl tracking-widest"
+                className={`w-full px-3 py-3 border-2 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} rounded-lg focus:border-primary focus:outline-none text-center text-3xl tracking-widest`}
                 placeholder="••••"
                 maxLength={6}
                 autoFocus

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import haptic from '../utils/hapticFeedback';
 
 /**
  * Cute dark mode toggle button
@@ -10,7 +11,10 @@ const DarkModeToggle = ({ className = '' }) => {
 
   return (
     <button
-      onClick={toggle}
+      onClick={() => {
+        haptic.selection();
+        toggle();
+      }}
       className={`relative w-14 h-8 rounded-full transition-all duration-300 ${
         isDark ? 'bg-indigo-600' : 'bg-yellow-400'
       } ${className}`}

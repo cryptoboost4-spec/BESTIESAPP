@@ -13,6 +13,10 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+.dark .modal-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -32,6 +36,10 @@
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
   position: relative;
+}
+
+.dark .modal-content {
+  background: #1f2937;
 }
 
 @keyframes slideUp {
@@ -57,6 +65,10 @@
   background: linear-gradient(135deg, #fce7f3 0%, #e9d5ff 100%);
 }
 
+.dark .invite-header {
+  background: linear-gradient(135deg, #831843 0%, #581c87 100%);
+}
+
 .invite-icon {
   font-size: 3.5rem;
   margin-bottom: 10px;
@@ -79,12 +91,21 @@
   line-height: 1.5;
 }
 
+.dark .invite-subtitle {
+  color: #d1d5db;
+}
+
 .invite-encouragement-box {
   margin: 20px 30px;
   padding: 15px;
   background: #f9fafb;
   border-radius: 12px;
   border-left: 4px solid #ec4899;
+}
+
+.dark .invite-encouragement-box {
+  background: #374151;
+  border-left-color: #f472b6;
 }
 
 .invite-benefits {
@@ -97,6 +118,10 @@
   padding: 5px 0;
   color: #374151;
   font-size: 0.875rem;
+}
+
+.dark .invite-benefits li {
+  color: #d1d5db;
 }
 
 .share-button {
@@ -156,11 +181,20 @@
   font-weight: 600;
 }
 
+.dark .share-divider {
+  color: #9ca3af;
+}
+
 .share-divider::before,
 .share-divider::after {
   content: '';
   flex: 1;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .share-divider::before,
+.dark .share-divider::after {
+  border-bottom-color: #4b5563;
 }
 
 .share-divider span {
@@ -190,10 +224,21 @@
   color: #374151;
 }
 
+.dark .share-option {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
 .share-option:hover {
   transform: translateY(-3px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-color: #ec4899;
+}
+
+.dark .share-option:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: #f472b6;
 }
 
 .share-option-emoji {
@@ -205,9 +250,19 @@
   border-color: #22c55e;
 }
 
+.dark .share-option.whatsapp:hover {
+  background: #064e3b;
+  border-color: #34d399;
+}
+
 .share-option.sms:hover {
   background: #dbeafe;
   border-color: #3b82f6;
+}
+
+.dark .share-option.sms:hover {
+  background: #1e3a8a;
+  border-color: #60a5fa;
 }
 
 .share-option.facebook:hover {
@@ -215,9 +270,19 @@
   border-color: #2563eb;
 }
 
+.dark .share-option.facebook:hover {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+}
+
 .share-option.copy:hover {
   background: #f3e8ff;
   border-color: #a855f7;
+}
+
+.dark .share-option.copy:hover {
+  background: #581c87;
+  border-color: #c084fc;
 }
 
 .invite-footer {
@@ -225,6 +290,11 @@
   padding: 15px 30px;
   background: #fafafa;
   border-top: 1px solid #e5e7eb;
+}
+
+.dark .invite-footer {
+  background: #111827;
+  border-top-color: #374151;
 }
 
 .modal-close-button {
@@ -245,9 +315,18 @@
   transition: all 0.2s;
 }
 
+.dark .modal-close-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #d1d5db;
+}
+
 .modal-close-button:hover {
   background: rgba(0, 0, 0, 0.2);
   transform: rotate(90deg);
+}
+
+.dark .modal-close-button:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Celebration Modal */
@@ -306,11 +385,19 @@
   margin: 0 0 25px 0;
 }
 
+.dark .celebration-text {
+  color: #d1d5db;
+}
+
 .celebration-encouragement {
   padding: 20px;
   background: linear-gradient(135deg, #fce7f3, #e9d5ff);
   border-radius: 15px;
   margin-top: 20px;
+}
+
+.dark .celebration-encouragement {
+  background: linear-gradient(135deg, #831843, #581c87);
 }
 
 .celebration-encouragement p {
@@ -325,6 +412,12 @@
   border: 2px solid #ddd;
   border-radius: 8px;
   font-size: 16px;
+}
+
+.dark .modal-content input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
 }
 
 .modal-content button:disabled {

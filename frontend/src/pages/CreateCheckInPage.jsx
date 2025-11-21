@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, storage } from '../services/firebase';
 import { collection, query, where, getDocs, addDoc, getDoc, doc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -25,7 +26,7 @@ const CheckInLoader = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 via-purple-50 to-indigo-50 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-indigo-900/30 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Elegant floating elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (
@@ -49,7 +50,7 @@ const CheckInLoader = () => {
 
       {/* Luxury content card */}
       <div className="w-full max-w-lg text-center relative z-10">
-        <div className="relative bg-white/95 backdrop-blur-xl rounded-[2rem] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/50">
+        <div className="relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-[2rem] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/50 dark:border-gray-600/50">
         {/* Message */}
         <h2 className="font-display text-3xl text-gradient mb-4">
           Creating your check-in!
@@ -85,13 +86,13 @@ const CheckInLoader = () => {
           </div>
 
           {/* Silk ribbon progress bar */}
-          <div className="relative w-full h-2 bg-gradient-to-r from-pink-100 via-purple-100 to-fuchsia-100 rounded-full overflow-hidden shadow-inner">
+          <div className="relative w-full h-2 bg-gradient-to-r from-pink-100 via-purple-100 to-fuchsia-100 dark:from-pink-900/50 dark:via-purple-900/50 dark:to-fuchsia-900/50 rounded-full overflow-hidden shadow-inner">
             <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 via-fuchsia-400 to-pink-400 animate-silk-shimmer bg-[length:300%_100%] opacity-80"></div>
-            <div className="absolute inset-0 bg-white/30 animate-silk-shine"></div>
+            <div className="absolute inset-0 bg-white/30 dark:bg-white/10 animate-silk-shine"></div>
           </div>
 
           {/* Gentle reminder */}
-          <p className="text-xs text-gray-400 mt-6 italic">
+          <p className="text-xs text-gray-400 dark:text-gray-400 mt-6 italic">
             Taking care of you, always 💕
           </p>
         </div>
@@ -163,6 +164,7 @@ const CheckInLoader = () => {
 
 const CreateCheckInPage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
+  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -880,7 +882,7 @@ const CreateCheckInPage = () => {
                 <button
                   type="button"
                   onClick={handleGetLocation}
-                  className="absolute right-3 top-20 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg border border-gray-300 transition-all z-10"
+                  className="absolute right-3 top-20 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 p-3 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 transition-all z-10"
                   disabled={loading}
                   title="Use my current location"
                 >
@@ -937,7 +939,7 @@ const CreateCheckInPage = () => {
                     className={`py-3 rounded-xl font-semibold transition-all ${
                       duration === mins
                         ? 'bg-gradient-primary text-white shadow-lg'
-                        : 'bg-gray-100 text-text-primary hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-text-primary hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     {mins < 60 ? `${mins}m` : `${mins / 60}h`}
@@ -976,7 +978,7 @@ const CreateCheckInPage = () => {
             </label>
 
             {besties.length === 0 ? (
-              <div className="text-center py-8 bg-orange-50 border-2 border-orange-200 rounded-xl">
+              <div className="text-center py-8 bg-orange-50 dark:bg-orange-900/30 border-2 border-orange-200 dark:border-orange-800 rounded-xl">
                 <p className="font-semibold text-text-primary mb-2">⚠️ No besties in your circle</p>
                 <p className="text-text-secondary text-sm mb-4">Add besties to your bestie circle on the home page to create check-ins</p>
                 <button
@@ -997,10 +999,10 @@ const CreateCheckInPage = () => {
                     disabled={!bestie.phone}
                     className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                       !bestie.phone
-                        ? 'border-orange-300 bg-orange-50 opacity-60 cursor-not-allowed'
+                        ? 'border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 opacity-60 cursor-not-allowed'
                         : selectedBesties.includes(bestie.id)
                         ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 hover:border-gray-300'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -1088,7 +1090,7 @@ const CreateCheckInPage = () => {
                 />
                 <label
                   htmlFor="photo-input"
-                  className="block w-full p-8 border-2 border-dashed border-gray-300 rounded-xl text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                  className="block w-full p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
                 >
                   <div className="text-4xl mb-2">📷</div>
                   <div className="text-sm text-text-secondary">
