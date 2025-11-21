@@ -241,15 +241,20 @@ const HomePage = () => {
                   Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
                 </p>
 
-                {/* Preview Example - Single rotating bubble */}
-                <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200">
-                  <p className="text-xs font-semibold text-purple-700 mb-3">Example messages (auto-scrolling):</p>
-                  <div className="flex justify-center">
+                {/* Preview Example */}
+                <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-purple-700 mb-1">Preview:</p>
+                    <p className="text-xs text-gray-600">
+                      Your besties will see you need support with a special badge
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
                     <ProfileWithBubble
                       photoURL={userData?.photoURL}
                       name={userData?.displayName || currentUser?.email || 'You'}
                       requestAttention={{ active: true, tag: exampleMessages[currentMessageIndex] }}
-                      size="xl"
+                      size="lg"
                       showBubble={true}
                     />
                   </div>
