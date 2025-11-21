@@ -53,9 +53,15 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
 
   const handleWhatsAppShare = () => {
     const encoded = encodeURIComponent(shareMessage);
-    window.open(`https://wa.me/?text=${encoded}`, '_blank');
-    setShowCelebration(true);
+    // Try to open in WhatsApp app first
+    window.location.href = `whatsapp://send?text=${encoded}`;
 
+    // Fallback to web WhatsApp if app doesn't open
+    setTimeout(() => {
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }, 1000);
+
+    setShowCelebration(true);
     setTimeout(() => {
       onSuccess?.();
       onClose();
@@ -64,9 +70,33 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
 
   const handleFacebookShare = () => {
     const encoded = encodeURIComponent(shareUrl);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encoded}`, '_blank');
-    setShowCelebration(true);
+    // Try to open in Facebook app first, fallback to web
+    const fbAppUrl = `fb://facewebmodal/f?href=${encoded}`;
+    window.location.href = fbAppUrl;
 
+    // Fallback to web if app doesn't open
+    setTimeout(() => {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encoded}`, '_blank');
+    }, 1000);
+
+    setShowCelebration(true);
+    setTimeout(() => {
+      onSuccess?.();
+      onClose();
+    }, 1500);
+  };
+
+  const handleMessengerShare = () => {
+    const encoded = encodeURIComponent(shareUrl);
+    // Try to open in Messenger app first
+    window.location.href = `fb-messenger://share?link=${encoded}`;
+
+    // Fallback to web messenger
+    setTimeout(() => {
+      window.open(`https://www.facebook.com/dialog/send?link=${encoded}&app_id=YOUR_APP_ID&redirect_uri=${window.location.origin}`, '_blank');
+    }, 1000);
+
+    setShowCelebration(true);
     setTimeout(() => {
       onSuccess?.();
       onClose();
@@ -119,15 +149,18 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
           </p>
         </div>
 
-        {/* Encouraging Message */}
+        {/* Bestie Circle Importance */}
         <div className="invite-encouragement-box">
+          <p className="text-sm font-semibold text-primary dark:text-purple-400 mb-2">
+            💜 Complete Your Bestie Circle
+          </p>
           <p className="text-sm text-text-secondary dark:text-gray-300">
-            <strong>Why invite besties?</strong>
+            Your safety network gets stronger with every bestie you add. Having 3-5 trusted friends means:
           </p>
           <ul className="invite-benefits">
-            <li>✓ They'll get alerts if you need help</li>
-            <li>✓ You'll know they're safe too</li>
-            <li>✓ Mutual protection = double the safety</li>
+            <li>✓ Someone's always available when you need help</li>
+            <li>✓ Faster response times in emergencies</li>
+            <li>✓ You all watch out for each other - true sisterhood! 💕</li>
           </ul>
         </div>
 
@@ -156,6 +189,14 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
           >
             <span className="share-option-emoji">💬</span>
             <span>WhatsApp</span>
+          </button>
+
+          <button
+            onClick={handleMessengerShare}
+            className="share-option messenger"
+          >
+            <span className="share-option-emoji">💬</span>
+            <span>Messenger</span>
           </button>
 
           <button

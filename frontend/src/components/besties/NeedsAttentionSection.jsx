@@ -8,7 +8,7 @@ const NeedsAttentionSection = ({ missedCheckIns, requestsForAttention, besties }
   }
 
   return (
-    <div className="mb-6 animate-pulse-slow">
+    <div className="mb-6">
       <h2 className="text-lg md:text-xl font-display text-red-600 mb-3 flex items-center gap-2">
         <span className="animate-ping inline-block w-3 h-3 bg-red-600 rounded-full"></span>
         ⚠️ NEEDS ATTENTION
@@ -18,7 +18,7 @@ const NeedsAttentionSection = ({ missedCheckIns, requestsForAttention, besties }
       {missedCheckIns.length > 0 && (
         <div className="space-y-3 mb-4">
           {missedCheckIns.map((missed) => (
-            <div key={missed.id} className="card p-4 bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-600 animate-pulse-slow">
+            <div key={missed.id} className="card p-4 bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-600">
               <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                 <div className="text-3xl flex-shrink-0">🚨</div>
                 <div className="flex-1 min-w-0">
@@ -48,39 +48,32 @@ const NeedsAttentionSection = ({ missedCheckIns, requestsForAttention, besties }
         </div>
       )}
 
-      {/* Request Attention */}
+      {/* Request Attention - Simplified */}
       {requestsForAttention.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {requestsForAttention.map((request) => (
-            <div key={request.userId} className="card p-4 bg-purple-50 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 animate-pulse-slow">
-              <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-                <div className="text-3xl flex-shrink-0">💜</div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-purple-900 dark:text-purple-200 text-sm md:text-base">
-                    {request.userName} needs support
-                  </h3>
-                  <div className="inline-block px-3 py-1 bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200 rounded-full text-xs md:text-sm font-semibold my-2">
-                    {request.tag}
-                  </div>
-                  {request.note && (
-                    <p className="text-xs md:text-sm text-purple-700 dark:text-purple-300 italic break-words">"{request.note}"</p>
-                  )}
-                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
-                    {new Date(request.timestamp).toLocaleString()}
-                  </p>
-                </div>
-                <button
-                  className="btn btn-sm btn-primary w-full sm:w-auto flex-shrink-0"
-                  onClick={() => {
-                    const bestie = besties.find(b => b.userId === request.userId);
-                    if (bestie?.phone) {
-                      window.location.href = `sms:${bestie.phone}`;
-                    }
-                  }}
-                >
-                  Reach Out
-                </button>
+            <div key={request.userId} className="flex items-center gap-3 p-3 border-l-4 border-purple-500 bg-purple-50/50 dark:bg-purple-900/20 rounded animate-bounce-gentle">
+              <div className="text-2xl">💜</div>
+              <div className="flex-1">
+                <span className="font-semibold text-purple-900 dark:text-purple-200 text-sm">
+                  {request.userName} needs support
+                </span>
+                <span className="mx-2 text-purple-600 dark:text-purple-400">•</span>
+                <span className="text-xs px-2 py-1 bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200 rounded-full font-semibold">
+                  {request.tag}
+                </span>
               </div>
+              <button
+                className="btn btn-sm btn-primary flex-shrink-0"
+                onClick={() => {
+                  const bestie = besties.find(b => b.userId === request.userId);
+                  if (bestie?.phone) {
+                    window.location.href = `sms:${bestie.phone}`;
+                  }
+                }}
+              >
+                Reach Out
+              </button>
             </div>
           ))}
         </div>

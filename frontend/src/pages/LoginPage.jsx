@@ -311,13 +311,10 @@ const LoginPage = () => {
                           setPhoneNumber(formatted);
                         }}
                         className="input flex-1"
-                        placeholder={countryCode === '+61' ? '435 853 854' : '412345678'}
+                        placeholder="435123456"
                         required
                       />
                     </div>
-                    <p className="text-xs text-text-secondary mt-1">
-                      Example: {countryCode} {countryCode === '+61' ? '435 853 854' : countryCode === '+1' ? '555 123 4567' : '412345678'}
-                    </p>
                   </div>
 
                   {/* reCAPTCHA Ready Indicator */}
@@ -325,12 +322,6 @@ const LoginPage = () => {
                     <div className="flex items-center justify-center gap-2 text-xs text-text-secondary">
                       <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                       <span>Preparing verification...</span>
-                    </div>
-                  )}
-                  {recaptchaReady && (
-                    <div className="flex items-center justify-center gap-2 text-xs text-success">
-                      <span>✅</span>
-                      <span>Ready to send code!</span>
                     </div>
                   )}
 
