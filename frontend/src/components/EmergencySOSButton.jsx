@@ -4,7 +4,6 @@ import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
-import GetMeOutButton from './GetMeOutButton';
 
 // Emergency numbers by country
 const EMERGENCY_NUMBERS = [
