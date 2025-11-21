@@ -38,6 +38,9 @@ const BestiesPage = () => {
   // Filter state
   const [activeFilter, setActiveFilter] = useState('all');
 
+  // Rankings period state (weekly, monthly, yearly)
+  const [rankingsPeriod, setRankingsPeriod] = useState('weekly');
+
   // Modal state
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
   const [showComments, setShowComments] = useState(false);
@@ -779,9 +782,45 @@ const BestiesPage = () => {
                 <div className="text-center mb-6">
                   <div className="text-5xl mb-2 animate-bounce" style={{animationDuration: '2s'}}>👑</div>
                   <h2 className="text-2xl font-display bg-gradient-to-r from-pink-600 via-purple-600 to-yellow-600 bg-clip-text text-transparent mb-1">
-                    This Week's Queens
+                    {rankingsPeriod === 'weekly' && "This Week's Queens"}
+                    {rankingsPeriod === 'monthly' && "This Month's Queens"}
+                    {rankingsPeriod === 'yearly' && "This Year's Queens"}
                   </h2>
                   <p className="text-xs text-gray-600">The besties who absolutely slayed! 💅</p>
+                </div>
+
+                {/* Period Tabs */}
+                <div className="flex gap-2 justify-center mb-6">
+                  <button
+                    onClick={() => setRankingsPeriod('weekly')}
+                    className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
+                      rankingsPeriod === 'weekly'
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
+                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    📅 Weekly
+                  </button>
+                  <button
+                    onClick={() => setRankingsPeriod('monthly')}
+                    className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
+                      rankingsPeriod === 'monthly'
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
+                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    🗓️ Monthly
+                  </button>
+                  <button
+                    onClick={() => setRankingsPeriod('yearly')}
+                    className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
+                      rankingsPeriod === 'yearly'
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
+                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    🎯 Yearly
+                  </button>
                 </div>
 
                 <div className="space-y-4">
@@ -893,7 +932,9 @@ const BestiesPage = () => {
                 {/* Cute footer */}
                 <div className="mt-6 pt-4 border-t-2 border-pink-200 text-center">
                   <p className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                    🎯 Resets every Monday • Keep slaying, queens! 👑
+                    {rankingsPeriod === 'weekly' && '🎯 Resets every Monday • Keep slaying, queens! 👑'}
+                    {rankingsPeriod === 'monthly' && '🎯 Resets on the 1st • Keep slaying, queens! 👑'}
+                    {rankingsPeriod === 'yearly' && '🎯 Resets January 1st • Keep slaying, queens! 👑'}
                   </p>
                 </div>
               </div>
