@@ -16,8 +16,28 @@ const EMERGENCY_NUMBERS = [
   { country: 'Europe (EU)', code: 'EU', police: '112', ambulance: '112', fire: '112', flag: '🇪🇺', timezones: ['Europe/'] },
 ];
 
-// Detect user's country from timezone
-const detectUserCountry = () => {
+// Detect user's country from phone number first, then timezone
+const detectUserCountry = (phoneNumber) => {
+  // Try phone number first (most reliable)
+  if (phoneNumber) {
+    // Remove spaces and special characters
+    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+
+    // Check country code
+    if (cleanPhone.startsWith('+61') || cleanPhone.startsWith('61')) {
+      return EMERGENCY_NUMBERS.find(c => c.code === 'AU');
+    } else if (cleanPhone.startsWith('+1') || cleanPhone.startsWith('1')) {
+      // Could be USA or Canada - check length (US: 11 digits, Canada: varies)
+      // Default to USA as it's more common
+      return EMERGENCY_NUMBERS.find(c => c.code === 'US');
+    } else if (cleanPhone.startsWith('+44') || cleanPhone.startsWith('44')) {
+      return EMERGENCY_NUMBERS.find(c => c.code === 'GB');
+    } else if (cleanPhone.startsWith('+64') || cleanPhone.startsWith('64')) {
+      return EMERGENCY_NUMBERS.find(c => c.code === 'NZ');
+    }
+  }
+
+  // Fall back to timezone detection
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   for (const country of EMERGENCY_NUMBERS) {
@@ -44,8 +64,8 @@ const EmergencySOSButton = () => {
   const holdStartTimeRef = useRef(null);
   const { executeOptimistic } = useOptimisticUpdate();
 
-  // Detect user's country
-  const userCountry = detectUserCountry();
+  // Detect user's country (phone number first, then timezone)
+  const userCountry = detectUserCountry(userData?.phoneNumber);
 
   // Prevent navigation away from orange alert screen
   useEffect(() => {
