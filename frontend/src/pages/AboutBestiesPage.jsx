@@ -34,173 +34,116 @@ const AboutBestiesPage = () => {
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
         {/* Hero Section */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">💜</div>
-          <h1 className="text-4xl font-display text-gradient mb-4">
-            Welcome to Besties
-          </h1>
-          <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-            Where safety meets friendship, and every check-in keeps someone you love a little bit safer
-          </p>
+        <div className="text-center mb-8 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-100 via-purple-100 to-pink-100 dark:from-pink-900/10 dark:via-purple-900/10 dark:to-pink-900/10 rounded-3xl opacity-50 -z-10"></div>
+          <div className="py-12">
+            <div className="text-7xl mb-4 animate-pulse-slow">💜</div>
+            <h1 className="text-5xl font-display text-gradient mb-6">
+              Hey Girl, We've Got Your Back
+            </h1>
+            <p className="text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
+              You shouldn't have to worry about your safety when you're just trying to live your life. So we built something to help. 💕
+            </p>
+          </div>
         </div>
 
-        {/* Our Story */}
+        {/* Why We Exist */}
+        <div className="card p-8 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-700">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="text-5xl">🌟</div>
+            <div>
+              <h2 className="text-3xl font-display text-primary dark:text-purple-400 mb-3">You Know That Feeling...</h2>
+              <p className="text-lg text-text-secondary leading-relaxed">
+                When you're walking to your car at night and text your bestie "text me when I get home"?
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4 text-text-secondary text-lg leading-relaxed">
+            <p>
+              Or when you're on a first date and share your location with your roommate? Or when your mom asks you to check in when you get back from a night out?
+            </p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">
+              We ALL do this. We're constantly looking out for each other in little ways.
+            </p>
+            <p>
+              Besties just makes it easier. <span className="text-primary font-semibold">You shouldn't have to remember to text everyone</span>. You shouldn't have to explain where you are or why you're worried. Your people should just... know. And be ready to help if something goes wrong.
+            </p>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 mt-6 border-2 border-pink-300 dark:border-pink-600">
+              <p className="text-primary dark:text-purple-400 font-display text-xl text-center">
+                That's what Besties does. We've got your back, so you can focus on living. 💕
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* How It Works */}
         <div className="card p-8 mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">Our Story 📖</h2>
-          <div className="space-y-4 text-text-secondary">
-            <p>
-              Besties was born from a simple truth: <span className="font-semibold text-primary">everyone deserves to feel safe</span>, especially when they're out there living their life.
-            </p>
-            <p>
-              We've all been there - walking home alone at night, going on a first date, traveling somewhere new, or just wanting someone to know you made it home okay. Those moments when you wish your best friend could be right there with you, even when they can't.
-            </p>
-            <p className="text-lg font-semibold text-primary">
-              That's why we built Besties. 💪
+          <h2 className="text-3xl font-display text-gradient mb-6 text-center">How Besties Works 💜</h2>
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-display text-xl flex-shrink-0">1</div>
+              <div>
+                <h3 className="font-display text-lg text-primary dark:text-purple-400 mb-2">Choose Your Circle</h3>
+                <p className="text-text-secondary">Pick up to 5 people you trust - your besties, your mom, your roommate, whoever makes you feel safest.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-display text-xl flex-shrink-0">2</div>
+              <div>
+                <h3 className="font-display text-lg text-primary dark:text-purple-400 mb-2">Check In When You're Out</h3>
+                <p className="text-text-secondary">Going somewhere? Create a quick check-in. Your circle gets notified and keeps an eye on the time.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-display text-xl flex-shrink-0">3</div>
+              <div>
+                <h3 className="font-display text-lg text-primary dark:text-purple-400 mb-2">They've Got Your Back</h3>
+                <p className="text-text-secondary">If you don't check in on time, they get an alert. If something's wrong, they know exactly where you are and can help.</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 text-center">
+            <p className="text-lg text-gray-700 dark:text-gray-300 italic">
+              "Simple, automatic, and always there when you need it. That's the whole point." ✨
             </p>
           </div>
         </div>
 
-        {/* Our Mission */}
-        <div className="card p-8 mb-6 bg-gradient-to-br from-pink-50 to-purple-50">
-          <h2 className="text-2xl font-display text-text-primary mb-4">Our Mission 🎯</h2>
-          <div className="space-y-3 text-gray-700">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🛡️</span>
-              <div>
-                <h3 className="font-semibold mb-1">Keep You Safe</h3>
-                <p className="text-sm">Make safety simple, automatic, and always there when you need it</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🤝</span>
-              <div>
-                <h3 className="font-semibold mb-1">Build Community</h3>
-                <p className="text-sm">Create a network of people who look out for each other</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">💜</span>
-              <div>
-                <h3 className="font-semibold mb-1">Stay Free</h3>
-                <p className="text-sm">Keep Besties accessible to everyone, regardless of their ability to pay</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* What Makes Us Different */}
-        <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
-          <h2 className="text-xl font-display text-text-primary mb-4 text-center">
-            What Makes Us Different ✨
+        {/* Why We're Different */}
+        <div className="card p-8 mb-6 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20">
+          <h2 className="text-3xl font-display text-gradient mb-6 text-center">
+            Why Besties is Different 🌸
           </h2>
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-pink-100 to-purple-100 p-4 rounded-xl border border-pink-200">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
-                    {/* Minimal heart with sparkle accent */}
-                    <path d="M16,26 L6,16 C4,14 4,10 6,8 C8,6 12,6 14,8 L16,10 L18,8 C20,6 24,6 26,8 C28,10 28,14 26,16 Z"
-                          fill="none"
-                          stroke="#ec4899"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round" />
-                    {/* Sparkle accent */}
-                    <circle cx="24" cy="6" r="1.5" fill="#fbbf24" className="animate-pulse" style={{animationDuration: '2s'}} />
-                    <path d="M24,3 L24,9 M21,6 L27,6" stroke="#fbbf24" strokeWidth="1" className="animate-pulse" style={{animationDuration: '2s'}} />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-sm text-pink-900">Good Over Profit</h3>
-              </div>
-              <p className="text-xs text-gray-700 leading-snug">
-                We're here to keep people safe. Every decision puts your safety first, not our profit margins.
+          <div className="grid md:grid-cols-2 gap-5">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border-2 border-pink-200 dark:border-pink-700">
+              <div className="text-4xl mb-3">💕</div>
+              <h3 className="font-display text-lg text-primary dark:text-purple-400 mb-2">Safety Over Profit</h3>
+              <p className="text-text-secondary text-sm leading-relaxed">
+                We're not here to make money off your fear. Every feature, every decision - it's about keeping you safe, not padding our wallets.
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-100 to-fuchsia-100 p-4 rounded-xl border border-purple-200">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
-                    {/* Minimal lock outline */}
-                    <rect x="11" y="15" width="10" height="10" rx="1.5"
-                          fill="none"
-                          stroke="#a855f7"
-                          strokeWidth="2"
-                          strokeLinecap="round" />
-                    <path d="M13,15 L13,11 C13,8.8 14.3,7 16,7 C17.7,7 19,8.8 19,11 L19,15"
-                          fill="none"
-                          stroke="#a855f7"
-                          strokeWidth="2"
-                          strokeLinecap="round"/>
-                    <circle cx="16" cy="20" r="1.5" fill="#a855f7"/>
-                    {/* Sparkle accent */}
-                    <circle cx="8" cy="8" r="1" fill="#fbbf24" className="animate-pulse" style={{animationDuration: '2s'}} />
-                    <path d="M8,6 L8,10 M6,8 L10,8" stroke="#fbbf24" strokeWidth="0.8" className="animate-pulse" style={{animationDuration: '2s'}} />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-sm text-purple-900">Privacy First</h3>
-              </div>
-              <p className="text-xs text-gray-700 leading-snug">
-                Your data is yours. We don't sell it, we don't mine it, and we delete it when you ask.
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border-2 border-purple-200 dark:border-purple-700">
+              <div className="text-4xl mb-3">🔒</div>
+              <h3 className="font-display text-lg text-primary dark:text-purple-400 mb-2">Your Privacy Matters</h3>
+              <p className="text-text-secondary text-sm leading-relaxed">
+                Your location, your check-ins, your data - it's yours. We don't sell it, we don't snoop, and we'll delete it whenever you want.
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-fuchsia-100 to-pink-100 p-4 rounded-xl border border-fuchsia-200">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
-                    {/* Minimal dollar sign */}
-                    <path d="M16,6 L16,26" stroke="#d946ef" strokeWidth="2" strokeLinecap="round" />
-                    <path d="M12,10 L18,10 C20,10 21,11 21,13 C21,15 20,16 18,16 L14,16 C12,16 11,17 11,19 C11,21 12,22 14,22 L20,22"
-                          fill="none"
-                          stroke="#d946ef"
-                          strokeWidth="2"
-                          strokeLinecap="round" />
-                    {/* Three sparkles */}
-                    <g className="animate-pulse" style={{animationDuration: '2s'}}>
-                      <circle cx="8" cy="8" r="1" fill="#fbbf24" />
-                      <path d="M8,6 L8,10 M6,8 L10,8" stroke="#fbbf24" strokeWidth="0.8" />
-                      <circle cx="24" cy="12" r="1" fill="#fbbf24" />
-                      <path d="M24,10 L24,14 M22,12 L26,12" stroke="#fbbf24" strokeWidth="0.8" />
-                      <circle cx="24" cy="24" r="1" fill="#fbbf24" />
-                      <path d="M24,22 L24,26 M22,24 L26,24" stroke="#fbbf24" strokeWidth="0.8" />
-                    </g>
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-sm text-fuchsia-900">Transparent Pricing</h3>
-              </div>
-              <p className="text-xs text-gray-700 leading-snug">
-                No hidden fees, no surprises. Most features free forever. Premium costs what it costs to run.
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border-2 border-fuchsia-200 dark:border-fuchsia-700">
+              <div className="text-4xl mb-3">✨</div>
+              <h3 className="font-display text-lg text-primary dark:text-purple-400 mb-2">Free For Real</h3>
+              <p className="text-text-secondary text-sm leading-relaxed">
+                Most apps say "free" but lock everything behind paywalls. Not us. The core features that keep you safe? Always free. Forever.
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-rose-100 to-pink-100 p-4 rounded-xl border border-rose-200">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <svg viewBox="0 0 32 32" className="w-8 h-8 drop-shadow-md">
-                    {/* Connection lines */}
-                    <line x1="16" y1="16" x2="16" y2="8" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4" />
-                    <line x1="16" y1="16" x2="24" y2="12" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4" />
-                    <line x1="16" y1="16" x2="24" y2="20" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4" />
-                    <line x1="16" y1="16" x2="8" y2="12" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4" />
-                    <line x1="16" y1="16" x2="8" y2="20" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4" />
-                    {/* Center circle */}
-                    <circle cx="16" cy="16" r="3" fill="none" stroke="#f43f5e" strokeWidth="2" />
-                    {/* 5 surrounding circles */}
-                    <circle cx="16" cy="8" r="2" fill="none" stroke="#f43f5e" strokeWidth="1.5" />
-                    <circle cx="24" cy="12" r="2" fill="none" stroke="#f43f5e" strokeWidth="1.5" />
-                    <circle cx="24" cy="20" r="2" fill="none" stroke="#f43f5e" strokeWidth="1.5" />
-                    <circle cx="8" cy="12" r="2" fill="none" stroke="#f43f5e" strokeWidth="1.5" />
-                    <circle cx="8" cy="20" r="2" fill="none" stroke="#f43f5e" strokeWidth="1.5" />
-                    {/* Sparkle accent */}
-                    <circle cx="26" cy="26" r="1" fill="#fbbf24" className="animate-pulse" style={{animationDuration: '2s'}} />
-                    <path d="M26,24 L26,28 M24,26 L28,26" stroke="#fbbf24" strokeWidth="0.8" className="animate-pulse" style={{animationDuration: '2s'}} />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-sm text-rose-900">Community Driven</h3>
-              </div>
-              <p className="text-xs text-gray-700 leading-snug">
-                You're part of the Besties family. We listen, adapt, and build features you actually want.
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border-2 border-rose-200 dark:border-rose-700">
+              <div className="text-4xl mb-3">🫶</div>
+              <h3 className="font-display text-lg text-primary dark:text-purple-400 mb-2">You're Not a Product</h3>
+              <p className="text-text-secondary text-sm leading-relaxed">
+                You're not a data point or a target audience. You're a person who deserves to feel safe. That's how we treat you - like the person you are.
               </p>
             </div>
           </div>
@@ -346,41 +289,52 @@ const AboutBestiesPage = () => {
         </div>
 
         {/* The Real Talk Section */}
-        <div className="card p-8 mb-6 bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200">
-          <h2 className="text-2xl font-display text-text-primary mb-4">
-            The Real Talk 💬
-          </h2>
-          <div className="space-y-4 text-gray-700">
-            <p className="font-semibold text-lg text-orange-900">
-              Here's the honest truth about running Besties:
+        <div className="card p-8 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-purple-900/20 border-2 border-primary dark:border-purple-600 shadow-lg">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-4">☕</div>
+            <h2 className="text-3xl font-display text-gradient mb-3">
+              Let's Be Real For A Sec
+            </h2>
+          </div>
+          <div className="space-y-6 text-text-secondary text-lg leading-relaxed max-w-2xl mx-auto">
+            <p>
+              Running Besties costs money. Servers, SMS messages, development time - it all adds up. We could have slapped ads everywhere or locked features behind paywalls. But that felt...wrong.
+            </p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">
+              Your safety shouldn't depend on your wallet.
             </p>
             <p>
-              Servers cost money. SMS messages cost money. Development takes time. But we knew that going in, and we still chose to make Besties <span className="font-semibold">free for everyone</span>.
+              So here's the deal: <span className="text-primary font-semibold">Besties is free</span>. The core features that keep you safe? Free. Always have been, always will be.
             </p>
-            <p>
-              <span className="font-semibold text-primary">If you can afford to donate</span>, it helps us keep the lights on and build cool new features faster. Every dollar goes directly into making Besties better.
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border-2 border-pink-300 dark:border-pink-600">
+              <p className="text-primary dark:text-purple-400 font-display text-xl mb-3 text-center">
+                If you can chip in, that's amazing 💕
+              </p>
+              <p className="text-base text-center">
+                Every dollar helps us keep the lights on and build new features faster. It means we can say no to investors who want to monetize your data. It means we stay independent and focused on YOU.
+              </p>
+            </div>
+            <p className="text-2xl font-display text-primary dark:text-purple-400 text-center">
+              But if you can't? Use the app anyway.
             </p>
-            <p className="text-lg font-semibold text-orange-900">
-              But if you can't? That's totally okay. 💜
-            </p>
-            <p>
-              Use the app. Stay safe. Look out for your friends. That's what matters. We'll cover the costs because keeping you safe is more important than making a profit.
-            </p>
-            <p className="italic text-sm">
-              You're not a customer. You're not a product. You're part of our community, and we've got your back.
+            <p className="text-center italic">
+              Seriously. Stay safe. Look out for your friends. That's what matters. We'll figure out the rest because keeping you safe is worth more than any profit margin.
             </p>
           </div>
         </div>
 
         {/* Support Section */}
         {!userData?.donationStats?.isActive && (
-          <div className="card p-8 mb-6">
-            <h2 className="text-2xl font-display text-text-primary mb-4 text-center">
-              Want to Help Out? 💜
-            </h2>
-            <p className="text-text-secondary text-center mb-6">
-              Choose an amount that works for you - every bit helps keep Besties free for everyone
-            </p>
+          <div className="card p-8 mb-6 bg-gradient-to-br from-pink-100 via-purple-100 to-pink-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-2 border-pink-300 dark:border-pink-600 shadow-xl">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-3">💜</div>
+              <h2 className="text-3xl font-display text-gradient mb-3">
+                Wanna Help Keep the Lights On?
+              </h2>
+              <p className="text-text-secondary text-lg">
+                Pick whatever works for you - honestly, every little bit makes a huge difference
+              </p>
+            </div>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <button
                 onClick={() => handleDonation(1)}
@@ -472,19 +426,33 @@ const AboutBestiesPage = () => {
 
         {/* Footer Message */}
         <div className="text-center py-8">
-          <p className="text-text-secondary italic mb-4">
+          <p className="text-2xl text-primary dark:text-purple-400 font-display italic mb-4">
             "Safety shouldn't be a luxury. It should be a given."
           </p>
-          <p className="text-sm text-text-secondary">
-            Built with 💜 by people who care about keeping you safe
+          <p className="text-lg text-text-secondary mb-2">
+            You deserve to feel safe, always.
+          </p>
+          <p className="text-sm text-text-secondary mb-6">
+            That's why we built Besties 💕
           </p>
           <button
             onClick={() => navigate('/')}
-            className="mt-6 btn btn-primary"
+            className="btn btn-primary text-lg px-8 py-3"
           >
-            Back to Home
+            Start Using Besties →
           </button>
         </div>
+
+        {/* CSS for animations */}
+        <style>{`
+          @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+          }
+          .animate-pulse-slow {
+            animation: pulse-slow 3s ease-in-out infinite;
+          }
+        `}</style>
       </div>
     </div>
   );

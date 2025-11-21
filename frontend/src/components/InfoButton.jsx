@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 const InfoButton = ({ message }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState('left');
   const buttonRef = useRef(null);
   const tooltipRef = useRef(null);
 
@@ -20,6 +21,22 @@ const InfoButton = ({ message }) => {
     }
   }, [showTooltip]);
 
+  // Calculate optimal tooltip position to keep it on screen
+  useEffect(() => {
+    if (showTooltip && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const tooltipWidth = 200; // maxWidth from styling
+
+      // Check if tooltip would go off right edge
+      if (buttonRect.left + tooltipWidth > viewportWidth - 20) {
+        setTooltipPosition('right');
+      } else {
+        setTooltipPosition('left');
+      }
+    }
+  }, [showTooltip]);
+
   const handleClick = (e) => {
     e.stopPropagation();
     setShowTooltip(!showTooltip);
@@ -31,7 +48,7 @@ const InfoButton = ({ message }) => {
         ref={buttonRef}
         type="button"
         onClick={handleClick}
-        className="text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-purple-400 transition-colors"
+        className="text-primary dark:text-purple-400 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
         title="Learn more"
       >
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -43,7 +60,7 @@ const InfoButton = ({ message }) => {
       {showTooltip && (
         <div
           ref={tooltipRef}
-          className="absolute left-0 top-full mt-2 z-50 animate-scale-up"
+          className={`absolute ${tooltipPosition === 'right' ? 'right-0' : 'left-0'} top-full mt-2 z-50 animate-scale-up`}
           style={{ minWidth: '160px', maxWidth: '200px' }}
         >
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-2.5">
@@ -60,7 +77,7 @@ const InfoButton = ({ message }) => {
               </div>
             </div>
             {/* Arrow pointing up */}
-            <div className="absolute bottom-full left-3 w-0 h-0 border-l-6 border-r-6 border-b-6 border-transparent border-b-primary dark:border-b-purple-400"></div>
+            <div className={`absolute bottom-full ${tooltipPosition === 'right' ? 'right-3' : 'left-3'} w-0 h-0 border-l-6 border-r-6 border-b-6 border-transparent border-b-primary dark:border-b-purple-400`}></div>
           </div>
         </div>
       )}
