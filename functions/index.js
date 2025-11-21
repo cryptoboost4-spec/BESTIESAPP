@@ -458,6 +458,52 @@ exports.onBestieCountUpdate = functions.firestore
     }
   });
 
+// Handle when bestie is created with accepted status (e.g., via invite link)
+exports.onBestieCreated = functions.firestore
+  .document('besties/{bestieId}')
+  .onCreate(async (snap, context) => {
+    const bestie = snap.data();
+    const cacheRef = db.collection('analytics_cache').doc('realtime');
+
+    // Only process if created directly as accepted (e.g., invite link flow)
+    if (bestie.status === 'accepted' && bestie.requesterId && bestie.recipientId) {
+      // Increment totalBesties for both users
+      await db.collection('users').doc(bestie.requesterId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
+      await db.collection('users').doc(bestie.recipientId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
+
+      // Add to bestieUserIds array for privacy enforcement
+      // This is CRITICAL - without this, besties can't view each other's profiles
+      await db.collection('users').doc(bestie.requesterId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.recipientId)
+      });
+      await db.collection('users').doc(bestie.recipientId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.requesterId)
+      });
+
+      // Update analytics cache: new accepted bestie
+      await cacheRef.set({
+        totalBesties: admin.firestore.FieldValue.increment(1),
+        acceptedBesties: admin.firestore.FieldValue.increment(1),
+        lastUpdated: admin.firestore.Timestamp.now(),
+      }, { merge: true });
+
+      // Award badges
+      await awardBestieBadge(bestie.requesterId);
+      await awardBestieBadge(bestie.recipientId);
+    } else if (bestie.status === 'pending') {
+      // Update analytics cache: new pending bestie
+      await cacheRef.set({
+        totalBesties: admin.firestore.FieldValue.increment(1),
+        pendingBesties: admin.firestore.FieldValue.increment(1),
+        lastUpdated: admin.firestore.Timestamp.now(),
+      }, { merge: true });
+    }
+  });
+
 // Remove from bestieUserIds and featuredCircle when bestie relationship is deleted
 exports.onBestieDeleted = functions.firestore
   .document('besties/{bestieId}')
