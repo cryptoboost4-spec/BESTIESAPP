@@ -327,7 +327,10 @@ export const calculateCircleHealth = async (userId) => {
 
     // Calculate connection strength with each circle member
     const connectionPromises = featuredCircle.map(bestieId =>
-      calculateConnectionStrength(userId, bestieId)
+      calculateConnectionStrength(userId, bestieId).then(strength => ({
+        ...strength,
+        id: bestieId, // Include bestie ID so we can match with bestie data later
+      }))
     );
     const connections = await Promise.all(connectionPromises);
 
