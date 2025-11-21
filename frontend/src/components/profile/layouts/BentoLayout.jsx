@@ -73,7 +73,7 @@ const BentoLayout = ({
         {bio && (
           <div className="col-span-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-3 shadow-lg flex items-center">
             <p
-              className={`${bioSizeClass || 'text-base'} text-gray-800 dark:text-gray-200 line-clamp-3`}
+              className="text-xs text-gray-800 dark:text-gray-200 line-clamp-2"
               style={bioStyle}
             >
               "{bio}"
