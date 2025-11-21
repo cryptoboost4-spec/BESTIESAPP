@@ -25,6 +25,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
   const [lastSeen, setLastSeen] = useState({});
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [overallHealth, setOverallHealth] = useState(0);
+  const [showVibeTooltip, setShowVibeTooltip] = useState(false);
 
   const loadBesties = async () => {
     if (!userId) return;
@@ -289,7 +290,12 @@ const LivingCircle = ({ userId, onAddClick }) => {
   }
 
   return (
-    <div className="card p-6 md:p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden">
+    <div
+      className="card p-6 md:p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden"
+      onClick={() => {
+        if (showVibeTooltip) setShowVibeTooltip(false);
+      }}
+    >
       {/* Animated background gradient */}
       <div className="absolute inset-0 opacity-30 animate-gradient-shift pointer-events-none"></div>
 
@@ -415,31 +421,39 @@ const LivingCircle = ({ userId, onAddClick }) => {
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : circleBesties.length === 0 ? (
                   <div className="text-center px-2">
-                    <div className="text-2xl">💜</div>
-                    <div className="text-xs font-semibold">Start</div>
+                    <div className="text-2xl mb-0.5">💜</div>
+                    <div className="text-[10px] font-semibold leading-tight">Begin<br/>Here</div>
                   </div>
                 ) : (
                   <>
                     <div className="text-2xl md:text-3xl font-bold leading-none">{overallHealth}</div>
                     <div className="text-xs font-semibold opacity-90">Your Vibe</div>
 
-                    {/* Info Tooltip for Context */}
-                    <div className="absolute -top-2 -right-2 w-6 h-6 md:w-5 md:h-5 bg-white rounded-full flex items-center justify-center shadow-md cursor-help">
+                    {/* Info Tooltip for Context - Mobile & Desktop Friendly */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowVibeTooltip(!showVibeTooltip);
+                      }}
+                      className="absolute -top-2 -right-2 w-6 h-6 md:w-5 md:h-5 bg-white rounded-full flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform active:scale-95 z-40"
+                    >
                       <span className="text-sm md:text-xs">ℹ️</span>
-                    </div>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-30">
-                      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold whitespace-nowrap shadow-2xl max-w-xs">
-                        <div className="font-bold mb-1">Your Circle Strength</div>
-                        <div className="text-white/90 text-xs whitespace-normal w-48">
-                          {overallHealth >= 90 && "🔥 Unbreakable - You and your circle are inseparable!"}
-                          {overallHealth >= 70 && overallHealth < 90 && "⚡ Powerful - Strong bonds, keep nurturing them!"}
-                          {overallHealth >= 50 && overallHealth < 70 && "💪 Strong - Solid friendships, growing stronger!"}
-                          {overallHealth >= 30 && overallHealth < 50 && "🔆 Growing - Building momentum together!"}
-                          {overallHealth < 30 && "🌱 Spark - Just getting started, lots of potential!"}
+                    </button>
+                    {showVibeTooltip && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 z-50 animate-fade-in">
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl max-w-xs">
+                          <div className="font-bold mb-1">Your Circle Strength</div>
+                          <div className="text-white/90 text-xs whitespace-normal w-48">
+                            {overallHealth >= 90 && "🔥 Unbreakable - You and your circle are inseparable!"}
+                            {overallHealth >= 70 && overallHealth < 90 && "⚡ Powerful - Strong bonds, keep nurturing them!"}
+                            {overallHealth >= 50 && overallHealth < 70 && "💪 Strong - Solid friendships, growing stronger!"}
+                            {overallHealth >= 30 && overallHealth < 50 && "🔆 Growing - Building momentum together!"}
+                            {overallHealth < 30 && "🌱 Spark - Just getting started, lots of potential!"}
+                          </div>
+                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-pink-600"></div>
                         </div>
-                        <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-pink-600"></div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
               </div>
@@ -501,19 +515,23 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
                       {/* Enhanced Tooltip with Connection Strength */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 transform group-hover:-translate-y-1">
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-2xl">
-                          <div className="font-bold mb-1">{bestie.name || 'Unknown'}</div>
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl min-w-max">
+                          <div className="font-bold text-sm mb-2">{bestie.name || 'Unknown'}</div>
                           {connectionStrength && !loadingConnections && (
-                            <div className="flex items-center gap-2 text-white/90">
-                              <span>{getConnectionEmoji(connectionStrength.total)}</span>
-                              <span>{connectionStrength.total}/100</span>
-                              <span className="text-white/70">•</span>
-                              <span className="capitalize">{connectionStrength.level}</span>
-                            </div>
+                            <>
+                              <div className="flex items-center gap-2 text-white/90 mb-1">
+                                <span className="text-lg">{getConnectionEmoji(connectionStrength.total)}</span>
+                                <span>{connectionStrength.total}/100</span>
+                                <span className="capitalize px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                                  {connectionStrength.level}
+                                </span>
+                              </div>
+                            </>
                           )}
                           {lastSeenTime && (
-                            <div className="text-white/70 text-xs mt-1">
-                              Last: {formatTimeAgo(lastSeenTime)}
+                            <div className="text-white/90 text-xs mt-2 flex items-center gap-1">
+                              <span>💬</span>
+                              <span>Last connected: {formatTimeAgo(lastSeenTime)}</span>
                             </div>
                           )}
                           <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-600"></div>
@@ -548,14 +566,14 @@ const LivingCircle = ({ userId, onAddClick }) => {
                     <button
                       onClick={() => setShowShareModal(true)}
                       className={`w-14 h-14 md:w-16 md:h-16 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex flex-col items-center justify-center ${slotColors[index].replace('bg-', 'text-')} font-bold hover:scale-110 hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl animate-pulse-slow relative group`}
-                      title="Add someone special to your circle"
+                      title="Add someone who has your back"
                     >
                       <span className="text-2xl">+</span>
                       <span className="text-[8px] opacity-70 mt-0.5">Add</span>
                       {/* Tooltip */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20">
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shadow-xl">
-                          Add a bestie! 💜
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap shadow-xl">
+                          {circleBesties.length === 0 ? "Your first bestie ✨" : "Add another one 💜"}
                           <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-600"></div>
                         </div>
                       </div>
@@ -590,8 +608,10 @@ const LivingCircle = ({ userId, onAddClick }) => {
             {circleBesties.length === 5
               ? "Your circle is complete! Keep nurturing these connections 💜"
               : circleBesties.length === 0
-              ? "Add your 5 closest friends - the ones who always have your back"
-              : `${5 - circleBesties.length} more ${circleBesties.length === 4 ? 'bestie' : 'besties'} to go! You're doing great 🌟`}
+              ? "Your 5 closest people - the ones you can call at 3am. Start building your circle ✨"
+              : circleBesties.length === 1
+              ? "Amazing start! Add 4 more to complete your inner circle 🌟"
+              : `${5 - circleBesties.length} more to go! You're building something special 💫`}
           </div>
 
           {circleBesties.length > 0 && !loadingConnections && (
@@ -608,6 +628,19 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       {/* CSS Animations */}
       <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out forwards;
+        }
         @keyframes breathe {
           0%, 100% {
             transform: scale(1);
