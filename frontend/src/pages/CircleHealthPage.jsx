@@ -204,7 +204,7 @@ const CircleHealthPage = () => {
               {healthScore >= 70 && healthScore < 90 && '💪 Strong - Keep nurturing these connections'}
               {healthScore >= 50 && healthScore < 70 && '👍 Good - Room to grow stronger'}
               {healthScore >= 30 && healthScore < 50 && '🌱 Developing - Focus on consistency'}
-              {healthScore < 30 && '💤 Needs Attention - Time to reconnect'}
+              {healthScore < 30 && '🌸 Growing - Building connections takes time'}
             </div>
 
             <button

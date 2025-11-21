@@ -26,7 +26,7 @@ import {
  * - 70-89: Strong connection (consistently supportive)
  * - 50-69: Good connection (reliable but room for growth)
  * - 30-49: Developing connection (occasional interaction)
- * - 0-29: Weak connection (rarely interact)
+ * - 0-29: Growing connection (just getting started)
  */
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -351,7 +351,7 @@ const getConnectionLevel = (score) => {
   if (score >= 70) return 'strong';
   if (score >= 50) return 'good';
   if (score >= 30) return 'developing';
-  return 'weak';
+  return 'growing';
 };
 
 /**
@@ -434,12 +434,12 @@ export const calculateCircleHealth = async (userId) => {
 const generateCircleInsights = (userId, connections, featuredCircle) => {
   const insights = [];
 
-  // Check for weak connections
-  const weakConnections = connections.filter(c => c.total < 30);
-  if (weakConnections.length > 0) {
+  // Check for growing connections
+  const growingConnections = connections.filter(c => c.total < 30);
+  if (growingConnections.length > 0) {
     insights.push({
       type: 'warning',
-      message: `${weakConnections.length} connection${weakConnections.length > 1 ? 's' : ''} need attention`,
+      message: `${growingConnections.length} connection${growingConnections.length > 1 ? 's' : ''} ${growingConnections.length > 1 ? 'are' : 'is'} just getting started`,
       action: 'reach_out',
     });
   }
