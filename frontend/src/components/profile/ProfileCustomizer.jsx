@@ -109,7 +109,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const getCustomNameStyle = () => {
     const baseStyle = currentTypography ? getNameStyle(currentTypography) : {};
     if (customNameFont) {
-      return { ...baseStyle, fontFamily: customNameFont };
+      return { ...baseStyle, fontFamily: `'${customNameFont}', ${baseStyle.fontFamily || 'sans-serif'}` };
     }
     return baseStyle;
   };
@@ -117,7 +117,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const getCustomBioStyle = () => {
     const baseStyle = currentTypography ? getBioStyle(currentTypography) : {};
     if (customBioFont) {
-      return { ...baseStyle, fontFamily: customBioFont };
+      return { ...baseStyle, fontFamily: `'${customBioFont}', ${baseStyle.fontFamily || 'sans-serif'}` };
     }
     return baseStyle;
   };
@@ -333,9 +333,12 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                           : 'bg-gray-100 dark:bg-gray-800'
                       }`}
                     >
-                      {/* Wireframe Preview */}
-                      <div className="mb-2 md:mb-3 h-12 md:h-20 bg-white/20 dark:bg-black/20 rounded-lg flex items-center justify-center">
-                        <div className="text-xl md:text-3xl">{layout.emoji}</div>
+                      {/* Layout Preview SVG */}
+                      <div className="mb-2 md:mb-3 h-16 md:h-24 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden border-2 border-white/10">
+                        <div
+                          className="w-full h-full"
+                          dangerouslySetInnerHTML={{ __html: layout.svg }}
+                        />
                       </div>
                       <div className="font-display font-bold text-xs md:text-base mb-0.5 md:mb-1">{layout.name}</div>
                       <div className="text-[10px] md:text-xs opacity-80 hidden md:block">{layout.description}</div>
@@ -429,7 +432,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                     {customNameFont && (
                       <div
                         className="mt-2 p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg"
-                        style={{ fontFamily: customNameFont }}
+                        style={{ fontFamily: `'${customNameFont}', sans-serif` }}
                       >
                         <div className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                           Your Name Preview
@@ -458,7 +461,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                     {customBioFont && (
                       <div
                         className="mt-2 p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg text-base text-gray-700 dark:text-gray-300"
-                        style={{ fontFamily: customBioFont }}
+                        style={{ fontFamily: `'${customBioFont}', sans-serif` }}
                       >
                         Your bio text preview appears here with your selected font
                       </div>
