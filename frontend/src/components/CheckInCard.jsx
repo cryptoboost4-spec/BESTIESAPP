@@ -205,6 +205,8 @@ const CheckInCard = ({ checkIn }) => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [optimisticAlertTime, setOptimisticAlertTime] = useState(null); // For optimistic updates
   const { executeOptimistic } = useOptimisticUpdate();
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(checkIn.location || '');
 
   // Passcode verification states
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -535,6 +537,59 @@ const CheckInCard = ({ checkIn }) => {
     });
   };
 
+  const handleUpdateLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setUpdatingLocation(true);
+    haptic.medium();
+
+    try {
+      // Get current position
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Use reverse geocoding to get address
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+
+      let locationName = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      if (data.results && data.results.length > 0) {
+        locationName = data.results[0].formatted_address;
+      }
+
+      // Update Firestore
+      await updateDoc(doc(db, 'checkins', checkIn.id), {
+        location: locationName,
+        gpsCoords: { lat: latitude, lng: longitude },
+        locationUpdatedAt: Timestamp.now(),
+      });
+
+      setCurrentLocation(locationName);
+      toast.success('Location updated!');
+    } catch (error) {
+      console.error('Error updating location:', error);
+      if (error.code === 1) {
+        toast.error('Location permission denied. Please enable location access.');
+      } else {
+        toast.error('Failed to update location');
+      }
+    } finally {
+      setUpdatingLocation(false);
+    }
+  };
+
   const removePhoto = async (index) => {
     haptic.light();
 
@@ -587,7 +642,14 @@ const CheckInCard = ({ checkIn }) => {
 
         {/* Extend Buttons - Right under timer */}
         {!isAlerted && (
-          <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            <button
+              onClick={() => handleExtend(10)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 active:scale-95"
+            >
+              +10m
+            </button>
             <button
               onClick={() => handleExtend(15)}
               disabled={extendingButton !== null}
@@ -603,11 +665,11 @@ const CheckInCard = ({ checkIn }) => {
               +30m
             </button>
             <button
-              onClick={() => handleExtend(60)}
+              onClick={() => handleExtend(45)}
               disabled={extendingButton !== null}
               className="btn btn-secondary text-sm py-2 active:scale-95"
             >
-              +1h
+              +45m
             </button>
           </div>
         )}
@@ -650,7 +712,7 @@ const CheckInCard = ({ checkIn }) => {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-display text-lg text-text-primary">
-              {checkIn.location}
+              {currentLocation || 'No location set'}
             </h3>
             {isAlerted && (
               <span className="badge badge-warning text-xs">ALERTED</span>
@@ -775,6 +837,19 @@ const CheckInCard = ({ checkIn }) => {
           </div>
         )}
       </div>
+
+      {/* Location Update Button */}
+      {!isAlerted && (
+        <div className="mb-4">
+          <button
+            onClick={handleUpdateLocation}
+            disabled={updatingLocation}
+            className={`w-full border-2 border-dashed ${isDark ? 'border-gray-600 text-gray-300 hover:bg-primary/10' : 'border-gray-300 text-gray-600 hover:bg-primary/5'} rounded-xl p-3 text-sm font-semibold hover:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+          >
+            📍 {updatingLocation ? 'Updating Location...' : 'Note Current Location'}
+          </button>
+        </div>
+      )}
 
       {/* Besties */}
       <div className="mb-4">

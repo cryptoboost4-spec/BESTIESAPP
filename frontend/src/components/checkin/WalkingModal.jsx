@@ -9,15 +9,23 @@ const WalkingModal = ({ onClose }) => {
   const handleStart = () => {
     haptic.light();
 
-    // Navigate to create page with walking data
+    // Navigate to create page with walking data - NO LOCATION NEEDED
     navigate('/create', {
       state: {
         quickType: 'walking',
         duration: duration,
+        skipLocation: true, // Skip location input
         activity: { name: '🚶‍♀️ Walking Alone', emoji: '🚶‍♀️' }
       }
     });
   };
+
+  const timePresets = [
+    { label: '10m', minutes: 10 },
+    { label: '15m', minutes: 15 },
+    { label: '30m', minutes: 30 },
+    { label: '45m', minutes: 45 },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -27,61 +35,29 @@ const WalkingModal = ({ onClose }) => {
         </h2>
 
         <p className="text-sm text-text-secondary mb-6">
-          Let your besties watch over you while you walk. We'll alert them if you don't check in safe.
+          Select duration and start your check-in. You can add location details during your walk.
         </p>
 
-        {/* Duration Slider */}
+        {/* Time Preset Buttons */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
-            How long? <span className="text-primary">{duration} minutes</span>
+            Duration
           </label>
-          <input
-            type="range"
-            min="5"
-            max="60"
-            step="5"
-            value={duration}
-            onChange={(e) => setDuration(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>5 min</span>
-            <span>1 hour</span>
+          <div className="grid grid-cols-4 gap-2">
+            {timePresets.map((preset) => (
+              <button
+                key={preset.minutes}
+                onClick={() => setDuration(preset.minutes)}
+                className={`py-3 px-4 rounded-lg text-sm font-semibold transition-colors ${
+                  duration === preset.minutes
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
           </div>
-        </div>
-
-        {/* Quick Time Presets */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <button
-            onClick={() => setDuration(10)}
-            className={`py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 10
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            10 min
-          </button>
-          <button
-            onClick={() => setDuration(15)}
-            className={`py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 15
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            15 min
-          </button>
-          <button
-            onClick={() => setDuration(30)}
-            className={`py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 30
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            30 min
-          </button>
         </div>
 
         {/* Buttons */}

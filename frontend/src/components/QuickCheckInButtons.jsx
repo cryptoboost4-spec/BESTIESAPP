@@ -26,9 +26,8 @@ const QuickCheckInButtons = () => {
             }}
             className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-amber-400 to-orange-500 text-white"
           >
-            <div className="text-3xl mb-1">🚗</div>
-            <div className="font-display text-sm mb-0.5">Rideshare</div>
-            <div className="text-xs opacity-90">Add rego</div>
+            <div className="text-3xl mb-2">🚗</div>
+            <div className="font-display text-sm">Rideshare</div>
           </button>
 
           {/* Walking Alone Button */}
@@ -39,9 +38,8 @@ const QuickCheckInButtons = () => {
             }}
             className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-blue-400 to-cyan-500 text-white"
           >
-            <div className="text-3xl mb-1">🚶‍♀️</div>
-            <div className="font-display text-sm mb-0.5">Walking</div>
-            <div className="text-xs opacity-90">Quick start</div>
+            <div className="text-3xl mb-2">🚶‍♀️</div>
+            <div className="font-display text-sm">Walking</div>
           </button>
 
           {/* Quick Meet Button */}
@@ -52,9 +50,8 @@ const QuickCheckInButtons = () => {
             }}
             className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-purple-400 to-indigo-500 text-white"
           >
-            <div className="text-3xl mb-1">👤</div>
-            <div className="font-display text-sm mb-0.5">Quick Meet</div>
-            <div className="text-xs opacity-90">Add name</div>
+            <div className="text-3xl mb-2">👤</div>
+            <div className="font-display text-sm">Quick Meet</div>
           </button>
         </div>
 
@@ -66,9 +63,8 @@ const QuickCheckInButtons = () => {
           }}
           className="w-full card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-rose-400 to-pink-500 text-white"
         >
-          <div className="text-3xl mb-1">✨</div>
-          <div className="font-display text-lg mb-0.5">Create Custom Check-In</div>
-          <div className="text-sm opacity-90">Full options</div>
+          <div className="text-3xl mb-2">✨</div>
+          <div className="font-display text-lg">Create Custom Check-In</div>
         </button>
       </div>
 
