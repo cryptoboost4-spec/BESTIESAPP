@@ -4,6 +4,17 @@ import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
+import GetMeOutButton from './GetMeOutButton';
+
+// Emergency numbers by country
+const EMERGENCY_NUMBERS = [
+  { country: 'Australia', police: '000', ambulance: '000', fire: '000', flag: '🇦🇺' },
+  { country: 'USA', police: '911', ambulance: '911', fire: '911', flag: '🇺🇸' },
+  { country: 'UK', police: '999', ambulance: '999', fire: '999', flag: '🇬🇧' },
+  { country: 'Canada', police: '911', ambulance: '911', fire: '911', flag: '🇨🇦' },
+  { country: 'NZ', police: '111', ambulance: '111', fire: '111', flag: '🇳🇿' },
+  { country: 'Europe', police: '112', ambulance: '112', fire: '112', flag: '🇪🇺' },
+];
 
 const EmergencySOSButton = () => {
   const { currentUser, userData } = useAuth();
@@ -150,8 +161,8 @@ const EmergencySOSButton = () => {
   // Orange alert screen after SOS is sent (LOCKED - must hold 10 seconds to escape)
   if (alertSent) {
     return (
-      <div className="fixed inset-0 bg-orange-500/95 z-[9999] flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
+      <div className="fixed inset-0 bg-orange-500/95 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="text-center max-w-md w-full my-8">
           <div className="text-8xl mb-6 animate-pulse">
             🚨
           </div>
@@ -162,6 +173,25 @@ const EmergencySOSButton = () => {
             Your besties have been notified!
           </p>
 
+          {/* Emergency Numbers */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-6">
+            <h3 className="text-white font-bold text-lg mb-3">📞 Emergency Numbers</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {EMERGENCY_NUMBERS.map((country) => (
+                <a
+                  key={country.country}
+                  href={`tel:${country.police}`}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-3 transition-all"
+                >
+                  <div className="text-2xl mb-1">{country.flag}</div>
+                  <div className="text-white text-xs font-semibold">{country.country}</div>
+                  <div className="text-white text-lg font-bold">{country.police}</div>
+                </a>
+              ))}
+            </div>
+            <p className="text-white/80 text-xs mt-3">Tap to call emergency services</p>
+          </div>
+
           {/* Hold-to-Cancel Button */}
           <div className="relative">
             <button
@@ -170,7 +200,7 @@ const EmergencySOSButton = () => {
               onMouseLeave={handleHoldEnd}
               onTouchStart={handleHoldStart}
               onTouchEnd={handleHoldEnd}
-              className="btn bg-white text-orange-600 text-xl px-12 py-6 font-bold relative overflow-hidden"
+              className="btn bg-white text-orange-600 text-xl px-12 py-6 font-bold relative overflow-hidden w-full"
             >
               {/* Progress bar background */}
               <div
