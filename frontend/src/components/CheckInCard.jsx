@@ -351,15 +351,28 @@ const CheckInCard = ({ checkIn }) => {
           // Upload each file
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const storageRef = ref(storage, `checkin-photos/${checkIn.userId}/${Date.now()}_${i}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-            newPhotoURLs.push(downloadURL);
+            try {
+              const storageRef = ref(storage, `checkin-photos/${checkIn.userId}/${Date.now()}_${i}_${file.name}`);
+              await uploadBytes(storageRef, file);
+              const downloadURL = await getDownloadURL(storageRef);
+
+              // Only add to array if we got a valid URL
+              if (downloadURL) {
+                newPhotoURLs.push(downloadURL);
+              } else {
+                console.warn(`Failed to get download URL for photo ${i}`);
+              }
+            } catch (photoError) {
+              console.error(`Error uploading photo ${i}:`, photoError);
+              toast.error(`Failed to upload ${file.name}`);
+              // Continue with other photos
+            }
           }
 
-          const updatedPhotoURLs = [...previousPhotoURLs, ...newPhotoURLs];
+          // Filter out any undefined values before updating Firestore
+          const updatedPhotoURLs = [...previousPhotoURLs, ...newPhotoURLs].filter(url => url !== undefined && url !== null);
 
-          // Update Firestore
+          // Update Firestore (Firestore doesn't accept undefined values)
           await updateDoc(doc(db, 'checkins', checkIn.id), {
             photoURLs: updatedPhotoURLs,
           });
@@ -389,7 +402,7 @@ const CheckInCard = ({ checkIn }) => {
 
   const removePhoto = async (index) => {
     const previousPhotoURLs = [...photoURLs];
-    const updatedPhotoURLs = photoURLs.filter((_, i) => i !== index);
+    const updatedPhotoURLs = photoURLs.filter((_, i) => i !== index).filter(url => url !== undefined && url !== null);
 
     await executeOptimistic({
       optimisticUpdate: () => {
@@ -397,6 +410,7 @@ const CheckInCard = ({ checkIn }) => {
         setPhotoURLs(updatedPhotoURLs);
       },
       serverUpdate: async () => {
+        // Ensure no undefined values in Firestore update
         await updateDoc(doc(db, 'checkins', checkIn.id), {
           photoURLs: updatedPhotoURLs,
         });

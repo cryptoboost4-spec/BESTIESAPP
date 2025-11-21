@@ -11,7 +11,7 @@ import errorTracker from '../services/errorTracking';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 import ProfileWithBubble from '../components/ProfileWithBubble';
 
-// Cute skeleton loader for check-in creation
+// Super girly skeleton loader for check-in creation
 const CheckInLoader = () => {
   const messages = [
     "Setting up your safety net... 💖",
@@ -25,38 +25,116 @@ const CheckInLoader = () => {
   const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
   return (
-    <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center">
-        {/* Animated heart */}
-        <div className="text-8xl mb-6 animate-pulse">
-          💖
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-fuchsia-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Floating sparkles background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute text-2xl opacity-40 animate-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${3 + Math.random() * 4}s`,
+            }}
+          >
+            {['✨', '💫', '🌸', '💖', '🦋', '🌺'][Math.floor(Math.random() * 6)]}
+          </div>
+        ))}
+      </div>
 
-        {/* Message */}
-        <h2 className="font-display text-3xl text-gradient mb-4">
-          Creating your check-in!
-        </h2>
+      {/* Main content card */}
+      <div className="w-full max-w-md text-center relative z-10">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border-4 border-pink-200/50">
+          {/* Animated hearts circle */}
+          <div className="relative w-32 h-32 mx-auto mb-6">
+            {/* Center heart */}
+            <div className="absolute inset-0 flex items-center justify-center text-6xl animate-pulse-gentle">
+              💖
+            </div>
+            {/* Orbiting hearts */}
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="absolute text-3xl animate-orbit"
+                style={{
+                  animationDelay: `${i * 0.5}s`,
+                  left: '50%',
+                  top: '50%',
+                  transformOrigin: '0 0',
+                }}
+              >
+                💕
+              </div>
+            ))}
+          </div>
 
-        <p className="text-xl text-text-secondary font-semibold mb-8">
-          {message}
-        </p>
+          {/* Message */}
+          <h2 className="font-display text-3xl bg-gradient-to-r from-pink-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent mb-4 animate-fade-in">
+            Creating your check-in!
+          </h2>
 
-        {/* Cute loading animation */}
-        <div className="flex justify-center gap-2 mb-8">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="w-4 h-4 bg-gradient-primary rounded-full animate-bounce"
-              style={{ animationDelay: `${i * 0.15}s` }}
-            ></div>
-          ))}
-        </div>
+          <p className="text-lg text-purple-600 font-semibold mb-6 animate-fade-in">
+            {message}
+          </p>
 
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-          <div className="h-full bg-gradient-primary animate-pulse"></div>
+          {/* Sparkly loading dots */}
+          <div className="flex justify-center gap-3 mb-6">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="relative"
+              >
+                <div
+                  className="w-3 h-3 bg-gradient-to-br from-pink-400 via-purple-400 to-fuchsia-400 rounded-full animate-bounce"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                ></div>
+                <div
+                  className="absolute inset-0 w-3 h-3 bg-gradient-to-br from-pink-400 via-purple-400 to-fuchsia-400 rounded-full animate-ping opacity-75"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                ></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Gradient progress bar with shimmer */}
+          <div className="w-full bg-gradient-to-r from-pink-100 via-purple-100 to-fuchsia-100 rounded-full h-3 overflow-hidden shadow-inner">
+            <div className="h-full bg-gradient-to-r from-pink-400 via-purple-400 to-fuchsia-400 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+          50% { transform: translateY(-20px) rotate(10deg); opacity: 0.6; }
+        }
+        @keyframes orbit {
+          0% { transform: translate(-50%, -50%) rotate(0deg) translateX(50px) rotate(0deg); }
+          100% { transform: translate(-50%, -50%) rotate(360deg) translateX(50px) rotate(-360deg); }
+        }
+        @keyframes pulse-gentle {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        @keyframes shimmer {
+          0% { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+        .animate-float {
+          animation: float 4s ease-in-out infinite;
+        }
+        .animate-orbit {
+          animation: orbit 3s linear infinite;
+        }
+        .animate-pulse-gentle {
+          animation: pulse-gentle 2s ease-in-out infinite;
+        }
+        .animate-shimmer {
+          animation: shimmer 2s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
@@ -367,10 +445,13 @@ const CreateCheckInPage = () => {
         gestureHandling: 'greedy', // Allow single-finger drag on mobile
       });
 
-      // Update location when map is dragged
-      mapInstanceRef.current.addListener('dragend', () => {
-        const center = mapInstanceRef.current.getCenter();
-        const coords = { lat: center.lat(), lng: center.lng() };
+      // Update location when map is double-clicked
+      mapInstanceRef.current.addListener('dblclick', (event) => {
+        const clickedLocation = event.latLng;
+        const coords = { lat: clickedLocation.lat(), lng: clickedLocation.lng() };
+
+        // Center map on double-clicked location
+        mapInstanceRef.current.setCenter(clickedLocation);
         setGpsCoords(coords);
 
         // Reverse geocode to get address
@@ -378,6 +459,22 @@ const CreateCheckInPage = () => {
         geocoder.geocode({ location: coords }, (results, status) => {
           if (status === 'OK' && results[0]) {
             setLocationInput(results[0].formatted_address);
+          }
+        });
+
+        // Show success feedback
+        toast.success('📍 Pin location updated!', { duration: 1500 });
+      });
+
+      // Show reminder on single click
+      mapInstanceRef.current.addListener('click', () => {
+        toast('💡 Double-tap to place your pin!', {
+          duration: 2000,
+          icon: '👆',
+          style: {
+            background: '#f3e8ff',
+            color: '#7e22ce',
+            fontWeight: 600,
           }
         });
       });
@@ -624,10 +721,21 @@ const CreateCheckInPage = () => {
           if (photoFiles.length > 0) {
             for (let i = 0; i < photoFiles.length; i++) {
               const file = photoFiles[i];
-              const storageRef = ref(storage, `checkin-photos/${currentUser.uid}/${Date.now()}_${i}_${file.name}`);
-              await uploadBytes(storageRef, file);
-              const downloadURL = await getDownloadURL(storageRef);
-              photoURLs.push(downloadURL);
+              try {
+                const storageRef = ref(storage, `checkin-photos/${currentUser.uid}/${Date.now()}_${i}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                // Only add to array if we got a valid URL
+                if (downloadURL) {
+                  photoURLs.push(downloadURL);
+                } else {
+                  console.warn(`Failed to get download URL for photo ${i}`);
+                }
+              } catch (photoError) {
+                console.error(`Error uploading photo ${i}:`, photoError);
+                // Continue with other photos even if one fails
+              }
             }
           }
 
@@ -789,7 +897,7 @@ const CreateCheckInPage = () => {
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              Drag the map to adjust pin location, search for a place, or click the crosshair to use GPS
+              💡 <strong>Double-tap the map</strong> to place your pin, search for a place, or click the crosshair to use GPS
             </p>
           </div>
 
