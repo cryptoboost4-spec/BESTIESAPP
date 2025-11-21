@@ -372,7 +372,10 @@ const ProfilePage = () => {
   const weeklySummary = getWeeklySummary();
   const currentGradient = userData?.profile?.backgroundGradient || GRADIENT_OPTIONS[0].gradient;
   const loginStreak = userData?.loginStreak || 0;
-  const featuredBadges = badges.filter(b => featuredBadgeIds.includes(b.id)).slice(0, 3);
+  // Show all badges, but put featured ones first
+  const featuredBadges = badges.filter(b => featuredBadgeIds.includes(b.id));
+  const otherBadges = badges.filter(b => !featuredBadgeIds.includes(b.id));
+  const allBadgesToShow = [...featuredBadges, ...otherBadges];
 
   // Get progress bar color
   const getProgressColor = (percentage) => {
@@ -743,34 +746,49 @@ const ProfilePage = () => {
 
         {/* Featured Badges with Sticky View All */}
         <div className="mb-6 relative">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-display text-text-primary">Featured Badges</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-2xl font-display text-text-primary">Your Badges</h2>
             <button
-              onClick={() => setShowBadgeSelector(true)}
+              onClick={() => navigate('/badges')}
               className="text-primary font-semibold hover:underline text-sm"
             >
-              Choose 3 →
+              View All →
             </button>
           </div>
 
-          {featuredBadges.length > 0 ? (
+          <p className="text-xs text-text-secondary mb-4">
+            {featuredBadgeIds.length > 0
+              ? `⭐ ${featuredBadgeIds.length} featured badge${featuredBadgeIds.length > 1 ? 's' : ''} shown first • `
+              : ''}
+            <button
+              onClick={() => setShowBadgeSelector(true)}
+              className="text-primary hover:underline"
+            >
+              Choose your top 3 to feature
+            </button>
+          </p>
+
+          {allBadgesToShow.length > 0 ? (
             <>
               <div className="grid grid-cols-3 gap-4">
-                {featuredBadges.map((badge) => (
-                  <div key={badge.id} className="card p-4 text-center bg-gradient-to-br from-yellow-50 to-orange-50">
-                    <div className="text-4xl mb-2">{badge.icon}</div>
-                    <div className="font-semibold text-sm text-text-primary">{badge.name}</div>
-                  </div>
-                ))}
+                {allBadgesToShow.map((badge) => {
+                  const isFeatured = featuredBadgeIds.includes(badge.id);
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`card p-4 text-center transition-all ${
+                        isFeatured
+                          ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 shadow-lg scale-105'
+                          : 'bg-gradient-to-br from-gray-50 to-gray-100'
+                      }`}
+                    >
+                      <div className="text-4xl mb-2">{badge.icon}</div>
+                      <div className="font-semibold text-sm text-text-primary">{badge.name}</div>
+                      {isFeatured && <div className="text-xs text-yellow-600 mt-1">⭐ Featured</div>}
+                    </div>
+                  );
+                })}
               </div>
-
-              {/* Sticky View All Button */}
-              <button
-                onClick={() => navigate('/badges')}
-                className="fixed bottom-24 right-4 md:bottom-6 md:right-6 btn btn-primary shadow-lg text-sm px-4 py-2 z-20"
-              >
-                🏆 View All
-              </button>
             </>
           ) : (
             <div className="card p-8 text-center">

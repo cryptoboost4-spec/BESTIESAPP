@@ -1019,7 +1019,7 @@ const BestiesPage = () => {
 
       {/* Comments Modal - Mobile Optimized */}
       {showComments && selectedCheckIn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-end md:items-center justify-center">
           <div className="bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
             {/* Header */}
             <div className="p-4 md:p-6 border-b border-gray-200 flex-shrink-0">
