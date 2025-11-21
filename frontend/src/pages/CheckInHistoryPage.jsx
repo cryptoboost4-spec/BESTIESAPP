@@ -304,12 +304,12 @@ const CheckInHistoryPage = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-display text-lg text-text-primary dark:text-dark-text-primary">
-                            {checkIn.location}
+                            {checkIn.location || 'No location'}
                           </h3>
                           {getStatusBadge(checkIn.status)}
                         </div>
                         <div className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                          {checkIn.createdAt && formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
+                          {checkIn.createdAt?.toDate ? formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true }) : 'Unknown time'}
                         </div>
                       </div>
                       {canExpand && (
@@ -336,7 +336,7 @@ const CheckInHistoryPage = () => {
                       <div>
                         <div className="text-text-secondary dark:text-dark-text-secondary">Duration</div>
                         <div className="font-semibold text-text-primary dark:text-dark-text-primary">
-                          {formatDuration(checkIn.duration)}
+                          {checkIn.duration ? formatDuration(checkIn.duration) : 'N/A'}
                         </div>
                       </div>
                       <div>
@@ -356,7 +356,7 @@ const CheckInHistoryPage = () => {
                             Timestamps
                           </div>
                           <div className="space-y-1 text-sm">
-                            {checkIn.createdAt && (
+                            {checkIn.createdAt?.toDate && (
                               <div className="flex justify-between">
                                 <span className="text-text-secondary dark:text-dark-text-secondary">Created:</span>
                                 <span className="font-medium text-text-primary dark:text-dark-text-primary">
@@ -364,7 +364,7 @@ const CheckInHistoryPage = () => {
                                 </span>
                               </div>
                             )}
-                            {checkIn.alertTime && (
+                            {checkIn.alertTime?.toDate && (
                               <div className="flex justify-between">
                                 <span className="text-text-secondary dark:text-dark-text-secondary">Alert Time:</span>
                                 <span className="font-medium text-text-primary dark:text-dark-text-primary">
@@ -372,7 +372,7 @@ const CheckInHistoryPage = () => {
                                 </span>
                               </div>
                             )}
-                            {checkIn.completedAt && (
+                            {checkIn.completedAt?.toDate && (
                               <div className="flex justify-between">
                                 <span className="text-success dark:text-dark-success">✅ Completed:</span>
                                 <span className="font-medium text-success dark:text-dark-success">
@@ -380,7 +380,7 @@ const CheckInHistoryPage = () => {
                                 </span>
                               </div>
                             )}
-                            {checkIn.alertedAt && (
+                            {checkIn.alertedAt?.toDate && (
                               <div className="flex justify-between">
                                 <span className="text-warning dark:text-dark-warning">🚨 Alerted:</span>
                                 <span className="font-medium text-warning dark:text-dark-warning">
