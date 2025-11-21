@@ -30,7 +30,7 @@ async function onUserCreated(user) {
       // Default settings
       settings: {
         defaultBesties: [],
-        dataRetention: 24, // hours
+        dataRetention: 168, // hours (7 days)
         holdData: false
       },
       

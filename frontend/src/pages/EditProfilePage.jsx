@@ -16,6 +16,7 @@ const EditProfilePage = () => {
 
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [bio, setBio] = useState(userData?.profile?.bio || '');
+  const [birthdate, setBirthdate] = useState(userData?.profile?.birthdate || '');
   const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
   const [profilePicture, setProfilePicture] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(userData?.photoURL || null);
@@ -172,6 +173,7 @@ const EditProfilePage = () => {
         phoneNumber: verifiedPhoneNumber || phoneNumber,
         photoURL,
         'profile.bio': bio,
+        'profile.birthdate': birthdate,
         updatedAt: new Date(),
       });
 
@@ -203,7 +205,8 @@ const EditProfilePage = () => {
         photoURL,
         profile: {
           ...userData?.profile,
-          bio
+          bio,
+          birthdate
         }
       };
 
@@ -329,6 +332,22 @@ const EditProfilePage = () => {
                 />
                 <div className="text-xs text-text-secondary mt-1">
                   {bio.length}/150 characters
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-text-primary mb-2">
+                  Birthday 🎂
+                </label>
+                <input
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => setBirthdate(e.target.value)}
+                  className="input"
+                  max={new Date().toISOString().split('T')[0]}
+                />
+                <div className="text-xs text-text-secondary mt-1">
+                  Your besties will be notified on your birthday! (Optional)
                 </div>
               </div>
 

@@ -448,7 +448,16 @@ const LoginPage = () => {
 
         {/* Footer */}
         <div className="text-center mt-6 text-sm text-text-secondary">
-          <p>By continuing, you agree to our Terms of Service</p>
+          <p>
+            By continuing, you agree to our{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Terms of Service
+            </a>
+            {' '}and{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Privacy Policy
+            </a>
+          </p>
         </div>
       </div>
     </div>
