@@ -42,8 +42,8 @@ exports.checkExpiredCheckIns = functions.pubsub
         alertedAt: now,
       });
 
-      // Update user stats
-      await updateUserStats(checkIn.userId, 'checkInAlerted');
+      // Stats are updated by onCheckInCountUpdate trigger - no need to update here
+      // (Removed duplicate increment to fix double-counting bug)
 
       alerts.push(sendAlertToBesties(doc.id, checkIn));
       await logAlertEvent(doc.id, checkIn);
@@ -102,7 +102,8 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
     completedAt: admin.firestore.Timestamp.now(),
   });
 
-  await updateUserStats(context.auth.uid, 'checkInCompleted');
+  // Stats are updated by onCheckInCountUpdate trigger - no need to update here
+  // (Removed duplicate increment to fix double-counting bug)
 
   return { success: true };
 });
@@ -271,10 +272,10 @@ exports.acceptBestieRequest = functions.https.onCall(async (data, context) => {
     status: 'accepted',
     acceptedAt: admin.firestore.Timestamp.now(),
   });
-  
-  await updateUserStats(bestie.data().requesterId, 'bestieAdded');
-  await updateUserStats(context.auth.uid, 'bestieAdded');
-  
+
+  // Stats are updated by onBestieCountUpdate trigger - no need to update here
+  // (Removed duplicate increment to fix double-counting bug)
+
   return { success: true };
 });
 
@@ -1624,6 +1625,44 @@ exports.migratePhoneNumbers = functions.https.onCall(async (data, context) => {
   } catch (error) {
     console.error('Error in phone migration:', error);
     throw new functions.https.HttpsError('internal', 'Migration failed');
+  }
+});
+
+// ========================================
+// DATA MIGRATION: Fix Double-Counted Stats
+// ========================================
+
+/**
+ * Fix double-counted user stats (Admin only)
+ * Recalculates stats.completedCheckIns, stats.alertedCheckIns, and stats.totalBesties
+ * from source collections to fix the double-counting bug.
+ */
+exports.fixDoubleCountedStats = functions.https.onCall(async (data, context) => {
+  // Check authentication
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  // Check admin status
+  const userDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!userDoc.exists || !userDoc.data().isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Admin access required');
+  }
+
+  console.log('🔄 Starting data migration to fix double-counted stats...');
+
+  try {
+    const { fixDoubleCountedStats } = require('./migrations/fixDoubleCountedStats');
+    const result = await fixDoubleCountedStats();
+
+    return {
+      success: true,
+      message: 'Stats migration completed successfully',
+      ...result,
+    };
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    throw new functions.https.HttpsError('internal', 'Migration failed: ' + error.message);
   }
 });
 
