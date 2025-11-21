@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs, getDoc, orderBy, limit } from 'firebase/firestore';
 import Header from '../components/Header';
 import CheckInCard from '../components/CheckInCard';
 import QuickButtons from '../components/QuickButtons';
@@ -16,6 +16,7 @@ import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import PullToRefresh from '../components/PullToRefresh';
+import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -53,6 +54,11 @@ const HomePage = () => {
   // Request Attention state
   const [showRequestAttention, setShowRequestAttention] = useState(false);
   const [attentionTag, setAttentionTag] = useState('');
+
+  // Alerts state
+  const [missedCheckIns, setMissedCheckIns] = useState([]);
+  const [requestsForAttention, setRequestsForAttention] = useState([]);
+  const [besties, setBesties] = useState([]);
 
   // Scrolling bubble example messages
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -154,6 +160,93 @@ const HomePage = () => {
     };
   }, [currentUser]);
 
+  // Load alerts for featured circle besties
+  useEffect(() => {
+    if (!currentUser || !userData) return;
+
+    const loadAlerts = async () => {
+      try {
+        // Get user's featured circle
+        const featuredCircle = userData.featuredCircle || [];
+        if (featuredCircle.length === 0) {
+          setMissedCheckIns([]);
+          setRequestsForAttention([]);
+          return;
+        }
+
+        // Load bestie names/info
+        const bestiesData = [];
+        for (const bestieId of featuredCircle) {
+          const userDoc = await getDoc(doc(db, 'users', bestieId));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            bestiesData.push({
+              userId: bestieId,
+              name: data.displayName || 'Bestie',
+              phone: data.phone
+            });
+          }
+        }
+        setBesties(bestiesData);
+
+        const missed = [];
+        const attentionRequests = [];
+
+        // Check each bestie in featured circle for alerts
+        for (const bestieId of featuredCircle) {
+          // Check for missed check-ins (last 48 hours)
+          const twoDaysAgo = new Date();
+          twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+
+          const checkInsQuery = query(
+            collection(db, 'checkins'),
+            where('userId', '==', bestieId),
+            where('createdAt', '>=', twoDaysAgo),
+            where('status', '==', 'alerted'),
+            orderBy('createdAt', 'desc'),
+            limit(5)
+          );
+
+          const checkInsSnapshot = await getDocs(checkInsQuery);
+          checkInsSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const bestie = bestiesData.find(b => b.userId === bestieId);
+            missed.push({
+              id: docSnap.id,
+              userName: bestie?.name || 'Bestie',
+              userId: bestieId,
+              checkInData: data,
+              timestamp: data.createdAt?.toDate() || new Date(),
+            });
+          });
+
+          // Check for attention requests
+          const userDoc = await getDoc(doc(db, 'users', bestieId));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.requestAttention && data.requestAttention.active) {
+              const bestie = bestiesData.find(b => b.userId === bestieId);
+              attentionRequests.push({
+                userId: bestieId,
+                userName: bestie?.name || 'Bestie',
+                tag: data.requestAttention.tag,
+                note: data.requestAttention.note,
+                timestamp: data.requestAttention.timestamp?.toDate() || new Date(),
+              });
+            }
+          }
+        }
+
+        setMissedCheckIns(missed);
+        setRequestsForAttention(attentionRequests);
+      } catch (error) {
+        console.error('Error loading alerts:', error);
+      }
+    };
+
+    loadAlerts();
+  }, [currentUser, userData]);
+
   const handleQuickCheckIn = (minutes) => {
     navigate('/create', { state: { quickMinutes: minutes } });
   };
@@ -204,6 +297,13 @@ const HomePage = () => {
               : welcomeMessage}
           </p>
         </div>
+
+        {/* Needs Attention Section - Featured Circle Only */}
+        <NeedsAttentionSection
+          missedCheckIns={missedCheckIns}
+          requestsForAttention={requestsForAttention}
+          besties={besties}
+        />
 
         {/* Quick Check-In Buttons */}
         {activeCheckIns.length === 0 && (

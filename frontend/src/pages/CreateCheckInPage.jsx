@@ -397,10 +397,20 @@ const CreateCheckInPage = () => {
     // Check if script is already being loaded
     const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existingScript) {
-      // Script exists, wait for it to load
+      // Script exists, wait for it to load with timeout
+      let attempts = 0;
+      const maxAttempts = 100; // 10 seconds timeout
       const interval = setInterval(() => {
+        attempts++;
         if (checkGoogleLoaded()) {
           clearInterval(interval);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          console.error('Google Maps API loading timeout');
+          toast.error('Map is taking too long to load. Please refresh the page.', {
+            duration: 5000,
+            id: 'maps-timeout'
+          });
         }
       }, 100);
 
@@ -413,18 +423,47 @@ const CreateCheckInPage = () => {
     script.async = true;
     script.defer = true;
 
+    // Add timeout for script loading
+    const loadTimeout = setTimeout(() => {
+      if (!checkGoogleLoaded()) {
+        console.error('Google Maps API script load timeout');
+        toast.error('Map failed to load. Please check your internet connection and refresh.', {
+          duration: 5000,
+          id: 'maps-load-timeout'
+        });
+      }
+    }, 15000); // 15 second timeout
+
     script.onload = () => {
-      setAutocompleteLoaded(true);
+      clearTimeout(loadTimeout);
+      // Double check that the API is fully loaded
+      const checkInterval = setInterval(() => {
+        if (checkGoogleLoaded()) {
+          clearInterval(checkInterval);
+        }
+      }, 100);
+
+      // Set a short timeout to ensure API is ready
+      setTimeout(() => {
+        if (checkGoogleLoaded()) {
+          console.log('Google Maps API loaded successfully');
+        }
+      }, 500);
     };
 
-    script.onerror = () => {
-      console.error('Failed to load Google Maps API');
-      toast.error('Failed to load address autocomplete', { duration: 2000 });
+    script.onerror = (error) => {
+      clearTimeout(loadTimeout);
+      console.error('Failed to load Google Maps API:', error);
+      toast.error('Failed to load address autocomplete. Please refresh the page.', {
+        duration: 5000,
+        id: 'maps-error'
+      });
     };
 
     document.head.appendChild(script);
 
-    // No cleanup needed - script stays loaded for other page visits
+    // Cleanup timeout on unmount
+    return () => clearTimeout(loadTimeout);
   }, []);
 
   // Initialize Map when API is loaded
@@ -504,6 +543,16 @@ const CreateCheckInPage = () => {
     if (!autocompleteLoaded || !locationInputRef.current) return;
 
     try {
+      // Verify Google Maps API is fully available
+      if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.error('Google Maps API not fully loaded');
+        toast.error('Address autocomplete temporarily unavailable. Please type your location manually.', {
+          duration: 4000,
+          id: 'autocomplete-unavailable'
+        });
+        return;
+      }
+
       // Initialize Google Places Autocomplete
       autocompleteRef.current = new window.google.maps.places.Autocomplete(
         locationInputRef.current,
@@ -515,28 +564,41 @@ const CreateCheckInPage = () => {
 
       // Listen for place selection
       autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current.getPlace();
+        try {
+          const place = autocompleteRef.current.getPlace();
 
-        if (place.formatted_address) {
-          // Use business name if available, otherwise use formatted address
-          const displayLocation = place.name && place.name !== place.formatted_address
-            ? `${place.name}, ${place.formatted_address}`
-            : place.formatted_address;
+          if (place.formatted_address) {
+            // Use business name if available, otherwise use formatted address
+            const displayLocation = place.name && place.name !== place.formatted_address
+              ? `${place.name}, ${place.formatted_address}`
+              : place.formatted_address;
 
-          setLocationInput(displayLocation);
+            setLocationInput(displayLocation);
 
-          // Center map on selected place (no marker needed - fixed pin in center)
-          if (place.geometry && place.geometry.location && mapInstanceRef.current) {
-            const location = place.geometry.location;
-            const coords = { lat: location.lat(), lng: location.lng() };
-            mapInstanceRef.current.setCenter(coords);
-            mapInstanceRef.current.setZoom(15);
-            setGpsCoords(coords); // Store coordinates
+            // Center map on selected place (no marker needed - fixed pin in center)
+            if (place.geometry && place.geometry.location && mapInstanceRef.current) {
+              const location = place.geometry.location;
+              const coords = { lat: location.lat(), lng: location.lng() };
+              mapInstanceRef.current.setCenter(coords);
+              mapInstanceRef.current.setZoom(15);
+              setGpsCoords(coords); // Store coordinates
+            }
           }
+        } catch (error) {
+          console.error('Error handling place selection:', error);
+          toast.error('Error selecting location. Please try again.', {
+            duration: 3000
+          });
         }
       });
+
+      console.log('Autocomplete initialized successfully');
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
+      toast.error('Could not initialize address search. Please type your location manually.', {
+        duration: 4000,
+        id: 'autocomplete-init-error'
+      });
     }
 
     return () => {
@@ -1180,7 +1242,7 @@ const CreateCheckInPage = () => {
               </div>
             )}
 
-            <div className="mt-3 text-sm text-text-secondary">
+            <div className="mt-3 text-sm text-primary font-semibold">
               Selected: {selectedBesties.length}/5
             </div>
           </div>

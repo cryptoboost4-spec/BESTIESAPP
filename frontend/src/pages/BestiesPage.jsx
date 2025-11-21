@@ -228,9 +228,18 @@ const BestiesPage = () => {
       // Sort activities by timestamp (newest first)
       activities.sort((a, b) => b.timestamp - a.timestamp);
 
+      // Filter alerts to only show selected besties (featured circle)
+      const featuredCircle = userData?.featuredCircle || [];
+      const filteredMissed = featuredCircle.length > 0
+        ? missed.filter(m => featuredCircle.includes(m.userId))
+        : missed;
+      const filteredAttention = featuredCircle.length > 0
+        ? attentionRequests.filter(a => featuredCircle.includes(a.userId))
+        : attentionRequests;
+
       setActivityFeed(activities);
-      setMissedCheckIns(missed);
-      setRequestsForAttention(attentionRequests);
+      setMissedCheckIns(filteredMissed);
+      setRequestsForAttention(filteredAttention);
     };
 
     // Initial load
@@ -522,84 +531,80 @@ const BestiesPage = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* This Week's Champions - SUPER GIRLY VERSION */}
+            {/* This Week's Champions - Soft & Girly Version */}
             <div className="relative overflow-hidden">
-              {/* Sparkly background */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-4 left-4 text-yellow-300 animate-pulse text-2xl">✨</div>
-                <div className="absolute top-8 right-6 text-pink-300 animate-pulse delay-1s text-xl">💫</div>
-                <div className="absolute bottom-6 left-8 text-purple-300 animate-pulse delay-2s text-xl">⭐</div>
-                <div className="absolute bottom-4 right-4 text-yellow-300 animate-pulse delay-3s text-2xl">✨</div>
+              {/* Subtle sparkly background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+                <div className="absolute top-2 left-2 text-pink-200 text-sm">✨</div>
+                <div className="absolute top-3 right-3 text-purple-200 text-sm">💫</div>
+                <div className="absolute bottom-2 left-3 text-pink-200 text-sm">⭐</div>
               </div>
 
-              <div className="card p-6 bg-gradient-to-br from-pink-50 via-purple-50 to-yellow-50 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-yellow-900/30 border-4 border-pink-200 dark:border-pink-600 shadow-xl relative">
+              <div className="card p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-600 shadow-lg relative">
                 {/* Cute header with crown */}
-                <div className="text-center mb-6">
-                  <div className="text-5xl mb-2 animate-bounce" style={{animationDuration: '2s'}}>👑</div>
-                  <h2 className="text-2xl font-display bg-gradient-to-r from-pink-600 via-purple-600 to-yellow-600 bg-clip-text text-transparent mb-1">
+                <div className="text-center mb-3">
+                  <div className="text-3xl mb-1">👑</div>
+                  <h2 className="text-lg font-display bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                     {rankingsPeriod === 'weekly' && "This Week's Queens"}
                     {rankingsPeriod === 'monthly' && "This Month's Queens"}
                     {rankingsPeriod === 'yearly' && "This Year's Queens"}
                   </h2>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">The besties who absolutely slayed! 💅</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Besties who slayed! 💅</p>
                 </div>
 
-                {/* Period Tabs */}
-                <div className="flex gap-2 justify-center mb-6">
+                {/* Period Tabs - Compact */}
+                <div className="flex gap-1.5 justify-center mb-3">
                   <button
                     onClick={() => setRankingsPeriod('weekly')}
-                    className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
+                    className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
                       rankingsPeriod === 'weekly'
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
+                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
                     }`}
                   >
-                    📅 Weekly
+                    📅 Week
                   </button>
                   <button
                     onClick={() => setRankingsPeriod('monthly')}
-                    className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
+                    className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
                       rankingsPeriod === 'monthly'
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
+                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
                     }`}
                   >
-                    🗓️ Monthly
+                    🗓️ Month
                   </button>
                   <button
                     onClick={() => setRankingsPeriod('yearly')}
-                    className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
+                    className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
                       rankingsPeriod === 'yearly'
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-110'
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
+                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
                     }`}
                   >
-                    🎯 Yearly
+                    🎯 Year
                   </button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {/* Most Reliable - Pink gradient */}
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-rose-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-pink-200 dark:border-pink-600 hover:scale-105 transition-transform">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-300 to-rose-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-pink-200 dark:border-pink-600 hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-shrink-0">
+                          <div className="w-10 h-10 bg-gradient-to-br from-pink-300 to-rose-400 rounded-full flex items-center justify-center text-lg shadow-sm">
                             💖
                           </div>
-                          <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
                             🏆
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="font-display text-base font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display text-sm font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
                             Most Reliable
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Always there! 💕</div>
-                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
-                            Earning crowns... 👑✨
-                          </div>
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Earning crowns... 👑</div>
                         </div>
                       </div>
                     </div>
@@ -607,25 +612,22 @@ const BestiesPage = () => {
 
                   {/* Fastest Responder - Purple gradient */}
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-fuchsia-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-purple-200 dark:border-purple-600 hover:scale-105 transition-transform">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-fuchsia-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg animate-pulse">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-300 to-fuchsia-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-purple-200 dark:border-purple-600 hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-shrink-0">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-full flex items-center justify-center text-lg shadow-sm">
                             ⚡
                           </div>
-                          <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
                             🏆
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="font-display text-base font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display text-sm font-bold bg-gradient-to-r from-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
                             Lightning Fast
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Instant replies! ⚡</div>
-                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
-                            Collecting sparkles... ✨
-                          </div>
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Collecting sparkles... ✨</div>
                         </div>
                       </div>
                     </div>
@@ -633,25 +635,22 @@ const BestiesPage = () => {
 
                   {/* Safety Champion - Rose gradient */}
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-rose-400 to-pink-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-rose-200 dark:border-rose-600 hover:scale-105 transition-transform">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-r from-rose-300 to-pink-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-rose-200 dark:border-rose-600 hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-shrink-0">
+                          <div className="w-10 h-10 bg-gradient-to-br from-rose-300 to-pink-400 rounded-full flex items-center justify-center text-lg shadow-sm">
                             🛡️
                           </div>
-                          <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
                             🏆
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="font-display text-base font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display text-sm font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                             Safety Superstar
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Check-in queen! 👑</div>
-                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
-                            Building streaks... 🔥
-                          </div>
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Building streaks... 🔥</div>
                         </div>
                       </div>
                     </div>
@@ -659,25 +658,22 @@ const BestiesPage = () => {
 
                   {/* Streak Queen - Yellow gradient */}
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-amber-400 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border-2 border-yellow-200 dark:border-yellow-600 hover:scale-105 transition-transform">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-yellow-200 dark:border-yellow-600 hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-shrink-0">
+                          <div className="w-10 h-10 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full flex items-center justify-center text-lg shadow-sm">
                             🔥
                           </div>
-                          <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
                             🏆
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="font-display text-base font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display text-sm font-bold bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
                             Streak Queen
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">On fire! 🔥</div>
-                          <div className="text-xs text-center text-gray-400 dark:text-gray-500 italic py-1 bg-gray-50 dark:bg-gray-700 rounded-lg mt-2">
-                            Tracking victories... 💪
-                          </div>
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Tracking victories... 💪</div>
                         </div>
                       </div>
                     </div>
@@ -685,11 +681,11 @@ const BestiesPage = () => {
                 </div>
 
                 {/* Cute footer */}
-                <div className="mt-6 pt-4 border-t-2 border-pink-200 dark:border-pink-600 text-center">
-                  <p className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                    {rankingsPeriod === 'weekly' && '🎯 Resets every Monday • Keep slaying, queens! 👑'}
-                    {rankingsPeriod === 'monthly' && '🎯 Resets on the 1st • Keep slaying, queens! 👑'}
-                    {rankingsPeriod === 'yearly' && '🎯 Resets January 1st • Keep slaying, queens! 👑'}
+                <div className="mt-3 pt-2 border-t border-pink-200 dark:border-pink-600 text-center">
+                  <p className="text-xs font-semibold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                    {rankingsPeriod === 'weekly' && '💫 Resets Monday'}
+                    {rankingsPeriod === 'monthly' && '💫 Resets on 1st'}
+                    {rankingsPeriod === 'yearly' && '💫 Resets Jan 1st'}
                   </p>
                 </div>
               </div>
@@ -714,7 +710,7 @@ const BestiesPage = () => {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
                   {filteredBesties.map((bestie) => {
                     const indicators = getBestieIndicators(bestie);
                     return (

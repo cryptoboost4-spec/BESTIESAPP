@@ -44,23 +44,23 @@ const InfoButton = ({ message }) => {
         <div
           ref={tooltipRef}
           className="absolute left-0 top-full mt-2 z-50 animate-scale-up"
-          style={{ minWidth: '250px', maxWidth: '300px' }}
+          style={{ minWidth: '160px', maxWidth: '200px' }}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-4">
-            <div className="flex items-start gap-2">
-              <span className="text-lg flex-shrink-0">ℹ️</span>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-2.5">
+            <div className="flex items-start gap-1.5">
+              <span className="text-sm flex-shrink-0">ℹ️</span>
               <div className="flex-1">
-                <p className="text-sm text-gray-700 dark:text-gray-200">{message}</p>
+                <p className="text-xs text-gray-700 dark:text-gray-200 leading-snug">{message}</p>
                 <button
                   onClick={() => setShowTooltip(false)}
-                  className="mt-2 text-primary dark:text-purple-400 text-xs font-semibold underline hover:no-underline"
+                  className="mt-1.5 text-primary dark:text-purple-400 text-xs font-semibold underline hover:no-underline"
                 >
                   Got it!
                 </button>
               </div>
             </div>
             {/* Arrow pointing up */}
-            <div className="absolute bottom-full left-4 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-primary dark:border-b-purple-400"></div>
+            <div className="absolute bottom-full left-3 w-0 h-0 border-l-6 border-r-6 border-b-6 border-transparent border-b-primary dark:border-b-purple-400"></div>
           </div>
         </div>
       )}
