@@ -42,6 +42,7 @@ const AlertViewPage = lazy(() => import('./pages/AlertViewPage'));
 const SubscriptionSuccessPage = lazy(() => import('./pages/SubscriptionSuccessPage'));
 const SubscriptionCancelPage = lazy(() => import('./pages/SubscriptionCancelPage'));
 const AboutBestiesPage = lazy(() => import('./pages/AboutBestiesPage'));
+const AdminBackfillPage = lazy(() => import('./pages/AdminBackfillPage'));
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
@@ -219,6 +220,10 @@ function App() {
                   <Route
                     path="/error-dashboard"
                     element={user ? <AdminRoute><ErrorDashboard /></AdminRoute> : <Navigate to="/login" />}
+                  />
+                  <Route
+                    path="/admin/backfill"
+                    element={user ? <AdminRoute><AdminBackfillPage /></AdminRoute> : <Navigate to="/login" />}
                   />
 
                   {/* Catch all */}

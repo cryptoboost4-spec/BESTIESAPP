@@ -458,6 +458,52 @@ exports.onBestieCountUpdate = functions.firestore
     }
   });
 
+// Handle when bestie is created with accepted status (e.g., via invite link)
+exports.onBestieCreated = functions.firestore
+  .document('besties/{bestieId}')
+  .onCreate(async (snap, context) => {
+    const bestie = snap.data();
+    const cacheRef = db.collection('analytics_cache').doc('realtime');
+
+    // Only process if created directly as accepted (e.g., invite link flow)
+    if (bestie.status === 'accepted' && bestie.requesterId && bestie.recipientId) {
+      // Increment totalBesties for both users
+      await db.collection('users').doc(bestie.requesterId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
+      await db.collection('users').doc(bestie.recipientId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
+
+      // Add to bestieUserIds array for privacy enforcement
+      // This is CRITICAL - without this, besties can't view each other's profiles
+      await db.collection('users').doc(bestie.requesterId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.recipientId)
+      });
+      await db.collection('users').doc(bestie.recipientId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.requesterId)
+      });
+
+      // Update analytics cache: new accepted bestie
+      await cacheRef.set({
+        totalBesties: admin.firestore.FieldValue.increment(1),
+        acceptedBesties: admin.firestore.FieldValue.increment(1),
+        lastUpdated: admin.firestore.Timestamp.now(),
+      }, { merge: true });
+
+      // Award badges
+      await awardBestieBadge(bestie.requesterId);
+      await awardBestieBadge(bestie.recipientId);
+    } else if (bestie.status === 'pending') {
+      // Update analytics cache: new pending bestie
+      await cacheRef.set({
+        totalBesties: admin.firestore.FieldValue.increment(1),
+        pendingBesties: admin.firestore.FieldValue.increment(1),
+        lastUpdated: admin.firestore.Timestamp.now(),
+      }, { merge: true });
+    }
+  });
+
 // Remove from bestieUserIds and featuredCircle when bestie relationship is deleted
 exports.onBestieDeleted = functions.firestore
   .document('besties/{bestieId}')
@@ -1914,6 +1960,39 @@ exports.fixDoubleCountedStats = functions.https.onCall(async (data, context) => 
   } catch (error) {
     console.error('❌ Migration failed:', error);
     throw new functions.https.HttpsError('internal', 'Migration failed: ' + error.message);
+  }
+});
+
+// ========================================
+// BACKFILL FUNCTIONS
+// ========================================
+
+// One-time backfill to populate bestieUserIds for existing besties
+const { backfillBestieUserIds } = require('./backfillBestieUserIds');
+exports.backfillBestieUserIds = functions.https.onCall(async (data, context) => {
+  // Require admin privileges for security
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  // Check if user is admin
+  const userDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!userDoc.exists || !userDoc.data().isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Must be admin to run backfill');
+  }
+
+  console.log(`🔧 Backfill triggered by admin: ${context.auth.uid}`);
+
+  try {
+    const result = await backfillBestieUserIds();
+    return {
+      success: true,
+      message: 'Backfill completed successfully',
+      ...result
+    };
+  } catch (error) {
+    console.error('❌ Backfill failed:', error);
+    throw new functions.https.HttpsError('internal', 'Backfill failed: ' + error.message);
   }
 });
 
