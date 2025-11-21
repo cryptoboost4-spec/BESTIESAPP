@@ -6,6 +6,7 @@ import { db, storage } from '../services/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
+import html2canvas from 'html2canvas';
 import Header from '../components/Header';
 import BestieCircle from '../components/BestieCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
@@ -248,6 +249,68 @@ const ProfilePage = () => {
     }
   };
 
+  const handleShareProfileCard = async () => {
+    const profileCard = document.getElementById('profile-card-shareable');
+    if (!profileCard) {
+      toast.error('Could not capture profile card');
+      return;
+    }
+
+    try {
+      toast('Generating image...', { icon: '📸' });
+
+      // Capture the profile card as canvas
+      const canvas = await html2canvas(profileCard, {
+        backgroundColor: null,
+        scale: 2, // Higher quality
+        logging: false,
+      });
+
+      // Convert to blob
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to generate image');
+          return;
+        }
+
+        // Try to share via Web Share API if available
+        if (navigator.share && navigator.canShare({ files: [new File([blob], 'profile.png', { type: 'image/png' })] })) {
+          const file = new File([blob], 'my-besties-profile.png', { type: 'image/png' });
+          navigator.share({
+            title: 'My Besties Profile',
+            text: 'Check out my Besties profile! 💜',
+            files: [file],
+          }).then(() => {
+            toast.success('Profile card shared! 💜');
+          }).catch((err) => {
+            if (err.name !== 'AbortError') {
+              // User cancelled, fallback to download
+              downloadImage(blob);
+            }
+          });
+        } else {
+          // Fallback: download the image
+          downloadImage(blob);
+        }
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error sharing profile card:', error);
+      toast.error('Failed to share profile card');
+    }
+  };
+
+  const downloadImage = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'my-besties-profile.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Profile card downloaded! 📥');
+  };
+
   const handleToggleFeaturedBadge = async (badgeId) => {
     let newFeaturedBadges = [...featuredBadgeIds];
 
@@ -441,6 +504,7 @@ const ProfilePage = () => {
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
         {/* Profile Header - Beautiful Profile Card */}
         <div
+          id="profile-card-shareable"
           className={`card p-8 mb-6 text-center relative overflow-hidden shadow-2xl profile-card-aura-${currentAura}`}
           style={{ background: currentGradient }}
         >
@@ -460,6 +524,15 @@ const ProfilePage = () => {
               title="Edit profile"
             >
               ✏️
+            </button>
+
+            {/* Share Profile Card as Image */}
+            <button
+              onClick={handleShareProfileCard}
+              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
+              title="Share profile card as image"
+            >
+              📸
             </button>
 
             {/* Color Picker Button */}
@@ -609,41 +682,21 @@ const ProfilePage = () => {
             </p>
           )}
 
-          {/* Social Sharing Icons */}
+          {/* Social Sharing Icons - Cute & Small */}
           <div className="mt-6 relative z-10">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-semibold">Share your profile:</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Share your profile:</p>
             <div className="flex gap-2 justify-center flex-wrap">
               {/* Facebook */}
               <button
                 onClick={() => {
                   const url = `${window.location.origin}/user/${currentUser.uid}`;
                   const text = `Come be my bestie on Besties! 💜`;
-                  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-                  if (isMobile) {
-                    // Try to open in Facebook app first
-                    const appUrl = `fb://profile/${currentUser.uid}`;
-                    const webUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
-
-                    // Create iframe to try opening app without redirecting
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.src = appUrl;
-                    document.body.appendChild(iframe);
-
-                    // Fallback to web in new tab if app doesn't open
-                    setTimeout(() => {
-                      document.body.removeChild(iframe);
-                      window.open(webUrl, '_blank');
-                    }, 1500);
-                  } else {
-                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
-                  }
+                  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank');
                 }}
-                className="w-10 h-10 rounded-full bg-[#1877f2] hover:bg-[#1864d9] text-white flex items-center justify-center transition-all shadow-lg hover:shadow-xl hover:scale-110"
+                className="w-8 h-8 rounded-full bg-[#1877f2] hover:bg-[#1864d9] text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
                 title="Share on Facebook"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
               </button>
@@ -653,32 +706,12 @@ const ProfilePage = () => {
                 onClick={() => {
                   const url = `${window.location.origin}/user/${currentUser.uid}`;
                   const text = `Come be my bestie on Besties! 💜`;
-                  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-                  if (isMobile) {
-                    // Try to open in Twitter/X app first
-                    const appUrl = `twitter://post?message=${encodeURIComponent(text + ' ' + url)}`;
-                    const webUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-
-                    // Create iframe to try opening app without redirecting
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.src = appUrl;
-                    document.body.appendChild(iframe);
-
-                    // Fallback to web in new tab if app doesn't open
-                    setTimeout(() => {
-                      document.body.removeChild(iframe);
-                      window.open(webUrl, '_blank');
-                    }, 1500);
-                  } else {
-                    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
-                  }
+                  window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
                 }}
-                className="w-10 h-10 rounded-full bg-black hover:bg-gray-800 text-white flex items-center justify-center transition-all shadow-lg hover:shadow-xl hover:scale-110"
+                className="w-8 h-8 rounded-full bg-black hover:bg-gray-800 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
                 title="Share on X (Twitter)"
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                 </svg>
               </button>
@@ -688,20 +721,12 @@ const ProfilePage = () => {
                 onClick={() => {
                   const url = `${window.location.origin}/user/${currentUser.uid}`;
                   const text = `Come be my bestie on Besties! 💜`;
-                  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-                  if (isMobile) {
-                    // Open WhatsApp app directly on mobile
-                    window.location.href = `whatsapp://send?text=${encodeURIComponent(text + ' ' + url)}`;
-                  } else {
-                    // Open WhatsApp web on desktop
-                    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
-                  }
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
                 }}
-                className="w-10 h-10 rounded-full bg-[#25d366] hover:bg-[#20bd5a] text-white flex items-center justify-center transition-all shadow-lg hover:shadow-xl hover:scale-110"
+                className="w-8 h-8 rounded-full bg-[#25d366] hover:bg-[#20bd5a] text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
                 title="Share on WhatsApp"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                 </svg>
               </button>
@@ -713,10 +738,10 @@ const ProfilePage = () => {
                   navigator.clipboard.writeText(url);
                   toast.success('Profile link copied! Share it on Instagram 💜');
                 }}
-                className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] hover:opacity-90 text-white flex items-center justify-center transition-all shadow-lg hover:shadow-xl hover:scale-110"
+                className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] hover:opacity-90 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
                 title="Copy link for Instagram"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                 </svg>
               </button>
@@ -728,10 +753,10 @@ const ProfilePage = () => {
                   navigator.clipboard.writeText(url);
                   toast.success('Profile link copied to clipboard!');
                 }}
-                className="w-10 h-10 rounded-full bg-gray-600 hover:bg-gray-700 text-white flex items-center justify-center transition-all shadow-lg hover:shadow-xl hover:scale-110"
+                className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-700 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
                 title="Copy link"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </button>
@@ -868,25 +893,57 @@ const ProfilePage = () => {
 
           {allBadgesToShow.length > 0 ? (
             <>
-              <div className="grid grid-cols-3 gap-4">
-                {allBadgesToShow.map((badge) => {
-                  const isFeatured = featuredBadgeIds.includes(badge.id);
-                  return (
-                    <div
-                      key={badge.id}
-                      className={`card p-4 text-center transition-all ${
-                        isFeatured
-                          ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg scale-105'
-                          : 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700'
-                      }`}
-                    >
-                      <div className="text-4xl mb-2">{badge.icon}</div>
-                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
-                      {isFeatured && <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">⭐ Featured</div>}
+              {/* Featured Badges - Show prominently */}
+              {featuredBadges.length > 0 && (
+                <div className="mb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {featuredBadges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="card p-4 text-center transition-all bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg"
+                      >
+                        <div className="text-4xl mb-2">{badge.icon}</div>
+                        <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
+                        <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">⭐ Featured</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other Badges - Scrollable horizontal list if many */}
+              {otherBadges.length > 0 && (
+                <div>
+                  {otherBadges.length > 6 ? (
+                    <>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Scroll to see all badges →</p>
+                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                        {otherBadges.map((badge) => (
+                          <div
+                            key={badge.id}
+                            className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-28"
+                          >
+                            <div className="text-3xl mb-2">{badge.icon}</div>
+                            <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {otherBadges.map((badge) => (
+                        <div
+                          key={badge.id}
+                          className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700"
+                        >
+                          <div className="text-4xl mb-2">{badge.icon}</div>
+                          <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
+                        </div>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <div className="card p-8 text-center">
@@ -1109,6 +1166,15 @@ const ProfilePage = () => {
 
       {/* Shimmer Effect and Aura Animations CSS */}
       <style>{`
+        /* Hide scrollbar for horizontal badge scroll */
+        .scrollbar-hide {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;  /* Chrome, Safari, Opera */
+        }
+
         @keyframes shimmer {
           0% {
             transform: translateX(-100%);
