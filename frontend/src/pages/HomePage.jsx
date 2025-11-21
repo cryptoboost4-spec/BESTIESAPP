@@ -6,16 +6,14 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs, getDoc, orderBy, limit } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
-import BestieCircleStatus from '../components/BestieCircleStatus';
 import DonationCard from '../components/DonationCard';
+import WeeklySummary from '../components/profile/WeeklySummary';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
 import ProfileWithBubble from '../components/ProfileWithBubble';
 import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
-import PullToRefresh from '../components/PullToRefresh';
-import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -194,18 +192,53 @@ const HomePage = () => {
     loadAlerts();
   }, [currentUser, userData]);
 
-  const handleRefresh = async () => {
-    // Reload user data by forcing a re-fetch
-    // The Firestore listeners will automatically update when data changes
-    try {
-      // Trigger a small delay to show the refresh animation
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success('Refreshed! 💜', { duration: 2000 });
-    } catch (error) {
-      console.error('Refresh error:', error);
-      toast.error('Failed to refresh');
+  // Weekly Summary Logic
+  const hasWeekOfActivity = () => {
+    const firstCheckIn = userData?.stats?.firstCheckInDate?.toDate?.() || userData?.stats?.firstCheckInDate;
+    if (!firstCheckIn) return false;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return firstCheckIn <= weekAgo;
+  };
+
+  const getWeeklySummary = () => {
+    if (!hasWeekOfActivity()) {
+      return {
+        status: 'new',
+        emoji: '🌱',
+        message: 'Building your safety journey',
+        tip: 'You\'ll get your weekly summary after you have one week of activity!'
+      };
+    }
+
+    const checkIns = userData?.stats?.totalCheckIns || 0;
+    const totalBesties = besties.length || 0;
+
+    if (checkIns >= 7 && totalBesties >= 3) {
+      return {
+        status: 'excellent',
+        emoji: '🌟',
+        message: 'You\'re absolutely crushing it this week!',
+        tip: 'Keep up the amazing safety habits!'
+      };
+    } else if (checkIns >= 3 || totalBesties >= 3) {
+      return {
+        status: 'good',
+        emoji: '💪',
+        message: 'You\'re doing great! Keep it up!',
+        tip: 'Try to check in regularly and add more besties.'
+      };
+    } else {
+      return {
+        status: 'needsWork',
+        emoji: '💜',
+        message: 'Let\'s build your safety network!',
+        tip: 'Start by adding your closest friends as besties.'
+      };
     }
   };
+
+  const weeklySummary = getWeeklySummary();
 
   if (loading) {
     return (
@@ -218,16 +251,16 @@ const HomePage = () => {
   }
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen bg-pattern">
-        <OfflineBanner />
+    <div className="min-h-screen bg-pattern">
+      <OfflineBanner />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
-        {/* Needs Attention Section - Featured Circle Only */}
-        <NeedsAttentionSection
-          missedCheckIns={missedCheckIns}
-          requestsForAttention={requestsForAttention}
-          besties={besties}
+        {/* Weekly Summary */}
+        <WeeklySummary
+          weeklySummary={weeklySummary}
+          hasWeekOfActivity={hasWeekOfActivity()}
+          userData={userData}
+          bestiesCount={besties.length}
         />
 
         {/* Stats Card - Moved above Quick Check-In */}
@@ -275,9 +308,6 @@ const HomePage = () => {
         {activeCheckIns.length === 0 && (
           <>
             <QuickCheckInButtons />
-
-            {/* Bestie Circle Status */}
-            <BestieCircleStatus userId={currentUser?.uid} />
 
             {/* Request Attention Button */}
             {userData?.requestAttention?.active ? (
@@ -631,8 +661,7 @@ const HomePage = () => {
           </div>
         </div>
       )}
-      </div>
-    </PullToRefresh>
+    </div>
   );
 };
 

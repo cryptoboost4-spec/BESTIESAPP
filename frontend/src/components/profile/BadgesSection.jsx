@@ -79,7 +79,7 @@ const BadgesSection = ({
                   {featuredBadges.map((badge) => (
                     <div
                       key={badge.id}
-                      className="card p-4 text-center transition-all bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg"
+                      className="p-4 rounded-2xl text-center transition-all bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg"
                     >
                       <div className="text-4xl mb-2">{badge.icon}</div>
                       <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
@@ -100,7 +100,7 @@ const BadgesSection = ({
                       {otherBadges.map((badge) => (
                         <div
                           key={badge.id}
-                          className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-32"
+                          className="p-4 rounded-2xl text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-32 shadow-md"
                         >
                           <div className="text-4xl mb-2">{badge.icon}</div>
                           <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
@@ -113,7 +113,7 @@ const BadgesSection = ({
                     {otherBadges.map((badge) => (
                       <div
                         key={badge.id}
-                        className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700"
+                        className="p-4 rounded-2xl text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 shadow-md"
                       >
                         <div className="text-4xl mb-2">{badge.icon}</div>
                         <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
@@ -125,7 +125,7 @@ const BadgesSection = ({
             )}
           </>
         ) : (
-          <div className="card p-8 text-center">
+          <div className="p-8 rounded-2xl bg-white dark:bg-gray-800 shadow-md text-center">
             <div className="text-5xl mb-3">🏆</div>
             <p className="text-gray-800 dark:text-gray-200 font-semibold mb-2">
               Start earning badges!

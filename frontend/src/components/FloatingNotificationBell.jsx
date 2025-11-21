@@ -128,17 +128,22 @@ const FloatingNotificationBell = () => {
   };
 
   return (
-    <div className="fixed top-4 left-4 z-50" ref={dropdownRef}>
+    <div
+      className={`fixed top-4 right-0 z-50 transition-transform duration-300 ease-in-out ${
+        unreadCount > 0 ? 'translate-x-0' : 'translate-x-[calc(100%-2rem)]'
+      }`}
+      ref={dropdownRef}
+    >
       {/* Floating Bell Button */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         className={`
           relative flex items-center justify-center
-          ${unreadCount > 0 ? 'w-16 h-16 px-4' : 'w-12 h-12'}
+          ${unreadCount > 0 ? 'w-20 h-16 px-4' : 'w-16 h-16'}
           ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'}
-          rounded-full shadow-lg
+          rounded-l-full shadow-lg
           transition-all duration-300 ease-in-out
-          border-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}
+          border-2 border-r-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}
         `}
       >
         {/* Bell Icon SVG */}
@@ -173,7 +178,7 @@ const FloatingNotificationBell = () => {
 
       {/* Dropdown Panel */}
       {showDropdown && (
-        <div className={`absolute top-full left-0 mt-2 w-80 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-2xl border-2 z-50 max-h-96 overflow-hidden flex flex-col transition-colors`}>
+        <div className={`absolute top-full right-0 mt-2 w-80 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-2xl border-2 z-50 max-h-96 overflow-hidden flex flex-col transition-colors`}>
           {/* Header */}
           <div className={`p-4 border-b-2 ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-100 bg-gradient-to-r from-pink-50 to-purple-50'}`}>
             <h3 className={`font-display text-lg ${isDark ? 'text-gray-100' : 'text-text-primary'} flex items-center justify-between`}>

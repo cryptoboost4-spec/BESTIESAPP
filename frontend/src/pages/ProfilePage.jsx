@@ -8,8 +8,9 @@ import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileCompletion from '../components/profile/ProfileCompletion';
-import WeeklySummary from '../components/profile/WeeklySummary';
 import LoginStreak from '../components/profile/LoginStreak';
+import BestieCircleStatus from '../components/BestieCircleStatus';
+import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import BadgesSection from '../components/profile/BadgesSection';
 import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
@@ -327,13 +328,15 @@ const ProfilePage = () => {
           onTaskNavigation={handleTaskNavigation}
         />
 
-        {/* Weekly Summary */}
-        <WeeklySummary
-          weeklySummary={weeklySummary}
-          hasWeekOfActivity={hasWeekOfActivity()}
-          userData={userData}
-          bestiesCount={bestiesCount}
+        {/* Needs Attention Section */}
+        <NeedsAttentionSection
+          missedCheckIns={[]}
+          requestsForAttention={[]}
+          besties={[]}
         />
+
+        {/* Bestie Circle Status */}
+        <BestieCircleStatus userId={currentUser?.uid} />
 
         {/* Login Streak */}
         <LoginStreak loginStreak={loginStreak} />
