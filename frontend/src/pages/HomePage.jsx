@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs, getDoc, orderBy, limit } from 'firebase/firestore';
+import { doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
 import DonationCard from '../components/DonationCard';
