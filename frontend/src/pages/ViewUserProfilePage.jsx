@@ -5,6 +5,7 @@ import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import Header from '../components/Header';
 import CountUp from '../components/CountUp';
+import toast from 'react-hot-toast';
 
 const ViewUserProfilePage = () => {
   const { userId } = useParams();
@@ -153,33 +154,83 @@ const ViewUserProfilePage = () => {
       <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
-        {/* Profile Header */}
+        {/* Profile Header - ENHANCED */}
         <div
-          className="card p-6 mb-6 text-center relative overflow-hidden"
-          style={{ background: user?.profile?.backgroundGradient || 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)' }}
+          className="card p-8 mb-6 text-center relative overflow-hidden"
+          style={{ background: user?.profile?.backgroundGradient || 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #ddd6fe 100%)' }}
         >
-          <div className="w-32 h-32 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center text-white text-5xl font-display overflow-hidden border-4 border-white shadow-xl">
-            {user?.photoURL ? (
-              <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              user?.displayName?.[0] || 'U'
+          {/* Floating decorative elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-6 left-6 text-3xl animate-float opacity-40">💖</div>
+            <div className="absolute top-10 right-8 text-2xl animate-float delay-1s opacity-40">✨</div>
+            <div className="absolute bottom-10 left-10 text-2xl animate-float delay-2s opacity-40">🌸</div>
+            <div className="absolute bottom-6 right-6 text-3xl animate-float delay-3s opacity-40">💫</div>
+          </div>
+
+          <div className="relative z-10">
+            <div className="w-36 h-36 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center text-white text-5xl font-display overflow-hidden border-4 border-white shadow-2xl ring-4 ring-purple-200">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                user?.displayName?.[0] || 'U'
+              )}
+            </div>
+
+            <h1 className="text-4xl font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-3">
+              {user?.displayName || 'User'}
+            </h1>
+
+            <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm text-primary rounded-full text-sm font-semibold shadow-lg">
+                <span>💜</span>
+                <span>Your Bestie</span>
+              </div>
+              {user?.requestAttention?.active && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-semibold shadow-lg animate-pulse">
+                  <span>💬</span>
+                  <span>{user.requestAttention.tag}</span>
+                </div>
+              )}
+            </div>
+
+            {user?.profile?.bio && (
+              <p className="text-gray-800 italic max-w-md mx-auto mt-4 text-lg">
+                "{user.profile.bio}"
+              </p>
             )}
+
+            {/* Quick Actions */}
+            <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
+              <button
+                onClick={() => {
+                  const phone = user?.phoneNumber || user?.phone;
+                  if (phone) {
+                    window.location.href = `sms:${phone}`;
+                  } else {
+                    toast.error('No phone number available');
+                  }
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-6 rounded-full transition-all shadow-lg hover:scale-105 flex items-center gap-2"
+              >
+                <span>💬</span>
+                <span>Send Message</span>
+              </button>
+              <button
+                onClick={() => {
+                  const phone = user?.phoneNumber || user?.phone;
+                  if (phone) {
+                    window.location.href = `tel:${phone}`;
+                  } else {
+                    toast.error('No phone number available');
+                  }
+                }}
+                className="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2.5 px-6 rounded-full transition-all shadow-lg hover:scale-105 flex items-center gap-2"
+              >
+                <span>📞</span>
+                <span>Call</span>
+              </button>
+            </div>
           </div>
-
-          <h1 className="text-3xl font-display text-gray-800 mb-2">
-            {user?.displayName || 'User'}
-          </h1>
-
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-sm text-primary rounded-full text-sm font-semibold mb-2 shadow-sm">
-            <span>💜</span>
-            <span>Your Bestie</span>
-          </div>
-
-          {user?.profile?.bio && (
-            <p className="text-gray-700 italic max-w-md mx-auto mt-4">
-              "{user.profile.bio}"
-            </p>
-          )}
         </div>
 
         {/* Stats Section - Visible to Besties */}
