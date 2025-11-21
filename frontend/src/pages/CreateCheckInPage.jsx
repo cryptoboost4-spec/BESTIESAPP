@@ -14,10 +14,10 @@ import ProfileWithBubble from '../components/ProfileWithBubble';
 // Luxury girly skeleton loader for check-in creation
 const CheckInLoader = () => {
   const messages = [
-    { text: "Wrapping you in safety...", subtext: "Your besties will watch over you 💖" },
-    { text: "Building your protection...", subtext: "We've got your back, always ✨" },
-    { text: "Setting up your safety circle...", subtext: "You're never alone with us 🌸" },
-    { text: "Preparing your safety net...", subtext: "Because you deserve to feel secure 💕" },
+    "Wrapping you in safety... Your besties will watch over you 💖",
+    "Building your protection... We've got your back, always ✨",
+    "Setting up your safety circle... You're never alone with us 🌸",
+    "Preparing your safety net... Because you deserve to feel secure 💕",
   ];
 
   // Pick one random message for this check-in
@@ -180,6 +180,8 @@ const CreateCheckInPage = () => {
   const { executeOptimistic } = useOptimisticUpdate();
   const [gpsCoords, setGpsCoords] = useState(null); // Store GPS coordinates for map display
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [mapLocked, setMapLocked] = useState(true); // Map starts locked
+  const [expandedBestieShare, setExpandedBestieShare] = useState(null); // Track which bestie's share menu is open
 
   // Map default center (San Francisco)
   const mapCenter = { lat: 37.7749, lng: -122.4194 };
@@ -405,16 +407,14 @@ const CreateCheckInPage = () => {
       return () => clearInterval(interval);
     }
 
-    // Load script
+    // Load script with loading=async
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
 
-    // Create global callback
-    window.initMap = () => {
+    script.onload = () => {
       setAutocompleteLoaded(true);
-      delete window.initMap; // Clean up
     };
 
     script.onerror = () => {
@@ -424,12 +424,7 @@ const CreateCheckInPage = () => {
 
     document.head.appendChild(script);
 
-    return () => {
-      // Don't remove script on unmount - keep it for other page visits
-      if (window.initMap) {
-        delete window.initMap;
-      }
-    };
+    // No cleanup needed - script stays loaded for other page visits
   }, []);
 
   // Initialize Map when API is loaded
@@ -437,7 +432,7 @@ const CreateCheckInPage = () => {
     if (!autocompleteLoaded || !mapRef.current || mapInitialized) return;
 
     try {
-      // Initialize Google Map with draggable enabled
+      // Initialize Google Map - locked by default
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: mapCenter,
         zoom: 12,
@@ -446,42 +441,55 @@ const CreateCheckInPage = () => {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        draggable: true, // Enable dragging
-        gestureHandling: 'greedy', // Allow single-finger drag on mobile
+        draggable: false, // Start locked
+        gestureHandling: 'none', // Disable all gestures initially
       });
 
-      // Update location when map is double-clicked
+      // Handle double-tap to unlock/place pin
       mapInstanceRef.current.addListener('dblclick', (event) => {
-        const clickedLocation = event.latLng;
-        const coords = { lat: clickedLocation.lat(), lng: clickedLocation.lng() };
+        if (mapLocked) {
+          // Unlock the map
+          setMapLocked(false);
+          mapInstanceRef.current.setOptions({
+            draggable: true,
+            gestureHandling: 'greedy'
+          });
+          toast.success('🗺️ Map unlocked! Drag to explore', { duration: 2000 });
+        } else {
+          // Place pin at double-tapped location
+          const clickedLocation = event.latLng;
+          const coords = { lat: clickedLocation.lat(), lng: clickedLocation.lng() };
 
-        // Center map on double-clicked location
-        mapInstanceRef.current.setCenter(clickedLocation);
-        setGpsCoords(coords);
+          // Center map on double-clicked location
+          mapInstanceRef.current.setCenter(clickedLocation);
+          setGpsCoords(coords);
 
-        // Reverse geocode to get address
-        const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode({ location: coords }, (results, status) => {
-          if (status === 'OK' && results[0]) {
-            setLocationInput(results[0].formatted_address);
-          }
-        });
+          // Reverse geocode to get address
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: coords }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              setLocationInput(results[0].formatted_address);
+            }
+          });
 
-        // Show success feedback
-        toast.success('📍 Pin location updated!', { duration: 1500 });
+          // Show success feedback
+          toast.success('📍 Pin location updated!', { duration: 1500 });
+        }
       });
 
-      // Show reminder on single click
+      // Show reminder on single click when locked
       mapInstanceRef.current.addListener('click', () => {
-        toast('💡 Double-tap to place your pin!', {
-          duration: 2000,
-          icon: '👆',
-          style: {
-            background: '#f3e8ff',
-            color: '#7e22ce',
-            fontWeight: 600,
-          }
-        });
+        if (mapLocked) {
+          toast('💡 Double-tap to unlock map!', {
+            duration: 2000,
+            icon: '🔒',
+            style: {
+              background: '#fef3c7',
+              color: '#92400e',
+              fontWeight: 600,
+            }
+          });
+        }
       });
 
       setMapInitialized(true);
@@ -490,7 +498,7 @@ const CreateCheckInPage = () => {
     }
     // mapCenter is a constant, not state
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autocompleteLoaded, mapInitialized]);
+  }, [autocompleteLoaded, mapInitialized, mapLocked]);
 
   // Initialize Autocomplete when API is loaded
   useEffect(() => {
@@ -624,6 +632,67 @@ const CreateCheckInPage = () => {
       }
       setSelectedBesties([...selectedBesties, bestieId]);
     }
+  };
+
+  const handleShareToAddPhone = (platform, bestieName) => {
+    const message = `Hey! You haven't added your phone number on Besties yet. I can't use you as my emergency contact until you do. Can you add it please? ❤️\n\nDownload Besties: ${window.location.origin}`;
+    const encoded = encodeURIComponent(message);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    switch (platform) {
+      case 'whatsapp':
+        if (isMobile) {
+          window.location.href = `whatsapp://send?text=${encoded}`;
+        } else {
+          window.open(`https://wa.me/?text=${encoded}`, '_blank');
+        }
+        break;
+      case 'messenger':
+        if (isMobile) {
+          window.location.href = `fb-messenger://share?link=${encodeURIComponent(window.location.origin)}`;
+          setTimeout(() => {
+            window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.origin)}&app_id=&redirect_uri=${encodeURIComponent(window.location.origin)}`, '_blank');
+          }, 1500);
+        } else {
+          window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.origin)}&app_id=&redirect_uri=${encodeURIComponent(window.location.origin)}`, '_blank', 'width=600,height=400');
+        }
+        break;
+      case 'instagram':
+        navigator.clipboard.writeText(message).then(() => {
+          toast.success('Message copied! Opening Instagram DMs...');
+          if (isMobile) {
+            window.location.href = 'instagram://direct/inbox';
+            setTimeout(() => {
+              window.open('https://www.instagram.com/direct/inbox/', '_blank');
+            }, 1500);
+          } else {
+            window.open('https://www.instagram.com/direct/inbox/', '_blank');
+          }
+        }).catch(() => {
+          toast.error('Failed to copy message');
+        });
+        break;
+      case 'sms':
+        window.location.href = `sms:?body=${encoded}`;
+        break;
+      case 'facebook':
+        const textEncoded = encodeURIComponent('Hey! Please add your phone number on Besties ❤️');
+        const urlEncoded = encodeURIComponent(window.location.origin);
+        if (isMobile) {
+          window.location.href = `fb://profile`;
+          setTimeout(() => {
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}&quote=${textEncoded}`, '_blank');
+          }, 1500);
+        } else {
+          window.open(`https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}&quote=${textEncoded}`, '_blank', 'width=600,height=400');
+        }
+        break;
+      default:
+        break;
+    }
+
+    toast.success(`Opening ${platform}...`);
+    setExpandedBestieShare(null); // Close the menu
   };
 
   const handlePhotoChange = (e) => {
@@ -902,7 +971,7 @@ const CreateCheckInPage = () => {
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              💡 <strong>Double-tap the map</strong> to place your pin, search for a place, or click the crosshair to use GPS
+              💡 <strong>Double-tap to unlock the map,</strong> then double-tap again to place your pin, or search for a place, or click the crosshair to use GPS
             </p>
           </div>
 
@@ -972,7 +1041,7 @@ const CreateCheckInPage = () => {
           {/* Select Besties */}
           <div className="card p-6">
             <label className="block text-lg font-display text-text-primary mb-3">
-              Who should we alert? 💜 (1-5)
+              Who should we alert? 💜
             </label>
 
             {besties.length === 0 ? (
@@ -989,42 +1058,126 @@ const CreateCheckInPage = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {besties.map((bestie) => (
-                  <button
-                    key={bestie.id}
-                    type="button"
-                    onClick={() => toggleBestie(bestie.id)}
-                    disabled={!bestie.phone}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      !bestie.phone
-                        ? 'border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 opacity-60 cursor-not-allowed'
-                        : selectedBesties.includes(bestie.id)
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <ProfileWithBubble
-                          photoURL={bestie.photoURL}
-                          name={bestie.name || bestie.email || 'Unknown'}
-                          requestAttention={bestie.requestAttention}
-                          size="md"
-                          showBubble={true}
-                        />
-                        <div>
-                          <div className="font-semibold text-text-primary">{bestie.name || bestie.email || 'Unknown'}</div>
-                          <div className="text-sm text-text-secondary">
-                            {bestie.phone ? bestie.email || bestie.phone : '⚠️ No phone number - ask them to add one'}
+                {besties.map((bestie) => {
+                  const selectionIndex = selectedBesties.indexOf(bestie.id);
+                  const isSelected = selectionIndex !== -1;
+                  const selectionNumber = isSelected ? selectionIndex + 1 : null;
+                  const isShareExpanded = expandedBestieShare === bestie.id;
+
+                  return (
+                    <div key={bestie.id} className="w-full">
+                      <button
+                        type="button"
+                        onClick={() => bestie.phone && toggleBestie(bestie.id)}
+                        disabled={!bestie.phone}
+                        className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                          !bestie.phone
+                            ? 'border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30'
+                            : isSelected
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <ProfileWithBubble
+                              photoURL={bestie.photoURL}
+                              name={bestie.name || bestie.email || 'Unknown'}
+                              requestAttention={bestie.requestAttention}
+                              size="md"
+                              showBubble={true}
+                            />
+                            <div className="flex-1">
+                              <div className="font-semibold text-text-primary">{bestie.name || bestie.email || 'Unknown'}</div>
+                              <div className="text-sm text-text-secondary">
+                                {bestie.phone ? bestie.email || bestie.phone : '⚠️ No phone number'}
+                              </div>
+                            </div>
+                          </div>
+                          {bestie.phone ? (
+                            isSelected && (
+                              <div className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">
+                                {selectionNumber}/5
+                              </div>
+                            )
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedBestieShare(isShareExpanded ? null : bestie.id);
+                              }}
+                              className="btn btn-sm btn-primary"
+                            >
+                              Ask to Add
+                            </button>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Social Share Menu for No Phone */}
+                      {!bestie.phone && isShareExpanded && (
+                        <div className="mt-2 p-4 bg-purple-50 dark:bg-purple-900/30 border-2 border-purple-200 dark:border-purple-800 rounded-xl">
+                          <p className="text-sm font-semibold text-purple-900 dark:text-purple-200 mb-3">
+                            📱 Ask {bestie.name} to add their phone number
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleShareToAddPhone('whatsapp', bestie.name)}
+                              className="flex flex-col items-center gap-1 p-3 rounded-lg bg-[#25D366] hover:bg-[#20BA5A] text-white transition-colors"
+                            >
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                              </svg>
+                              <span className="text-xs">WhatsApp</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleShareToAddPhone('messenger', bestie.name)}
+                              className="flex flex-col items-center gap-1 p-3 rounded-lg bg-[#0084FF] hover:bg-[#0073E6] text-white transition-colors"
+                            >
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0C5.373 0 0 4.975 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.09.301 2.246.464 3.442.464 6.627 0 12-4.974 12-11.111C24 4.975 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/>
+                              </svg>
+                              <span className="text-xs">Messenger</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleShareToAddPhone('instagram', bestie.name)}
+                              className="flex flex-col items-center gap-1 p-3 rounded-lg bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] hover:opacity-90 text-white transition-opacity"
+                            >
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                              </svg>
+                              <span className="text-xs">Instagram</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleShareToAddPhone('sms', bestie.name)}
+                              className="flex flex-col items-center gap-1 p-3 rounded-lg bg-success hover:bg-green-600 text-white transition-colors"
+                            >
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                              </svg>
+                              <span className="text-xs">SMS</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleShareToAddPhone('facebook', bestie.name)}
+                              className="flex flex-col items-center gap-1 p-3 rounded-lg bg-[#1877F2] hover:bg-[#166FE5] text-white transition-colors"
+                            >
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                              </svg>
+                              <span className="text-xs">Facebook</span>
+                            </button>
                           </div>
                         </div>
-                      </div>
-                      {selectedBesties.includes(bestie.id) && (
-                        <div className="text-primary text-xl">✓</div>
                       )}
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -1033,24 +1186,24 @@ const CreateCheckInPage = () => {
             </div>
           </div>
 
-          {/* Notes */}
+          {/* Notes and Photos Combined */}
           <div className="card p-6">
             <label className="block text-lg font-display text-text-primary mb-3">
-              Notes (Optional) 📝
+              Notes & Photos (Optional) 📝📸
             </label>
+
+            {/* Notes */}
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="input min-h-[100px] resize-none"
+              className="input min-h-[100px] resize-none mb-4"
               placeholder="Any additional info for your besties..."
             />
-          </div>
 
-          {/* Photos */}
-          <div className="card p-6">
-            <label className="block text-lg font-display text-text-primary mb-3">
-              Add Photos (Optional) 📸 ({photoFiles.length}/5)
-            </label>
+            {/* Photos */}
+            <div className="text-sm font-semibold text-text-primary mb-2">
+              Add Photos ({photoFiles.length}/5)
+            </div>
 
             {/* Photo grid */}
             {photoPreviews.length > 0 && (
