@@ -537,7 +537,7 @@ const CheckInCard = ({ checkIn }) => {
     });
   };
 
-  const handleUpdateLocation = async (retryCount = 0) => {
+  const handleUpdateLocation = async () => {
     if (!navigator.geolocation) {
       toast.error('Geolocation is not supported by your browser');
       return;
@@ -547,12 +547,12 @@ const CheckInCard = ({ checkIn }) => {
     haptic.medium();
 
     try {
-      // Get current position with improved settings
+      // Get current position quickly - prioritize speed over accuracy
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,      // Use GPS for better accuracy
-          timeout: 30000,                 // 30 second timeout (increased from 10s)
-          maximumAge: 0                   // Don't use cached location
+          enableHighAccuracy: false,     // Faster location (network/WiFi instead of GPS)
+          timeout: 5000,                  // 5 second timeout for speed
+          maximumAge: 10000               // Accept cached location up to 10s old
         });
       });
 
@@ -580,34 +580,18 @@ const CheckInCard = ({ checkIn }) => {
       });
 
       setCurrentLocation(locationName);
-      toast.success(`Location updated! (Accuracy: ${Math.round(accuracy)}m)`);
+      toast.success('Location updated!');
     } catch (error) {
       console.error('Error updating location:', error);
-
-      // Retry logic for timeout errors
-      if (error.code === 3 && retryCount < 2) {
-        toast(`Location timeout. Retrying... (${retryCount + 1}/2)`, {
-          icon: '🔄',
-          duration: 2000
-        });
-        setTimeout(() => handleUpdateLocation(retryCount + 1), 2000);
-        return;
-      }
-
       if (error.code === 1) {
-        toast.error('Location permission denied. Please enable location access in your browser settings.', { duration: 6000 });
-      } else if (error.code === 2) {
-        toast.error('Location unavailable. Make sure location services are enabled on your device.', { duration: 5000 });
+        toast.error('Location permission denied. Please enable location access.', { duration: 4000 });
       } else if (error.code === 3) {
-        toast.error('Location request timed out. Please try again or move to an area with better GPS signal.', { duration: 5000 });
+        toast.error('Location timeout. Please try again.', { duration: 3000 });
       } else {
-        toast.error('Failed to update location. Please try again.');
+        toast.error('Failed to update location');
       }
-      setUpdatingLocation(false);
     } finally {
-      if (retryCount === 0) {
-        setUpdatingLocation(false);
-      }
+      setUpdatingLocation(false);
     }
   };
 

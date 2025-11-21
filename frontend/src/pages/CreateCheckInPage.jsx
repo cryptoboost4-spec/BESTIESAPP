@@ -241,30 +241,33 @@ const CreateCheckInPage = () => {
         setDuration(quickDuration);
       }
 
-      // Note: Auto-submit removed - users can now review quick check-ins before submitting
+      // If skipLocation is true, set location and trigger auto-submit
+      if (skipLocation) {
+        setLocationInput('No location set');
 
-      // Handle rideshare - add rego to notes and set location
+        // Auto-submit after brief delay to let state update
+        setTimeout(() => {
+          // Programmatically submit the form by calling handleSubmit
+          const submitBtn = document.querySelector('#create-checkin-submit-btn');
+          if (submitBtn) {
+            submitBtn.click();
+          }
+        }, 100);
+      }
+
+      // Handle rideshare - add rego to notes
       if (quickType === 'rideshare' && rego) {
         setNotes(`🚗 Rideshare - Vehicle: ${rego}`);
-        if (skipLocation) {
-          setLocationInput('In transit - will update location');
-        }
       }
 
       // Handle quick meet - set meeting with
       if (quickType === 'quickmeet' && meetingWithParam) {
         setMeetingWith(meetingWithParam);
-        if (skipLocation) {
-          setLocationInput('Meeting location - will update');
-        }
       }
 
-      // Handle walking - add note and set location
+      // Handle walking - add note
       if (quickType === 'walking') {
         setNotes('🚶‍♀️ Walking alone');
-        if (skipLocation) {
-          setLocationInput('Walking - will update location');
-        }
       }
     }
 
@@ -1375,11 +1378,11 @@ const CreateCheckInPage = () => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    // Mobile keyboard "Done" or "Go" button (Enter without shift)
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
                       setNotesExpanded(false);
-                    }
-                    if (e.key === 'Escape') {
-                      setNotesExpanded(false);
+                      e.target.blur(); // Dismiss keyboard
                     }
                   }}
                   className="input min-h-[120px] resize-none"
