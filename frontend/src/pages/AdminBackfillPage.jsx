@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import toast from 'react-hot-toast';
 
 const AdminBackfillPage = () => {
-  const { currentUser, userData } = useAuth();
+  const { userData } = useAuth();
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState(null);
 
