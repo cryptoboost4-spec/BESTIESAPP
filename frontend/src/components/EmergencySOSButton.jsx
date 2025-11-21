@@ -59,10 +59,12 @@ const EmergencySOSButton = () => {
   const [alertSent, setAlertSent] = useState(false); // Show orange alert screen after SOS sent
   const [holdProgress, setHoldProgress] = useState(0); // Progress for hold-to-cancel (0-100)
   const [showAllCountries, setShowAllCountries] = useState(false);
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false); // Show passcode verification modal
+  const [passcodeInput, setPasscodeInput] = useState('');
   const countdownInterval = useRef(null);
   const holdIntervalRef = useRef(null);
   const holdStartTimeRef = useRef(null);
-  const { executeOptimistic } = useOptimisticUpdate();
+  const { executeOptimistic} = useOptimisticUpdate();
 
   // Detect user's country (phone number first, then timezone)
   const userCountry = detectUserCountry(userData?.phoneNumber);
@@ -193,14 +195,82 @@ const EmergencySOSButton = () => {
     toast.error('Hold button for 10 seconds to cancel alert');
   };
 
+  const sendDuressAlert = async () => {
+    try {
+      // Get location
+      let location = 'Location unavailable';
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+          });
+          location = `GPS: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+        } catch (err) {
+          console.error('Location error:', err);
+        }
+      }
+
+      // Create duress alert
+      await addDoc(collection(db, 'emergency_sos'), {
+        userId: currentUser.uid,
+        userName: userData?.displayName || 'User',
+        location,
+        timestamp: Timestamp.now(),
+        status: 'active',
+        type: 'duress',
+        message: '🚨 DURESS CODE USED - User is in danger and being forced to cancel!'
+      });
+    } catch (error) {
+      console.error('Error sending duress alert:', error);
+    }
+  };
+
+  const verifyPasscode = () => {
+    const safetyCode = userData?.security?.safetyPasscode;
+    const duressCode = userData?.security?.duressCode;
+
+    if (passcodeInput === safetyCode) {
+      // Correct safety passcode - cancel alert
+      setShowPasscodeModal(false);
+      setPasscodeInput('');
+      setAlertSent(false);
+      setHoldProgress(0);
+      toast.success('Emergency alert cancelled');
+    } else if (passcodeInput === duressCode && duressCode) {
+      // Duress code entered - appear to cancel but actually send emergency alert
+      setShowPasscodeModal(false);
+      setPasscodeInput('');
+      toast.success('Emergency alert cancelled');
+      // Secretly send duress alert
+      sendDuressAlert();
+      // Hide the alert screen to make it appear cancelled
+      setTimeout(() => {
+        setAlertSent(false);
+        setHoldProgress(0);
+      }, 1000);
+    } else {
+      // Incorrect passcode
+      toast.error('Incorrect passcode');
+      setPasscodeInput('');
+    }
+  };
+
   const handleCancelAlert = () => {
     if (holdIntervalRef.current) {
       clearInterval(holdIntervalRef.current);
       holdIntervalRef.current = null;
     }
-    setAlertSent(false);
-    setHoldProgress(0);
-    toast.success('Emergency alert cancelled');
+
+    // Check if passcode is required
+    if (userData?.security?.safetyPasscode) {
+      // Show passcode verification modal
+      setShowPasscodeModal(true);
+    } else {
+      // No passcode required, cancel immediately
+      setAlertSent(false);
+      setHoldProgress(0);
+      toast.success('Emergency alert cancelled');
+    }
   };
 
   // Orange alert screen after SOS is sent (LOCKED - must hold 10 seconds to escape)
@@ -208,7 +278,7 @@ const EmergencySOSButton = () => {
     return (
       <div className="fixed inset-0 bg-orange-500/95 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
         <div className="text-center max-w-md w-full my-8">
-          <div className="text-8xl mb-6 animate-pulse">
+          <div className="text-8xl mb-6">
             🚨
           </div>
           <h2 className="text-4xl font-display text-white mb-4">
@@ -322,14 +392,70 @@ const EmergencySOSButton = () => {
   }
 
   return (
-    <button
-      onClick={handleSOSPress}
-      className="fixed bottom-24 right-6 w-20 h-20 bg-danger text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95 flex flex-col items-center justify-center transition-all duration-200 z-40 animate-pulse"
-      title="Emergency SOS - Hold for 5 seconds"
-    >
-      <span className="text-3xl">🆘</span>
-      <span className="text-xs font-bold">SOS</span>
-    </button>
+    <>
+      <button
+        onClick={handleSOSPress}
+        className="fixed bottom-24 right-6 w-20 h-20 bg-danger text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95 flex flex-col items-center justify-center transition-all duration-200 z-40"
+        title="Emergency SOS - Hold for 5 seconds"
+      >
+        <span className="text-3xl">🆘</span>
+        <span className="text-xs font-bold">SOS</span>
+      </button>
+
+      {/* Passcode Verification Modal */}
+      {showPasscodeModal && (
+        <div className="fixed inset-0 bg-black/70 z-[10000] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 animate-scale-up">
+            <h2 className="text-2xl font-display text-text-primary mb-2 text-center">
+              🔒 Enter Safety Passcode
+            </h2>
+            <p className="text-sm text-text-secondary mb-6 text-center">
+              Verify your passcode to cancel the emergency alert
+            </p>
+
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={passcodeInput}
+              onChange={(e) => setPasscodeInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  verifyPasscode();
+                }
+              }}
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 focus:border-primary focus:outline-none text-center text-2xl font-bold tracking-widest mb-4"
+              placeholder="••••"
+              autoFocus
+              maxLength={8}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasscodeModal(false);
+                  setPasscodeInput('');
+                }}
+                className="flex-1 btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={verifyPasscode}
+                disabled={!passcodeInput}
+                className="flex-1 btn btn-primary disabled:opacity-50"
+              >
+                Verify
+              </button>
+            </div>
+
+            <p className="text-xs text-text-secondary text-center mt-4">
+              Don't have a passcode set? <a href="/settings" className="text-primary underline">Set one up</a>
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

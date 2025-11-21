@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp, getDocs, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -6,56 +6,16 @@ import haptic from '../utils/hapticFeedback';
 
 /**
  * "Get Me Out of Here" emergency button
- * Hold for 3 seconds to send "please call me" notification to all besties
+ * Click to send "please call me" notification to all besties
  * Non-emergency - for uncomfortable situations needing an exit
  */
 const GetMeOutButton = ({ currentUser, userData }) => {
-  const [isHolding, setIsHolding] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [sending, setSending] = useState(false);
-  const holdTimer = useRef(null);
-  const progressInterval = useRef(null);
-
-  const handleMouseDown = () => {
-    if (sending) return;
-
-    // Emergency haptic feedback when button is pressed
-    haptic.emergency();
-
-    setIsHolding(true);
-    setProgress(0);
-
-    // Progress animation
-    progressInterval.current = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(progressInterval.current);
-          return 100;
-        }
-        return prev + (100 / 30); // 30 frames over 3 seconds
-      });
-    }, 100);
-
-    // Trigger after 3 seconds
-    holdTimer.current = setTimeout(() => {
-      triggerGetMeOut();
-    }, 3000);
-  };
-
-  const handleMouseUp = () => {
-    setIsHolding(false);
-    setProgress(0);
-    if (holdTimer.current) {
-      clearTimeout(holdTimer.current);
-    }
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-  };
 
   const triggerGetMeOut = async () => {
     setSending(true);
-    setProgress(100);
+    setShowConfirmation(false);
 
     try {
       // Get all besties
@@ -83,7 +43,6 @@ const GetMeOutButton = ({ currentUser, userData }) => {
       if (bestieIds.size === 0) {
         toast.error('You need besties to use this feature');
         setSending(false);
-        setIsHolding(false);
         return;
       }
 
@@ -113,95 +72,82 @@ const GetMeOutButton = ({ currentUser, userData }) => {
       // Reset after 2 seconds
       setTimeout(() => {
         setSending(false);
-        setIsHolding(false);
-        setProgress(0);
       }, 2000);
 
     } catch (error) {
       console.error('Error sending Get Me Out alert:', error);
       toast.error('Failed to send alert. Please try again.');
       setSending(false);
-      setIsHolding(false);
-      setProgress(0);
     }
   };
 
   return (
-    <div className="relative inline-block">
-      <button
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleMouseDown}
-        onTouchEnd={handleMouseUp}
-        disabled={sending}
-        className={`relative w-full p-4 rounded-xl font-bold text-white shadow-lg transition-all duration-200 ${
-          sending
-            ? 'bg-green-500 scale-95'
-            : isHolding
-            ? 'bg-orange-600 scale-95'
-            : 'bg-gradient-to-r from-orange-500 to-red-500 hover:scale-105'
-        } ${sending ? 'cursor-wait' : 'cursor-pointer'} active:scale-95`}
-      >
-        {/* Progress ring */}
-        {isHolding && !sending && (
-          <svg className="absolute inset-0 w-full h-full" style={{ transform: 'rotate(-90deg)' }}>
-            <circle
-              cx="50%"
-              cy="50%"
-              r="45%"
-              fill="none"
-              stroke="white"
-              strokeWidth="4"
-              opacity="0.3"
-            />
-            <circle
-              cx="50%"
-              cy="50%"
-              r="45%"
-              fill="none"
-              stroke="white"
-              strokeWidth="4"
-              strokeDasharray={`${2 * Math.PI * 45} ${2 * Math.PI * 45}`}
-              strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-              className="transition-all duration-100"
-            />
-          </svg>
-        )}
-
-        {/* Button content */}
-        <div className="relative z-10 flex items-center justify-center gap-2">
-          {sending ? (
-            <>
-              <span className="text-xl">✓</span>
-              <span>Notifying your besties...</span>
-            </>
-          ) : isHolding ? (
-            <>
-              <span className="text-xl animate-pulse">⏱️</span>
-              <span>Hold...</span>
-            </>
-          ) : (
-            <>
-              <span className="text-xl">📞</span>
-              <span>Get Me Out of Here</span>
-            </>
-          )}
-        </div>
-      </button>
-
-      {!sending && !isHolding && (
-        <p className="text-xs text-center text-gray-500 mt-2">
-          Hold for 3 seconds to alert your besties
-        </p>
-      )}
+    <>
+      <div className="flex justify-center">
+        <button
+          onClick={() => {
+            haptic.medium();
+            setShowConfirmation(true);
+          }}
+          disabled={sending}
+          className={`w-full max-w-md p-4 rounded-xl font-bold text-white shadow-lg transition-all duration-200 ${
+            sending
+              ? 'bg-green-500 scale-95'
+              : 'bg-gradient-to-r from-orange-500 to-red-500 hover:scale-105'
+          } ${sending ? 'cursor-wait' : 'cursor-pointer'} active:scale-95`}
+        >
+          {/* Button content */}
+          <div className="flex items-center justify-center gap-2">
+            {sending ? (
+              <>
+                <span className="text-xl">✓</span>
+                <span>Notifying your besties...</span>
+              </>
+            ) : (
+              <>
+                <span className="text-xl">📞</span>
+                <span>Get Me Out of Here</span>
+              </>
+            )}
+          </div>
+        </button>
+      </div>
 
       {sending && (
         <p className="text-xs text-center text-green-600 mt-2 font-semibold">
           💜 Your besties will call you soon!
         </p>
       )}
-    </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-display text-text-primary mb-2">
+              🆘 Need an Exit?
+            </h2>
+            <p className="text-base text-text-secondary mb-6">
+              Are you sure? We will get your besties on the job!
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="flex-1 btn btn-secondary"
+              >
+                No
+              </button>
+              <button
+                onClick={triggerGetMeOut}
+                className="flex-1 btn bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+              >
+                Yes, Get Me Out!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
