@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, storage } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -9,7 +8,6 @@ import toast from 'react-hot-toast';
 
 const OnboardingPage = () => {
   const { currentUser, userData } = useAuth();
-  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [step, setStep] = useState('welcome'); // welcome, slides, name, photo, invite-welcome, bestie-circle
   const [slideIndex, setSlideIndex] = useState(0);

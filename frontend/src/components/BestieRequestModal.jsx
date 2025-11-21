@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
 import html2canvas from 'html2canvas';
 
@@ -51,7 +50,6 @@ const CARD_TEMPLATES = [
 
 const BestieRequestModal = ({ onClose }) => {
   const { userData, currentUser } = useAuth();
-  const { isDark } = useDarkMode();
   const [selectedTemplate, setSelectedTemplate] = useState(CARD_TEMPLATES[0]);
   const [customMessage, setCustomMessage] = useState(CARD_TEMPLATES[0].defaultMessage);
   const [generatingImage, setGeneratingImage] = useState(false);
