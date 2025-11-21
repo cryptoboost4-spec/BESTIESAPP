@@ -820,25 +820,57 @@ const ProfilePage = () => {
 
           {allBadgesToShow.length > 0 ? (
             <>
-              <div className="grid grid-cols-3 gap-4">
-                {allBadgesToShow.map((badge) => {
-                  const isFeatured = featuredBadgeIds.includes(badge.id);
-                  return (
-                    <div
-                      key={badge.id}
-                      className={`card p-4 text-center transition-all ${
-                        isFeatured
-                          ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg scale-105'
-                          : 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700'
-                      }`}
-                    >
-                      <div className="text-4xl mb-2">{badge.icon}</div>
-                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
-                      {isFeatured && <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">⭐ Featured</div>}
+              {/* Featured Badges - Show prominently */}
+              {featuredBadges.length > 0 && (
+                <div className="mb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {featuredBadges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="card p-4 text-center transition-all bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg"
+                      >
+                        <div className="text-4xl mb-2">{badge.icon}</div>
+                        <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
+                        <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">⭐ Featured</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other Badges - Scrollable horizontal list if many */}
+              {otherBadges.length > 0 && (
+                <div>
+                  {otherBadges.length > 6 ? (
+                    <>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Scroll to see all badges →</p>
+                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                        {otherBadges.map((badge) => (
+                          <div
+                            key={badge.id}
+                            className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-28"
+                          >
+                            <div className="text-3xl mb-2">{badge.icon}</div>
+                            <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {otherBadges.map((badge) => (
+                        <div
+                          key={badge.id}
+                          className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700"
+                        >
+                          <div className="text-4xl mb-2">{badge.icon}</div>
+                          <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
+                        </div>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <div className="card p-8 text-center">
@@ -1061,6 +1093,15 @@ const ProfilePage = () => {
 
       {/* Shimmer Effect and Aura Animations CSS */}
       <style>{`
+        /* Hide scrollbar for horizontal badge scroll */
+        .scrollbar-hide {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;  /* Chrome, Safari, Opera */
+        }
+
         @keyframes shimmer {
           0% {
             transform: translateX(-100%);
