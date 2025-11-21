@@ -6,38 +6,51 @@ const LegalSection = ({ navigate }) => {
       <h2 className="text-xl font-display text-text-primary mb-4">Legal & Privacy</h2>
 
       <div className="space-y-3">
-        <button
-          onClick={() => navigate('/terms')}
-          className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+        <a
+          href="/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          <div className="text-left">
-            <div className="font-semibold text-text-primary">Terms of Service</div>
-            <div className="text-sm text-text-secondary">Read our terms and conditions</div>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🔒</span>
+            <div>
+              <div className="font-semibold text-text-primary">Privacy Policy</div>
+              <div className="text-xs text-text-secondary">How we protect your data</div>
+            </div>
           </div>
-          <span className="text-gray-400">→</span>
-        </button>
+          <span className="text-gray-400 dark:text-gray-500">→</span>
+        </a>
 
-        <button
-          onClick={() => navigate('/privacy')}
-          className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+        <a
+          href="/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          <div className="text-left">
-            <div className="font-semibold text-text-primary">Privacy Policy</div>
-            <div className="text-sm text-text-secondary">How we protect your data</div>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📜</span>
+            <div>
+              <div className="font-semibold text-text-primary">Terms of Service</div>
+              <div className="text-xs text-text-secondary">Terms and conditions</div>
+            </div>
           </div>
-          <span className="text-gray-400">→</span>
-        </button>
+          <span className="text-gray-400 dark:text-gray-500">→</span>
+        </a>
 
-        <button
-          onClick={() => navigate('/data')}
-          className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+        <a
+          href="/about"
+          className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          <div className="text-left">
-            <div className="font-semibold text-text-primary">Your Data</div>
-            <div className="text-sm text-text-secondary">Download or delete your data</div>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">💕</span>
+            <div>
+              <div className="font-semibold text-text-primary">About Besties</div>
+              <div className="text-xs text-text-secondary">Our story and mission</div>
+            </div>
           </div>
-          <span className="text-gray-400">→</span>
-        </button>
+          <span className="text-gray-400 dark:text-gray-500">→</span>
+        </a>
       </div>
     </div>
   );

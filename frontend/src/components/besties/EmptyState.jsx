@@ -1,6 +1,11 @@
 import React from 'react';
 
-const EmptyState = ({ onAddClick }) => {
+const EmptyState = ({ besties, pendingRequests, onAddBestie }) => {
+  // Only show empty state when there are no besties AND no pending requests
+  if ((besties && besties.length > 0) || (pendingRequests && pendingRequests.length > 0)) {
+    return null;
+  }
+
   return (
     <div className="card p-8 md:p-12 text-center">
       <div className="text-5xl md:text-6xl mb-4">💜</div>
@@ -11,7 +16,7 @@ const EmptyState = ({ onAddClick }) => {
         Add friends who'll have your back when you need them
       </p>
       <button
-        onClick={onAddClick}
+        onClick={onAddBestie}
         className="btn btn-primary"
       >
         Add Your First Bestie
