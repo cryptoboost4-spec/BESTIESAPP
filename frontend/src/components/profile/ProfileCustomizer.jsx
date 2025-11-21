@@ -21,6 +21,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [customBioFont, setCustomBioFont] = useState(userData?.profile?.customization?.customBioFont || '');
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [backgroundSearch, setBackgroundSearch] = useState('');
 
   // Popular Google Fonts list
   const POPULAR_FONTS = [
@@ -99,6 +100,16 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     return allBackgrounds.find(bg => bg.id === id);
   };
 
+  const filterBackgrounds = (backgrounds) => {
+    if (!backgroundSearch.trim()) return backgrounds;
+    const search = backgroundSearch.toLowerCase();
+    return backgrounds.filter(bg =>
+      bg.name.toLowerCase().includes(search) ||
+      bg.description.toLowerCase().includes(search) ||
+      bg.category.toLowerCase().includes(search)
+    );
+  };
+
   // Get current selections for preview
   const currentBackground = getBackgroundById(selectedBackground);
   const currentTypography = getTypographyById(selectedTypography);
@@ -140,14 +151,14 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     decorativeElements: []
   };
 
-  const getPhotoShapeClass = () => {
+  const getPhotoShapeClass = (shapeId = photoShape) => {
     const shapes = {
       circle: 'rounded-full',
       square: 'rounded-none',
       rounded: 'rounded-2xl',
       heart: 'heart-shape'
     };
-    return shapes[photoShape] || 'rounded-full';
+    return shapes[shapeId] || 'rounded-full';
   };
 
   const getPhotoBorderClass = () => {
@@ -168,7 +179,8 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           <div className="w-full max-w-sm">
             <h3 className="text-xs md:text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 md:mb-3 text-center">Live Preview</h3>
             <div
-              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''} rounded-xl md:rounded-2xl overflow-hidden shadow-xl scale-[0.75] md:scale-100 origin-top`}
+              key={`${selectedBackground}-${selectedLayout}-${selectedTypography}-${selectedSpecialEffect}-${photoShape}-${photoBorder}`}
+              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''} rounded-xl md:rounded-2xl overflow-hidden shadow-xl scale-[0.75] md:scale-100 origin-top transition-all duration-300 ease-out animate-fadeIn`}
               style={{ background: currentBackground?.gradient || '#fff' }}
             >
               <LayoutComponent {...layoutProps} />
@@ -181,12 +193,42 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           {/* Header - Sticky */}
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <div className="flex items-center justify-between p-2 md:p-4">
-              <h2 className="text-base md:text-lg font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                Customize ✨
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base md:text-lg font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                  Customize ✨
+                </h2>
+                <button
+                  onClick={() => {
+                    // Randomize everything!
+                    const allBackgrounds = Object.values(BACKGROUNDS).flat();
+                    const randomBg = allBackgrounds[Math.floor(Math.random() * allBackgrounds.length)];
+                    const randomLayout = LAYOUT_OPTIONS[Math.floor(Math.random() * LAYOUT_OPTIONS.length)];
+                    const randomTypo = TYPOGRAPHY_STYLES[Math.floor(Math.random() * TYPOGRAPHY_STYLES.length)];
+                    const randomEffect = SPECIAL_EFFECTS[Math.floor(Math.random() * SPECIAL_EFFECTS.length)];
+                    const shapes = ['circle', 'square', 'rounded', 'heart'];
+                    const borders = ['none', 'classic', 'metallic', 'scalloped'];
+                    const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+                    const randomBorder = borders[Math.floor(Math.random() * borders.length)];
+
+                    setSelectedBackground(randomBg.id);
+                    setSelectedLayout(randomLayout.id);
+                    setSelectedTypography(randomTypo.id);
+                    setSelectedSpecialEffect(randomEffect.id);
+                    setPhotoShape(randomShape);
+                    setPhotoBorder(randomBorder);
+
+                    toast('✨ Complete style randomized! ✨', { icon: '🎲' });
+                  }}
+                  className="px-2 py-1 text-xs md:text-sm rounded-lg bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold hover:shadow-lg transition-all whitespace-nowrap"
+                  title="Randomize everything!"
+                >
+                  <span className="hidden sm:inline">🎲 Surprise Me!</span>
+                  <span className="sm:hidden">🎲</span>
+                </button>
+              </div>
               <button
                 onClick={onClose}
-                className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-sm md:text-base"
+                className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-sm md:text-base transition-all"
               >
                 ✕
               </button>
@@ -223,9 +265,21 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             {/* VIBES TAB - Special Effects */}
             {activeTab === 'vibes' && (
               <div>
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-2 md:mb-4">
-                  Add special effects to your profile ✨
-                </p>
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    Add special effects to your profile ✨
+                  </p>
+                  <button
+                    onClick={() => {
+                      const randomEffect = SPECIAL_EFFECTS[Math.floor(Math.random() * SPECIAL_EFFECTS.length)];
+                      setSelectedSpecialEffect(randomEffect.id);
+                      toast(`Random vibe: ${randomEffect.name}! ${randomEffect.emoji}`);
+                    }}
+                    className="text-xs px-2 py-1 rounded-lg bg-gradient-primary text-white font-semibold hover:shadow-lg transition-all"
+                  >
+                    🎲 Surprise Me
+                  </button>
+                </div>
                 <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3">
                   {SPECIAL_EFFECTS.map(effect => {
                     return (
@@ -237,13 +291,20 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                         }}
                         className={`relative overflow-hidden rounded-xl transition-all hover:scale-105 ${
                           selectedSpecialEffect === effect.id
-                            ? 'ring-4 ring-purple-500 bg-gradient-primary'
-                            : 'bg-gray-100 dark:bg-gray-800'
+                            ? 'ring-4 ring-purple-500 bg-gradient-primary shadow-xl'
+                            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700'
                         }`}
                       >
                         {/* Effect Preview with Animation */}
-                        <div className={`h-20 md:h-32 p-2 md:p-3 flex flex-col items-center justify-center text-center relative ${effect.cssClass || ''}`}>
-                          <div className={`text-2xl md:text-4xl mb-1 md:mb-2 z-10 relative ${selectedSpecialEffect === effect.id ? 'animate-bounce' : ''}`}>
+                        <div className={`h-24 md:h-36 p-2 md:p-3 flex flex-col items-center justify-center text-center relative ${effect.cssClass || ''}`}>
+                          {/* Animated Background Demo */}
+                          <div className="absolute inset-0 opacity-30">
+                            {effect.id !== 'none' && (
+                              <div className={`w-full h-full ${effect.cssClass}`}></div>
+                            )}
+                          </div>
+
+                          <div className={`text-3xl md:text-5xl mb-1 md:mb-2 z-10 relative transition-transform ${selectedSpecialEffect === effect.id ? 'scale-110' : ''}`}>
                             {effect.emoji}
                           </div>
                           <div className={`text-[10px] md:text-sm font-bold z-10 relative ${selectedSpecialEffect === effect.id ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
@@ -253,7 +314,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                             {effect.description}
                           </div>
                           {selectedSpecialEffect === effect.id && (
-                            <div className="absolute top-2 right-2 bg-white rounded-full w-6 h-6 flex items-center justify-center text-purple-600 z-10">
+                            <div className="absolute top-1.5 right-1.5 md:top-2 md:right-2 bg-white rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-purple-600 z-10 shadow-lg">
                               ✓
                             </div>
                           )}
@@ -268,42 +329,82 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             {/* BACKGROUNDS TAB */}
             {activeTab === 'backgrounds' && (
               <div>
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-2 md:mb-4">
-                  Pick your aesthetic 🎨
-                </p>
+                {/* Search and Randomize */}
+                <div className="mb-3 md:mb-4 space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Search backgrounds..."
+                      value={backgroundSearch}
+                      onChange={(e) => setBackgroundSearch(e.target.value)}
+                      className="flex-1 px-3 py-1.5 md:py-2 text-xs md:text-sm rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all"
+                    />
+                    <button
+                      onClick={() => {
+                        const allBackgrounds = Object.values(BACKGROUNDS).flat();
+                        const randomBg = allBackgrounds[Math.floor(Math.random() * allBackgrounds.length)];
+                        setSelectedBackground(randomBg.id);
+                        toast(`Random aesthetic: ${randomBg.name}! 🎨`);
+                      }}
+                      className="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm rounded-lg bg-gradient-primary text-white font-semibold hover:shadow-lg transition-all whitespace-nowrap"
+                    >
+                      🎲 Random
+                    </button>
+                  </div>
+                  {backgroundSearch && (
+                    <button
+                      onClick={() => setBackgroundSearch('')}
+                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                    >
+                      Clear search
+                    </button>
+                  )}
+                </div>
+
                 {BACKGROUND_CATEGORIES.map(category => {
-                  const backgrounds = BACKGROUNDS[category] || [];
+                  const backgrounds = filterBackgrounds(BACKGROUNDS[category] || []);
                   if (backgrounds.length === 0) return null;
 
                   return (
                     <div key={category} className="mb-4 md:mb-6">
                       <h3 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 md:mb-3">
                         {getCategoryName(category)}
+                        <span className="ml-2 text-[10px] md:text-xs font-normal text-gray-500 dark:text-gray-400">
+                          ({backgrounds.length})
+                        </span>
                       </h3>
                       <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3">
                         {backgrounds.map(bg => (
                           <button
                             key={bg.id}
-                            onClick={() => setSelectedBackground(bg.id)}
+                            onClick={() => {
+                              setSelectedBackground(bg.id);
+                              toast(`${bg.name} applied! 🎨`);
+                            }}
                             className={`relative overflow-hidden rounded-xl transition-all hover:scale-105 ${
-                              selectedBackground === bg.id ? 'ring-4 ring-purple-500' : ''
+                              selectedBackground === bg.id ? 'ring-4 ring-purple-500 shadow-xl' : ''
                             }`}
                           >
                             {/* Mini Card Preview */}
                             <div
-                              className="h-16 md:h-24 flex items-center justify-center relative"
+                              className={`h-16 md:h-24 flex items-center justify-center relative profile-card-pattern pattern-${bg.pattern || 'none'}`}
                               style={{ background: bg.gradient }}
                             >
                               {/* Tiny profile preview */}
                               <div className="flex flex-col items-center">
-                                <div className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-white/80 mb-0.5 md:mb-1"></div>
+                                <div className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-white/80 mb-0.5 md:mb-1 shadow-lg"></div>
                                 <div className="text-[8px] md:text-[10px] font-bold text-white drop-shadow-lg bg-black/30 px-1 md:px-2 py-0.5 rounded truncate max-w-full">
                                   {bg.name}
                                 </div>
                               </div>
                               {selectedBackground === bg.id && (
-                                <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-white rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center text-purple-600 text-[10px] md:text-xs">
+                                <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-white rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center text-purple-600 text-[10px] md:text-xs shadow-lg">
                                   ✓
+                                </div>
+                              )}
+                              {bg.illustrated && (
+                                <div className="absolute top-1 left-1 md:top-2 md:left-2 bg-purple-600 text-white text-[8px] md:text-[10px] px-1 md:px-1.5 py-0.5 rounded font-bold shadow-lg">
+                                  ✨
                                 </div>
                               )}
                             </div>
@@ -313,35 +414,63 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                     </div>
                   );
                 })}
+
+                {BACKGROUND_CATEGORIES.every(cat => filterBackgrounds(BACKGROUNDS[cat] || []).length === 0) && (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <div className="text-4xl mb-2">🔍</div>
+                    <p className="text-sm">No backgrounds found</p>
+                    <p className="text-xs mt-1">Try a different search term</p>
+                  </div>
+                )}
               </div>
             )}
 
             {/* LAYOUTS TAB */}
             {activeTab === 'layouts' && (
               <div>
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-2 md:mb-4">
-                  Choose your layout style 📱
-                </p>
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    Choose your layout style 📱
+                  </p>
+                  <button
+                    onClick={() => {
+                      const randomLayout = LAYOUT_OPTIONS[Math.floor(Math.random() * LAYOUT_OPTIONS.length)];
+                      setSelectedLayout(randomLayout.id);
+                      toast(`Random layout: ${randomLayout.name}! ${randomLayout.emoji}`);
+                    }}
+                    className="text-xs px-2 py-1 rounded-lg bg-gradient-primary text-white font-semibold hover:shadow-lg transition-all"
+                  >
+                    🎲 Surprise Me
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
                   {LAYOUT_OPTIONS.map(layout => (
                     <button
                       key={layout.id}
-                      onClick={() => setSelectedLayout(layout.id)}
+                      onClick={() => {
+                        setSelectedLayout(layout.id);
+                        toast(`${layout.name} layout applied! ${layout.emoji}`);
+                      }}
                       className={`p-2 md:p-4 rounded-xl text-left transition-all hover:scale-105 ${
                         selectedLayout === layout.id
                           ? 'bg-gradient-primary text-white shadow-xl ring-2 ring-purple-500'
-                          : 'bg-gray-100 dark:bg-gray-800'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700'
                       }`}
                     >
                       {/* Layout Preview SVG */}
-                      <div className="mb-2 md:mb-3 h-16 md:h-24 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden border-2 border-white/10">
+                      <div className="mb-2 md:mb-3 h-16 md:h-24 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden border-2 border-gray-200/50 dark:border-gray-600/50">
                         <div
                           className="w-full h-full"
                           dangerouslySetInnerHTML={{ __html: layout.svg }}
                         />
                       </div>
-                      <div className="font-display font-bold text-xs md:text-base mb-0.5 md:mb-1">{layout.name}</div>
-                      <div className="text-[10px] md:text-xs opacity-80 hidden md:block">{layout.description}</div>
+                      <div className={`flex items-center gap-1 mb-0.5 md:mb-1 ${selectedLayout === layout.id ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+                        <span className="text-sm md:text-base">{layout.emoji}</span>
+                        <span className="font-display font-bold text-xs md:text-base">{layout.name}</span>
+                      </div>
+                      <div className={`text-[10px] md:text-xs opacity-80 hidden md:block ${selectedLayout === layout.id ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
+                        {layout.description}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -351,9 +480,21 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             {/* TYPOGRAPHY TAB */}
             {activeTab === 'typography' && (
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Pick your font style 🔤
-                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Pick your font style 🔤
+                  </p>
+                  <button
+                    onClick={() => {
+                      const randomTypo = TYPOGRAPHY_STYLES[Math.floor(Math.random() * TYPOGRAPHY_STYLES.length)];
+                      setSelectedTypography(randomTypo.id);
+                      toast(`Random typography: ${randomTypo.name}! ${randomTypo.emoji}`);
+                    }}
+                    className="text-xs px-2 py-1 rounded-lg bg-gradient-primary text-white font-semibold hover:shadow-lg transition-all"
+                  >
+                    🎲 Surprise Me
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {TYPOGRAPHY_STYLES.map(typo => (
                     <button
@@ -410,60 +551,142 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
 
                 {/* Custom Font Selection */}
                 <div className="mt-8 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4">✨ Custom Fonts</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">✨ Custom Fonts</h3>
+                    <button
+                      onClick={() => {
+                        const randomFont = POPULAR_FONTS[Math.floor(Math.random() * POPULAR_FONTS.length)];
+                        setCustomNameFont(randomFont.name);
+                        setCustomBioFont(randomFont.name);
+                        toast(`Random font combo: ${randomFont.name}! 🔤`);
+                      }}
+                      className="text-xs px-2 py-1 rounded-lg bg-gradient-primary text-white font-semibold hover:shadow-lg transition-all"
+                    >
+                      🎲 Random
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Choose different fonts for your name and bio, or use preset typography pairings above
+                  </p>
 
                   {/* Name Font */}
                   <div className="mb-5">
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      Name Font
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                      <span>Name Font</span>
+                      {customNameFont && (
+                        <button
+                          onClick={() => setCustomNameFont('')}
+                          className="text-xs text-purple-600 dark:text-purple-400 hover:underline font-normal"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </label>
                     <select
                       value={customNameFont}
                       onChange={(e) => setCustomNameFont(e.target.value)}
-                      className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                      className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all"
                     >
-                      <option value="">Use preset font</option>
-                      {POPULAR_FONTS.map(font => (
-                        <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
-                          {font.name} ({font.category})
-                        </option>
-                      ))}
+                      <option value="">Use preset font from typography pairing</option>
+                      <optgroup label="Serif Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'serif').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Sans-Serif Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'sans-serif').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Display Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'display').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Handwriting Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'handwriting').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                     {customNameFont && (
                       <div
-                        className="mt-2 p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg"
+                        className="mt-2 p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg"
                         style={{ fontFamily: `'${customNameFont}', sans-serif` }}
                       >
-                        <div className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                        <div className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                           Your Name Preview
                         </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{customNameFont}</div>
                       </div>
                     )}
                   </div>
 
                   {/* Bio Font */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      Bio Font
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                      <span>Bio Font</span>
+                      {customBioFont && (
+                        <button
+                          onClick={() => setCustomBioFont('')}
+                          className="text-xs text-purple-600 dark:text-purple-400 hover:underline font-normal"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </label>
                     <select
                       value={customBioFont}
                       onChange={(e) => setCustomBioFont(e.target.value)}
-                      className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                      className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all"
                     >
-                      <option value="">Use preset font</option>
-                      {POPULAR_FONTS.map(font => (
-                        <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
-                          {font.name} ({font.category})
-                        </option>
-                      ))}
+                      <option value="">Use preset font from typography pairing</option>
+                      <optgroup label="Serif Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'serif').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Sans-Serif Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'sans-serif').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Display Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'display').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Handwriting Fonts">
+                        {POPULAR_FONTS.filter(f => f.category === 'handwriting').map(font => (
+                          <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                     {customBioFont && (
                       <div
-                        className="mt-2 p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg text-base text-gray-700 dark:text-gray-300"
+                        className="mt-2 p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg"
                         style={{ fontFamily: `'${customBioFont}', sans-serif` }}
                       >
-                        Your bio text preview appears here with your selected font
+                        <div className="text-base text-gray-700 dark:text-gray-300">
+                          Your bio text preview appears here with your selected font. This is how it will look on your profile card when you share it with friends.
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{customBioFont}</div>
                       </div>
                     )}
                   </div>
@@ -474,9 +697,25 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             {/* PHOTO TAB */}
             {activeTab === 'photo' && (
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Customize your photo style 📸
-                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Customize your photo style 📸
+                  </p>
+                  <button
+                    onClick={() => {
+                      const shapes = ['circle', 'square', 'rounded', 'heart'];
+                      const borders = ['none', 'classic', 'metallic', 'scalloped'];
+                      const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+                      const randomBorder = borders[Math.floor(Math.random() * borders.length)];
+                      setPhotoShape(randomShape);
+                      setPhotoBorder(randomBorder);
+                      toast(`Random photo style! 📸`);
+                    }}
+                    className="text-xs px-2 py-1 rounded-lg bg-gradient-primary text-white font-semibold hover:shadow-lg transition-all"
+                  >
+                    🎲 Surprise Me
+                  </button>
+                </div>
 
                 {/* Photo Shape */}
                 <div className="mb-6">
@@ -491,15 +730,19 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                       <button
                         key={shape.id}
                         onClick={() => setPhotoShape(shape.id)}
-                        className={`p-3 rounded-xl text-center transition-all ${
+                        className={`p-3 rounded-xl text-center transition-all hover:scale-105 ${
                           photoShape === shape.id
-                            ? 'bg-gradient-primary text-white shadow-lg'
-                            : 'bg-gray-100 dark:bg-gray-800'
+                            ? 'bg-gradient-primary text-white shadow-lg ring-2 ring-purple-500'
+                            : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
                         {/* Shape Preview */}
-                        <div className={`w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-pink-400 to-purple-400 ${getPhotoShapeClass()}`}></div>
-                        <div className="text-xs font-bold">{shape.label}</div>
+                        <div className={`w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-pink-400 to-purple-400 ${getPhotoShapeClass(shape.id)} overflow-hidden transition-all`}>
+                          {shape.id === 'heart' && (
+                            <div className="w-full h-full bg-gradient-to-br from-pink-400 to-purple-400"></div>
+                          )}
+                        </div>
+                        <div className={`text-xs font-bold ${photoShape === shape.id ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{shape.label}</div>
                       </button>
                     ))}
                   </div>
@@ -510,26 +753,33 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                   <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Photo Border</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { id: 'none', label: 'None', desc: 'Clean' },
-                      { id: 'classic', label: 'Classic', desc: 'White border' },
-                      { id: 'metallic', label: 'Metallic', desc: 'Gold shimmer' },
-                      { id: 'scalloped', label: 'Scalloped', desc: 'Decorative' }
+                      { id: 'none', label: 'None', desc: 'Clean', icon: '⭕' },
+                      { id: 'classic', label: 'Classic', desc: 'White border', icon: '⚪' },
+                      { id: 'metallic', label: 'Metallic', desc: 'Gold shimmer', icon: '✨' },
+                      { id: 'scalloped', label: 'Scalloped', desc: 'Decorative', icon: '🌸' }
                     ].map(border => (
                       <button
                         key={border.id}
-                        onClick={() => setPhotoBorder(border.id)}
-                        className={`p-3 rounded-xl text-left transition-all ${
+                        onClick={() => {
+                          setPhotoBorder(border.id);
+                          toast(`${border.label} border applied! ${border.icon}`);
+                        }}
+                        className={`p-3 rounded-xl text-left transition-all hover:scale-105 ${
                           photoBorder === border.id
-                            ? 'bg-gradient-primary text-white shadow-lg'
-                            : 'bg-gray-100 dark:bg-gray-800'
+                            ? 'bg-gradient-primary text-white shadow-xl ring-2 ring-purple-500'
+                            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700'
                         }`}
                       >
                         {/* Border Preview */}
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 ${getPhotoBorderClass()}`}></div>
-                          <div className="flex-1">
-                            <div className="font-bold text-sm">{border.label}</div>
-                            <div className="text-xs opacity-80">{border.desc}</div>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 ${getPhotoBorderClass()} flex-shrink-0 transition-all`}></div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`font-bold text-sm mb-0.5 ${photoBorder === border.id ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+                              {border.label} {border.icon}
+                            </div>
+                            <div className={`text-xs ${photoBorder === border.id ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'}`}>
+                              {border.desc}
+                            </div>
                           </div>
                         </div>
                       </button>
@@ -541,14 +791,38 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           </div>
 
           {/* Footer - Sticky */}
-          <div className="flex-shrink-0 p-2 md:p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full bg-gradient-primary text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : '💾 Save'}
-            </button>
+          <div className="flex-shrink-0 p-2 md:p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 space-y-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  // Reset to defaults
+                  setSelectedBackground('pearl-elegance');
+                  setSelectedLayout('classic');
+                  setSelectedTypography('elegant');
+                  setSelectedSpecialEffect('none');
+                  setPhotoShape('circle');
+                  setPhotoBorder('classic');
+                  setCustomNameFont('');
+                  setCustomBioFont('');
+                  toast('Reset to default style', { icon: '↺' });
+                }}
+                className="flex-shrink-0 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-3 md:px-4 rounded-lg font-semibold text-xs md:text-sm transition-all"
+                title="Reset to defaults"
+              >
+                <span className="hidden sm:inline">↺ Reset</span>
+                <span className="sm:hidden">↺</span>
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-gradient-primary text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : '💾 Save Changes'}
+              </button>
+            </div>
+            <p className="text-[10px] md:text-xs text-center text-gray-500 dark:text-gray-400">
+              Your changes will be visible in your profile and shared cards
+            </p>
           </div>
         </div>
       </div>
