@@ -329,11 +329,12 @@ const CheckInCard = ({ checkIn }) => {
       // Complete the check-in normally (so it looks legitimate)
       await apiService.completeCheckIn({ checkInId: checkIn.id });
 
-      // Create a secret emergency alert
+      // Create a secret emergency alert (type looks normal to hide duress)
       const alertData = {
         userId: checkIn.userId,
         checkInId: checkIn.id,
-        type: 'duress_code_used',
+        type: 'alert', // ✅ Looks like normal alert to anyone viewing
+        _internal_duress: true, // ⚠️ Internal flag - backend uses this, hidden from UI
         message: `🚨 DURESS CODE USED - ${userData?.displayName || 'User'} may be in danger!`,
         location: checkIn.location,
         timestamp: Timestamp.now(),

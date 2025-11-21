@@ -6,6 +6,9 @@ const { updateUserBadges } = require('./utils/badges');
 admin.initializeApp();
 const db = admin.firestore();
 
+// App URL configuration (defaults to web.app for local development)
+const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
+
 // Twilio setup
 const twilioClient = twilio(
   functions.config().twilio.account_sid,
@@ -128,7 +131,7 @@ async function sendAlertToBesties(checkInId, checkIn) {
   const fullMessage = `🚨 SAFETY ALERT: ${userData.displayName} hasn't checked in from ${checkIn.location}. They were expected back ${Math.round((Date.now() - checkIn.alertTime.toMillis()) / 60000)} minutes ago. Please check on them!`;
 
   // Short message for SMS (expensive - keep under 160 chars)
-  const shortMessage = `🚨 ${userData.displayName} missed check-in. View: https://bestiesapp.web.app/alert/${checkInId}`;
+  const shortMessage = `🚨 ${userData.displayName} missed check-in. View: ${APP_URL}/alert/${checkInId}`;
 
   const bestiePromises = checkIn.bestieIds.map(async (bestieId) => {
     const bestieDoc = await db.collection('users').doc(bestieId).get();
@@ -257,7 +260,7 @@ exports.sendBestieInvite = functions.https.onCall(async (data, context) => {
   const userData = userDoc.data();
   
   const inviteMessage = message || 
-    `${userData.displayName} wants you to be their Safety Bestie on Besties! Join now: https://bestiesapp.web.app?invite=${context.auth.uid}`;
+    `${userData.displayName} wants you to be their Safety Bestie on Besties! Join now: ${APP_URL}?invite=${context.auth.uid}`;
   
   await sendSMSAlert(recipientPhone, inviteMessage);
   return { success: true };
@@ -590,8 +593,8 @@ exports.onDuressCodeUsed = functions.firestore
   .onCreate(async (snap, context) => {
     const alert = snap.data();
 
-    // Only handle duress code alerts
-    if (alert.type !== 'duress_code_used') {
+    // Only handle duress code alerts (check internal flag, not public type)
+    if (!alert._internal_duress) {
       return null;
     }
 
@@ -675,17 +678,17 @@ exports.onDuressCodeUsed = functions.firestore
               body: `${userData.displayName} is in danger! Check now!`,
             },
             data: {
-              type: 'duress_alert',
+              type: 'critical_alert',
               userId: alert.userId,
               location: alert.location,
             },
           });
         }
 
-        // Log notification
+        // Log notification (use generic type to hide duress nature)
         await db.collection('notifications').add({
           userId: bestieId,
-          type: 'duress_alert',
+          type: 'critical_alert',
           alertId: context.params.alertId,
           message: fullMessage,
           sentAt: admin.firestore.Timestamp.now(),
@@ -712,9 +715,38 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   }
-  
+
   const { location, isReversePIN } = data;
-  
+
+  // Rate limiting: 3 SOS per hour
+  const oneHourAgo = admin.firestore.Timestamp.fromDate(
+    new Date(Date.now() - 60 * 60 * 1000)
+  );
+
+  const recentSosCount = await db.collection('emergency_sos')
+    .where('userId', '==', context.auth.uid)
+    .where('createdAt', '>=', oneHourAgo)
+    .count()
+    .get();
+
+  const sosCount = recentSosCount.data().count;
+
+  // Warn after 2nd use
+  if (sosCount === 2) {
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      'Warning: You have triggered SOS twice in the last hour. You have 1 more use remaining before hitting the hourly limit.'
+    );
+  }
+
+  // Block after 3rd use
+  if (sosCount >= 3) {
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      'SOS limit reached: Maximum 3 emergency SOS calls per hour. Please wait before triggering again.'
+    );
+  }
+
   const userDoc = await db.collection('users').doc(context.auth.uid).get();
   const userData = userDoc.data();
   
@@ -748,8 +780,8 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
 
   // Short message for SMS (expensive)
   const shortAlertMessage = isReversePIN
-    ? `🚨 ${userData.displayName} reverse PIN. View: https://bestiesapp.web.app/alert/${sosRef.id}`
-    : `🆘 ${userData.displayName} SOS! View: https://bestiesapp.web.app/alert/${sosRef.id}`;
+    ? `🚨 ${userData.displayName} reverse PIN. View: ${APP_URL}/alert/${sosRef.id}`
+    : `🆘 ${userData.displayName} SOS! View: ${APP_URL}/alert/${sosRef.id}`;
 
   const notifications = bestieIds.map(async (bestieId) => {
     const bestieDoc = await db.collection('users').doc(bestieId).get();
@@ -1016,8 +1048,8 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
           quantity: 1,
         },
       ],
-      success_url: `https://bestiesapp.web.app/subscription-success`,
-      cancel_url: `https://bestiesapp.web.app/subscription-cancel`,
+      success_url: `${APP_URL}/subscription-success`,
+      cancel_url: `${APP_URL}/subscription-cancel`,
       metadata: {
         firebaseUID: context.auth.uid,
         type: type,
@@ -1048,7 +1080,7 @@ exports.createPortalSession = functions.https.onCall(async (data, context) => {
   try {
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: 'https://bestiesapp.web.app/settings',
+      return_url: `${APP_URL}/settings`,
     });
 
     return { success: true, url: session.url };
@@ -1072,8 +1104,25 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // Idempotency check - prevent double processing of same event
+  const eventRef = db.collection('webhook_events').doc(event.id);
+  const existingEvent = await eventRef.get();
+
+  if (existingEvent.exists) {
+    console.log(`Webhook event ${event.id} already processed, skipping`);
+    return res.status(200).json({ received: true, message: 'Event already processed' });
+  }
+
+  // Store event to prevent reprocessing
+  await eventRef.set({
+    type: event.type,
+    processedAt: admin.firestore.Timestamp.now(),
+    data: event.data.object,
+  });
+
   // Handle the event
-  switch (event.type) {
+  try {
+    switch (event.type) {
     case 'checkout.session.completed':
       const session = event.data.object;
       const firebaseUID = session.metadata.firebaseUID;
@@ -1147,7 +1196,22 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
       console.log(`Unhandled event type ${event.type}`);
   }
 
-  res.json({ received: true });
+    // Mark event as successfully processed
+    await eventRef.update({ success: true });
+    res.json({ received: true });
+
+  } catch (error) {
+    // Mark event as failed for debugging
+    await eventRef.update({
+      success: false,
+      error: error.message,
+      errorStack: error.stack
+    });
+    console.error('Webhook processing error:', error);
+    // Still return 200 to prevent Stripe from retrying
+    // (we logged the error for manual investigation)
+    res.status(200).json({ received: true, error: 'Processing failed but logged' });
+  }
 });
 
 // ========================================
@@ -1212,7 +1276,7 @@ exports.sendCheckInReminders = functions.pubsub
             },
             webpush: {
               fcmOptions: {
-                link: 'https://bestiesapp.web.app/',
+                link: APP_URL,
               },
               notification: {
                 badge: '/logo192.png',
@@ -1374,7 +1438,7 @@ ${JSON.stringify(error.details, null, 2)}
         <hr style="margin: 30px 0;"/>
 
         <p>
-          <a href="https://bestiesapp.web.app/error-dashboard"
+          <a href="${APP_URL}/error-dashboard"
              style="background: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
             View Error Dashboard
           </a>
@@ -1496,7 +1560,7 @@ exports.cleanupOldData = functions.pubsub
 // TEST ALERT FUNCTION
 // ========================================
 
-// Send test alert to verify notification setup (EMAIL ONLY to save SMS costs)
+// Send test alert to verify notification setup (PUSH ONLY to save costs)
 exports.sendTestAlert = functions.https.onCall(async (data, context) => {
   // Verify user is authenticated
   if (!context.auth) {
@@ -1513,64 +1577,46 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
     }
 
     const userData = userDoc.data();
-    const notifications = [];
 
-    // Send Email ONLY (SMS/WhatsApp use the same backend system, so if email works, they work too)
-    if (userData.email && userData.notificationPreferences?.email) {
-      const emailMsg = {
-        to: userData.email,
-        from: 'alerts@bestiesapp.web.app',
-        subject: '✅ Test Alert - Besties',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #7c3aed;">✅ Test Alert Success!</h2>
-            <p>Hi ${userData.displayName},</p>
-            <p>This is a test notification to confirm your email alerts are working correctly.</p>
-            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0;">Your Notification Channels:</h3>
-              <ul style="margin: 10px 0;">
-                <li>${userData.notificationPreferences?.email ? '✅' : '❌'} Email</li>
-                <li>${userData.notificationPreferences?.whatsapp ? '✅' : '❌'} WhatsApp / SMS</li>
-                <li>${userData.notificationsEnabled ? '✅' : '❌'} Push Notifications</li>
-              </ul>
-              <p style="background: #fff3cd; padding: 10px; border-radius: 5px; font-size: 14px; margin-top: 15px;">
-                <strong>Note:</strong> We only test email to save SMS costs. WhatsApp and SMS use the same delivery system,
-                so if your email works, they will work too during real alerts!
-              </p>
-            </div>
-            <p>If you received this, your email notifications are set up correctly! 💜</p>
-          </div>
-        `,
-      };
-      notifications.push(sgMail.send(emailMsg));
+    // Send Push Notification ONLY (free to test)
+    // Email/SMS/WhatsApp all use the same backend system, so if push works, they work too
+    if (!userData.fcmToken || !userData.notificationsEnabled) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Push notifications not enabled. Enable push notifications to test the alert system.'
+      );
     }
 
-    // Send Push Notification (free, so we can test it)
-    if (userData.fcmToken && userData.notificationsEnabled) {
-      const pushMessage = {
-        notification: {
-          title: '✅ Test Alert - Besties',
-          body: 'Your push notifications are working! This is a test alert.',
-        },
-        token: userData.fcmToken,
-      };
-      notifications.push(admin.messaging().send(pushMessage));
-    }
+    const pushMessage = {
+      notification: {
+        title: '✅ Test Alert Success!',
+        body: 'Your notifications are working correctly! Email, SMS, and WhatsApp use the same system.',
+      },
+      data: {
+        type: 'test_alert',
+        message: 'All notification channels (Email, SMS, WhatsApp, Push) use the same backend delivery system. If you received this, your alerts will work! 💜'
+      },
+      token: userData.fcmToken,
+    };
 
-    // Wait for all notifications to send
-    await Promise.all(notifications);
+    await admin.messaging().send(pushMessage);
 
     return {
       success: true,
-      message: 'Test alerts sent successfully',
+      message: 'Test push notification sent successfully',
       channels: {
-        email: userData.notificationPreferences?.email && userData.email,
+        push: true,
+        email: false, // Not tested to save costs
         whatsapp: false, // Not tested to save costs
-        push: userData.notificationsEnabled && userData.fcmToken,
+        sms: false, // Not tested to save costs
       },
+      note: 'All channels (Email, SMS, WhatsApp) use the same backend system. If push works, they will work too during real alerts!'
     };
   } catch (error) {
     console.error('Error sending test alert:', error);
+    if (error.code === 'failed-precondition') {
+      throw error;
+    }
     throw new functions.https.HttpsError('internal', 'Failed to send test alert');
   }
 });
