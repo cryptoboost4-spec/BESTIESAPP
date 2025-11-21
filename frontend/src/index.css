@@ -148,9 +148,21 @@ h1, h2, h3, h4, h5, h6 {
     @apply h-full bg-gradient-primary transition-all duration-300;
   }
 
-  /* Loading spinner */
+  /* Loading spinner - Using gradient instead of logo for simplicity */
   .spinner {
-    @apply inline-block w-8 h-8 border-4 border-gray-200 border-t-primary rounded-full animate-spin;
+    @apply inline-block w-8 h-8 rounded-full animate-spin;
+    background: conic-gradient(from 0deg, transparent 0deg 270deg, #FF6B9D 270deg 360deg);
+    mask: radial-gradient(circle, transparent 50%, black 50%);
+    -webkit-mask: radial-gradient(circle, transparent 50%, black 50%);
+  }
+
+  .animate-bounce-gentle {
+    animation: bounce-gentle 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce-gentle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
   }
 
   /* Toast notification */

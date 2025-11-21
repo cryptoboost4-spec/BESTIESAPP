@@ -1,4 +1,5 @@
 import React from 'react';
+import InfoButton from '../InfoButton';
 
 const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, userData, navigate }) => {
   return (
@@ -10,7 +11,10 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-semibold text-text-primary">Dark Mode</div>
+              <div className="font-semibold text-text-primary flex items-center">
+                Dark Mode
+                <InfoButton message="Toggle between light and dark color themes. Dark mode is easier on your eyes at night and can save battery on OLED screens." />
+              </div>
               <div className="text-sm text-text-secondary">
                 {isDark ? 'Dark mode enabled' : 'Light mode enabled'}
               </div>
@@ -31,7 +35,10 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
 
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-semibold text-text-primary">Data Retention</div>
+              <div className="font-semibold text-text-primary flex items-center">
+                Data Retention
+                <InfoButton message="Choose whether to keep your check-in history indefinitely or auto-delete after 24 hours. Keeping history lets you track patterns, while auto-delete maximizes privacy." />
+              </div>
               <div className="text-sm text-text-secondary">
                 {userData?.settings?.holdData
                   ? 'Keeping all check-in history'

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, orderBy, limit, startAfter } from 'firebase/firestore';
@@ -8,6 +9,7 @@ import Header from '../components/Header';
 const ITEMS_PER_PAGE = 20;
 
 const CheckInHistoryPage = () => {
+  const navigate = useNavigate();
   const { currentUser, userData } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +133,17 @@ const CheckInHistoryPage = () => {
       <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
+        {/* Back Button - Top */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-primary dark:text-dark-primary hover:underline mb-4 font-semibold"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-display text-text-primary dark:text-dark-text-primary mb-2">Check-in History</h1>
@@ -292,6 +305,19 @@ const CheckInHistoryPage = () => {
             )}
           </>
         )}
+
+        {/* Back Button - Bottom */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 text-primary dark:text-dark-primary hover:underline font-semibold"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+        </div>
       </div>
     </div>
   );

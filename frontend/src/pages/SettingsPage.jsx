@@ -225,6 +225,7 @@ const SettingsPage = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleDonation = async (amount) => {
     setLoading(true);
     try {
