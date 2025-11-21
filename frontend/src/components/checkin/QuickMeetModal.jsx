@@ -5,7 +5,7 @@ import haptic from '../../utils/hapticFeedback';
 const QuickMeetModal = ({ onClose }) => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [duration, setDuration] = useState(60); // Default 60 minutes
+  const [duration, setDuration] = useState(30); // Default 30 minutes
 
   const handleStart = () => {
     if (!name.trim()) {
@@ -13,12 +13,13 @@ const QuickMeetModal = ({ onClose }) => {
     }
     haptic.light();
 
-    // Navigate to create page with quick meet data
+    // Navigate to create page with quick meet data - NO LOCATION NEEDED
     navigate('/create', {
       state: {
         quickType: 'quickmeet',
         meetingWith: name.trim(),
         duration: duration,
+        skipLocation: true, // Skip location input
         activity: { name: '👤 Meeting Someone', emoji: '👤' }
       }
     });
@@ -32,7 +33,7 @@ const QuickMeetModal = ({ onClose }) => {
         </h2>
 
         <p className="text-sm text-text-secondary mb-6">
-          Meeting someone new? Let your besties know who you're with
+          Enter who you're meeting and select duration
         </p>
 
         {/* Name Input */}
@@ -50,68 +51,44 @@ const QuickMeetModal = ({ onClose }) => {
           />
         </div>
 
-        {/* Duration Slider */}
+        {/* Duration Selection */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
-            How long? <span className="text-primary">{duration} minutes</span>
+            Duration: {duration} minutes
           </label>
+
+          {/* Quick preset buttons */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {[10, 15, 30, 45].map((mins) => (
+              <button
+                key={mins}
+                type="button"
+                onClick={() => setDuration(mins)}
+                className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                  duration === mins
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {mins}m
+              </button>
+            ))}
+          </div>
+
+          {/* Fine-tune slider */}
           <input
             type="range"
-            min="15"
-            max="180"
-            step="15"
+            min="10"
+            max="90"
+            step="5"
             value={duration}
             onChange={(e) => setDuration(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>15 min</span>
-            <span>3 hours</span>
+          <div className="flex justify-between text-xs text-text-secondary mt-1">
+            <span>10 min</span>
+            <span>90 min</span>
           </div>
-        </div>
-
-        {/* Quick Time Presets */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
-          <button
-            onClick={() => setDuration(30)}
-            className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 30
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            30m
-          </button>
-          <button
-            onClick={() => setDuration(60)}
-            className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 60
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            1h
-          </button>
-          <button
-            onClick={() => setDuration(90)}
-            className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 90
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            1.5h
-          </button>
-          <button
-            onClick={() => setDuration(120)}
-            className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 120
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            2h
-          </button>
         </div>
 
         {/* Buttons */}

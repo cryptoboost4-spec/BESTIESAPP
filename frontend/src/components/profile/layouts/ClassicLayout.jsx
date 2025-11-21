@@ -29,7 +29,7 @@ const ClassicLayout = ({
     const borders = {
       none: '',
       classic: 'border-4 border-white shadow-2xl ring-4 ring-purple-200',
-      metallic: 'border-4 border-gradient-to-r from-yellow-400 to-pink-500 shadow-2xl',
+      metallic: 'border-4 border-yellow-400 shadow-2xl ring-4 ring-yellow-300',
       scalloped: 'border-4 border-white shadow-2xl',
       dotted: 'border-4 border-dashed border-white shadow-xl'
     };
@@ -84,7 +84,7 @@ const ClassicLayout = ({
       {/* Bio */}
       {bio && (
         <p
-          className={`${bioSizeClass || 'text-lg'} text-gray-800 dark:text-gray-200 italic max-w-md mx-auto mt-4`}
+          className={`${bioSizeClass || 'text-xl'} text-gray-800 dark:text-gray-200 max-w-md mx-auto mt-4`}
           style={bioStyle}
         >
           "{bio}"

@@ -13,12 +13,13 @@ const RideshareModal = ({ onClose }) => {
     }
     haptic.light();
 
-    // Navigate to create page with rideshare data
+    // Navigate to create page with rideshare data - NO LOCATION NEEDED
     navigate('/create', {
       state: {
         quickType: 'rideshare',
         rego: rego.trim(),
         duration: duration,
+        skipLocation: true, // Skip location input
         activity: { name: '🚗 Rideshare', emoji: '🚗' }
       }
     });
@@ -32,7 +33,7 @@ const RideshareModal = ({ onClose }) => {
         </h2>
 
         <p className="text-sm text-text-secondary mb-6">
-          Enter your ride details so your besties know you're safe
+          Enter your vehicle registration and select duration
         </p>
 
         {/* Rego Input */}
@@ -50,23 +51,43 @@ const RideshareModal = ({ onClose }) => {
           />
         </div>
 
-        {/* Duration Slider */}
+        {/* Duration Selection */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
-            How long? <span className="text-primary">{duration} minutes</span>
+            Duration: {duration} minutes
           </label>
+
+          {/* Quick preset buttons */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {[10, 15, 30, 45].map((mins) => (
+              <button
+                key={mins}
+                type="button"
+                onClick={() => setDuration(mins)}
+                className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                  duration === mins
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {mins}m
+              </button>
+            ))}
+          </div>
+
+          {/* Fine-tune slider */}
           <input
             type="range"
             min="10"
-            max="120"
+            max="90"
             step="5"
             value={duration}
             onChange={(e) => setDuration(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-text-secondary mt-1">
             <span>10 min</span>
-            <span>2 hours</span>
+            <span>90 min</span>
           </div>
         </div>
 

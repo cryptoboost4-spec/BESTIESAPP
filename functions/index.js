@@ -58,6 +58,117 @@ exports.checkExpiredCheckIns = functions.pubsub
     return null;
   });
 
+// Check for cascading alert escalation every 30 seconds
+exports.checkCascadingAlertEscalation = functions.pubsub
+  .schedule('every 30 seconds')
+  .onRun(async (context) => {
+    const now = admin.firestore.Timestamp.now();
+    const thirtySecondsAgo = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 30 * 1000)
+    );
+
+    // Find alerted check-ins with current notified bestie that haven't been acknowledged in 30s
+    const checkInsSnapshot = await db.collection('checkins')
+      .where('status', '==', 'alerted')
+      .where('currentNotifiedBestie', '!=', null)
+      .where('currentNotificationSentAt', '<=', thirtySecondsAgo)
+      .get();
+
+    const escalations = [];
+
+    for (const doc of checkInsSnapshot.docs) {
+      const checkIn = doc.data();
+      const checkInId = doc.id;
+
+      // Check if current bestie has acknowledged
+      const acknowledgedBy = checkIn.acknowledgedBy || [];
+      if (acknowledgedBy.includes(checkIn.currentNotifiedBestie)) {
+        // Current bestie acknowledged, stop escalation
+        await doc.ref.update({
+          currentNotifiedBestie: null,
+          currentNotificationSentAt: null,
+        });
+        continue;
+      }
+
+      // Find next bestie to notify
+      const notifiedHistory = checkIn.notifiedBestieHistory || [];
+      const allBesties = checkIn.bestieIds || [];
+      const remainingBesties = allBesties.filter(id => !notifiedHistory.includes(id));
+
+      if (remainingBesties.length === 0) {
+        // All besties have been notified, stop escalation
+        console.log(`All besties notified for check-in ${checkInId}, no more escalation`);
+        await doc.ref.update({
+          currentNotifiedBestie: null,
+          currentNotificationSentAt: null,
+        });
+        continue;
+      }
+
+      // Escalate to next bestie
+      const nextBestieId = remainingBesties[0];
+
+      await doc.ref.update({
+        currentNotifiedBestie: nextBestieId,
+        currentNotificationSentAt: now,
+        notifiedBestieHistory: admin.firestore.FieldValue.arrayUnion(nextBestieId),
+      });
+
+      // Send notification to next bestie
+      const userDoc = await db.collection('users').doc(checkIn.userId).get();
+      const userData = userDoc.data();
+
+      escalations.push(sendCascadingAlert(checkInId, checkIn, nextBestieId, userData));
+
+      console.log(`Escalated check-in ${checkInId} to bestie ${nextBestieId} (${notifiedHistory.length + 1}/${allBesties.length})`);
+    }
+
+    await Promise.all(escalations);
+
+    console.log(`Processed ${checkInsSnapshot.size} check-ins for escalation, escalated ${escalations.length}`);
+    return null;
+  });
+
+// Acknowledge alert (bestie has viewed the alert)
+exports.acknowledgeAlert = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const { checkInId } = data;
+
+  if (!checkInId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing checkInId');
+  }
+
+  const checkInRef = db.collection('checkins').doc(checkInId);
+  const checkIn = await checkInRef.get();
+
+  if (!checkIn.exists) {
+    throw new functions.https.HttpsError('not-found', 'Check-in not found');
+  }
+
+  const checkInData = checkIn.data();
+
+  // Verify that the user is one of the besties for this check-in
+  if (!checkInData.bestieIds || !checkInData.bestieIds.includes(context.auth.uid)) {
+    throw new functions.https.HttpsError('permission-denied', 'You are not authorized to acknowledge this alert');
+  }
+
+  // Add user to acknowledgedBy array if not already there
+  const acknowledgedBy = checkInData.acknowledgedBy || [];
+  if (!acknowledgedBy.includes(context.auth.uid)) {
+    await checkInRef.update({
+      acknowledgedBy: admin.firestore.FieldValue.arrayUnion(context.auth.uid),
+    });
+
+    console.log(`User ${context.auth.uid} acknowledged alert for check-in ${checkInId}`);
+  }
+
+  return { success: true };
+});
+
 // Extend check-in
 exports.extendCheckIn = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -122,10 +233,43 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
 
 // REMOVED: Duplicate definition - see line 314 for the active trigger
 
-// Send alerts to besties
+// Send alerts to besties using cascading notification system
 async function sendAlertToBesties(checkInId, checkIn) {
   const userDoc = await db.collection('users').doc(checkIn.userId).get();
   const userData = userDoc.data();
+
+  // Initialize cascading alert - notify first bestie only
+  if (checkIn.bestieIds.length === 0) {
+    console.log('No besties to notify for check-in:', checkInId);
+    return;
+  }
+
+  const firstBestieId = checkIn.bestieIds[0];
+
+  // Update check-in with cascading alert fields
+  await db.collection('checkins').doc(checkInId).update({
+    currentNotifiedBestie: firstBestieId,
+    currentNotificationSentAt: admin.firestore.Timestamp.now(),
+    notifiedBestieHistory: [firstBestieId],
+    acknowledgedBy: [],
+  });
+
+  // Send notification to first bestie
+  await sendCascadingAlert(checkInId, checkIn, firstBestieId, userData);
+
+  console.log(`Cascading alert initialized for check-in ${checkInId}, notified: ${firstBestieId}`);
+}
+
+// Send notification to a specific bestie (cascading alert)
+async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
+  const bestieDoc = await db.collection('users').doc(bestieId).get();
+
+  if (!bestieDoc.exists) {
+    console.log(`Bestie ${bestieId} not found`);
+    return;
+  }
+
+  const bestieData = bestieDoc.data();
 
   // Full message for WhatsApp/Email (free/cheap)
   const fullMessage = `🚨 SAFETY ALERT: ${userData.displayName} hasn't checked in from ${checkIn.location}. They were expected back ${Math.round((Date.now() - checkIn.alertTime.toMillis()) / 60000)} minutes ago. Please check on them!`;
@@ -133,50 +277,42 @@ async function sendAlertToBesties(checkInId, checkIn) {
   // Short message for SMS (expensive - keep under 160 chars)
   const shortMessage = `🚨 ${userData.displayName} missed check-in. View: ${APP_URL}/alert/${checkInId}`;
 
-  const bestiePromises = checkIn.bestieIds.map(async (bestieId) => {
-    const bestieDoc = await db.collection('users').doc(bestieId).get();
-
-    if (!bestieDoc.exists) return;
-
-    const bestieData = bestieDoc.data();
-
-    try {
-      // Try WhatsApp first (free - use full message)
-      if (bestieData.notifications?.whatsapp && bestieData.phoneNumber) {
-        try {
-          await sendWhatsAppAlert(bestieData.phoneNumber, fullMessage);
-        } catch (whatsappError) {
-          console.log('WhatsApp failed, trying SMS...');
-          // Fallback to SMS (expensive - use short message)
-          if (bestieData.smsSubscription?.active) {
-            await sendSMSAlert(bestieData.phoneNumber, shortMessage);
-          }
+  try {
+    // Try WhatsApp first (free - use full message)
+    if (bestieData.notifications?.whatsapp && bestieData.phoneNumber) {
+      try {
+        await sendWhatsAppAlert(bestieData.phoneNumber, fullMessage);
+      } catch (whatsappError) {
+        console.log('WhatsApp failed, trying SMS...');
+        // Fallback to SMS (expensive - use short message)
+        if (bestieData.smsSubscription?.active) {
+          await sendSMSAlert(bestieData.phoneNumber, shortMessage);
         }
-      } else if (bestieData.smsSubscription?.active && bestieData.phoneNumber) {
-        // SMS only (expensive - use short message)
-        await sendSMSAlert(bestieData.phoneNumber, shortMessage);
       }
-
-      // Send email if enabled (cheap - use full message)
-      if (bestieData.email && bestieData.notificationPreferences?.email) {
-        await sendEmailAlert(bestieData.email, fullMessage, checkIn);
-      }
-
-      await db.collection('notifications').add({
-        userId: bestieId,
-        type: 'safety_alert',
-        checkInId,
-        message: fullMessage,
-        sentAt: admin.firestore.Timestamp.now(),
-        read: false,
-      });
-      
-    } catch (error) {
-      console.error(`Failed to notify bestie ${bestieId}:`, error);
+    } else if (bestieData.smsSubscription?.active && bestieData.phoneNumber) {
+      // SMS only (expensive - use short message)
+      await sendSMSAlert(bestieData.phoneNumber, shortMessage);
     }
-  });
-  
-  await Promise.all(bestiePromises);
+
+    // Send email if enabled (cheap - use full message)
+    if (bestieData.email && bestieData.notificationPreferences?.email) {
+      await sendEmailAlert(bestieData.email, fullMessage, checkIn);
+    }
+
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'safety_alert',
+      checkInId,
+      message: fullMessage,
+      sentAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+
+    console.log(`Cascading alert sent to bestie: ${bestieId}`);
+  } catch (error) {
+    console.error(`Failed to notify bestie ${bestieId}:`, error);
+  }
 }
 
 async function logAlertEvent(checkInId, checkIn) {

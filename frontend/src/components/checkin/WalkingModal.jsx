@@ -9,11 +9,12 @@ const WalkingModal = ({ onClose }) => {
   const handleStart = () => {
     haptic.light();
 
-    // Navigate to create page with walking data
+    // Navigate to create page with walking data - NO LOCATION NEEDED
     navigate('/create', {
       state: {
         quickType: 'walking',
         duration: duration,
+        skipLocation: true, // Skip location input
         activity: { name: '🚶‍♀️ Walking Alone', emoji: '🚶‍♀️' }
       }
     });
@@ -27,61 +28,47 @@ const WalkingModal = ({ onClose }) => {
         </h2>
 
         <p className="text-sm text-text-secondary mb-6">
-          Let your besties watch over you while you walk. We'll alert them if you don't check in safe.
+          Select duration and start your check-in. You can add location details during your walk.
         </p>
 
-        {/* Duration Slider */}
+        {/* Duration Selection */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
-            How long? <span className="text-primary">{duration} minutes</span>
+            Duration: {duration} minutes
           </label>
+
+          {/* Quick preset buttons */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {[10, 15, 30, 45].map((mins) => (
+              <button
+                key={mins}
+                type="button"
+                onClick={() => setDuration(mins)}
+                className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                  duration === mins
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {mins}m
+              </button>
+            ))}
+          </div>
+
+          {/* Fine-tune slider */}
           <input
             type="range"
-            min="5"
-            max="60"
+            min="10"
+            max="90"
             step="5"
             value={duration}
             onChange={(e) => setDuration(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>5 min</span>
-            <span>1 hour</span>
+          <div className="flex justify-between text-xs text-text-secondary mt-1">
+            <span>10 min</span>
+            <span>90 min</span>
           </div>
-        </div>
-
-        {/* Quick Time Presets */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <button
-            onClick={() => setDuration(10)}
-            className={`py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 10
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            10 min
-          </button>
-          <button
-            onClick={() => setDuration(15)}
-            className={`py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 15
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            15 min
-          </button>
-          <button
-            onClick={() => setDuration(30)}
-            className={`py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
-              duration === 30
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            30 min
-          </button>
         </div>
 
         {/* Buttons */}

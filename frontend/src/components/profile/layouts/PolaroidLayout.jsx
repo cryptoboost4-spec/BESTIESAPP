@@ -60,7 +60,7 @@ const PolaroidLayout = ({
       {/* Bio */}
       {bio && (
         <p
-          className={`${bioSizeClass || 'text-sm'} text-gray-800 dark:text-gray-200 mt-4 max-w-xs mx-auto`}
+          className={`${bioSizeClass || 'text-xl'} text-gray-800 dark:text-gray-200 mt-4 max-w-xs mx-auto`}
           style={bioStyle}
         >
           "{bio}"
