@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 const BadgesPage = () => {
+  const navigate = useNavigate();
   const { currentUser, userData } = useAuth();
   const { isDark } = useDarkMode();
   const [earnedBadges, setEarnedBadges] = useState([]);
@@ -124,6 +126,17 @@ const BadgesPage = () => {
 
   return (
     <div className="p-5 max-w-7xl mx-auto">
+      {/* Back Button - Top */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-pink-500 dark:text-pink-400 hover:underline mb-6 font-semibold"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
+
       <div className="text-center mb-10">
         <h1 className="text-4xl mb-2.5 text-gray-800 dark:text-gray-200">🏆 Your Badges</h1>
         <div className="text-2xl text-gray-600 dark:text-gray-400">
@@ -198,6 +211,19 @@ const BadgesPage = () => {
           </div>
         </div>
       )}
+
+      {/* Back Button - Bottom */}
+      <div className="mt-12 text-center">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-pink-500 dark:text-pink-400 hover:underline font-semibold"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+      </div>
     </div>
   );
 };

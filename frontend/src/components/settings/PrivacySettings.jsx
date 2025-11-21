@@ -2,6 +2,7 @@ import React from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
+import InfoButton from '../InfoButton';
 
 const PrivacySettings = ({ userData, currentUser }) => {
   return (
@@ -12,7 +13,10 @@ const PrivacySettings = ({ userData, currentUser }) => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-semibold text-text-primary">Show Stats to Besties</div>
+            <div className="font-semibold text-text-primary flex items-center">
+              Show Stats to Besties
+              <InfoButton message="Control whether your besties can see your check-in stats and safety record on your profile. This includes streaks, badges, and check-in history." />
+            </div>
             <div className="text-sm text-text-secondary">
               {userData?.privacySettings?.showStatsToBesties !== false
                 ? 'Besties can see your stats'
@@ -50,7 +54,10 @@ const PrivacySettings = ({ userData, currentUser }) => {
 
         <div className="space-y-3">
           <div>
-            <div className="font-semibold text-text-primary mb-2">Check-in Visibility</div>
+            <div className="font-semibold text-text-primary mb-2 flex items-center">
+              Check-in Visibility
+              <InfoButton message="Choose who can see your check-ins in their activity feed. This helps you control your privacy while still letting your closest besties know you're safe." />
+            </div>
             <div className="text-sm text-text-secondary mb-3">
               Control who can see your check-ins (last 7 days)
             </div>

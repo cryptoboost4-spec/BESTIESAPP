@@ -1,4 +1,5 @@
 import React from 'react';
+import InfoButton from '../InfoButton';
 
 const SecurityPasscodes = ({
   userData,
@@ -41,7 +42,10 @@ const SecurityPasscodes = ({
         <div className="border-2 border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <div className="font-semibold text-text-primary">🔒 Safety Passcode</div>
+              <div className="font-semibold text-text-primary flex items-center">
+                🔒 Safety Passcode
+                <InfoButton message="Required to cancel check-ins or SOS alerts. This ensures only you can mark yourself safe, protecting you from coercion." />
+              </div>
               {userData?.security?.safetyPasscode && (
                 <div className="text-green-600 text-xl">✓</div>
               )}
@@ -86,7 +90,10 @@ const SecurityPasscodes = ({
         <div className="border-2 border-red-200 dark:border-red-600 rounded-lg p-4 bg-red-50/50 dark:bg-red-900/10">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <div className="font-semibold text-text-primary">🚨 Duress Code</div>
+              <div className="font-semibold text-text-primary flex items-center">
+                🚨 Duress Code
+                <InfoButton message="A special code that appears to cancel alerts but secretly sends an emergency signal to all besties. Use if you're in danger and being forced to cancel." />
+              </div>
               {userData?.security?.duressCode && (
                 <div className="text-green-600 text-xl">✓</div>
               )}

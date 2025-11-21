@@ -1,5 +1,6 @@
 import React from 'react';
 import toast from 'react-hot-toast';
+import InfoButton from '../InfoButton';
 
 const NotificationSettings = ({
   userData,
@@ -21,6 +22,7 @@ const NotificationSettings = ({
             <div className="font-semibold text-text-primary flex items-center gap-2">
               WhatsApp
               <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">Coming Soon</span>
+              <InfoButton message="WhatsApp notifications will be sent when your besties check in or need help. This is the most reliable option for mobile alerts and will be completely free!" />
             </div>
             <div className="text-sm text-text-secondary">WhatsApp integration in development</div>
           </div>
@@ -38,6 +40,7 @@ const NotificationSettings = ({
             <div className="font-semibold text-text-primary flex items-center gap-2">
               Facebook Messenger
               <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">Coming Soon</span>
+              <InfoButton message="Facebook Messenger notifications will keep you updated on your besties' safety. Perfect if you use Messenger regularly!" />
             </div>
             <div className="text-sm text-text-secondary">Facebook Messenger integration in development</div>
           </div>
@@ -52,7 +55,10 @@ const NotificationSettings = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-semibold text-text-primary">Email</div>
+            <div className="font-semibold text-text-primary flex items-center">
+              Email
+              <InfoButton message="Receive email alerts when your besties check in or trigger an emergency alert. Emails are sent instantly and work on all devices." />
+            </div>
             <div className="text-sm text-text-secondary">Get alerts via email</div>
           </div>
           <button
