@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import ConfettiCelebration from './ConfettiCelebration';
 
 const ProfileCompletionModal = ({ isOpen, onClose }) => {
+  const { isDark } = useDarkMode();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -23,9 +25,9 @@ const ProfileCompletionModal = ({ isOpen, onClose }) => {
       {showConfetti && <ConfettiCelebration />}
 
       {/* Modal Overlay */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div className="fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
         {/* Modal Card */}
-        <div className="card max-w-lg w-full p-8 animate-scale-up relative overflow-hidden">
+        <div className="card max-w-lg w-full p-8 animate-scale-up relative overflow-hidden bg-white dark:bg-gray-800">
           {/* Floating decorative elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-6 left-6 text-3xl animate-float opacity-60">⭐</div>
@@ -45,29 +47,29 @@ const ProfileCompletionModal = ({ isOpen, onClose }) => {
               Congratulations!
             </h2>
 
-            <h3 className="text-2xl font-display text-text-primary mb-4">
+            <h3 className="text-2xl font-display text-text-primary dark:text-white mb-4">
               Profile Perfectionist Unlocked!
             </h3>
 
-            <p className="text-lg text-text-secondary mb-6 max-w-md mx-auto">
+            <p className="text-lg text-text-secondary dark:text-gray-300 mb-6 max-w-md mx-auto">
               You've completed your entire profile! Your besties can now see all your info, and you're all set to stay safe together.
             </p>
 
             {/* Badge Display */}
-            <div className="inline-block bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-6 mb-6 border-2 border-pink-200 shadow-xl">
+            <div className="inline-block bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 rounded-2xl p-6 mb-6 border-2 border-pink-200 dark:border-pink-700 shadow-xl">
               <div className="text-5xl mb-2">⭐</div>
-              <div className="text-xl font-display text-text-primary mb-1">Profile Perfectionist</div>
-              <div className="text-sm text-text-secondary">
+              <div className="text-xl font-display text-text-primary dark:text-white mb-1">Profile Perfectionist</div>
+              <div className="text-sm text-text-secondary dark:text-gray-300">
                 Completed your full profile
               </div>
             </div>
 
             {/* Fun Stats */}
-            <div className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-xl p-4 mb-6">
-              <div className="text-sm font-semibold text-text-primary mb-2">
+            <div className="bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/40 dark:to-purple-900/40 rounded-xl p-4 mb-6 border border-pink-200 dark:border-pink-800">
+              <div className="text-sm font-semibold text-text-primary dark:text-white mb-2">
                 🎯 Profile Complete! Here's what you unlocked:
               </div>
-              <div className="space-y-1 text-xs text-text-secondary">
+              <div className="space-y-1 text-xs text-text-secondary dark:text-gray-300">
                 <div>✅ Full profile visibility to your besties</div>
                 <div>✅ Profile Perfectionist badge</div>
                 <div>✅ Priority support access</div>
@@ -83,7 +85,7 @@ const ProfileCompletionModal = ({ isOpen, onClose }) => {
               Awesome! Let's Go! 🎉
             </button>
 
-            <p className="text-xs text-text-secondary mt-4">
+            <p className="text-xs text-text-secondary dark:text-gray-400 mt-4">
               Check your Notifications to see your new badge
             </p>
           </div>

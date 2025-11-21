@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp, getDocs, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import haptic from '../utils/hapticFeedback';
 
 /**
  * "Get Me Out of Here" emergency button
@@ -17,6 +18,9 @@ const GetMeOutButton = ({ currentUser, userData }) => {
 
   const handleMouseDown = () => {
     if (sending) return;
+
+    // Emergency haptic feedback when button is pressed
+    haptic.emergency();
 
     setIsHolding(true);
     setProgress(0);
@@ -97,6 +101,9 @@ const GetMeOutButton = ({ currentUser, userData }) => {
       // Send notifications to all besties
       // This will be picked up by Cloud Function to send push/SMS/email
       console.log('Get Me Out alert created:', alert.id);
+
+      // Success haptic feedback when alert is successfully triggered
+      haptic.success();
 
       toast.success('📞 Your besties are being notified to call you!', {
         duration: 5000,

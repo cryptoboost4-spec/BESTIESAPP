@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 const DonationCard = () => {
+  const { isDark } = useDarkMode();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -26,13 +28,13 @@ const DonationCard = () => {
   };
 
   return (
-    <div className="card p-6 bg-gradient-to-br from-primary/5 to-secondary/5 border-2 border-primary/20">
+    <div className={`card p-6 ${isDark ? 'bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/30' : 'bg-gradient-to-br from-primary/5 to-secondary/5 border-2 border-primary/20'}`}>
       <div className="text-center mb-4">
         <div className="text-4xl mb-2">💜</div>
-        <h3 className="font-display text-xl text-text-primary mb-2">
+        <h3 className={`font-display text-xl ${isDark ? 'text-gray-100' : 'text-text-primary'} mb-2`}>
           Keep Besties Free
         </h3>
-        <p className="text-text-secondary text-sm">
+        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Our goal is to keep it free for everyone, but we rely on donations to make it happen
         </p>
       </div>
@@ -64,12 +66,12 @@ const DonationCard = () => {
 
         <button
           onClick={() => navigate('/about')}
-          className="w-full text-primary hover:text-primary-dark font-semibold text-sm underline transition-colors"
+          className={`w-full font-semibold text-sm underline transition-colors ${isDark ? 'text-primary-light hover:text-primary' : 'text-primary hover:text-primary-dark'}`}
         >
           Learn more about Besties →
         </button>
 
-        <div className="text-xs text-text-secondary text-center">
+        <div className={`text-xs text-center ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
           Every donation helps keep Besties free 💜
         </div>
       </div>

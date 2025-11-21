@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -7,6 +8,7 @@ import html2canvas from 'html2canvas';
 
 const SocialShareCardsModal = ({ onClose }) => {
   const { userData, currentUser } = useAuth();
+  const { isDark } = useDarkMode();
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingImage, setGeneratingImage] = useState(false);
@@ -214,8 +216,8 @@ const SocialShareCardsModal = ({ onClose }) => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="card p-8">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+        <div className="card p-8 bg-white dark:bg-gray-800">
           <div className="spinner"></div>
         </div>
       </div>
@@ -223,20 +225,20 @@ const SocialShareCardsModal = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="card max-w-2xl w-full p-6 animate-scale-up max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="card max-w-2xl w-full p-6 animate-scale-up max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-display text-text-primary">Share Your Profile</h2>
+          <h2 className="text-2xl font-display text-text-primary dark:text-white">Share Your Profile</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors text-gray-700 dark:text-gray-300"
           >
             ✕
           </button>
         </div>
 
-        <p className="text-text-secondary mb-6">Choose how you'd like to share your Besties profile with friends!</p>
+        <p className="text-text-secondary dark:text-gray-300 mb-6">Choose how you'd like to share your Besties profile with friends!</p>
 
         {/* Hidden Card for Image Generation */}
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
@@ -380,21 +382,21 @@ const SocialShareCardsModal = ({ onClose }) => {
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 text-center mt-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
           Share your profile with friends so they can join your safety network!
         </p>
       </div>
 
       {/* Share Choice Popup */}
       {showShareChoice && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4 animate-fade-in">
-          <div className="card max-w-md w-full p-6 animate-scale-up">
+        <div className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-[60] p-4 animate-fade-in">
+          <div className="card max-w-md w-full p-6 animate-scale-up bg-white dark:bg-gray-800">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4 animate-bounce-slow">🎨</div>
-              <h3 className="text-2xl font-display text-text-primary mb-2">
+              <h3 className="text-2xl font-display text-text-primary dark:text-white mb-2">
                 How do you want to share?
               </h3>
-              <p className="text-sm text-text-secondary">
+              <p className="text-sm text-text-secondary dark:text-gray-300">
                 Choose between a beautiful card or a simple link
               </p>
             </div>
@@ -403,20 +405,20 @@ const SocialShareCardsModal = ({ onClose }) => {
               {/* Share with Card */}
               <button
                 onClick={handleShareWithCard}
-                className="w-full p-4 border-2 border-primary bg-purple-50 rounded-xl hover:bg-purple-100 transition-all group"
+                className="w-full p-4 border-2 border-primary bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-all group"
                 disabled={generatingImage}
               >
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">🖼️</div>
                   <div className="flex-1 text-left">
-                    <div className="font-display text-lg text-primary mb-1">
+                    <div className="font-display text-lg text-primary dark:text-purple-400 mb-1">
                       Share Beautiful Card
                     </div>
-                    <div className="text-xs text-text-secondary">
+                    <div className="text-xs text-text-secondary dark:text-gray-400">
                       Custom image with your profile & badges
                     </div>
                   </div>
-                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity dark:text-white">
                     →
                   </div>
                 </div>
@@ -425,19 +427,19 @@ const SocialShareCardsModal = ({ onClose }) => {
               {/* Share with Link */}
               <button
                 onClick={handleShareWithLink}
-                className="w-full p-4 border-2 border-gray-300 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
+                className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">🔗</div>
                   <div className="flex-1 text-left">
-                    <div className="font-display text-lg text-gray-800 mb-1">
+                    <div className="font-display text-lg text-gray-800 dark:text-gray-200 mb-1">
                       Share Simple Link
                     </div>
-                    <div className="text-xs text-text-secondary">
+                    <div className="text-xs text-text-secondary dark:text-gray-400">
                       Quick text message with link
                     </div>
                   </div>
-                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity dark:text-white">
                     →
                   </div>
                 </div>

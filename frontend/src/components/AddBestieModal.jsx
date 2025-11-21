@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
 import '../styles/AddBestieModal.css';
 
 const AddBestieModal = ({ onClose, onSuccess }) => {
   const { currentUser, userData } = useAuth();
+  const { isDark } = useDarkMode();
   const [showCelebration, setShowCelebration] = useState(false);
 
   const shareUrl = `https://bestiesapp.web.app/?invite=${currentUser?.uid}`;
@@ -95,8 +97,8 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
               You're building your safety network! Every bestie you add makes both of you safer. 💜
             </p>
             <div className="celebration-encouragement">
-              <p className="font-semibold text-primary">Keep going! Invite more besties:</p>
-              <p className="text-sm text-text-secondary mt-2">
+              <p className="font-semibold text-primary dark:text-purple-400">Keep going! Invite more besties:</p>
+              <p className="text-sm text-text-secondary dark:text-gray-300 mt-2">
                 The more people in your circle, the safer everyone is.
                 Your besties will thank you! ✨
               </p>
@@ -121,7 +123,7 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
 
         {/* Encouraging Message */}
         <div className="invite-encouragement-box">
-          <p className="text-sm text-text-secondary">
+          <p className="text-sm text-text-secondary dark:text-gray-300">
             <strong>Why invite besties?</strong>
           </p>
           <ul className="invite-benefits">
@@ -185,7 +187,7 @@ const AddBestieModal = ({ onClose, onSuccess }) => {
 
         {/* Footer Encouragement */}
         <div className="invite-footer">
-          <p className="text-xs text-text-secondary">
+          <p className="text-xs text-text-secondary dark:text-gray-400">
             💜 Your besties will appreciate you looking out for them!
           </p>
         </div>

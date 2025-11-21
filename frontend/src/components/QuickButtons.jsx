@@ -1,4 +1,5 @@
 import React from 'react';
+import haptic from '../utils/hapticFeedback';
 
 const QuickButtons = ({ onQuickCheckIn }) => {
   const quickOptions = [
@@ -15,7 +16,10 @@ const QuickButtons = ({ onQuickCheckIn }) => {
         {quickOptions.map((option) => (
           <button
             key={option.label}
-            onClick={() => onQuickCheckIn(option.minutes)}
+            onClick={() => {
+              haptic.light();
+              onQuickCheckIn(option.minutes);
+            }}
             className={`card p-6 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br ${option.color} text-white`}
           >
             <div className="text-4xl mb-2">{option.emoji}</div>

@@ -3,13 +3,45 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/firebase';
 import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
+import { useDarkMode } from '../contexts/DarkModeContext';
+import useFormValidation from '../hooks/useFormValidation';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const { isDark } = useDarkMode();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Form validation for email/password
+  const {
+    values,
+    errors,
+    handleChange,
+    handleBlur,
+    validateAll,
+    reset: resetForm
+  } = useFormValidation(
+    { email: '', password: '', displayName: '' },
+    {
+      email: {
+        required: true,
+        email: true,
+        requiredMessage: 'Email is required 📧',
+        emailMessage: 'Please enter a valid email address 💜'
+      },
+      password: {
+        required: true,
+        minLength: 6,
+        requiredMessage: 'Password is required 🔒',
+        minLengthMessage: 'Password must be at least 6 characters 🔐'
+      },
+      displayName: {
+        required: isSignUp,
+        minLength: 2,
+        requiredMessage: 'Name is required ✨',
+        minLengthMessage: 'Name must be at least 2 characters 💜'
+      }
+    }
+  );
   const [countryCode, setCountryCode] = useState('+61'); // Default to Australia
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -76,15 +108,21 @@ const LoginPage = () => {
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
+    // Validate form before submission
+    if (!validateAll()) {
+      toast.error('Please fix the errors before continuing 💜');
+      return;
+    }
+
+    setLoading(true);
     errorTracker.trackFunnelStep('signup', isSignUp ? 'click_email_signup' : 'click_email_signin');
 
     let result;
     if (isSignUp) {
-      result = await authService.signUpWithEmail(email, password, displayName);
+      result = await authService.signUpWithEmail(values.email, values.password, values.displayName);
     } else {
-      result = await authService.signInWithEmail(email, password);
+      result = await authService.signInWithEmail(values.email, values.password);
     }
 
     setLoading(false);
@@ -188,7 +226,7 @@ const LoginPage = () => {
 
           {/* Loading Progress Indicator */}
           {loadingStep && (
-            <div className="mb-4 p-3 bg-gray-100 rounded-lg text-center">
+            <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">
               <p className="text-sm font-semibold text-primary flex items-center justify-center gap-2">
                 <span className="inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
                 {loadingStep}
@@ -224,7 +262,7 @@ const LoginPage = () => {
 
           {/* Phone Auth Form */}
           {showPhoneAuth && (
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               {!confirmationResult ? (
                 <form onSubmit={handleSendCode} className="space-y-3">
                   <div>
@@ -372,10 +410,10 @@ const LoginPage = () => {
           {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-text-secondary">Or</span>
+              <span className="px-2 bg-white dark:bg-gray-800 text-text-secondary">Or</span>
             </div>
           </div>
 
@@ -388,12 +426,15 @@ const LoginPage = () => {
                 </label>
                 <input
                   type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="input"
+                  value={values.displayName}
+                  onChange={(e) => handleChange('displayName', e.target.value)}
+                  onBlur={() => handleBlur('displayName')}
+                  className={`input ${errors.displayName ? 'border-red-500 dark:border-red-400' : ''}`}
                   placeholder="Your name"
-                  required
                 />
+                {errors.displayName && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.displayName}</p>
+                )}
               </div>
             )}
 
@@ -403,12 +444,15 @@ const LoginPage = () => {
               </label>
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input"
+                value={values.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
+                className={`input ${errors.email ? 'border-red-500 dark:border-red-400' : ''}`}
                 placeholder="you@example.com"
-                required
               />
+              {errors.email && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -417,13 +461,15 @@ const LoginPage = () => {
               </label>
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input"
+                value={values.password}
+                onChange={(e) => handleChange('password', e.target.value)}
+                onBlur={() => handleBlur('password')}
+                className={`input ${errors.password ? 'border-red-500 dark:border-red-400' : ''}`}
                 placeholder="••••••••"
-                required
-                minLength={6}
               />
+              {errors.password && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.password}</p>
+              )}
             </div>
 
             <button

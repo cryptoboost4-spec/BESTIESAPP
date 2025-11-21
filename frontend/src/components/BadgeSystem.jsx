@@ -1,6 +1,8 @@
 import React from 'react';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 const BadgeSystem = ({ badges = [] }) => {
+  const { isDark } = useDarkMode();
   const allBadges = [
     { id: 'guardian_1', name: 'Helper', icon: '🛡️', category: 'guardian', requirement: 1 },
     { id: 'guardian_5', name: 'Protector', icon: '🛡️✨', category: 'guardian', requirement: 5 },
@@ -25,15 +27,17 @@ const BadgeSystem = ({ badges = [] }) => {
             key={badge.id}
             className={`card p-4 text-center transition-all ${
               isEarned
-                ? 'bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/20'
+                ? isDark
+                  ? 'bg-gradient-to-br from-primary/20 to-secondary/20 border-2 border-primary/30'
+                  : 'bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/20'
                 : 'opacity-50 grayscale'
             }`}
           >
             <div className="text-4xl mb-2">{badge.icon}</div>
-            <div className="font-semibold text-sm text-text-primary mb-1">
+            <div className={`font-semibold text-sm ${isDark ? 'text-gray-100' : 'text-text-primary'} mb-1`}>
               {badge.name}
             </div>
-            <div className="text-xs text-text-secondary">
+            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
               {isEarned ? 'Earned!' : `Need ${badge.requirement}`}
             </div>
           </div>

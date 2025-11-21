@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import '../styles/BadgesPage.css';
 
 const BadgesPage = () => {
   const { currentUser, userData } = useAuth();
+  const { isDark } = useDarkMode();
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -112,8 +113,8 @@ const BadgesPage = () => {
 
   if (loading) {
     return (
-      <div className="badges-page">
-        <div className="loading">Loading your badges...</div>
+      <div className="p-5 max-w-7xl mx-auto">
+        <div className="text-center py-15 px-5 text-xl text-gray-600 dark:text-gray-400">Loading your badges...</div>
       </div>
     );
   }
@@ -122,35 +123,37 @@ const BadgesPage = () => {
   const locked = allBadges.filter(b => !earnedBadges.includes(b.id));
 
   return (
-    <div className="badges-page">
-      <div className="badges-header">
-        <h1>🏆 Your Badges</h1>
-        <div className="badge-stats">
-          <span className="earned-count">{earned.length}</span>
-          <span className="total-count">/ {allBadges.length}</span>
+    <div className="p-5 max-w-7xl mx-auto">
+      <div className="text-center mb-10">
+        <h1 className="text-4xl mb-2.5 text-gray-800 dark:text-gray-200">🏆 Your Badges</h1>
+        <div className="text-2xl text-gray-600 dark:text-gray-400">
+          <span className="text-pink-500 dark:text-pink-400 font-bold text-3xl">{earned.length}</span>
+          <span className="text-gray-600 dark:text-gray-400">/ {allBadges.length}</span>
         </div>
       </div>
 
       {earned.length > 0 && (
-        <div className="badge-section">
-          <h2>✨ Earned ({earned.length})</h2>
-          <div className="badges-grid">
+        <div className="mb-12">
+          <h2 className="text-3xl mb-5 pl-2.5 text-gray-800 dark:text-gray-200">✨ Earned ({earned.length})</h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
             {earned.map(badge => (
-              <div 
-                key={badge.id} 
-                className="badge-card earned"
-                style={{ 
+              <div
+                key={badge.id}
+                className="bg-white dark:bg-gray-800 border-[3px] rounded-2xl p-6 flex gap-5 items-center transition-all duration-300 shadow-lg hover:shadow-xl transform -translate-y-0.5"
+                style={{
                   borderColor: badge.color,
-                  background: `linear-gradient(135deg, ${badge.color}15, ${badge.color}05)`
+                  background: isDark
+                    ? `linear-gradient(135deg, ${badge.color}20, ${badge.color}10), rgb(31 41 55)`
+                    : `linear-gradient(135deg, ${badge.color}15, ${badge.color}05)`
                 }}
               >
-                <div className="badge-icon" style={{ color: badge.color }}>
+                <div className="text-[3.5rem] flex-shrink-0 leading-none" style={{ color: badge.color }}>
                   {badge.icon}
                 </div>
-                <div className="badge-info">
-                  <h3 style={{ color: badge.color }}>{badge.name}</h3>
-                  <p>{badge.description}</p>
-                  <span className="earned-label" style={{ background: badge.color }}>
+                <div className="flex-1">
+                  <h3 className="m-0 mb-2 text-xl" style={{ color: badge.color }}>{badge.name}</h3>
+                  <p className="m-0 text-gray-600 dark:text-gray-400 text-[0.95rem]">{badge.description}</p>
+                  <span className="inline-block py-1.5 px-3.5 rounded-full text-white text-[0.85rem] mt-2.5 font-semibold" style={{ background: badge.color }}>
                     ✓ Earned
                   </span>
                 </div>
@@ -161,32 +164,32 @@ const BadgesPage = () => {
       )}
 
       {locked.length > 0 && (
-        <div className="badge-section">
-          <h2>🔒 Locked ({locked.length})</h2>
-          <div className="badges-grid">
+        <div className="mb-12">
+          <h2 className="text-3xl mb-5 pl-2.5 text-gray-800 dark:text-gray-200">🔒 Locked ({locked.length})</h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
             {locked.map(badge => {
               const progress = getProgress(badge);
               const progressText = getProgressText(badge);
 
               return (
-                <div key={badge.id} className="badge-card locked">
-                  <div className="badge-icon">{badge.icon}</div>
-                  <div className="badge-info">
-                    <h3>{badge.name}</h3>
-                    <p>{badge.description}</p>
+                <div key={badge.id} className="bg-white dark:bg-gray-800 border-[3px] border-gray-200 dark:border-gray-600 rounded-2xl p-6 flex gap-5 items-center transition-all duration-300 opacity-40 grayscale-[0.8]">
+                  <div className="text-[3.5rem] flex-shrink-0 leading-none text-gray-600 dark:text-gray-400">{badge.icon}</div>
+                  <div className="flex-1">
+                    <h3 className="m-0 mb-2 text-xl text-gray-800 dark:text-gray-200">{badge.name}</h3>
+                    <p className="m-0 text-gray-600 dark:text-gray-400 text-[0.95rem]">{badge.description}</p>
 
                     {/* Progress bar */}
-                    <div className="badge-progress-container">
-                      <div className="badge-progress-bar">
+                    <div className="mt-3">
+                      <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-xl overflow-hidden mb-1.5">
                         <div
-                          className="badge-progress-fill"
+                          className="h-full transition-all duration-300 rounded-xl"
                           style={{
                             width: `${progress}%`,
                             backgroundColor: badge.color
                           }}
                         />
                       </div>
-                      <span className="badge-progress-text">{progressText}</span>
+                      <span className="text-[0.85rem] text-gray-600 dark:text-gray-400 font-semibold">{progressText}</span>
                     </div>
                   </div>
                 </div>

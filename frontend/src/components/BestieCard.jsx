@@ -4,8 +4,10 @@ import { db } from '../services/firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import ProfileWithBubble from './ProfileWithBubble';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 const BestieCard = ({ bestie, onRemove }) => {
+  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [userPhoto, setUserPhoto] = useState(null);
   const [requestAttention, setRequestAttention] = useState(null);
@@ -123,20 +125,20 @@ const BestieCard = ({ bestie, onRemove }) => {
 
               {/* Dropdown Menu - appears below profile picture */}
               {showProfileMenu && (
-                <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 z-50 min-w-[180px]">
+                <div className={`absolute top-full left-0 mt-2 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg shadow-xl border-2 z-50 min-w-[180px]`}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowProfileMenu(false);
                       navigate(`/user/${bestie.userId}`);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700 first:rounded-t-lg"
+                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold first:rounded-t-lg`}
                   >
                     👤 View Profile
                   </button>
                   <button
                     onClick={handleToggleCircle}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
+                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold`}
                   >
                     {bestie.isFavorite ? '💔 Remove from Circle' : '💜 Add to Circle'}
                   </button>
@@ -151,7 +153,7 @@ const BestieCard = ({ bestie, onRemove }) => {
                       }
                       setShowProfileMenu(false);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
+                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold`}
                   >
                     💬 Send Message
                   </button>
@@ -161,7 +163,7 @@ const BestieCard = ({ bestie, onRemove }) => {
                       setShowProfileMenu(false);
                       setShowDeleteModal(true);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-semibold text-red-600 last:rounded-b-lg"
+                    className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-red-900/30' : 'hover:bg-red-50'} text-sm font-semibold text-red-600 last:rounded-b-lg`}
                   >
                     🗑️ Delete Bestie
                   </button>
@@ -181,11 +183,11 @@ const BestieCard = ({ bestie, onRemove }) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg text-gray-900 truncate">
+                  <h3 className={`font-bold text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'} truncate`}>
                     {bestie.name || bestie.phone || 'Unknown'}
                   </h3>
                   {bestie.phone && (
-                    <p className="text-sm text-gray-600 truncate">{bestie.phone}</p>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} truncate`}>{bestie.phone}</p>
                   )}
                 </div>
                 {bestie.isFavorite && (
@@ -212,8 +214,8 @@ const BestieCard = ({ bestie, onRemove }) => {
           </div>
 
           {/* Hover hint */}
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
+          <div className={`mt-3 pt-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} text-center`}>
               💡 Tap profile picture for options
             </p>
           </div>
@@ -223,21 +225,21 @@ const BestieCard = ({ bestie, onRemove }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-display text-text-primary mb-2">Remove Bestie?</h2>
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full p-6`}>
+            <h2 className={`text-2xl font-display ${isDark ? 'text-gray-100' : 'text-text-primary'} mb-2`}>Remove Bestie?</h2>
             <p className="text-text-secondary mb-4">
               Are you sure you want to remove <strong>{bestie.name || bestie.phone}</strong> from your besties?
             </p>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-yellow-800 mb-2">
+            <div className={`${isDark ? 'bg-yellow-900/30 border-yellow-700' : 'bg-yellow-50 border-yellow-200'} border rounded-lg p-3 mb-4`}>
+              <p className={`text-sm ${isDark ? 'text-yellow-300' : 'text-yellow-800'} mb-2`}>
                 ⚠️ Type <strong>"see ya"</strong> or <strong>"bye bye"</strong> to confirm
               </p>
               <input
                 type="text"
                 value={deleteChallenge}
                 onChange={(e) => setDeleteChallenge(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-yellow-300 rounded-lg focus:border-yellow-500 focus:outline-none"
+                className={`w-full px-3 py-2 border-2 ${isDark ? 'border-yellow-600 bg-gray-700 text-gray-100 focus:border-yellow-500' : 'border-yellow-300 bg-white text-gray-900 focus:border-yellow-500'} rounded-lg focus:outline-none`}
                 placeholder="Type here..."
                 autoFocus
               />
