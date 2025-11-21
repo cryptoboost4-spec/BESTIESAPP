@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }) => {
       const inviterSnap = await getDoc(inviterRef);
 
       if (!inviterSnap.exists()) {
-        console.log('Invalid invite - user does not exist');
         localStorage.removeItem('pending_invite');
         localStorage.removeItem('inviter_info');
         return;
@@ -152,15 +151,12 @@ export const AuthProvider = ({ children }) => {
           seen: false,
           createdAt: Timestamp.now(),
         });
-
-        console.log('✅ Celebration documents created for both users');
       } catch (error) {
         console.error('Failed to create celebration documents:', error);
       }
 
       // Clean up localStorage after successful processing
       localStorage.removeItem('pending_invite');
-      console.log('Invite processed successfully for:', inviterData.displayName);
     } catch (error) {
       console.error('Auto-add bestie failed:', error);
     }
@@ -172,7 +168,6 @@ export const AuthProvider = ({ children }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const inviterUID = urlParams.get('invite');
     if (inviterUID) {
-      console.log('💾 Saving invite code to localStorage:', inviterUID);
       localStorage.setItem('pending_invite', inviterUID);
 
       // Fetch inviter info early so it's ready for welcome screen
@@ -187,7 +182,6 @@ export const AuthProvider = ({ children }) => {
               displayName: inviterData.displayName,
               photoURL: inviterData.photoURL,
             }));
-            console.log('✅ Inviter info saved:', inviterData.displayName);
           }
         } catch (error) {
           console.error('Failed to fetch inviter info:', error);
@@ -205,19 +199,12 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
-      console.group('🔐 Auth State Changed');
-      console.log('User:', user);
-      console.log('User UID:', user?.uid);
-      console.groupEnd();
-
       setCurrentUser(user);
 
       if (user) {
         errorTracker.setUser(user.uid);
         const userRef = doc(db, 'users', user.uid);
-        console.log('📄 Fetching user document at path:', `users/${user.uid}`);
         const userSnap = await getDoc(userRef);
-        console.log('📄 User document exists:', userSnap.exists());
 
         const isNewUser = !userSnap.exists();
 
@@ -303,19 +290,13 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Listen for real-time updates to user document
-        console.log('📡 AuthContext: Setting up Firestore listener for user:', user.uid);
         userUnsubscribeRef.current = onSnapshot(userRef, (doc) => {
-          console.group('📡 Firestore Listener Callback');
-          console.log('Document exists:', doc.exists());
           if (doc.exists()) {
             const data = { id: doc.id, ...doc.data() };
-            console.log('User data loaded:', data);
-            console.log('isAdmin field:', data.isAdmin);
             setUserData(data);
           } else {
             console.error('❌ User document does not exist at path:', `users/${user.uid}`);
           }
-          console.groupEnd();
           setLoading(false);
         }, (error) => {
           console.error('❌ Firestore listener error:', error);

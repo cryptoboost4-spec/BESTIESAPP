@@ -257,9 +257,6 @@ const CreateCheckInPage = () => {
         const userData = userDoc.data();
         const featuredIds = userData.featuredCircle || [];
 
-        console.log('🔄 Real-time update - featuredCircle:', featuredIds);
-        console.log('featuredCircle length:', featuredIds.length);
-
         if (featuredIds.length === 0) {
           console.warn('⚠️ featuredCircle is empty - no besties to load');
           setBesties([]);
@@ -267,7 +264,6 @@ const CreateCheckInPage = () => {
         }
 
         // Get all accepted besties to find the ones in the circle
-        console.log('📡 Querying besties collection...');
         const [requesterQuery, recipientQuery] = await Promise.all([
           getDocs(
             query(
@@ -284,9 +280,6 @@ const CreateCheckInPage = () => {
             )
           ),
         ]);
-
-        console.log('Requester query results:', requesterQuery.size);
-        console.log('Recipient query results:', recipientQuery.size);
 
         const allBestiesList = [];
 
@@ -310,17 +303,8 @@ const CreateCheckInPage = () => {
           });
         });
 
-        console.log('All besties found:', allBestiesList);
-        console.log('Filtering for featuredCircle IDs:', featuredIds);
-
         // Filter to only show besties in the featured circle
-        const circleBesties = allBestiesList.filter(b => {
-          const inCircle = featuredIds.includes(b.id);
-          console.log(`Bestie ${b.name} (${b.id}): ${inCircle ? 'IN' : 'NOT IN'} circle`);
-          return inCircle;
-        });
-
-        console.log('✅ Circle besties after filtering:', circleBesties);
+        const circleBesties = allBestiesList.filter(b => featuredIds.includes(b.id));
 
         // Fetch full user data for each bestie to get displayName, photoURL, and requestAttention
         const bestiesWithUserData = await Promise.all(
@@ -376,7 +360,6 @@ const CreateCheckInPage = () => {
 
     // Cleanup listener on unmount
     return () => {
-      console.log('🔌 Cleaning up featuredCircle listener');
       unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
