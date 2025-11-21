@@ -149,6 +149,10 @@
 | `alertedAt` | Timestamp \| null | ❌ | When alert was triggered |
 | `privacyLevel` | string | ❌ | **NEW:** Privacy setting: `"all_besties"` \| `"circle"` \| `"alerts_only"` (defaults to `"all_besties"` if missing) |
 | `circleSnapshot` | array[string] | ❌ | **NEW:** Snapshot of featuredCircle USER IDs at time of creation (for `"circle"` privacy) |
+| `currentNotifiedBestie` | string \| null | ❌ | **CASCADING ALERTS:** USER ID of bestie currently being notified |
+| `currentNotificationSentAt` | Timestamp \| null | ❌ | **CASCADING ALERTS:** When current bestie was notified |
+| `notifiedBestieHistory` | array[string] | ❌ | **CASCADING ALERTS:** Array of USER IDs already notified (in order) |
+| `acknowledgedBy` | array[string] | ❌ | **CASCADING ALERTS:** Array of USER IDs who have acknowledged/viewed the alert |
 
 ---
 
@@ -414,6 +418,12 @@
   - `alert_responses` collection - tracks who responds to alerts and how quickly
   - `circle_milestones` collection - celebrates important relationship moments
 - These collections enable real connection strength calculations based on actual behavior
+- **Added CASCADING ALERT FIELDS to check-ins collection:**
+  - `currentNotifiedBestie` - tracks which bestie is currently being notified
+  - `currentNotificationSentAt` - timestamp of when current bestie was notified
+  - `notifiedBestieHistory` - array of all besties already notified (in order)
+  - `acknowledgedBy` - array of besties who have acknowledged/viewed the alert
+  - Enables one-at-a-time notification with 30-second timeout escalation
 
 ### 2025-11-19
 - Initial schema documentation created

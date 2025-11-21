@@ -5,8 +5,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import Header from '../components/Header';
 import {
   calculateCircleHealth,
-  calculateConnectionStrength,
-  getConnectionColor,
   getConnectionEmoji,
   formatTimeAgo,
   getLastInteraction,
@@ -21,6 +19,7 @@ const CircleHealthPage = () => {
 
   useEffect(() => {
     loadCircleHealth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCircleHealth = async () => {
@@ -559,7 +558,7 @@ const PerfectCircleDemo = () => {
           <div className="bg-white p-4 rounded-xl border-2 border-green-300 text-center">
             <div className="text-3xl mb-2">🚨</div>
             <div className="font-bold text-green-700">Instant Response</div>
-            <div className="text-sm text-gray-600">< 5 minutes to every alert</div>
+            <div className="text-sm text-gray-600">&lt; 5 minutes to every alert</div>
           </div>
           <div className="bg-white p-4 rounded-xl border-2 border-green-300 text-center">
             <div className="text-3xl mb-2">✅</div>
