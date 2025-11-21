@@ -228,6 +228,46 @@ const CreateCheckInPage = () => {
       setDuration(location.state.quickMinutes);
     }
 
+    // Load from new quick check-in types
+    if (location.state?.quickType) {
+      const { quickType, duration: quickDuration, rego, meetingWith: meetingWithParam, skipLocation } = location.state;
+
+      errorTracker.trackFunnelStep('checkin', `use_quick_${quickType}`, { duration: quickDuration });
+
+      if (quickDuration) {
+        setDuration(quickDuration);
+      }
+
+      // If skipLocation is true, set location to empty and trigger auto-submit
+      if (skipLocation) {
+        setLocationInput('No location set');
+
+        // Auto-submit after brief delay to let state update
+        setTimeout(() => {
+          // Programmatically submit the form by calling handleSubmit
+          const submitBtn = document.querySelector('#create-checkin-submit-btn');
+          if (submitBtn) {
+            submitBtn.click();
+          }
+        }, 100);
+      }
+
+      // Handle rideshare - add rego to notes
+      if (quickType === 'rideshare' && rego) {
+        setNotes(`🚗 Rideshare - Vehicle: ${rego}`);
+      }
+
+      // Handle quick meet - set meeting with
+      if (quickType === 'quickmeet' && meetingWithParam) {
+        setMeetingWith(meetingWithParam);
+      }
+
+      // Handle walking - add note
+      if (quickType === 'walking') {
+        setNotes('🚶‍♀️ Walking alone');
+      }
+    }
+
     if (location.state?.template) {
       errorTracker.trackFunnelStep('checkin', 'use_template');
       const template = location.state.template;
@@ -846,8 +886,8 @@ const CreateCheckInPage = () => {
       return;
     }
 
-    if (duration < 15 || duration > 180) {
-      toast.error('Duration must be between 15 and 180 minutes');
+    if (duration < 10 || duration > 180) {
+      toast.error('Duration must be between 10 and 180 minutes');
       return;
     }
 
@@ -1336,6 +1376,7 @@ const CreateCheckInPage = () => {
           {/* Submit */}
           <button
             type="submit"
+            id="create-checkin-submit-btn"
             disabled={loading || selectedBesties.length === 0}
             className="w-full btn btn-primary text-lg py-4"
           >
