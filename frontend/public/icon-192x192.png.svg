@@ -1,0 +1,24 @@
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF69B4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9333EA;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="192" height="192" fill="url(#bg)" rx="42"/>
+  
+  <!-- White heart -->
+  <path d="M96,140 C96,140 58,118 58,88 C58,73 68,63 80,63 C88,63 93,68 96,76 C99,68 104,63 112,63 C124,63 134,73 134,88 C134,118 96,140 96,140 Z" 
+        fill="#FFFFFF" 
+        opacity="0.95"/>
+  
+  <!-- Letter B -->
+  <text x="96" y="115" 
+        font-family="Arial, sans-serif" 
+        font-size="72" 
+        font-weight="bold" 
+        fill="#FF69B4" 
+        text-anchor="middle">B</text>
+</svg>
