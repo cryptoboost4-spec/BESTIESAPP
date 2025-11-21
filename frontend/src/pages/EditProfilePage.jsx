@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage, authService } from '../services/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import { isValidE164 } from '../utils/phoneUtils';
+import { checkAndAwardProfileCompletion } from '../services/profileCompletionService';
+import ProfileCompletionModal from '../components/ProfileCompletionModal';
 
 const EditProfilePage = () => {
   const { currentUser, userData } = useAuth();
@@ -24,6 +26,9 @@ const EditProfilePage = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [phoneConfirmationResult, setPhoneConfirmationResult] = useState(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState('');
+
+  // Profile completion celebration
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -172,10 +177,54 @@ const EditProfilePage = () => {
 
       toast.success('Profile updated successfully!');
 
-      // Small delay to ensure Firestore update propagates
-      setTimeout(() => {
-        navigate('/profile');
-      }, 500);
+      // Check if profile is now complete and award badge
+      // Get besties count
+      const bestiesQuery1 = query(
+        collection(db, 'besties'),
+        where('requesterId', '==', currentUser.uid),
+        where('status', '==', 'accepted')
+      );
+      const bestiesQuery2 = query(
+        collection(db, 'besties'),
+        where('recipientId', '==', currentUser.uid),
+        where('status', '==', 'accepted')
+      );
+      const [snapshot1, snapshot2] = await Promise.all([
+        getDocs(bestiesQuery1),
+        getDocs(bestiesQuery2)
+      ]);
+      const bestiesCount = snapshot1.size + snapshot2.size;
+
+      // Create updated userData object
+      const updatedUserData = {
+        ...userData,
+        displayName,
+        phoneNumber: verifiedPhoneNumber || phoneNumber,
+        photoURL,
+        profile: {
+          ...userData?.profile,
+          bio
+        }
+      };
+
+      // Check and award profile completion badge
+      const wasAwarded = await checkAndAwardProfileCompletion(
+        currentUser.uid,
+        updatedUserData,
+        currentUser,
+        bestiesCount
+      );
+
+      if (wasAwarded) {
+        // Show celebration modal
+        setShowCompletionModal(true);
+        // Don't navigate yet, let user close the modal first
+      } else {
+        // Navigate after a short delay
+        setTimeout(() => {
+          navigate('/profile');
+        }, 500);
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error(error.message || 'Failed to update profile');
@@ -405,6 +454,15 @@ const EditProfilePage = () => {
 
         {/* Invisible reCAPTCHA container */}
         <div id="phone-recaptcha-container"></div>
+
+        {/* Profile Completion Celebration Modal */}
+        <ProfileCompletionModal
+          isOpen={showCompletionModal}
+          onClose={() => {
+            setShowCompletionModal(false);
+            navigate('/profile');
+          }}
+        />
       </div>
     </div>
   );
