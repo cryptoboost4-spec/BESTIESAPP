@@ -3,7 +3,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
 import { BACKGROUNDS, getCategoryName, BACKGROUND_CATEGORIES } from './themes/backgrounds';
-import { loadGoogleFonts } from './themes/typography';
 import { getLayoutById } from './layouts';
 import './themes/backgroundPatterns.css';
 

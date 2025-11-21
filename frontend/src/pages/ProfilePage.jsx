@@ -221,50 +221,6 @@ const ProfilePage = () => {
     return { tasks, percentage, completed, total: tasks.length };
   };
 
-  const hasWeekOfActivity = () => {
-    if (!firstCheckInDate) return false;
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return firstCheckInDate <= weekAgo;
-  };
-
-  const getWeeklySummary = () => {
-    if (!hasWeekOfActivity()) {
-      return {
-        status: 'new',
-        emoji: '🌱',
-        message: 'Building your safety journey',
-        tip: 'You\'ll get your weekly summary after you have one week of activity!'
-      };
-    }
-
-    const checkIns = userData?.stats?.totalCheckIns || 0;
-    const besties = userData?.stats?.totalBesties || 0;
-
-    if (checkIns >= 7 && besties >= 3) {
-      return {
-        status: 'excellent',
-        emoji: '🌟',
-        message: 'You\'re absolutely crushing it this week!',
-        tip: 'Keep up the amazing safety habits!'
-      };
-    } else if (checkIns >= 3 || besties >= 3) {
-      return {
-        status: 'good',
-        emoji: '💪',
-        message: 'You\'re doing great! Keep it up!',
-        tip: 'Try to check in regularly and add more besties.'
-      };
-    } else {
-      return {
-        status: 'needsWork',
-        emoji: '💜',
-        message: 'Let\'s build your safety network!',
-        tip: 'Start by adding your closest friends as besties.'
-      };
-    }
-  };
-
   const handleTaskNavigation = (task) => {
     if (task.action === 'scrollToPhoto') {
       const photoElement = document.querySelector('.photo-menu-container');
@@ -299,7 +255,6 @@ const ProfilePage = () => {
   };
 
   const profileCompletion = calculateProfileCompletion();
-  const weeklySummary = getWeeklySummary();
   const loginStreak = userData?.loginStreak || 0;
 
   if (loading) {

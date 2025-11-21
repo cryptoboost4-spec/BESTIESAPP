@@ -27,9 +27,7 @@ const HomePage = () => {
   const [showRequestAttention, setShowRequestAttention] = useState(false);
   const [attentionTag, setAttentionTag] = useState('');
 
-  // Alerts state
-  const [missedCheckIns, setMissedCheckIns] = useState([]);
-  const [requestsForAttention, setRequestsForAttention] = useState([]);
+  // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
 
   // Scrolling bubble example messages
@@ -109,17 +107,16 @@ const HomePage = () => {
   useEffect(() => {
     if (!currentUser || !userData) return;
 
-    const loadAlerts = async () => {
+    const loadBesties = async () => {
       try {
         // Get user's featured circle
         const featuredCircle = userData.featuredCircle || [];
         if (featuredCircle.length === 0) {
-          setMissedCheckIns([]);
-          setRequestsForAttention([]);
+          setBesties([]);
           return;
         }
 
-        // Load bestie names/info
+        // Load bestie names/info for weekly summary
         const bestiesData = [];
         for (const bestieId of featuredCircle) {
           const userDoc = await getDoc(doc(db, 'users', bestieId));
@@ -133,63 +130,12 @@ const HomePage = () => {
           }
         }
         setBesties(bestiesData);
-
-        const missed = [];
-        const attentionRequests = [];
-
-        // Check each bestie in featured circle for alerts
-        for (const bestieId of featuredCircle) {
-          // Check for missed check-ins (last 48 hours)
-          const twoDaysAgo = new Date();
-          twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
-
-          const checkInsQuery = query(
-            collection(db, 'checkins'),
-            where('userId', '==', bestieId),
-            where('createdAt', '>=', twoDaysAgo),
-            where('status', '==', 'alerted'),
-            orderBy('createdAt', 'desc'),
-            limit(5)
-          );
-
-          const checkInsSnapshot = await getDocs(checkInsQuery);
-          checkInsSnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const bestie = bestiesData.find(b => b.userId === bestieId);
-            missed.push({
-              id: docSnap.id,
-              userName: bestie?.name || 'Bestie',
-              userId: bestieId,
-              checkInData: data,
-              timestamp: data.createdAt?.toDate() || new Date(),
-            });
-          });
-
-          // Check for attention requests
-          const userDoc = await getDoc(doc(db, 'users', bestieId));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data.requestAttention && data.requestAttention.active) {
-              const bestie = bestiesData.find(b => b.userId === bestieId);
-              attentionRequests.push({
-                userId: bestieId,
-                userName: bestie?.name || 'Bestie',
-                tag: data.requestAttention.tag,
-                note: data.requestAttention.note,
-                timestamp: data.requestAttention.timestamp?.toDate() || new Date(),
-              });
-            }
-          }
-        }
-
-        setMissedCheckIns(missed);
-        setRequestsForAttention(attentionRequests);
       } catch (error) {
-        console.error('Error loading alerts:', error);
+        console.error('Error loading besties:', error);
       }
     };
 
-    loadAlerts();
+    loadBesties();
   }, [currentUser, userData]);
 
   // Weekly Summary Logic
