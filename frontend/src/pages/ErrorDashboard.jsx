@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
-import Header from '../components/Header';
 import { formatDistanceToNow } from 'date-fns';
 
 const ErrorDashboard = () => {
@@ -77,7 +76,6 @@ const ErrorDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
         </div>
@@ -87,7 +85,6 @@ const ErrorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-7xl mx-auto p-4 pb-20">
         {/* Header */}

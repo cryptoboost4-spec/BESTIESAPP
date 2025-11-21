@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import Header from '../components/Header';
 import LivingCircle from '../components/LivingCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
@@ -305,7 +304,6 @@ const ProfilePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
         </div>
@@ -315,7 +313,6 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
       <ConfettiCelebration trigger={confettiTrigger} type="badge" />
       <ProfileAuraStyles />
 

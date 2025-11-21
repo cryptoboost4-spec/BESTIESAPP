@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import Header from '../components/Header';
 
 const ExportDataPage = () => {
   const { currentUser, userData } = useAuth();
@@ -186,7 +185,6 @@ const ExportDataPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
         <div className="mb-6">

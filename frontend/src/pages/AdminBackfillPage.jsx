@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { functions } from '../services/firebase';
 import { httpsCallable } from 'firebase/functions';
-import Header from '../components/Header';
 import toast from 'react-hot-toast';
 
 const AdminBackfillPage = () => {
@@ -42,7 +41,6 @@ const AdminBackfillPage = () => {
   if (!userData?.isAdmin) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="max-w-4xl mx-auto p-4 pb-20">
           <div className="card p-12 text-center">
             <div className="text-6xl mb-4">🔒</div>
@@ -58,7 +56,6 @@ const AdminBackfillPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
         <div className="card p-8">

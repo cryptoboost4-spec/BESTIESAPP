@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, getDoc } from 'firebase/firestore';
 import { formatDistanceToNow, format } from 'date-fns';
-import Header from '../components/Header';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -186,7 +185,6 @@ const CheckInHistoryPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern dark:bg-dark-pattern">
-        <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
         </div>
@@ -196,7 +194,6 @@ const CheckInHistoryPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern dark:bg-dark-pattern">
-      <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
         {/* Back Button - Top */}

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -30,7 +29,6 @@ const AboutBestiesPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
         {/* Hero Section */}

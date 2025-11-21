@@ -16,7 +16,6 @@ import {
   limit,
   Timestamp
 } from 'firebase/firestore';
-import Header from '../components/Header';
 import BestieCard from '../components/BestieCard';
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
@@ -482,7 +481,6 @@ const BestiesPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
         </div>
@@ -492,7 +490,6 @@ const BestiesPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
         {/* Mobile Header - Simplified */}
