@@ -3653,7 +3653,6 @@ const AboutBestiesPage = () => {
           </button>
         </div>
       </div>
-    </div>
   );
 };
 
