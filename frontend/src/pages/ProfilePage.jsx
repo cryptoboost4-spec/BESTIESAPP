@@ -741,48 +741,83 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Featured Badges with Sticky View All */}
+        {/* Your Badges - Show All Earned */}
         <div className="mb-6 relative">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-display text-text-primary">Featured Badges</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-2xl font-display text-text-primary">Your Badges</h2>
             <button
-              onClick={() => setShowBadgeSelector(true)}
-              className="text-primary font-semibold hover:underline text-sm"
+              onClick={() => navigate('/badges')}
+              className="text-primary font-semibold hover:underline text-sm flex items-center gap-1"
             >
-              Choose 3 →
+              View All
+              <span className="text-xs bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center">
+                {badges.length}
+              </span>
             </button>
           </div>
 
-          {featuredBadges.length > 0 ? (
-            <>
-              <div className="grid grid-cols-3 gap-4">
-                {featuredBadges.map((badge) => (
-                  <div key={badge.id} className="card p-4 text-center bg-gradient-to-br from-yellow-50 to-orange-50">
-                    <div className="text-4xl mb-2">{badge.icon}</div>
-                    <div className="font-semibold text-sm text-text-primary">{badge.name}</div>
-                  </div>
-                ))}
-              </div>
+          {/* Help text about featuring */}
+          {badges.length > 0 && (
+            <p className="text-xs text-gray-500 mb-4">
+              💡 Tap badges to choose your top 3 to display on your profile
+            </p>
+          )}
 
-              {/* Sticky View All Button */}
-              <button
-                onClick={() => navigate('/badges')}
-                className="fixed bottom-24 right-4 md:bottom-6 md:right-6 btn btn-primary shadow-lg text-sm px-4 py-2 z-20"
-              >
-                🏆 View All
-              </button>
+          {badges.length > 0 ? (
+            <>
+              {/* Featured Badges - Highlighted */}
+              {featuredBadges.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-purple-700 mb-2">⭐ Featured on Profile</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {featuredBadges.map((badge) => (
+                      <button
+                        key={badge.id}
+                        onClick={() => handleToggleFeaturedBadge(badge.id)}
+                        className="card p-4 text-center bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 hover:border-yellow-400 transition-all hover:scale-105"
+                      >
+                        <div className="text-4xl mb-2">{badge.icon}</div>
+                        <div className="font-semibold text-xs text-text-primary">{badge.name}</div>
+                        <div className="text-xs text-yellow-700 mt-1">★ Featured</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* All Other Badges */}
+              {badges.filter(b => !featuredBadgeIds.includes(b.id)).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">All Badges</p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    {badges.filter(b => !featuredBadgeIds.includes(b.id)).map((badge) => (
+                      <button
+                        key={badge.id}
+                        onClick={() => handleToggleFeaturedBadge(badge.id)}
+                        className="card p-3 text-center hover:shadow-lg transition-all hover:scale-105 hover:border-purple-300"
+                      >
+                        <div className="text-3xl mb-1">{badge.icon}</div>
+                        <div className="font-semibold text-xs text-text-primary line-clamp-2">{badge.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="card p-8 text-center">
-              <div className="text-4xl mb-2">🏆</div>
-              <p className="text-text-secondary mb-3">
-                Earn badges and showcase your favorites here!
+              <div className="text-5xl mb-3">🏆</div>
+              <p className="text-text-primary font-semibold mb-2">
+                Start earning badges!
+              </p>
+              <p className="text-text-secondary text-sm mb-4">
+                Complete check-ins, invite friends, and stay safe to unlock achievements
               </p>
               <button
                 onClick={() => navigate('/badges')}
                 className="btn btn-primary text-sm"
               >
-                View All Badges
+                See All Available Badges
               </button>
             </div>
           )}

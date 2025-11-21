@@ -220,32 +220,41 @@ const HomePage = () => {
                   Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
                 </p>
 
-                {/* Preview Example */}
-                <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200">
-                  <p className="text-xs font-semibold text-purple-700 mb-2">Preview:</p>
-                  <div className="flex items-center gap-3">
-                    {/* User Profile Picture */}
-                    <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white text-lg font-display overflow-hidden flex-shrink-0 border-2 border-purple-300">
-                      {userData?.photoURL ? (
-                        <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
-                      )}
-                    </div>
+                {/* Preview Example - Centered with Speech Bubble */}
+                <div className="bg-white rounded-xl p-6 mb-4 border-2 border-purple-200">
+                  <p className="text-xs font-semibold text-purple-700 mb-4 text-center">How your besties will see it:</p>
 
-                    {/* Animated Message */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-gray-800 mb-1">
-                        {userData?.displayName || 'You'}
+                  {/* Centered profile with animated speech bubble */}
+                  <div className="flex justify-center mb-3">
+                    <div className="relative inline-block">
+                      {/* Profile Picture */}
+                      <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-display overflow-hidden border-4 border-white shadow-lg">
+                        {userData?.photoURL ? (
+                          <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
+                        )}
                       </div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 border border-purple-300 rounded-full">
-                        <span className="text-lg">💬</span>
-                        <span className="text-xs font-semibold text-purple-900 scrolling-message">
-                          Needs to vent
-                        </span>
+
+                      {/* Animated Speech Bubble - Top Right */}
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <div className="bg-purple-500 text-white rounded-full px-3 py-2 font-semibold whitespace-nowrap shadow-lg relative text-xs animate-bounce-gentle">
+                          <span className="bubble-message">Needs to vent</span>
+                          {/* Triangle pointer */}
+                          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-purple-500"></div>
+                        </div>
+                        {/* Pulse ring */}
+                        <div className="absolute inset-0 rounded-full bg-purple-300 animate-ping opacity-75"></div>
                       </div>
                     </div>
                   </div>
+
+                  <p className="text-center text-sm text-gray-700 font-semibold mt-4">
+                    {userData?.displayName || 'You'}
+                  </p>
+                  <p className="text-center text-xs text-gray-500 mt-1">
+                    Message cycles through your chosen tag
+                  </p>
                 </div>
 
                 <button
@@ -255,33 +264,45 @@ const HomePage = () => {
                   💜 Request Attention
                 </button>
 
-                {/* CSS for scrolling animation */}
+                {/* CSS for bubble message animation */}
                 <style>{`
-                  @keyframes scrollMessages {
-                    0%, 20% { content: "Needs to vent 💬"; }
-                    25%, 45% { content: "Needs a shoulder 🫂"; }
-                    50%, 70% { content: "Could use support 💜"; }
-                    75%, 95% { content: "Having a rough day 😔"; }
+                  @keyframes bounce-gentle {
+                    0%, 100% {
+                      transform: translateY(0);
+                    }
+                    50% {
+                      transform: translateY(-4px);
+                    }
                   }
 
-                  .scrolling-message {
-                    animation: fadeText 8s ease-in-out infinite;
+                  .animate-bounce-gentle {
+                    animation: bounce-gentle 2s ease-in-out infinite;
                   }
 
-                  .scrolling-message::after {
+                  @keyframes cycleBubbleMessages {
+                    0%, 24% { content: "Needs to vent"; }
+                    25%, 49% { content: "Needs a shoulder"; }
+                    50%, 74% { content: "Could use support"; }
+                    75%, 100% { content: "Having a rough day"; }
+                  }
+
+                  .bubble-message {
+                    animation: fadeBubble 8s ease-in-out infinite;
+                  }
+
+                  .bubble-message::after {
                     content: "Needs to vent";
-                    animation: scrollMessages 8s ease-in-out infinite;
+                    animation: cycleBubbleMessages 8s ease-in-out infinite;
                   }
 
-                  @keyframes fadeText {
-                    0%, 18%, 100% { opacity: 1; }
-                    20%, 23% { opacity: 0; }
-                    25%, 43% { opacity: 1; }
-                    45%, 48% { opacity: 0; }
-                    50%, 68% { opacity: 1; }
-                    70%, 73% { opacity: 0; }
-                    75%, 93% { opacity: 1; }
-                    95%, 98% { opacity: 0; }
+                  @keyframes fadeBubble {
+                    0%, 23%, 100% { opacity: 1; }
+                    24%, 25% { opacity: 0.3; }
+                    26%, 48% { opacity: 1; }
+                    49%, 50% { opacity: 0.3; }
+                    51%, 73% { opacity: 1; }
+                    74%, 75% { opacity: 0.3; }
+                    76%, 99% { opacity: 1; }
                   }
                 `}</style>
               </div>
