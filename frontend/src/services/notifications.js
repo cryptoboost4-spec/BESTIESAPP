@@ -33,8 +33,18 @@ class NotificationService {
       return true;
     }
 
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    if (Notification.permission === 'denied') {
+      throw new Error('PERMISSION_DENIED');
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    } catch (error) {
+      // Some browsers (like Samsung Internet) may block the permission request
+      console.error('Permission request error:', error);
+      throw new Error('PERMISSION_BLOCKED');
+    }
   }
 
   // Initialize service worker
@@ -125,10 +135,21 @@ class NotificationService {
       }
 
       // Request permission
-      const hasPermission = await this.requestPermission();
-      if (!hasPermission) {
-        toast.error('Notification permission denied');
-        return false;
+      try {
+        const hasPermission = await this.requestPermission();
+        if (!hasPermission) {
+          toast.error('Notification permission denied. Please enable notifications in your browser settings.');
+          return false;
+        }
+      } catch (error) {
+        if (error.message === 'PERMISSION_DENIED') {
+          toast.error('Push notifications are blocked. Go to your browser settings to enable them.', { duration: 6000 });
+          return false;
+        } else if (error.message === 'PERMISSION_BLOCKED') {
+          toast.error('Could not request notification permission. Please enable notifications in your browser settings.', { duration: 6000 });
+          return false;
+        }
+        throw error;
       }
 
       // Get token
