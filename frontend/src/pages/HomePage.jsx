@@ -357,31 +357,30 @@ const HomePage = () => {
               </div>
             ) : (
               <div className="card p-4 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-purple-100 dark:border-purple-700">
-                <h3 className="text-lg font-display text-gray-800 dark:text-gray-200 mb-3">
-                  Need Support?
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
-                </p>
-
-                {/* Preview Example */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border-2 border-purple-200 dark:border-purple-700 flex items-center justify-between gap-4 min-h-[120px]">
+                {/* Compact header with profile preview on right */}
+                <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-1">Preview:</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Your besties will see you need support with a special badge
-                    </p>
+                    <h3 className="text-lg font-display text-gray-800 dark:text-gray-200 inline">
+                      Need Support?
+                    </h3>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                      "{exampleMessages[currentMessageIndex]}"
+                    </span>
                   </div>
                   <div className="flex-shrink-0">
                     <ProfileWithBubble
                       photoURL={userData?.photoURL}
                       name={userData?.displayName || currentUser?.email || 'You'}
                       requestAttention={{ active: true, tag: exampleMessages[currentMessageIndex] }}
-                      size="lg"
+                      size="md"
                       showBubble={true}
                     />
                   </div>
                 </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
+                </p>
 
                 <button
                   onClick={() => {

@@ -68,9 +68,6 @@ const ProfileWithBubble = ({
             {/* Small triangle pointer to profile */}
             <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-purple-500"></div>
           </div>
-
-          {/* Pulse ring animation - smaller and behind bubble */}
-          <div className="absolute top-1 right-1 bottom-1 left-1 rounded-full bg-purple-300 animate-ping opacity-50 pointer-events-none"></div>
         </div>
       )}
     </div>
