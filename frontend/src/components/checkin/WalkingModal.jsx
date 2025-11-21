@@ -31,11 +31,31 @@ const WalkingModal = ({ onClose }) => {
           Select duration and start your check-in. You can add location details during your walk.
         </p>
 
-        {/* Time Slider */}
+        {/* Duration Selection */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
             Duration: {duration} minutes
           </label>
+
+          {/* Quick preset buttons */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {[10, 15, 30, 45].map((mins) => (
+              <button
+                key={mins}
+                type="button"
+                onClick={() => setDuration(mins)}
+                className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                  duration === mins
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {mins}m
+              </button>
+            ))}
+          </div>
+
+          {/* Fine-tune slider */}
           <input
             type="range"
             min="10"

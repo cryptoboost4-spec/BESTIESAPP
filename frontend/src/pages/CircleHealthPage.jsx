@@ -5,8 +5,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import Header from '../components/Header';
 import {
   calculateCircleHealth,
-  calculateConnectionStrength,
-  getConnectionColor,
   getConnectionEmoji,
   formatTimeAgo,
   getLastInteraction,
@@ -21,6 +19,7 @@ const CircleHealthPage = () => {
 
   useEffect(() => {
     loadCircleHealth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCircleHealth = async () => {
