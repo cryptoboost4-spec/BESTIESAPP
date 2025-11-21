@@ -169,14 +169,6 @@ const ProfileCard = ({ currentUser, userData }) => {
       className={`card p-8 mb-6 text-center relative overflow-hidden shadow-2xl profile-card-aura-${currentAura}`}
       style={{ background: currentGradient }}
     >
-      {/* Floating decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-6 left-6 text-3xl animate-float opacity-30">💖</div>
-        <div className="absolute top-10 right-8 text-2xl animate-float delay-1s opacity-30">✨</div>
-        <div className="absolute bottom-10 left-10 text-2xl animate-float delay-2s opacity-30">🌸</div>
-        <div className="absolute bottom-6 right-6 text-3xl animate-float delay-3s opacity-30">💫</div>
-      </div>
-
       {/* Edit Profile Button - Above Color Picker */}
       <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
         <button
@@ -185,15 +177,6 @@ const ProfileCard = ({ currentUser, userData }) => {
           title="Edit profile"
         >
           ✏️
-        </button>
-
-        {/* Share Profile Card as Image */}
-        <button
-          onClick={handleShareProfileCard}
-          className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
-          title="Share profile card as image"
-        >
-          📸
         </button>
 
         {/* Color Picker Button */}
@@ -352,7 +335,18 @@ const ProfileCard = ({ currentUser, userData }) => {
             onClick={() => {
               const url = `${window.location.origin}/user/${currentUser.uid}`;
               const text = `Come be my bestie on Besties! 💜`;
-              window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank');
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+              if (isMobile) {
+                // Try to open Facebook app first
+                window.location.href = `fb://profile/${currentUser.uid}`;
+                // Fallback to web after a delay
+                setTimeout(() => {
+                  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank');
+                }, 1500);
+              } else {
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank');
+              }
             }}
             className="w-8 h-8 rounded-full bg-[#1877f2] hover:bg-[#1864d9] text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
             title="Share on Facebook"
@@ -367,7 +361,18 @@ const ProfileCard = ({ currentUser, userData }) => {
             onClick={() => {
               const url = `${window.location.origin}/user/${currentUser.uid}`;
               const text = `Come be my bestie on Besties! 💜`;
-              window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+              if (isMobile) {
+                // Try to open Twitter app first
+                window.location.href = `twitter://post?message=${encodeURIComponent(text + ' ' + url)}`;
+                // Fallback to web after a delay
+                setTimeout(() => {
+                  window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+                }, 1500);
+              } else {
+                window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+              }
             }}
             className="w-8 h-8 rounded-full bg-black hover:bg-gray-800 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
             title="Share on X (Twitter)"
@@ -382,7 +387,18 @@ const ProfileCard = ({ currentUser, userData }) => {
             onClick={() => {
               const url = `${window.location.origin}/user/${currentUser.uid}`;
               const text = `Come be my bestie on Besties! 💜`;
-              window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+              if (isMobile) {
+                // Try to open WhatsApp app first
+                window.location.href = `whatsapp://send?text=${encodeURIComponent(text + ' ' + url)}`;
+                // Fallback to web after a delay
+                setTimeout(() => {
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+                }, 1500);
+              } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+              }
             }}
             className="w-8 h-8 rounded-full bg-[#25d366] hover:bg-[#20bd5a] text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-110"
             title="Share on WhatsApp"

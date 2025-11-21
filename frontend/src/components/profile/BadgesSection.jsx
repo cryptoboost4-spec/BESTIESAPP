@@ -100,10 +100,10 @@ const BadgesSection = ({
                       {otherBadges.map((badge) => (
                         <div
                           key={badge.id}
-                          className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-28"
+                          className="card p-4 text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-32"
                         >
-                          <div className="text-3xl mb-2">{badge.icon}</div>
-                          <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
+                          <div className="text-4xl mb-2">{badge.icon}</div>
+                          <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
                         </div>
                       ))}
                     </div>
