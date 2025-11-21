@@ -5,12 +5,12 @@ import toast from 'react-hot-toast';
 import { BACKGROUNDS, getCategoryName, BACKGROUND_CATEGORIES } from './themes/backgrounds';
 import { TYPOGRAPHY_STYLES, loadGoogleFonts, getTypographyById, getNameStyle, getBioStyle } from './themes/typography';
 import { LAYOUT_OPTIONS, getLayoutById } from './layouts';
-import { VIBE_PRESETS } from './themes/vibePresets';
+import { SPECIAL_EFFECTS, getSpecialEffectById } from './themes/specialEffects';
 import './themes/backgroundPatterns.css';
 
 const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [activeTab, setActiveTab] = useState('vibes');
-  const [selectedVibe, setSelectedVibe] = useState(null);
+  const [selectedSpecialEffect, setSelectedSpecialEffect] = useState(userData?.profile?.customization?.specialEffect || 'none');
   const [selectedBackground, setSelectedBackground] = useState(userData?.profile?.customization?.background || 'pearl-elegance');
   const [selectedLayout, setSelectedLayout] = useState(userData?.profile?.customization?.layout || 'classic');
   const [selectedTypography, setSelectedTypography] = useState(userData?.profile?.customization?.typography || 'elegant');
@@ -36,7 +36,8 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           layout: selectedLayout,
           typography: selectedTypography,
           photoShape,
-          photoBorder
+          photoBorder,
+          specialEffect: selectedSpecialEffect
         }
       });
       toast.success('Profile style saved! 💜');
@@ -49,15 +50,6 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     }
   };
 
-  const applyVibePreset = (vibe) => {
-    setSelectedVibe(vibe.id);
-    setSelectedBackground(vibe.background);
-    setSelectedLayout(vibe.layout);
-    setSelectedTypography(vibe.typography);
-    setPhotoShape(vibe.photoShape);
-    setPhotoBorder(vibe.photoBorder);
-    toast('Vibe applied! ✨', { icon: vibe.emoji });
-  };
 
   const getBackgroundById = (id) => {
     const allBackgrounds = Object.values(BACKGROUNDS).flat();
@@ -67,6 +59,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   // Get current selections for preview
   const currentBackground = getBackgroundById(selectedBackground);
   const currentTypography = getTypographyById(selectedTypography);
+  const currentSpecialEffect = getSpecialEffectById(selectedSpecialEffect);
   const LayoutComponent = getLayoutById(selectedLayout);
 
   const layoutProps = {
@@ -84,7 +77,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     bioSizeClass: currentTypography?.bioSizeClass || 'text-lg',
     photoShape,
     photoBorder,
-    decorativeElements: []
+    decorativeElements: currentSpecialEffect?.decorativeElements || []
   };
 
   const getPhotoShapeClass = () => {
@@ -187,31 +180,64 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
 
           {/* Content Area - Scrollable */}
           <div className="flex-1 overflow-y-auto p-4">
-            {/* VIBES TAB */}
+            {/* VIBES TAB - Special Effects */}
             {activeTab === 'vibes' && (
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  One-tap complete looks! 🎨
+                  Add special effects to your profile ✨
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {VIBE_PRESETS.map(vibe => {
-                    const vibeBg = getBackgroundById(vibe.background);
+                  {SPECIAL_EFFECTS.map(effect => {
                     return (
                       <button
-                        key={vibe.id}
-                        onClick={() => applyVibePreset(vibe)}
+                        key={effect.id}
+                        onClick={() => {
+                          setSelectedSpecialEffect(effect.id);
+                          toast(`${effect.name} effect applied! ${effect.emoji}`);
+                        }}
                         className={`relative overflow-hidden rounded-xl transition-all hover:scale-105 ${
-                          selectedVibe === vibe.id ? 'ring-4 ring-purple-500' : ''
+                          selectedSpecialEffect === effect.id
+                            ? 'ring-4 ring-purple-500 bg-gradient-primary'
+                            : 'bg-gray-100 dark:bg-gray-800'
                         }`}
                       >
-                        {/* Mini Card Preview */}
-                        <div
-                          className="h-32 p-3 flex flex-col items-center justify-center text-center"
-                          style={{ background: vibeBg?.gradient || '#f0f0f0' }}
-                        >
-                          <div className="text-2xl mb-1">{vibe.emoji}</div>
-                          <div className="text-xs font-bold text-gray-800 dark:text-white">{vibe.name}</div>
-                          <div className="text-[10px] text-gray-600 dark:text-gray-300 mt-1">{vibe.description}</div>
+                        {/* Effect Preview */}
+                        <div className="h-32 p-3 flex flex-col items-center justify-center text-center relative">
+                          {/* Show decorative elements preview */}
+                          {effect.decorativeElements && effect.decorativeElements.length > 0 && (
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-60">
+                              {effect.decorativeElements.slice(0, 4).map((element, index) => (
+                                <div
+                                  key={index}
+                                  className="absolute"
+                                  style={{
+                                    left: `${element.x}%`,
+                                    top: `${element.y}%`,
+                                    width: element.size * 0.6 || 16,
+                                    height: element.size * 0.6 || 16,
+                                    color: element.color || 'currentColor',
+                                    opacity: element.opacity || 0.8,
+                                    transform: 'translate(-50%, -50%)'
+                                  }}
+                                  dangerouslySetInnerHTML={{ __html: element.svg }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          <div className={`text-4xl mb-2 z-10 relative ${selectedSpecialEffect === effect.id ? 'animate-bounce' : ''}`}>
+                            {effect.emoji}
+                          </div>
+                          <div className={`text-sm font-bold z-10 relative ${selectedSpecialEffect === effect.id ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                            {effect.name}
+                          </div>
+                          <div className={`text-xs z-10 relative mt-1 ${selectedSpecialEffect === effect.id ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
+                            {effect.description}
+                          </div>
+                          {selectedSpecialEffect === effect.id && (
+                            <div className="absolute top-2 right-2 bg-white rounded-full w-6 h-6 flex items-center justify-center text-purple-600 z-10">
+                              ✓
+                            </div>
+                          )}
                         </div>
                       </button>
                     );
@@ -311,41 +337,50 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                     <button
                       key={typo.id}
                       onClick={() => setSelectedTypography(typo.id)}
-                      className={`w-full p-4 rounded-xl text-left transition-all ${
+                      className={`w-full p-5 rounded-xl text-left transition-all ${
                         selectedTypography === typo.id
                           ? 'bg-gradient-primary text-white shadow-xl ring-2 ring-purple-500'
-                          : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700'
                       }`}
                     >
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl">{typo.emoji}</span>
-                        <div className="flex-1">
-                          <div className="font-bold">{typo.name}</div>
-                          <div className="text-xs opacity-80">{typo.description}</div>
-                        </div>
-                        {selectedTypography === typo.id && <span>✓</span>}
-                      </div>
-                      {/* Font Preview */}
-                      <div className="mt-2 p-2 bg-white/10 rounded">
+                      {/* Font Preview - MAIN FOCUS */}
+                      <div className="mb-3">
                         <div
-                          className="text-lg font-bold"
+                          className={`text-3xl font-bold mb-2 ${selectedTypography === typo.id ? 'text-white' : 'bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent'}`}
                           style={{
                             fontFamily: typo.nameFont.family,
-                            fontWeight: typo.nameFont.weight
+                            fontWeight: typo.nameFont.weight,
+                            fontStyle: typo.nameFont.style,
+                            textTransform: typo.nameFont.transform || 'none'
                           }}
                         >
                           Your Name
                         </div>
                         <div
-                          className="text-sm mt-1 opacity-80"
+                          className={`text-lg ${selectedTypography === typo.id ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'}`}
                           style={{
                             fontFamily: typo.bioFont.family,
                             fontWeight: typo.bioFont.weight,
                             fontStyle: typo.bioFont.style
                           }}
                         >
-                          Your bio text
+                          Your bio text appears here
                         </div>
+                      </div>
+                      {/* Font Info - Secondary */}
+                      <div className="flex items-center justify-between pt-3 border-t border-white/20 dark:border-gray-700">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{typo.emoji}</span>
+                          <div>
+                            <div className={`text-xs font-bold ${selectedTypography === typo.id ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+                              {typo.name}
+                            </div>
+                            <div className={`text-xs ${selectedTypography === typo.id ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+                              {typo.nameFont.family}
+                            </div>
+                          </div>
+                        </div>
+                        {selectedTypography === typo.id && <span className="text-xl">✓</span>}
                       </div>
                     </button>
                   ))}
