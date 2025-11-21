@@ -633,63 +633,58 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Profile Completion Bar with Clickable Tasks */}
-        <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
-            <span className="text-2xl font-bold text-gradient">
-              {profileCompletion.completed}/{profileCompletion.total}
-            </span>
-          </div>
-
-          {/* Animated Progress Bar with Shimmer Effect */}
-          <div className="w-full h-4 bg-white rounded-full overflow-hidden mb-4 shadow-inner relative">
-            <div
-              className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
-              style={{ width: `${animatedProgress}%` }}
-            >
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 shimmer-effect"></div>
-            </div>
-            {/* Progress percentage text */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-bold text-gray-700 drop-shadow-sm">
-                {Math.round(profileCompletion.percentage)}%
+        {/* Profile Completion Bar with Clickable Tasks - Hide when 100% complete */}
+        {profileCompletion.percentage < 100 && (
+          <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
+              <span className="text-2xl font-bold text-gradient">
+                {profileCompletion.completed}/{profileCompletion.total}
               </span>
             </div>
-          </div>
 
-          {/* Task List with Navigation */}
-          <div className="space-y-2">
-            {profileCompletion.tasks.map((task, index) => (
-              <div key={index} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-lg">
-                    {task.completed ? '✅' : '⭕'}
-                  </span>
-                  <span className={`text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-700 font-semibold'}`}>
-                    {task.name}
-                  </span>
-                </div>
-                {!task.completed && (task.path || task.action) && (
-                  <button
-                    onClick={() => handleTaskNavigation(task)}
-                    className="btn btn-sm btn-primary text-xs px-3 py-1"
-                  >
-                    Go →
-                  </button>
-                )}
+            {/* Animated Progress Bar with Shimmer Effect */}
+            <div className="w-full h-4 bg-white rounded-full overflow-hidden mb-4 shadow-inner relative">
+              <div
+                className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
+                style={{ width: `${animatedProgress}%` }}
+              >
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 shimmer-effect"></div>
               </div>
-            ))}
-          </div>
-
-          {profileCompletion.percentage === 100 && (
-            <div className="mt-4 p-3 bg-green-50 rounded-lg text-center">
-              <span className="text-2xl">🎉</span>
-              <p className="text-green-700 font-semibold">Profile Complete! You're all set!</p>
+              {/* Progress percentage text */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-bold text-gray-700 drop-shadow-sm">
+                  {Math.round(profileCompletion.percentage)}%
+                </span>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Task List with Navigation */}
+            <div className="space-y-2">
+              {profileCompletion.tasks.map((task, index) => (
+                <div key={index} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-lg">
+                      {task.completed ? '✅' : '⭕'}
+                    </span>
+                    <span className={`text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-700 font-semibold'}`}>
+                      {task.name}
+                    </span>
+                  </div>
+                  {!task.completed && (task.path || task.action) && (
+                    <button
+                      onClick={() => handleTaskNavigation(task)}
+                      className="btn btn-sm btn-primary text-xs px-3 py-1"
+                    >
+                      Go →
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Weekly Summary */}
         <div className="card p-6 mb-6">
