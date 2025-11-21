@@ -171,6 +171,7 @@ const CreateCheckInPage = () => {
   const [selectedBesties, setSelectedBesties] = useState([]);
   const [notes, setNotes] = useState('');
   const [meetingWith, setMeetingWith] = useState('');
+  const [socialMediaLinks, setSocialMediaLinks] = useState(''); // Social media links of person meeting
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [besties, setBesties] = useState([]);
@@ -182,6 +183,9 @@ const CreateCheckInPage = () => {
   const [mapInitialized, setMapInitialized] = useState(false);
   const [mapLocked, setMapLocked] = useState(true); // Map starts locked
   const [expandedBestieShare, setExpandedBestieShare] = useState(null); // Track which bestie's share menu is open
+  const [notesExpanded, setNotesExpanded] = useState(false); // Track if notes section is expanded
+  const [photosExpanded, setPhotosExpanded] = useState(false); // Track if photos section is expanded
+  const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false); // Flag for auto-submit after besties load
 
   // Map default center (San Francisco)
   const mapCenter = { lat: 37.7749, lng: -122.4194 };
@@ -238,18 +242,10 @@ const CreateCheckInPage = () => {
         setDuration(quickDuration);
       }
 
-      // If skipLocation is true, set location to empty and trigger auto-submit
+      // If skipLocation is true, set location and flag for auto-submit
       if (skipLocation) {
         setLocationInput('No location set');
-
-        // Auto-submit after brief delay to let state update
-        setTimeout(() => {
-          // Programmatically submit the form by calling handleSubmit
-          const submitBtn = document.querySelector('#create-checkin-submit-btn');
-          if (submitBtn) {
-            submitBtn.click();
-          }
-        }, 100);
+        setShouldAutoSubmit(true); // Flag to auto-submit once besties are loaded
       }
 
       // Handle rideshare - add rego to notes
@@ -406,6 +402,26 @@ const CreateCheckInPage = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, authLoading]);
+
+  // Auto-submit quick check-ins after besties are loaded
+  useEffect(() => {
+    if (shouldAutoSubmit && selectedBesties.length > 0 && !loading) {
+      // Besties are loaded and auto-selected, now trigger submit
+      console.log('Auto-submitting quick check-in with besties:', selectedBesties);
+
+      // Small delay to ensure all state is ready
+      setTimeout(() => {
+        const submitBtn = document.querySelector('#create-checkin-submit-btn');
+        if (submitBtn && !submitBtn.disabled) {
+          console.log('Clicking submit button');
+          submitBtn.click();
+          setShouldAutoSubmit(false); // Reset flag
+        } else {
+          console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
+        }
+      }, 200);
+    }
+  }, [shouldAutoSubmit, selectedBesties, loading]);
 
   // Load Google Places API
   useEffect(() => {
@@ -941,11 +957,13 @@ const CreateCheckInPage = () => {
           const checkInData = {
             userId: currentUser.uid,
             location: locationInput,
+            gpsCoords: gpsCoords || null, // Save GPS coordinates from map pin
             duration: duration,
             alertTime: Timestamp.fromDate(alertTime),
             bestieIds: selectedBesties,
             notes: notes || null,
             meetingWith: meetingWith || null,
+            socialMediaLinks: socialMediaLinks || null, // Save social media links
             photoURLs: photoURLs,
             status: 'active',
             privacyLevel: privacyLevel,
@@ -1107,8 +1125,18 @@ const CreateCheckInPage = () => {
                 type="text"
                 value={meetingWith}
                 onChange={(e) => setMeetingWith(e.target.value)}
-                className="input"
+                className="input mb-3"
                 placeholder="e.g., Alex, Sarah, John..."
+              />
+              <label className="block text-sm font-semibold text-text-secondary mb-2">
+                Their Social Media (Optional)
+              </label>
+              <input
+                type="text"
+                value={socialMediaLinks}
+                onChange={(e) => setSocialMediaLinks(e.target.value)}
+                className="input"
+                placeholder="e.g., @username on Instagram, facebook.com/profile..."
               />
             </div>
 
@@ -1307,68 +1335,143 @@ const CreateCheckInPage = () => {
             </div>
           </div>
 
-          {/* Notes and Photos Combined */}
+          {/* Notes and Photos - Side by side expandable buttons */}
           <div className="card p-6">
             <label className="block text-lg font-display text-text-primary mb-3">
-              Notes & Photos (Optional) 📝📸
+              Notes & Photos (Optional)
             </label>
 
-            {/* Notes */}
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="input min-h-[100px] resize-none mb-4"
-              placeholder="Any additional info for your besties..."
-            />
+            {/* Side-by-side buttons */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setNotesExpanded(!notesExpanded);
+                  if (!notesExpanded) setPhotosExpanded(false);
+                }}
+                className={`py-4 px-4 rounded-xl font-semibold transition-all border-2 ${
+                  notesExpanded
+                    ? 'bg-gradient-primary text-white border-primary shadow-lg scale-105'
+                    : notes
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-text-primary hover:border-primary hover:bg-primary/5'
+                }`}
+              >
+                <div className="text-2xl mb-1">📝</div>
+                <div className="text-sm">Add Notes</div>
+                {notes && !notesExpanded && <div className="text-xs mt-1 opacity-75">✓ Added</div>}
+              </button>
 
-            {/* Photos */}
-            <div className="text-sm font-semibold text-text-primary mb-2">
-              Add Photos ({photoFiles.length}/5)
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotosExpanded(!photosExpanded);
+                  if (!photosExpanded) setNotesExpanded(false);
+                }}
+                className={`py-4 px-4 rounded-xl font-semibold transition-all border-2 ${
+                  photosExpanded
+                    ? 'bg-gradient-primary text-white border-primary shadow-lg scale-105'
+                    : photoFiles.length > 0
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-text-primary hover:border-primary hover:bg-primary/5'
+                }`}
+              >
+                <div className="text-2xl mb-1">📷</div>
+                <div className="text-sm">Add Photos</div>
+                {photoFiles.length > 0 && !photosExpanded && (
+                  <div className="text-xs mt-1 opacity-75">✓ {photoFiles.length}/5</div>
+                )}
+              </button>
             </div>
 
-            {/* Photo grid */}
-            {photoPreviews.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-                {photoPreviews.map((preview, index) => (
-                  <div key={index} className="relative aspect-square">
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full rounded-xl object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-sm font-bold hover:bg-red-600 flex items-center justify-center"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+            {/* Expandable Notes Section */}
+            {notesExpanded && (
+              <div className="mb-4 animate-fade-in">
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Mobile keyboard "Done" or "Go" button (Enter without shift)
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      setNotesExpanded(false);
+                      e.target.blur(); // Dismiss keyboard
+                    }
+                  }}
+                  className="input min-h-[120px] resize-none"
+                  placeholder="Any additional info for your besties..."
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setNotesExpanded(false)}
+                  className="mt-2 w-full btn btn-secondary text-sm py-2"
+                >
+                  Done
+                </button>
               </div>
             )}
 
-            {/* Add more photos button */}
-            {photoFiles.length < 5 && (
-              <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                  id="photo-input"
-                />
-                <label
-                  htmlFor="photo-input"
-                  className="block w-full p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
-                >
-                  <div className="text-4xl mb-2">📷</div>
-                  <div className="text-sm text-text-secondary">
-                    Click to add photos (up to 5, max 5MB each)
+            {/* Expandable Photos Section */}
+            {photosExpanded && (
+              <div className="animate-fade-in">
+                <div className="text-sm font-semibold text-text-primary mb-2">
+                  Add Photos ({photoFiles.length}/5)
+                </div>
+
+                {/* Photo grid */}
+                {photoPreviews.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                    {photoPreviews.map((preview, index) => (
+                      <div key={index} className="relative aspect-square">
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-full rounded-xl object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-sm font-bold hover:bg-red-600 flex items-center justify-center"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                </label>
+                )}
+
+                {/* Add more photos button */}
+                {photoFiles.length < 5 && (
+                  <div className="mb-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                      id="photo-input"
+                    />
+                    <label
+                      htmlFor="photo-input"
+                      className="block w-full p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <div className="text-4xl mb-2">📷</div>
+                      <div className="text-sm text-text-secondary">
+                        Click to add photos (up to 5, max 5MB each)
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setPhotosExpanded(false)}
+                  className="w-full btn btn-secondary text-sm py-2"
+                >
+                  Done
+                </button>
               </div>
             )}
           </div>

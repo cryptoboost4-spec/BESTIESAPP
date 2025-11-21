@@ -240,6 +240,102 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(135deg, #FF1493 0%, #8A2BE2 100%);
 }
 
+/* Pink Range Slider Styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.dark input[type="range"] {
+  background: #374151;
+}
+
+input[type="range"]::-webkit-slider-track {
+  -webkit-appearance: none;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #FF69B4 0%,
+    #FF69B4 var(--value, 50%),
+    #e5e7eb var(--value, 50%),
+    #e5e7eb 100%
+  );
+}
+
+.dark input[type="range"]::-webkit-slider-track {
+  background: linear-gradient(
+    to right,
+    #FF69B4 0%,
+    #FF69B4 var(--value, 50%),
+    #374151 var(--value, 50%),
+    #374151 100%
+  );
+}
+
+input[type="range"]::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.dark input[type="range"]::-moz-range-track {
+  background: #374151;
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FF69B4 0%, #9370DB 100%);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF69B4 0%, #9370DB 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 105, 180, 0.4);
+  transition: all 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(255, 105, 180, 0.6);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF69B4 0%, #9370DB 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 105, 180, 0.4);
+  transition: all 0.2s;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(255, 105, 180, 0.6);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(1.1);
+}
+
 /* Selection */
 ::selection {
   background: rgba(255, 105, 180, 0.3);

@@ -547,45 +547,97 @@ const CheckInCard = ({ checkIn }) => {
     haptic.medium();
 
     try {
-      // Get current position
-      const position = await new Promise((resolve, reject) => {
+      // STEP 1: Get FAST location first (network-based, appears instant to user)
+      const fastPosition = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+          enableHighAccuracy: false,     // Use network/WiFi for speed
+          timeout: 5000,                  // 5 second timeout
+          maximumAge: 10000               // Accept cached location up to 10s old
         });
       });
 
-      const { latitude, longitude } = position.coords;
+      const { latitude: fastLat, longitude: fastLng, accuracy: fastAccuracy } = fastPosition.coords;
 
-      // Use reverse geocoding to get address
+      console.log(`Fast location: ${fastAccuracy} meters accuracy`);
+
+      // Use reverse geocoding to get address from fast location
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${fastLat},${fastLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
 
-      let locationName = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      let locationName = `GPS: ${fastLat.toFixed(6)}, ${fastLng.toFixed(6)}`;
       if (data.results && data.results.length > 0) {
         locationName = data.results[0].formatted_address;
       }
 
-      // Update Firestore
+      // Update Firestore with fast location (user sees this immediately)
       await updateDoc(doc(db, 'checkins', checkIn.id), {
         location: locationName,
-        gpsCoords: { lat: latitude, lng: longitude },
+        gpsCoords: { lat: fastLat, lng: fastLng },
+        locationAccuracy: fastAccuracy,
         locationUpdatedAt: Timestamp.now(),
       });
 
       setCurrentLocation(locationName);
       toast.success('Location updated!');
+      setUpdatingLocation(false);
+
+      // STEP 2: Get ACCURATE location in background (GPS-based, silently updates)
+      console.log('Getting accurate GPS location in background...');
+      navigator.geolocation.getCurrentPosition(
+        async (accuratePosition) => {
+          const { latitude: accLat, longitude: accLng, accuracy: accAccuracy } = accuratePosition.coords;
+
+          console.log(`Accurate location: ${accAccuracy} meters accuracy (improved from ${fastAccuracy}m)`);
+
+          // Only update if accuracy improved significantly (>50 meters better)
+          if (fastAccuracy - accAccuracy > 50) {
+            // Get address for accurate location
+            const accResponse = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${accLat},${accLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+            );
+            const accData = await accResponse.json();
+
+            let accLocationName = `GPS: ${accLat.toFixed(6)}, ${accLng.toFixed(6)}`;
+            if (accData.results && accData.results.length > 0) {
+              accLocationName = accData.results[0].formatted_address;
+            }
+
+            // Silently update with more accurate location
+            await updateDoc(doc(db, 'checkins', checkIn.id), {
+              location: accLocationName,
+              gpsCoords: { lat: accLat, lng: accLng },
+              locationAccuracy: accAccuracy,
+              locationUpdatedAt: Timestamp.now(),
+            });
+
+            setCurrentLocation(accLocationName);
+            console.log('Location silently updated with accurate GPS');
+          } else {
+            console.log('Accurate location not significantly better, keeping fast location');
+          }
+        },
+        (error) => {
+          // Silently fail on background GPS - fast location is already saved
+          console.log('Background accurate GPS failed (not critical):', error);
+        },
+        {
+          enableHighAccuracy: true,      // Use GPS for accuracy
+          timeout: 15000,                 // 15 second timeout
+          maximumAge: 0                   // Don't use cached location
+        }
+      );
+
     } catch (error) {
       console.error('Error updating location:', error);
       if (error.code === 1) {
-        toast.error('Location permission denied. Please enable location access.');
+        toast.error('Location permission denied. Please enable location access.', { duration: 4000 });
+      } else if (error.code === 3) {
+        toast.error('Location timeout. Please try again.', { duration: 3000 });
       } else {
         toast.error('Failed to update location');
       }
-    } finally {
       setUpdatingLocation(false);
     }
   };
@@ -728,6 +780,14 @@ const CheckInCard = ({ checkIn }) => {
             Photos ({photoURLs.length}/5)
           </div>
 
+          {/* Placeholder broken image when no photos */}
+          {photoURLs.length === 0 && (
+            <div className={`mb-3 p-8 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-gray-100'} flex flex-col items-center justify-center border-2 border-dashed ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+              <div className="text-6xl mb-2 opacity-50">🖼️</div>
+              <div className={`text-sm font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No photos yet</div>
+            </div>
+          )}
+
           {/* Photo grid */}
           {photoURLs.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
@@ -848,6 +908,24 @@ const CheckInCard = ({ checkIn }) => {
           >
             📍 {updatingLocation ? 'Updating Location...' : 'Note Current Location'}
           </button>
+        </div>
+      )}
+
+      {/* Meeting With & Social Media */}
+      {(checkIn.meetingWith || checkIn.socialMediaLinks) && (
+        <div className="mb-4">
+          {checkIn.meetingWith && (
+            <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-50'} p-3 rounded-xl mb-2`}>
+              <div className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-1`}>MEETING WITH:</div>
+              <p className="text-sm text-text-primary font-semibold">{checkIn.meetingWith}</p>
+            </div>
+          )}
+          {checkIn.socialMediaLinks && (
+            <div className={`${isDark ? 'bg-purple-900/30' : 'bg-purple-50'} p-3 rounded-xl border-2 ${isDark ? 'border-purple-800' : 'border-purple-200'}`}>
+              <div className={`text-xs font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'} mb-1`}>THEIR SOCIAL MEDIA:</div>
+              <p className="text-sm text-text-primary">{checkIn.socialMediaLinks}</p>
+            </div>
+          )}
         </div>
       )}
 
