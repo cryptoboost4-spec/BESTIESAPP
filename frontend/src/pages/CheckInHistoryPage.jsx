@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, orderBy, limit, startAfter } from 'firebase/firestore';
-import { formatDistanceToNow } from 'date-fns';
+import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, getDoc } from 'firebase/firestore';
+import { formatDistanceToNow, format } from 'date-fns';
 import Header from '../components/Header';
 
 const ITEMS_PER_PAGE = 20;
@@ -17,11 +17,60 @@ const CheckInHistoryPage = () => {
   const [filter, setFilter] = useState('all'); // all, completed, alerted
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const [bestieNames, setBestieNames] = useState({});
 
   useEffect(() => {
     loadHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, filter]);
+
+  // Fetch bestie names
+  useEffect(() => {
+    const fetchBestieNames = async () => {
+      const uniqueBestieIds = new Set();
+      history.forEach(checkIn => {
+        if (checkIn.bestieIds) {
+          checkIn.bestieIds.forEach(id => uniqueBestieIds.add(id));
+        }
+      });
+
+      setBestieNames(prevNames => {
+        const names = { ...prevNames };
+        const promises = [];
+
+        for (const bestieId of uniqueBestieIds) {
+          if (!names[bestieId]) {
+            promises.push(
+              getDoc(doc(db, 'users', bestieId))
+                .then(bestieDoc => {
+                  if (bestieDoc.exists()) {
+                    const bestieData = bestieDoc.data();
+                    names[bestieId] = bestieData.displayName || 'Unknown';
+                  } else {
+                    names[bestieId] = 'Unknown';
+                  }
+                })
+                .catch(error => {
+                  console.error('Error fetching bestie name:', error);
+                  names[bestieId] = 'Unknown';
+                })
+            );
+          }
+        }
+
+        if (promises.length > 0) {
+          Promise.all(promises).then(() => setBestieNames({ ...names }));
+        }
+
+        return names;
+      });
+    };
+
+    if (history.length > 0) {
+      fetchBestieNames();
+    }
+  }, [history]);
 
   const loadHistory = async (loadMore = false) => {
     if (!currentUser) return;
@@ -97,6 +146,16 @@ const CheckInHistoryPage = () => {
     loadHistory(true);
   };
 
+  const toggleExpanded = (id) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedItems(newExpanded);
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'completed':
@@ -115,6 +174,13 @@ const CheckInHistoryPage = () => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  const hasExpandableContent = (checkIn) => {
+    return (checkIn.notes || checkIn.meetingWith || checkIn.socialMediaLinks ||
+            checkIn.gpsCoords || checkIn.photoURLs?.length > 0 ||
+            checkIn.bestieIds?.length > 0 || checkIn.alertTime ||
+            checkIn.completedAt || checkIn.alertedAt);
   };
 
   if (loading) {
@@ -224,58 +290,214 @@ const CheckInHistoryPage = () => {
         ) : (
           <>
             <div className="space-y-4">
-              {history.map((checkIn) => (
-                <div key={checkIn.id} className="card dark:bg-dark-card p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-display text-lg text-text-primary dark:text-dark-text-primary">
-                          {checkIn.location}
-                        </h3>
-                        {getStatusBadge(checkIn.status)}
+              {history.map((checkIn) => {
+                const isExpanded = expandedItems.has(checkIn.id);
+                const canExpand = hasExpandableContent(checkIn);
+
+                return (
+                  <div
+                    key={checkIn.id}
+                    className={`card dark:bg-dark-card p-4 md:p-6 transition-all ${canExpand ? 'cursor-pointer hover:shadow-lg' : ''}`}
+                    onClick={() => canExpand && toggleExpanded(checkIn.id)}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-display text-lg text-text-primary dark:text-dark-text-primary">
+                            {checkIn.location}
+                          </h3>
+                          {getStatusBadge(checkIn.status)}
+                        </div>
+                        <div className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                          {checkIn.createdAt && formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
+                        </div>
                       </div>
-                      <div className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                        {checkIn.createdAt && formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
+                      {canExpand && (
+                        <button
+                          className="text-primary dark:text-dark-primary ml-2 flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpanded(checkIn.id);
+                          }}
+                        >
+                          <svg
+                            className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                      <div>
+                        <div className="text-text-secondary dark:text-dark-text-secondary">Duration</div>
+                        <div className="font-semibold text-text-primary dark:text-dark-text-primary">
+                          {formatDuration(checkIn.duration)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-text-secondary dark:text-dark-text-secondary">Besties Notified</div>
+                        <div className="font-semibold text-text-primary dark:text-dark-text-primary">
+                          {checkIn.bestieIds?.length || 0}
+                        </div>
                       </div>
                     </div>
+
+                    {/* Expandable Details */}
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border space-y-3 animate-fade-in">
+                        {/* Exact Timestamps */}
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                          <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                            Timestamps
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            {checkIn.createdAt && (
+                              <div className="flex justify-between">
+                                <span className="text-text-secondary dark:text-dark-text-secondary">Created:</span>
+                                <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                                  {format(checkIn.createdAt.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                            {checkIn.alertTime && (
+                              <div className="flex justify-between">
+                                <span className="text-text-secondary dark:text-dark-text-secondary">Alert Time:</span>
+                                <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                                  {format(checkIn.alertTime.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                            {checkIn.completedAt && (
+                              <div className="flex justify-between">
+                                <span className="text-success dark:text-dark-success">✅ Completed:</span>
+                                <span className="font-medium text-success dark:text-dark-success">
+                                  {format(checkIn.completedAt.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                            {checkIn.alertedAt && (
+                              <div className="flex justify-between">
+                                <span className="text-warning dark:text-dark-warning">🚨 Alerted:</span>
+                                <span className="font-medium text-warning dark:text-dark-warning">
+                                  {format(checkIn.alertedAt.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Besties List */}
+                        {checkIn.bestieIds && checkIn.bestieIds.length > 0 && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Notified Besties
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {checkIn.bestieIds.map((bestieId) => (
+                                <span
+                                  key={bestieId}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary dark:bg-primary/20 dark:text-dark-primary rounded-full text-sm"
+                                >
+                                  👤 {bestieNames[bestieId] || 'Loading...'}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        {checkIn.notes && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Notes
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary italic">
+                              "{checkIn.notes}"
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Meeting With */}
+                        {checkIn.meetingWith && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Meeting With
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary">
+                              {checkIn.meetingWith}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Social Media Links */}
+                        {checkIn.socialMediaLinks && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Social Media Links
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary break-all">
+                              {checkIn.socialMediaLinks}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* GPS Coordinates */}
+                        {checkIn.gpsCoords && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              GPS Location
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary">
+                              📍 {checkIn.gpsCoords.lat.toFixed(6)}, {checkIn.gpsCoords.lng.toFixed(6)}
+                            </div>
+                            <a
+                              href={`https://www.google.com/maps?q=${checkIn.gpsCoords.lat},${checkIn.gpsCoords.lng}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary dark:text-dark-primary hover:underline mt-1 inline-block"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              View on Google Maps →
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Photos */}
+                        {checkIn.photoURLs && checkIn.photoURLs.length > 0 && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Photos ({checkIn.photoURLs.length})
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {checkIn.photoURLs.map((url, idx) => (
+                                <a
+                                  key={idx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block aspect-square rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`Check-in ${idx + 1}`}
+                                    className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="text-text-secondary dark:text-dark-text-secondary">Duration</div>
-                      <div className="font-semibold text-text-primary dark:text-dark-text-primary">
-                        {formatDuration(checkIn.duration)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-text-secondary dark:text-dark-text-secondary">Besties Notified</div>
-                      <div className="font-semibold text-text-primary dark:text-dark-text-primary">
-                        {checkIn.bestieIds?.length || 0}
-                      </div>
-                    </div>
-                  </div>
-
-                  {checkIn.notes && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-dark-border">
-                      <div className="text-sm text-text-secondary dark:text-dark-text-secondary italic">
-                        "{checkIn.notes}"
-                      </div>
-                    </div>
-                  )}
-
-                  {checkIn.completedAt && (
-                    <div className="mt-3 text-xs text-success dark:text-dark-success">
-                      ✅ Completed {formatDistanceToNow(checkIn.completedAt.toDate(), { addSuffix: true })}
-                    </div>
-                  )}
-
-                  {checkIn.alertedAt && (
-                    <div className="mt-3 text-xs text-warning dark:text-dark-warning">
-                      🚨 Alert sent {formatDistanceToNow(checkIn.alertedAt.toDate(), { addSuffix: true })}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Load More Button */}

@@ -43,7 +43,7 @@ const SecurityPasscodes = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="font-semibold text-text-primary flex items-center">
-                🔒 Safety Passcode
+                🔒 Safety<br />Passcode
                 <InfoButton message="Required to cancel check-ins or SOS alerts. This ensures only you can mark yourself safe, protecting you from coercion." />
               </div>
               {userData?.security?.safetyPasscode && (
@@ -66,9 +66,9 @@ const SecurityPasscodes = ({
                   setPasscodeType('safety');
                   setShowPasscodeModal(true);
                 }}
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm px-6"
               >
-                Set Passcode
+                Set
               </button>
             )}
           </div>
@@ -91,7 +91,7 @@ const SecurityPasscodes = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="font-semibold text-text-primary flex items-center">
-                🚨 Duress Code
+                🚨 Duress<br />Code
                 <InfoButton message="A special code that appears to cancel alerts but secretly sends an emergency signal to all besties. Use if you're in danger and being forced to cancel." />
               </div>
               {userData?.security?.duressCode && (
@@ -114,9 +114,9 @@ const SecurityPasscodes = ({
                   setPasscodeType('duress');
                   setShowPasscodeModal(true);
                 }}
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm px-6"
               >
-                Set Code
+                Set
               </button>
             )}
           </div>

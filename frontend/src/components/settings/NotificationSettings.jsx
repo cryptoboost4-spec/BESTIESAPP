@@ -17,17 +17,17 @@ const NotificationSettings = ({
 
       <div className="space-y-4">
         <div className="flex items-center justify-between opacity-50">
-          <div>
+          <div className="flex-1">
             <div className="font-semibold text-text-primary flex items-center gap-2">
               WhatsApp
               <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">Coming Soon</span>
               <InfoButton message="WhatsApp notifications will be sent when your besties check in or need help. This is the most reliable option for mobile alerts and will be completely free!" />
             </div>
-            <div className="text-sm text-text-secondary">WhatsApp integration in development</div>
+            <div className="text-sm text-text-secondary">Integration in development</div>
           </div>
           <button
             onClick={() => toggleNotification('whatsapp')}
-            className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
+            className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed flex-shrink-0"
             disabled
           >
             <div className="w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform translate-x-1" />
@@ -35,17 +35,17 @@ const NotificationSettings = ({
         </div>
 
         <div className="flex items-center justify-between opacity-50">
-          <div>
+          <div className="flex-1">
             <div className="font-semibold text-text-primary flex items-center gap-2">
               Facebook Messenger
               <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">Coming Soon</span>
               <InfoButton message="Facebook Messenger notifications will keep you updated on your besties' safety. Perfect if you use Messenger regularly!" />
             </div>
-            <div className="text-sm text-text-secondary">Facebook Messenger integration in development</div>
+            <div className="text-sm text-text-secondary">Integration in development</div>
           </div>
           <button
             onClick={() => toggleNotification('facebook')}
-            className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
+            className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed flex-shrink-0"
             disabled
           >
             <div className="w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform translate-x-1" />
