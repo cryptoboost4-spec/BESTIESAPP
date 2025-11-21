@@ -1,5 +1,4 @@
 import React from 'react';
-import toast from 'react-hot-toast';
 import InfoButton from '../InfoButton';
 
 const NotificationSettings = ({
@@ -81,29 +80,9 @@ const NotificationSettings = ({
 
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-text-primary">Push Notifications (Beta)</span>
-              <button
-                onClick={() => toast((t) => (
-                  <div className="text-sm">
-                    <p className="font-semibold mb-2">About Push Notifications</p>
-                    <p className="mb-2">Push notifications in web browsers have limited reliability because:</p>
-                    <ul className="list-disc ml-4 mb-2 text-xs">
-                      <li>They require a VAPID key configuration</li>
-                      <li>They only work when the browser is open</li>
-                      <li>Some browsers block them by default</li>
-                    </ul>
-                    <p className="text-xs font-semibold text-primary">We're building a native mobile app that will support reliable push notifications! 📱</p>
-                    <button onClick={() => toast.dismiss(t.id)} className="mt-2 text-primary text-xs underline">Close</button>
-                  </div>
-                ), { duration: 8000 })}
-                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
-                title="Learn more about push notifications"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </button>
+            <div className="font-semibold text-text-primary flex items-center">
+              Push Notifications (Beta)
+              <InfoButton message="Browser push notifications only work when your browser is open. For reliable alerts, we recommend using Email or SMS. We're building a mobile app with better push notifications soon! 📱" />
             </div>
             <div className="text-sm text-text-secondary">
               {pushNotificationsSupported
@@ -140,32 +119,14 @@ const NotificationSettings = ({
 
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-text-primary">SMS Alerts</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="font-semibold text-text-primary flex items-center">
+                SMS Alerts
+                <InfoButton message="Text message alerts are currently free during beta (up to 5 per week). Once WhatsApp and Facebook integrations launch, SMS will become a premium feature at $1/month for 20 alerts. Use Email for unlimited free alerts!" />
+              </div>
               <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-semibold">
                 Free - Limited Time
               </span>
-              <button
-                onClick={() => toast((t) => (
-                  <div className="text-sm max-w-sm">
-                    <p className="font-semibold mb-2">About SMS Alerts</p>
-                    <p className="mb-2">SMS messages are expensive to send. Currently offering them for free during beta!</p>
-                    <p className="mb-2 text-xs">
-                      • <span className="font-semibold">Free tier:</span> Up to 5 SMS alerts per week<br/>
-                      • Once WhatsApp and Facebook integrations launch, SMS will become a premium feature<br/>
-                      • Premium SMS subscription: Up to 20 SMS alerts per month for $1/month
-                    </p>
-                    <p className="text-xs font-semibold text-primary">Use WhatsApp or Email for free unlimited alerts! 📱</p>
-                    <button onClick={() => toast.dismiss(t.id)} className="mt-2 text-primary text-xs underline">Close</button>
-                  </div>
-                ), { duration: 10000 })}
-                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
-                title="Learn more about SMS alerts"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </button>
             </div>
             <div className="text-sm text-text-secondary">
               {userData?.notificationPreferences?.sms
