@@ -7,6 +7,7 @@ import { TYPOGRAPHY_STYLES, loadGoogleFonts, getTypographyById, getNameStyle, ge
 import { LAYOUT_OPTIONS, getLayoutById } from './layouts';
 import { SPECIAL_EFFECTS, getSpecialEffectById } from './themes/specialEffects';
 import './themes/backgroundPatterns.css';
+import './themes/specialEffects.css';
 
 const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [activeTab, setActiveTab] = useState('vibes');
@@ -16,8 +17,34 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [selectedTypography, setSelectedTypography] = useState(userData?.profile?.customization?.typography || 'elegant');
   const [photoShape, setPhotoShape] = useState(userData?.profile?.customization?.photoShape || 'circle');
   const [photoBorder, setPhotoBorder] = useState(userData?.profile?.customization?.photoBorder || 'classic');
+  const [customNameFont, setCustomNameFont] = useState(userData?.profile?.customization?.customNameFont || '');
+  const [customBioFont, setCustomBioFont] = useState(userData?.profile?.customization?.customBioFont || '');
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Popular Google Fonts list
+  const POPULAR_FONTS = [
+    { name: 'Playfair Display', category: 'serif' },
+    { name: 'Montserrat', category: 'sans-serif' },
+    { name: 'Roboto', category: 'sans-serif' },
+    { name: 'Open Sans', category: 'sans-serif' },
+    { name: 'Lora', category: 'serif' },
+    { name: 'Raleway', category: 'sans-serif' },
+    { name: 'Poppins', category: 'sans-serif' },
+    { name: 'Merriweather', category: 'serif' },
+    { name: 'Oswald', category: 'sans-serif' },
+    { name: 'Inter', category: 'sans-serif' },
+    { name: 'Bebas Neue', category: 'display' },
+    { name: 'Pacifico', category: 'handwriting' },
+    { name: 'Dancing Script', category: 'handwriting' },
+    { name: 'Crimson Text', category: 'serif' },
+    { name: 'Nunito', category: 'sans-serif' },
+    { name: 'Quicksand', category: 'sans-serif' },
+    { name: 'Libre Baskerville', category: 'serif' },
+    { name: 'Source Sans Pro', category: 'sans-serif' },
+    { name: 'Abril Fatface', category: 'display' },
+    { name: 'Cormorant Garamond', category: 'serif' }
+  ];
 
   // Load fonts when typography changes
   useEffect(() => {
@@ -26,6 +53,20 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       loadGoogleFonts(typography);
     }
   }, [selectedTypography]);
+
+  // Load custom fonts when selected
+  useEffect(() => {
+    const loadCustomFont = (fontName) => {
+      if (!fontName) return;
+      const link = document.createElement('link');
+      link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@400;600;700&display=swap`;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    };
+
+    if (customNameFont) loadCustomFont(customNameFont);
+    if (customBioFont) loadCustomFont(customBioFont);
+  }, [customNameFont, customBioFont]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -37,7 +78,9 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           typography: selectedTypography,
           photoShape,
           photoBorder,
-          specialEffect: selectedSpecialEffect
+          specialEffect: selectedSpecialEffect,
+          customNameFont,
+          customBioFont
         }
       });
       toast.success('Profile style saved! 💜');
@@ -62,6 +105,23 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const currentSpecialEffect = getSpecialEffectById(selectedSpecialEffect);
   const LayoutComponent = getLayoutById(selectedLayout);
 
+  // Determine styles with custom fonts override
+  const getCustomNameStyle = () => {
+    const baseStyle = currentTypography ? getNameStyle(currentTypography) : {};
+    if (customNameFont) {
+      return { ...baseStyle, fontFamily: customNameFont };
+    }
+    return baseStyle;
+  };
+
+  const getCustomBioStyle = () => {
+    const baseStyle = currentTypography ? getBioStyle(currentTypography) : {};
+    if (customBioFont) {
+      return { ...baseStyle, fontFamily: customBioFont };
+    }
+    return baseStyle;
+  };
+
   const layoutProps = {
     profilePhoto: userData?.photoURL,
     displayName: userData?.displayName || 'Your Name',
@@ -71,13 +131,13 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       besties: userData?.totalBesties || 0,
       checkIns: userData?.checkInCount || 0
     },
-    nameStyle: currentTypography ? getNameStyle(currentTypography) : {},
-    bioStyle: currentTypography ? getBioStyle(currentTypography) : {},
+    nameStyle: getCustomNameStyle(),
+    bioStyle: getCustomBioStyle(),
     nameSizeClass: currentTypography?.nameSizeClass || 'text-4xl',
     bioSizeClass: currentTypography?.bioSizeClass || 'text-lg',
     photoShape,
     photoBorder,
-    decorativeElements: currentSpecialEffect?.decorativeElements || []
+    decorativeElements: []
   };
 
   const getPhotoShapeClass = () => {
@@ -113,7 +173,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           </button>
           <div className="max-w-sm w-full">
             <div
-              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'}`}
+              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''}`}
               style={{ background: currentBackground?.gradient || '#fff' }}
             >
               <LayoutComponent {...layoutProps} />
@@ -122,13 +182,13 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 w-full h-full md:h-auto md:max-w-6xl md:rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 w-full h-full md:h-[90vh] md:max-h-[900px] md:max-w-6xl md:rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
         {/* LIVE PREVIEW - Desktop Left, Hidden on Mobile */}
-        <div className="hidden md:flex md:w-2/5 bg-gray-50 dark:bg-gray-800 p-6 items-center justify-center border-r border-gray-200 dark:border-gray-700">
+        <div className="hidden md:flex md:w-2/5 bg-gray-50 dark:bg-gray-800 p-6 items-center justify-center border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
           <div className="w-full max-w-sm">
             <h3 className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-3 text-center">Preview</h3>
             <div
-              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} rounded-2xl overflow-hidden shadow-xl`}
+              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''} rounded-2xl overflow-hidden shadow-xl`}
               style={{ background: currentBackground?.gradient || '#fff' }}
             >
               <LayoutComponent {...layoutProps} />
@@ -201,29 +261,8 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                             : 'bg-gray-100 dark:bg-gray-800'
                         }`}
                       >
-                        {/* Effect Preview */}
-                        <div className="h-32 p-3 flex flex-col items-center justify-center text-center relative">
-                          {/* Show decorative elements preview */}
-                          {effect.decorativeElements && effect.decorativeElements.length > 0 && (
-                            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-60">
-                              {effect.decorativeElements.slice(0, 4).map((element, index) => (
-                                <div
-                                  key={index}
-                                  className="absolute"
-                                  style={{
-                                    left: `${element.x}%`,
-                                    top: `${element.y}%`,
-                                    width: element.size * 0.6 || 16,
-                                    height: element.size * 0.6 || 16,
-                                    color: element.color || 'currentColor',
-                                    opacity: element.opacity || 0.8,
-                                    transform: 'translate(-50%, -50%)'
-                                  }}
-                                  dangerouslySetInnerHTML={{ __html: element.svg }}
-                                />
-                              ))}
-                            </div>
-                          )}
+                        {/* Effect Preview with Animation */}
+                        <div className={`h-32 p-3 flex flex-col items-center justify-center text-center relative ${effect.cssClass || ''}`}>
                           <div className={`text-4xl mb-2 z-10 relative ${selectedSpecialEffect === effect.id ? 'animate-bounce' : ''}`}>
                             {effect.emoji}
                           </div>
@@ -384,6 +423,67 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                       </div>
                     </button>
                   ))}
+                </div>
+
+                {/* Custom Font Selection */}
+                <div className="mt-8 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4">✨ Custom Fonts</h3>
+
+                  {/* Name Font */}
+                  <div className="mb-5">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Name Font
+                    </label>
+                    <select
+                      value={customNameFont}
+                      onChange={(e) => setCustomNameFont(e.target.value)}
+                      className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                    >
+                      <option value="">Use preset font</option>
+                      {POPULAR_FONTS.map(font => (
+                        <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                          {font.name} ({font.category})
+                        </option>
+                      ))}
+                    </select>
+                    {customNameFont && (
+                      <div
+                        className="mt-2 p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg"
+                        style={{ fontFamily: customNameFont }}
+                      >
+                        <div className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                          Your Name Preview
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bio Font */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Bio Font
+                    </label>
+                    <select
+                      value={customBioFont}
+                      onChange={(e) => setCustomBioFont(e.target.value)}
+                      className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                    >
+                      <option value="">Use preset font</option>
+                      {POPULAR_FONTS.map(font => (
+                        <option key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                          {font.name} ({font.category})
+                        </option>
+                      ))}
+                    </select>
+                    {customBioFont && (
+                      <div
+                        className="mt-2 p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg text-base text-gray-700 dark:text-gray-300"
+                        style={{ fontFamily: customBioFont }}
+                      >
+                        Your bio text preview appears here with your selected font
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
