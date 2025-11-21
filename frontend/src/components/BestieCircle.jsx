@@ -157,16 +157,38 @@ const BestieCircle = ({ userId, onAddClick }) => {
     );
   }
 
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
     <div className="card p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100">
-      <h3 className="text-center text-2xl font-display text-gradient mb-6">Bestie Circle ⭐</h3>
+      <div className="flex items-center justify-center gap-2 mb-6">
+        <h3 className="text-center text-2xl font-display text-gradient">Bestie Circle ⭐</h3>
+        <div className="relative">
+          <button
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+            className="w-6 h-6 bg-pink-500 text-white rounded-full flex items-center justify-center text-xs font-bold hover:bg-pink-600 transition-colors cursor-help"
+          >
+            ?
+          </button>
+          {showTooltip && (
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-pink-500 text-white text-sm p-3 rounded-lg shadow-xl z-50">
+              <div className="font-semibold mb-1">Your Inner 5 💜</div>
+              <p className="text-xs leading-relaxed">
+                Your Bestie Circle is the foundation of the app - these 5 people are your core safety network. They're always notified of your check-ins and can respond fastest when you need help. Choose wisely!
+              </p>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-500"></div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Circle Container - Responsive sizing */}
       <div className="relative w-full max-w-sm mx-auto aspect-square">
         <div className="absolute inset-0">
-          {/* Connection Lines */}
+          {/* Connection Lines - Always show for all 5 slots */}
           {slots.map((bestie, index) => {
-            if (!bestie) return null;
             const angle = (index * 72 - 90) * (Math.PI / 180);
             const radius = 45; // Percentage-based radius
             const x = 50 + radius * Math.cos(angle);
@@ -183,13 +205,13 @@ const BestieCircle = ({ userId, onAddClick }) => {
                   y1="50%"
                   x2={`${x}%`}
                   y2={`${y}%`}
-                  stroke="url(#gradient)"
+                  stroke="url(#gradient-${index})"
                   strokeWidth="2"
-                  strokeDasharray="4 2"
-                  opacity="0.3"
+                  strokeDasharray={bestie ? "4 2" : "2 4"}
+                  opacity={bestie ? "0.3" : "0.15"}
                 />
                 <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <linearGradient id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#a855f7" />
                     <stop offset="100%" stopColor="#ec4899" />
                   </linearGradient>
@@ -229,13 +251,13 @@ const BestieCircle = ({ userId, onAddClick }) => {
                       onClick={() => setSelectedSlot(selectedSlot === index ? null : index)}
                       className={`relative hover:scale-110 transition-all duration-300`}
                     >
-                      <div className={`w-16 h-16 md:w-20 md:h-20 ${slotColors[index]} rounded-full shadow-xl border-4 border-white hover:shadow-2xl ring-2 ring-purple-200 hover:ring-4 hover:ring-purple-300 overflow-hidden flex items-center justify-center`}>
+                      <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full shadow-xl border-4 border-white hover:shadow-2xl ring-2 ring-purple-200 hover:ring-4 hover:ring-purple-300 overflow-hidden flex items-center justify-center bg-white`}>
                         <ProfileWithBubble
                           photoURL={bestie.photoURL}
                           name={bestie.name || 'Bestie'}
                           requestAttention={bestie.requestAttention}
                           size="xl"
-                          showBubble={true}
+                          showBubble={false}
                           className="w-full h-full"
                         />
                       </div>
@@ -290,20 +312,13 @@ const BestieCircle = ({ userId, onAddClick }) => {
         </div>
       </div>
 
-      {/* Info - Enhanced */}
+      {/* Info - Simplified */}
       <div className="text-center mt-8">
-        <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border-2 border-purple-200 mb-2">
+        <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border-2 border-purple-200">
           <span className="text-2xl">⭐</span>
           <span className="font-display text-lg text-gradient font-bold">
-            {circleBesties.length}/5 Circle Members
+            {circleBesties.length}/5
           </span>
-        </div>
-        <div className="text-sm text-gray-600 mt-2">
-          {circleBesties.length === 5
-            ? "Your circle is complete! 🎉"
-            : circleBesties.length === 0
-            ? "Start building your safety network"
-            : `Add ${5 - circleBesties.length} more to complete your circle`}
         </div>
       </div>
 

@@ -100,7 +100,7 @@ const BadgesSection = ({
                       {otherBadges.map((badge) => (
                         <div
                           key={badge.id}
-                          className="p-4 rounded-2xl text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-32 shadow-md"
+                          className="p-4 rounded-2xl text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-32 shadow-md pointer-events-none select-none"
                         >
                           <div className="text-4xl mb-2">{badge.icon}</div>
                           <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
@@ -113,7 +113,7 @@ const BadgesSection = ({
                     {otherBadges.map((badge) => (
                       <div
                         key={badge.id}
-                        className="p-4 rounded-2xl text-center transition-all bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 shadow-md"
+                        className="p-4 rounded-2xl text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 shadow-md pointer-events-none select-none"
                       >
                         <div className="text-4xl mb-2">{badge.icon}</div>
                         <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
