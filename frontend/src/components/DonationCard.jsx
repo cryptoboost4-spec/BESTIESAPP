@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
-import { useDarkMode } from '../contexts/DarkModeContext';
 
 const DonationCard = () => {
-  const { isDark } = useDarkMode();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -28,53 +26,51 @@ const DonationCard = () => {
   };
 
   return (
-    <div className={`card p-6 ${isDark ? 'bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/30' : 'bg-gradient-to-br from-primary/5 to-secondary/5 border-2 border-primary/20'}`}>
-      <div className="text-center mb-4">
-        <div className="text-4xl mb-2">💜</div>
-        <h3 className={`font-display text-xl ${isDark ? 'text-gray-100' : 'text-text-primary'} mb-2`}>
-          Keep Besties Free
-        </h3>
-        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
-          Our goal is to keep it free for everyone, but we rely on donations to make it happen
-        </p>
-      </div>
-
-      <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-3">
-          <button
-            onClick={() => handleDonation(1)}
-            disabled={loading}
-            className="btn btn-secondary text-sm"
-          >
-            $1/mo
-          </button>
-          <button
-            onClick={() => handleDonation(5)}
-            disabled={loading}
-            className="btn btn-primary text-sm"
-          >
-            $5/mo
-          </button>
-          <button
-            onClick={() => handleDonation(10)}
-            disabled={loading}
-            className="btn btn-secondary text-sm"
-          >
-            $10/mo
-          </button>
-        </div>
-
+    <div className="card p-8 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-100 dark:border-purple-700">
+      <h2 className="text-2xl font-display text-text-primary mb-4 text-center">
+        Keep Besties Free 💜
+      </h2>
+      <p className="text-text-secondary text-center mb-6">
+        Choose an amount that works for you - every bit helps keep Besties free for everyone
+      </p>
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <button
-          onClick={() => navigate('/about')}
-          className={`w-full font-semibold text-sm underline transition-colors ${isDark ? 'text-primary-light hover:text-primary' : 'text-primary hover:text-primary-dark'}`}
+          onClick={() => handleDonation(1)}
+          disabled={loading}
+          className="btn btn-secondary p-6 flex flex-col items-center gap-2 hover:scale-105 transition-transform"
         >
-          Learn more about Besties →
+          <span className="text-2xl">☕</span>
+          <span className="font-display text-xl">$1</span>
+          <span className="text-xs text-text-secondary">Coffee</span>
         </button>
-
-        <div className={`text-xs text-center ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
-          Every donation helps keep Besties free 💜
-        </div>
+        <button
+          onClick={() => handleDonation(5)}
+          disabled={loading}
+          className="btn btn-primary p-6 flex flex-col items-center gap-2 transform scale-105 shadow-lg hover:scale-110 transition-transform"
+        >
+          <span className="text-2xl">🍕</span>
+          <span className="font-display text-xl">$5</span>
+          <span className="text-xs">Pizza Slice</span>
+        </button>
+        <button
+          onClick={() => handleDonation(10)}
+          disabled={loading}
+          className="btn btn-secondary p-6 flex flex-col items-center gap-2 hover:scale-105 transition-transform"
+        >
+          <span className="text-2xl">🎬</span>
+          <span className="font-display text-xl">$10</span>
+          <span className="text-xs text-text-secondary">Movie Night</span>
+        </button>
       </div>
+      <p className="text-xs text-center text-text-secondary italic mb-4">
+        Monthly contribution - cancel anytime, no questions asked
+      </p>
+      <button
+        onClick={() => navigate('/about')}
+        className="w-full font-semibold text-sm underline transition-colors text-primary hover:text-primary-dark dark:hover:text-primary-light"
+      >
+        Learn more about Besties →
+      </button>
     </div>
   );
 };

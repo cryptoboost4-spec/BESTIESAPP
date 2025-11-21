@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import LivingCircle from '../components/LivingCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
@@ -15,6 +14,7 @@ import BadgesSection from '../components/profile/BadgesSection';
 import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
 import ProfileAuraStyles from '../components/profile/ProfileAuraStyles';
+import RequestSupportSection from '../components/RequestSupportSection';
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
@@ -283,12 +283,8 @@ const ProfilePage = () => {
           onTaskNavigation={handleTaskNavigation}
         />
 
-        {/* Needs Attention Section */}
-        <NeedsAttentionSection
-          missedCheckIns={[]}
-          requestsForAttention={[]}
-          besties={[]}
-        />
+        {/* Request Support Section */}
+        <RequestSupportSection />
 
         {/* Bestie Circle Status */}
         <BestieCircleStatus userId={currentUser?.uid} />
@@ -316,20 +312,6 @@ const ProfilePage = () => {
           nighttimeCheckIns={nighttimeCheckIns}
           weekendCheckIns={weekendCheckIns}
         />
-
-        {/* Bestie Circle */}
-        <div className="mb-6 bestie-circle-section">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Bestie Circle</h2>
-            <button
-              onClick={() => navigate('/besties')}
-              className="text-primary font-semibold hover:underline"
-            >
-              Manage →
-            </button>
-          </div>
-          <LivingCircle userId={currentUser?.uid} onAddClick={() => navigate('/besties')} />
-        </div>
 
         {/* Donation Status */}
         <DonationStatus userData={userData} />

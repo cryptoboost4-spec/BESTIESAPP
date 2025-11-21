@@ -148,6 +148,100 @@ const ActivityFeed = ({
                 </div>
               </div>
             )}
+
+            {activity.type === 'post' && (
+              <div>
+                <div className="flex items-start gap-2 md:gap-3 mb-3">
+                  {activity.postData.userPhoto ? (
+                    <img
+                      src={activity.postData.userPhoto}
+                      alt={activity.userName}
+                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display flex-shrink-0">
+                      {activity.userName?.[0] || '?'}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-text-primary text-sm md:text-base">
+                      {activity.userName}
+                    </h3>
+                    <p className="text-xs md:text-sm text-text-secondary">
+                      {getTimeAgo(activity.timestamp)}
+                    </p>
+                  </div>
+                  <div className="text-xl flex-shrink-0">✍️</div>
+                </div>
+
+                {/* Post Content */}
+                {activity.postData.text && (
+                  <p className="text-sm md:text-base text-text-primary mb-3 whitespace-pre-wrap break-words">
+                    {activity.postData.text}
+                  </p>
+                )}
+
+                {/* Post Photo */}
+                {activity.postData.photoURL && (
+                  <img
+                    src={activity.postData.photoURL}
+                    alt="Post"
+                    className="w-full rounded-xl mb-3 max-h-96 object-cover"
+                  />
+                )}
+
+                {/* Reactions */}
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
+                    <button
+                      onClick={() => addReaction(activity.id, '💜')}
+                      className="text-xl md:text-2xl hover:scale-110 transition-transform"
+                      title="Love"
+                    >
+                      💜
+                    </button>
+                    <button
+                      onClick={() => addReaction(activity.id, '😂')}
+                      className="text-xl md:text-2xl hover:scale-110 transition-transform"
+                      title="Funny"
+                    >
+                      😂
+                    </button>
+                    <button
+                      onClick={() => addReaction(activity.id, '🔥')}
+                      className="text-xl md:text-2xl hover:scale-110 transition-transform"
+                      title="Fire"
+                    >
+                      🔥
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedCheckIn(activity);
+                        setShowComments(true);
+                      }}
+                      className="ml-auto text-xs md:text-sm text-primary hover:underline font-semibold"
+                    >
+                      💬 Comment
+                    </button>
+                  </div>
+                  {/* Show reaction counts */}
+                  {reactions[activity.id] && reactions[activity.id].length > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      {Object.entries(
+                        reactions[activity.id].reduce((acc, r) => {
+                          acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                          return acc;
+                        }, {})
+                      ).map(([emoji, count]) => (
+                        <span key={emoji} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                          {emoji} {count}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
