@@ -52,7 +52,7 @@ const NeedsAttentionSection = ({ missedCheckIns, requestsForAttention, besties }
       {requestsForAttention.length > 0 && (
         <div className="space-y-2">
           {requestsForAttention.map((request) => (
-            <div key={request.userId} className="flex items-center gap-3 p-3 border-l-4 border-purple-500 bg-purple-50/50 dark:bg-purple-900/20 rounded animate-slide-up">
+            <div key={request.userId} className="flex items-center gap-3 p-3 border-l-4 border-purple-500 bg-purple-50/50 dark:bg-purple-900/20 rounded">
               <div className="text-2xl">💜</div>
               <div className="flex-1">
                 <span className="font-semibold text-purple-900 dark:text-purple-200 text-sm">
