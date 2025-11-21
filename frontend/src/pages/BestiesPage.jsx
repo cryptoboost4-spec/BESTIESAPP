@@ -23,6 +23,7 @@ import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import ActivityFilters from '../components/besties/ActivityFilters';
 import ActivityFeed from '../components/besties/ActivityFeed';
 import EmptyState from '../components/besties/EmptyState';
+import CreatePostModal from '../components/CreatePostModal';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -31,6 +32,7 @@ const BestiesPage = () => {
   const [besties, setBesties] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Activity feed state
@@ -124,6 +126,70 @@ const BestiesPage = () => {
     };
   }, [currentUser]);
 
+  // Create welcome posts for new users
+  useEffect(() => {
+    const createWelcomePosts = async () => {
+      if (!currentUser || !userData) return;
+
+      // Check if user is day-old (account created within last 24 hours)
+      const accountAge = currentUser.metadata?.creationTime
+        ? new Date() - new Date(currentUser.metadata.creationTime)
+        : Infinity;
+      const oneDayInMs = 24 * 60 * 60 * 1000;
+
+      if (accountAge > oneDayInMs) return; // Not a new user
+
+      // Check if welcome posts already exist
+      const welcomePostsQuery = query(
+        collection(db, 'posts'),
+        where('userId', '==', 'BESTIES_BOT')
+      );
+      const welcomePostsSnapshot = await getDocs(welcomePostsQuery);
+
+      // Check if any existing welcome posts are for this user
+      const hasWelcomePosts = welcomePostsSnapshot.docs.some(doc =>
+        doc.data().recipientId === currentUser.uid
+      );
+
+      if (hasWelcomePosts) return; // Welcome posts already created
+
+      // Create welcome posts
+      const welcomeMessages = [
+        {
+          text: "Welcome to your Besties social hub! 💜\n\nThis is your private space - only your besties see what you get up to in here. There's no algorithm, just you, your besties, and a whole lot of privacy. Feel free to share updates, check-ins, or just say hi!",
+          order: 1
+        },
+        {
+          text: "📊 Scroll down to find the leaderboard!\n\nCompete with your friends to see who's most reliable, who's the quickest to respond... but in reality, you all win. This is about staying safe together, not competition. The real prize is having each other's backs! 🏆",
+          order: 2
+        },
+        {
+          text: "👥 Keep scrolling to see all your besties!\n\nThis is where you'll find everyone after you've filled your bestie circle. Check on them, see their activity, and stay connected. Your safety squad is growing! 🌟",
+          order: 3
+        }
+      ];
+
+      try {
+        for (const message of welcomeMessages) {
+          await addDoc(collection(db, 'posts'), {
+            userId: 'BESTIES_BOT',
+            recipientId: currentUser.uid,
+            userName: 'Besties Team',
+            userPhoto: null,
+            text: message.text,
+            photoURL: null,
+            createdAt: Timestamp.fromMillis(Date.now() - (3 - message.order) * 1000), // Stagger timestamps
+            isWelcomeMessage: true,
+          });
+        }
+      } catch (error) {
+        console.error('Error creating welcome posts:', error);
+      }
+    };
+
+    createWelcomePosts();
+  }, [currentUser, userData]);
+
   // Load activity feed - only when page is visible
   useEffect(() => {
     if (!currentUser || besties.length === 0) return;
@@ -139,9 +205,51 @@ const BestiesPage = () => {
       // Get bestie user IDs (deduplicated to avoid showing duplicates for mutual besties)
       const bestieIds = [...new Set(besties.map(b => b.userId))];
 
-      // Load recent check-ins (last 48 hours)
+      // Load recent activity (last 48 hours)
       const twoDaysAgo = new Date();
       twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+
+      // Load user's own posts
+      const userPostsQuery = query(
+        collection(db, 'posts'),
+        where('userId', '==', currentUser.uid),
+        where('createdAt', '>=', twoDaysAgo),
+        orderBy('createdAt', 'desc'),
+        limit(10)
+      );
+      const userPostsSnapshot = await getDocs(userPostsQuery);
+      userPostsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        activities.push({
+          id: doc.id,
+          type: 'post',
+          postData: data,
+          userName: userData?.displayName || 'You',
+          userId: currentUser.uid,
+          timestamp: data.createdAt?.toDate() || new Date(),
+        });
+      });
+
+      // Load welcome posts from Besties Bot
+      const welcomePostsQuery = query(
+        collection(db, 'posts'),
+        where('userId', '==', 'BESTIES_BOT')
+      );
+      const welcomePostsSnapshot = await getDocs(welcomePostsQuery);
+      welcomePostsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        // Only show welcome posts addressed to current user
+        if (data.recipientId === currentUser.uid) {
+          activities.push({
+            id: doc.id,
+            type: 'post',
+            postData: data,
+            userName: 'Besties Team',
+            userId: 'BESTIES_BOT',
+            timestamp: data.createdAt?.toDate() || new Date(),
+          });
+        }
+      });
 
       for (const bestieId of bestieIds) {
         try {
@@ -155,6 +263,29 @@ const BestiesPage = () => {
           );
 
           const checkInsSnapshot = await getDocs(checkInsQuery);
+
+          // Get recent posts from this bestie
+          const postsQuery = query(
+            collection(db, 'posts'),
+            where('userId', '==', bestieId),
+            where('createdAt', '>=', twoDaysAgo),
+            orderBy('createdAt', 'desc'),
+            limit(10)
+          );
+          const postsSnapshot = await getDocs(postsQuery);
+          const bestie = besties.find(b => b.userId === bestieId);
+
+          postsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            activities.push({
+              id: doc.id,
+              type: 'post',
+              postData: data,
+              userName: bestie?.name || 'Bestie',
+              userId: bestieId,
+              timestamp: data.createdAt?.toDate() || new Date(),
+            });
+          });
 
           checkInsSnapshot.forEach((doc) => {
             const data = doc.data();
@@ -507,6 +638,16 @@ const BestiesPage = () => {
           requestsForAttention={requestsForAttention}
           besties={besties}
         />
+
+        {/* Create Post Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowCreatePostModal(true)}
+            className="w-full btn btn-primary py-4 text-lg font-semibold bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg"
+          >
+            ✍️ Make a Post
+          </button>
+        </div>
 
         {/* Mobile-First Layout - Stack on mobile, grid on desktop */}
         <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
@@ -903,6 +1044,17 @@ const BestiesPage = () => {
       {/* Add Bestie Modal */}
       {showAddModal && (
         <AddBestieModal onClose={() => setShowAddModal(false)} />
+      )}
+
+      {/* Create Post Modal */}
+      {showCreatePostModal && (
+        <CreatePostModal
+          onClose={() => setShowCreatePostModal(false)}
+          onPostCreated={() => {
+            // Reload activity feed after post creation
+            window.location.reload();
+          }}
+        />
       )}
 
       {/* CSS for slow pulse animation */}
