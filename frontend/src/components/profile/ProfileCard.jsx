@@ -1,9 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
 import toast from 'react-hot-toast';
+import html2canvas from 'html2canvas';
+import { getLayoutById } from './layouts';
+import { getTypographyById, getNameStyle, getBioStyle } from './themes/typography';
+import { BACKGROUNDS } from './themes/backgrounds';
+import './themes/backgroundPatterns.css';
+
+const ProfileCustomizer = lazy(() => import('./ProfileCustomizer'));
 
 const GRADIENT_OPTIONS = [
   { id: 'pink', name: 'Pink Dream', gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)' },
@@ -31,10 +38,41 @@ const ProfileCard = ({ currentUser, userData }) => {
   const [uploading, setUploading] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showAuraPicker, setShowAuraPicker] = useState(false);
+  const [showCustomizer, setShowCustomizer] = useState(false);
   const fileInputRef = useRef(null);
 
   const currentGradient = userData?.profile?.backgroundGradient || GRADIENT_OPTIONS[0].gradient;
   const currentAura = userData?.profile?.aura || 'none';
+
+  // Get customization settings
+  const customization = userData?.profile?.customization || {};
+  const layoutId = customization.layout || 'classic';
+  const backgroundId = customization.background || null;
+  const typographyId = customization.typography || 'playful';
+
+  // Get the selected background or fall back to gradient
+  const getBackgroundById = (id) => {
+    const allBackgrounds = Object.values(BACKGROUNDS).flat();
+    return allBackgrounds.find(bg => bg.id === id);
+  };
+
+  const selectedBackground = backgroundId ? getBackgroundById(backgroundId) : null;
+  const backgroundStyle = selectedBackground ? selectedBackground.gradient : currentGradient;
+  const patternClass = selectedBackground ? `pattern-${selectedBackground.pattern}` : '';
+
+  // Get typography settings
+  const typography = getTypographyById(typographyId);
+  const nameStyle = typography ? getNameStyle(typography) : {};
+  const bioStyle = typography ? getBioStyle(typography) : {};
+  const nameSizeClass = typography?.nameSizeClass || 'text-4xl';
+  const bioSizeClass = typography?.bioSizeClass || 'text-lg';
+
+  // Get layout component
+  const LayoutComponent = getLayoutById(layoutId);
+
+  // Use customization photo settings or defaults
+  const photoShape = customization.photoShape || 'circle';
+  const photoBorder = customization.photoBorder || 'classic';
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -105,14 +143,99 @@ const ProfileCard = ({ currentUser, userData }) => {
     }
   };
 
+  const handleShareProfileCard = async () => {
+    const profileCard = document.getElementById('profile-card-shareable');
+    if (!profileCard) {
+      toast.error('Could not capture profile card');
+      return;
+    }
+
+    try {
+      toast('Generating image...', { icon: '📸' });
+
+      const canvas = await html2canvas(profileCard, {
+        backgroundColor: null,
+        scale: 2,
+        logging: false,
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to generate image');
+          return;
+        }
+
+        if (navigator.share && navigator.canShare({ files: [new File([blob], 'profile.png', { type: 'image/png' })] })) {
+          const file = new File([blob], 'my-besties-profile.png', { type: 'image/png' });
+          navigator.share({
+            title: 'My Besties Profile',
+            text: 'Check out my Besties profile! 💜',
+            files: [file],
+          }).then(() => {
+            toast.success('Profile card shared! 💜');
+          }).catch((err) => {
+            if (err.name !== 'AbortError') {
+              downloadImage(blob);
+            }
+          });
+        } else {
+          downloadImage(blob);
+        }
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error sharing profile card:', error);
+      toast.error('Failed to share profile card');
+    }
+  };
+
+  const downloadImage = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'my-besties-profile.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Profile card downloaded! 📥');
+  };
+
+  // Prepare data for layout component
+  const layoutProps = {
+    profilePhoto: userData?.photoURL,
+    displayName: userData?.displayName,
+    bio: userData?.profile?.bio,
+    badges: userData?.featuredBadges || [],
+    stats: {
+      besties: userData?.totalBesties || 0,
+      checkIns: userData?.checkInCount || 0
+    },
+    nameStyle,
+    bioStyle,
+    nameSizeClass,
+    bioSizeClass,
+    photoShape,
+    photoBorder,
+    decorativeElements: customization.decorativeElements || []
+  };
+
   return (
-    <div
-      id="profile-card-shareable"
-      className={`card p-8 mb-6 text-center relative overflow-hidden shadow-2xl profile-card-aura-${currentAura}`}
-      style={{ background: currentGradient }}
-    >
-      {/* Edit Profile Button - Above Color Picker */}
-      <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
+    <>
+      <div
+        id="profile-card-shareable"
+        className={`card mb-6 relative overflow-hidden shadow-2xl profile-card-aura-${currentAura} profile-card-pattern ${patternClass}`}
+        style={{ background: backgroundStyle }}
+      >
+        {/* Action Buttons */}
+        <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
+          {/* Customize Button */}
+          <button
+            onClick={() => setShowCustomizer(true)}
+            className="w-10 h-10 rounded-full bg-gradient-primary text-white backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all text-lg"
+            title="Customize your vibe"
+          >
+            ✨
+          </button>
         <button
           onClick={() => navigate('/edit-profile')}
           className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
@@ -213,39 +336,32 @@ const ProfileCard = ({ currentUser, userData }) => {
         )}
       </div>
 
-      {/* Profile Photo */}
-      <div className="relative inline-block photo-menu-container z-10">
-        <button
-          onClick={() => setShowPhotoMenu(!showPhotoMenu)}
-          className="w-36 h-36 bg-gradient-primary rounded-full flex items-center justify-center text-white text-5xl font-display overflow-hidden hover:opacity-90 transition-all hover:scale-105 border-4 border-white shadow-2xl ring-4 ring-purple-200"
-        >
-          {userData?.photoURL ? (
-            <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
-          )}
-        </button>
-
-        {/* Photo Management Menu */}
+        {/* Photo Management Menu - Floating */}
         {showPhotoMenu && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-gray-200 dark:border-gray-600 p-2 z-30 w-48">
-            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Manage Photo</div>
-            <button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowPhotoMenu(false);
-              }}
-              disabled={uploading}
-              className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm font-semibold text-gray-700 dark:text-gray-300"
-            >
-              🔄 Replace
-            </button>
-            <button
-              onClick={handleRemovePhoto}
-              className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-sm font-semibold text-red-600 dark:text-red-400"
-            >
-              ❌ Remove
-            </button>
+          <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setShowPhotoMenu(false)}>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-gray-200 dark:border-gray-600 p-4 w-64">
+              <div className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Manage Photo</div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                  setShowPhotoMenu(false);
+                }}
+                disabled={uploading}
+                className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              >
+                🔄 Replace Photo
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemovePhoto();
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-sm font-semibold text-red-600 dark:text-red-400"
+              >
+                ❌ Remove Photo
+              </button>
+            </div>
           </div>
         )}
 
@@ -256,17 +372,9 @@ const ProfileCard = ({ currentUser, userData }) => {
           onChange={handlePhotoUpload}
           className="hidden"
         />
-      </div>
 
-      <h1 className="text-4xl font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-3 mt-4">
-        {userData?.displayName || 'User'}
-      </h1>
-
-      {userData?.profile?.bio && (
-        <p className="text-gray-800 dark:text-gray-200 italic max-w-md mx-auto mt-4 text-lg">
-          "{userData.profile.bio}"
-        </p>
-      )}
+        {/* Dynamic Layout Component */}
+        <LayoutComponent {...layoutProps} />
 
       {/* Social Sharing Icons - Cute & Small */}
       <div className="mt-6 relative z-10">
@@ -381,7 +489,19 @@ const ProfileCard = ({ currentUser, userData }) => {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Profile Customizer Modal */}
+      {showCustomizer && (
+        <Suspense fallback={null}>
+          <ProfileCustomizer
+            currentUser={currentUser}
+            userData={userData}
+            onClose={() => setShowCustomizer(false)}
+          />
+        </Suspense>
+      )}
+    </>
   );
 };
 
