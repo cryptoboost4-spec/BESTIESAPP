@@ -10,6 +10,7 @@ import DonationCard from '../components/DonationCard';
 import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
+import ProfileWithBubble from '../components/ProfileWithBubble';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -220,31 +221,31 @@ const HomePage = () => {
                   Let your besties know you could use some attention. They'll see a badge on your profile everywhere in the app.
                 </p>
 
-                {/* Preview Example */}
+                {/* Preview Example - Compact */}
                 <div className="bg-white rounded-xl p-4 mb-4 border-2 border-purple-200">
-                  <p className="text-xs font-semibold text-purple-700 mb-2">Preview:</p>
-                  <div className="flex items-center gap-3">
-                    {/* User Profile Picture */}
-                    <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white text-lg font-display overflow-hidden flex-shrink-0 border-2 border-purple-300">
-                      {userData?.photoURL ? (
-                        <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
-                      )}
-                    </div>
-
-                    {/* Animated Message */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-gray-800 mb-1">
-                        {userData?.displayName || 'You'}
-                      </div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 border border-purple-300 rounded-full">
-                        <span className="text-lg">💬</span>
-                        <span className="text-xs font-semibold text-purple-900 scrolling-message">
-                          Needs to vent
-                        </span>
-                      </div>
-                    </div>
+                  <p className="text-xs font-semibold text-purple-700 mb-3">Example messages:</p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <ProfileWithBubble
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || currentUser?.email || 'You'}
+                      requestAttention={{ active: true, tag: '💬 Needs to vent' }}
+                      size="lg"
+                      showBubble={true}
+                    />
+                    <ProfileWithBubble
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || currentUser?.email || 'You'}
+                      requestAttention={{ active: true, tag: '🫂 Need a shoulder' }}
+                      size="lg"
+                      showBubble={true}
+                    />
+                    <ProfileWithBubble
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || currentUser?.email || 'You'}
+                      requestAttention={{ active: true, tag: '💜 Could use support' }}
+                      size="lg"
+                      showBubble={true}
+                    />
                   </div>
                 </div>
 
@@ -254,36 +255,6 @@ const HomePage = () => {
                 >
                   💜 Request Attention
                 </button>
-
-                {/* CSS for scrolling animation */}
-                <style>{`
-                  @keyframes scrollMessages {
-                    0%, 20% { content: "Needs to vent 💬"; }
-                    25%, 45% { content: "Needs a shoulder 🫂"; }
-                    50%, 70% { content: "Could use support 💜"; }
-                    75%, 95% { content: "Having a rough day 😔"; }
-                  }
-
-                  .scrolling-message {
-                    animation: fadeText 8s ease-in-out infinite;
-                  }
-
-                  .scrolling-message::after {
-                    content: "Needs to vent";
-                    animation: scrollMessages 8s ease-in-out infinite;
-                  }
-
-                  @keyframes fadeText {
-                    0%, 18%, 100% { opacity: 1; }
-                    20%, 23% { opacity: 0; }
-                    25%, 43% { opacity: 1; }
-                    45%, 48% { opacity: 0; }
-                    50%, 68% { opacity: 1; }
-                    70%, 73% { opacity: 0; }
-                    75%, 93% { opacity: 1; }
-                    95%, 98% { opacity: 0; }
-                  }
-                `}</style>
               </div>
             )}
           </>
