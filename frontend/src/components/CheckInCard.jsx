@@ -537,7 +537,7 @@ const CheckInCard = ({ checkIn }) => {
     });
   };
 
-  const handleUpdateLocation = async () => {
+  const handleUpdateLocation = async (retryCount = 0) => {
     if (!navigator.geolocation) {
       toast.error('Geolocation is not supported by your browser');
       return;
@@ -551,8 +551,8 @@ const CheckInCard = ({ checkIn }) => {
       const fastPosition = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: false,     // Use network/WiFi for speed
-          timeout: 5000,                  // 5 second timeout
-          maximumAge: 10000               // Accept cached location up to 10s old
+          timeout: 8000,                  // 8 second timeout (mobile networks can be slow)
+          maximumAge: 5000                // Accept cached location up to 5s old
         });
       });
 
@@ -593,27 +593,31 @@ const CheckInCard = ({ checkIn }) => {
 
           // Only update if accuracy improved significantly (>50 meters better)
           if (fastAccuracy - accAccuracy > 50) {
-            // Get address for accurate location
-            const accResponse = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${accLat},${accLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
-            );
-            const accData = await accResponse.json();
+            try {
+              // Get address for accurate location
+              const accResponse = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${accLat},${accLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+              );
+              const accData = await accResponse.json();
 
-            let accLocationName = `GPS: ${accLat.toFixed(6)}, ${accLng.toFixed(6)}`;
-            if (accData.results && accData.results.length > 0) {
-              accLocationName = accData.results[0].formatted_address;
+              let accLocationName = `GPS: ${accLat.toFixed(6)}, ${accLng.toFixed(6)}`;
+              if (accData.results && accData.results.length > 0) {
+                accLocationName = accData.results[0].formatted_address;
+              }
+
+              // Silently update with more accurate location
+              await updateDoc(doc(db, 'checkins', checkIn.id), {
+                location: accLocationName,
+                gpsCoords: { lat: accLat, lng: accLng },
+                locationAccuracy: accAccuracy,
+                locationUpdatedAt: Timestamp.now(),
+              });
+
+              setCurrentLocation(accLocationName);
+              console.log('Location silently updated with accurate GPS');
+            } catch (error) {
+              console.log('Background update failed (not critical):', error);
             }
-
-            // Silently update with more accurate location
-            await updateDoc(doc(db, 'checkins', checkIn.id), {
-              location: accLocationName,
-              gpsCoords: { lat: accLat, lng: accLng },
-              locationAccuracy: accAccuracy,
-              locationUpdatedAt: Timestamp.now(),
-            });
-
-            setCurrentLocation(accLocationName);
-            console.log('Location silently updated with accurate GPS');
           } else {
             console.log('Accurate location not significantly better, keeping fast location');
           }
@@ -624,19 +628,34 @@ const CheckInCard = ({ checkIn }) => {
         },
         {
           enableHighAccuracy: true,      // Use GPS for accuracy
-          timeout: 15000,                 // 15 second timeout
+          timeout: 20000,                 // 20 second timeout for mobile GPS
           maximumAge: 0                   // Don't use cached location
         }
       );
 
     } catch (error) {
       console.error('Error updating location:', error);
+
+      // Retry logic for mobile - timeout errors are common
+      if (error.code === 3 && retryCount < 2) {
+        console.log(`Location timeout, retry ${retryCount + 1}/2`);
+        toast(`Location slow, retrying... (${retryCount + 1}/2)`, {
+          icon: '🔄',
+          duration: 2000
+        });
+        // Retry after 1 second
+        setTimeout(() => handleUpdateLocation(retryCount + 1), 1000);
+        return;
+      }
+
       if (error.code === 1) {
-        toast.error('Location permission denied. Please enable location access.', { duration: 4000 });
+        toast.error('Location permission denied. Please enable location access in your device settings.', { duration: 6000 });
+      } else if (error.code === 2) {
+        toast.error('Location unavailable. Make sure location services are enabled on your device.', { duration: 5000 });
       } else if (error.code === 3) {
-        toast.error('Location timeout. Please try again.', { duration: 3000 });
+        toast.error('Location timeout. Try moving to a window or outdoor area for better signal.', { duration: 5000 });
       } else {
-        toast.error('Failed to update location');
+        toast.error('Failed to update location. Please try again.');
       }
       setUpdatingLocation(false);
     }
