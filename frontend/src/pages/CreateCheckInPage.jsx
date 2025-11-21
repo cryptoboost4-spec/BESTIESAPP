@@ -21,14 +21,8 @@ const CheckInLoader = () => {
     "Getting everything ready... 🌸",
   ];
 
-  const [messageIndex, setMessageIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [messages.length]);
+  // Pick one random message and stick with it
+  const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
   return (
     <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
@@ -43,8 +37,8 @@ const CheckInLoader = () => {
           Creating your check-in!
         </h2>
 
-        <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
-          {messages[messageIndex]}
+        <p className="text-xl text-text-secondary font-semibold mb-8">
+          {message}
         </p>
 
         {/* Cute loading animation */}

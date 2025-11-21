@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Cute loader for "I'm Safe" confirmation
 const SafeLoader = () => {
+  const navigate = useNavigate();
   const messages = [
     "We're so glad you're safe! 💖",
     "Your besties will be so relieved! ✨",
@@ -19,14 +20,16 @@ const SafeLoader = () => {
     "See you next time, stay safe! 🦋",
   ];
 
-  const [messageIndex, setMessageIndex] = useState(0);
+  // Pick one random message and stick with it
+  const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
+  // Redirect to home after 2 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 1200);
-    return () => clearInterval(interval);
-  }, [messages.length]);
+    const timeout = setTimeout(() => {
+      navigate('/');
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
@@ -49,8 +52,8 @@ const SafeLoader = () => {
           You're Safe!
         </h2>
 
-        <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
-          {messages[messageIndex]}
+        <p className="text-xl text-text-secondary font-semibold mb-8">
+          {message}
         </p>
 
         {/* Success checkmark animation */}
