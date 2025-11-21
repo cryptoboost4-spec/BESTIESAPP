@@ -5,7 +5,6 @@ import { db, storage, authService } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
-import Header from '../components/Header';
 import { isValidE164 } from '../utils/phoneUtils';
 import { checkAndAwardProfileCompletion } from '../services/profileCompletionService';
 import ProfileCompletionModal from '../components/ProfileCompletionModal';
@@ -255,7 +254,6 @@ const EditProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-2xl mx-auto p-4 pb-20">
         <div className="mb-6">

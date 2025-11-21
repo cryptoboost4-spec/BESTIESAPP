@@ -12,6 +12,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import AdminRoute from './components/AdminRoute';
 import ScrollToTop from './components/ScrollToTop';
 import MilestoneCelebration from './components/MilestoneCelebration';
+import FloatingNotificationBell from './components/FloatingNotificationBell';
+import MobileBottomNav from './components/MobileBottomNav';
 
 // Services
 import errorTracker from './services/errorTracking';
@@ -120,6 +122,8 @@ function App() {
             <RouteTracker />
             <ScrollToTop />
             <MilestoneCelebration />
+            {user && <FloatingNotificationBell />}
+            {user && <MobileBottomNav />}
             <div className="App">
               <Suspense fallback={<PageLoader />}>
                 <Routes>

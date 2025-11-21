@@ -3,29 +3,79 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
 import { BACKGROUNDS, getCategoryName, BACKGROUND_CATEGORIES } from './themes/backgrounds';
-import { TYPOGRAPHY_STYLES, loadGoogleFonts, getTypographyById, getNameStyle, getBioStyle } from './themes/typography';
-import { LAYOUT_OPTIONS, getLayoutById } from './layouts';
-import { VIBE_PRESETS } from './themes/vibePresets';
+import { getLayoutById } from './layouts';
 import './themes/backgroundPatterns.css';
 
+// Google Fonts list for dropdowns
+const GOOGLE_FONTS = [
+  { family: 'Playfair Display', category: 'Serif' },
+  { family: 'Merriweather', category: 'Serif' },
+  { family: 'Lora', category: 'Serif' },
+  { family: 'Crimson Text', category: 'Serif' },
+  { family: 'EB Garamond', category: 'Serif' },
+  { family: 'Cormorant', category: 'Serif' },
+  { family: 'Inter', category: 'Sans Serif' },
+  { family: 'Poppins', category: 'Sans Serif' },
+  { family: 'Montserrat', category: 'Sans Serif' },
+  { family: 'Quicksand', category: 'Sans Serif' },
+  { family: 'Work Sans', category: 'Sans Serif' },
+  { family: 'Raleway', category: 'Sans Serif' },
+  { family: 'Open Sans', category: 'Sans Serif' },
+  { family: 'Roboto', category: 'Sans Serif' },
+  { family: 'Nunito', category: 'Sans Serif' },
+  { family: 'Archivo Black', category: 'Display' },
+  { family: 'Fredoka One', category: 'Display' },
+  { family: 'Bebas Neue', category: 'Display' },
+  { family: 'Righteous', category: 'Display' },
+  { family: 'Permanent Marker', category: 'Display' },
+  { family: 'Dancing Script', category: 'Script' },
+  { family: 'Pacifico', category: 'Script' },
+  { family: 'Great Vibes', category: 'Script' },
+  { family: 'Satisfy', category: 'Script' },
+  { family: 'Caveat', category: 'Script' }
+];
+
+const FONT_SIZES = [
+  { id: 'xs', label: 'XS', nameClass: 'text-2xl', bioClass: 'text-xs' },
+  { id: 'sm', label: 'S', nameClass: 'text-3xl', bioClass: 'text-sm' },
+  { id: 'md', label: 'M', nameClass: 'text-4xl', bioClass: 'text-base' },
+  { id: 'lg', label: 'L', nameClass: 'text-5xl', bioClass: 'text-lg' },
+  { id: 'xl', label: 'XL', nameClass: 'text-6xl', bioClass: 'text-xl' }
+];
+
 const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
-  const [activeTab, setActiveTab] = useState('vibes');
-  const [selectedVibe, setSelectedVibe] = useState(null);
+  const [activeTab, setActiveTab] = useState('backgrounds');
   const [selectedBackground, setSelectedBackground] = useState(userData?.profile?.customization?.background || 'pearl-elegance');
-  const [selectedLayout, setSelectedLayout] = useState(userData?.profile?.customization?.layout || 'classic');
-  const [selectedTypography, setSelectedTypography] = useState(userData?.profile?.customization?.typography || 'elegant');
-  const [photoShape, setPhotoShape] = useState(userData?.profile?.customization?.photoShape || 'circle');
-  const [photoBorder, setPhotoBorder] = useState(userData?.profile?.customization?.photoBorder || 'classic');
+
+  // Font customization
+  const [nameFont, setNameFont] = useState(userData?.profile?.customization?.nameFont || 'Playfair Display');
+  const [bioFont, setBioFont] = useState(userData?.profile?.customization?.bioFont || 'Inter');
+  const [nameSize, setNameSize] = useState(userData?.profile?.customization?.nameSize || 'md');
+  const [bioSize, setBioSize] = useState(userData?.profile?.customization?.bioSize || 'md');
+
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Load fonts when typography changes
+  // Load fonts when they change
   useEffect(() => {
-    const typography = getTypographyById(selectedTypography);
-    if (typography) {
-      loadGoogleFonts(typography);
+    const fonts = new Set();
+    if (nameFont) fonts.add(nameFont.replace(/ /g, '+') + ':wght@300;400;700');
+    if (bioFont) fonts.add(bioFont.replace(/ /g, '+') + ':wght@300;400;700');
+
+    if (fonts.size > 0) {
+      const fontString = Array.from(fonts).join('&family=');
+      const linkId = 'profile-custom-fonts';
+
+      const existingLink = document.getElementById(linkId);
+      if (existingLink) existingLink.remove();
+
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${fontString}&display=swap`;
+      document.head.appendChild(link);
     }
-  }, [selectedTypography]);
+  }, [nameFont, bioFont]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -33,10 +83,15 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       await updateDoc(doc(db, 'users', currentUser.uid), {
         'profile.customization': {
           background: selectedBackground,
-          layout: selectedLayout,
-          typography: selectedTypography,
-          photoShape,
-          photoBorder
+          layout: 'magazine', // Always magazine
+          nameFont,
+          bioFont,
+          nameSize,
+          bioSize,
+          // Keep old fields for backward compatibility
+          typography: 'elegant',
+          photoShape: 'circle',
+          photoBorder: 'classic'
         }
       });
       toast.success('Profile style saved! 💜');
@@ -49,25 +104,16 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     }
   };
 
-  const applyVibePreset = (vibe) => {
-    setSelectedVibe(vibe.id);
-    setSelectedBackground(vibe.background);
-    setSelectedLayout(vibe.layout);
-    setSelectedTypography(vibe.typography);
-    setPhotoShape(vibe.photoShape);
-    setPhotoBorder(vibe.photoBorder);
-    toast('Vibe applied! ✨', { icon: vibe.emoji });
-  };
-
   const getBackgroundById = (id) => {
     const allBackgrounds = Object.values(BACKGROUNDS).flat();
     return allBackgrounds.find(bg => bg.id === id);
   };
 
-  // Get current selections for preview
   const currentBackground = getBackgroundById(selectedBackground);
-  const currentTypography = getTypographyById(selectedTypography);
-  const LayoutComponent = getLayoutById(selectedLayout);
+  const LayoutComponent = getLayoutById('magazine');
+
+  const nameSizeClass = FONT_SIZES.find(s => s.id === nameSize)?.nameClass || 'text-4xl';
+  const bioSizeClass = FONT_SIZES.find(s => s.id === bioSize)?.bioClass || 'text-base';
 
   const layoutProps = {
     profilePhoto: userData?.photoURL,
@@ -78,33 +124,13 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       besties: userData?.totalBesties || 0,
       checkIns: userData?.checkInCount || 0
     },
-    nameStyle: currentTypography ? getNameStyle(currentTypography) : {},
-    bioStyle: currentTypography ? getBioStyle(currentTypography) : {},
-    nameSizeClass: currentTypography?.nameSizeClass || 'text-4xl',
-    bioSizeClass: currentTypography?.bioSizeClass || 'text-lg',
-    photoShape,
-    photoBorder,
+    nameStyle: { fontFamily: nameFont },
+    bioStyle: { fontFamily: bioFont },
+    nameSizeClass,
+    bioSizeClass,
+    photoShape: 'circle',
+    photoBorder: 'classic',
     decorativeElements: []
-  };
-
-  const getPhotoShapeClass = () => {
-    const shapes = {
-      circle: 'rounded-full',
-      square: 'rounded-none',
-      rounded: 'rounded-2xl',
-      heart: 'rounded-full'
-    };
-    return shapes[photoShape] || 'rounded-full';
-  };
-
-  const getPhotoBorderClass = () => {
-    const borders = {
-      none: '',
-      classic: 'border-4 border-white shadow-lg',
-      metallic: 'border-4 border-yellow-400 shadow-lg',
-      scalloped: 'border-4 border-white shadow-lg'
-    };
-    return borders[photoBorder] || '';
   };
 
   return (
@@ -159,15 +185,12 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
               </button>
             </div>
 
-            {/* Tab Navigation - Scrollable */}
+            {/* Tab Navigation */}
             <div className="overflow-x-auto px-4 pb-3">
               <div className="flex gap-2 min-w-max">
                 {[
-                  { id: 'vibes', label: 'Vibes', emoji: '✨' },
                   { id: 'backgrounds', label: 'Backgrounds', emoji: '🎨' },
-                  { id: 'layouts', label: 'Layouts', emoji: '📱' },
-                  { id: 'typography', label: 'Fonts', emoji: '🔤' },
-                  { id: 'photo', label: 'Photo', emoji: '📸' }
+                  { id: 'fonts', label: 'Fonts', emoji: '🔤' }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -187,39 +210,6 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
 
           {/* Content Area - Scrollable */}
           <div className="flex-1 overflow-y-auto p-4">
-            {/* VIBES TAB */}
-            {activeTab === 'vibes' && (
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  One-tap complete looks! 🎨
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {VIBE_PRESETS.map(vibe => {
-                    const vibeBg = getBackgroundById(vibe.background);
-                    return (
-                      <button
-                        key={vibe.id}
-                        onClick={() => applyVibePreset(vibe)}
-                        className={`relative overflow-hidden rounded-xl transition-all hover:scale-105 ${
-                          selectedVibe === vibe.id ? 'ring-4 ring-purple-500' : ''
-                        }`}
-                      >
-                        {/* Mini Card Preview */}
-                        <div
-                          className="h-32 p-3 flex flex-col items-center justify-center text-center"
-                          style={{ background: vibeBg?.gradient || '#f0f0f0' }}
-                        >
-                          <div className="text-2xl mb-1">{vibe.emoji}</div>
-                          <div className="text-xs font-bold text-gray-800 dark:text-white">{vibe.name}</div>
-                          <div className="text-[10px] text-gray-600 dark:text-gray-300 mt-1">{vibe.description}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* BACKGROUNDS TAB */}
             {activeTab === 'backgrounds' && (
               <div>
@@ -244,12 +234,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                               selectedBackground === bg.id ? 'ring-4 ring-purple-500' : ''
                             }`}
                           >
-                            {/* Mini Card Preview */}
                             <div
                               className="h-24 flex items-center justify-center relative"
                               style={{ background: bg.gradient }}
                             >
-                              {/* Tiny profile preview */}
                               <div className="flex flex-col items-center">
                                 <div className="w-8 h-8 rounded-full bg-white/80 mb-1"></div>
                                 <div className="text-[10px] font-bold text-white drop-shadow-lg bg-black/30 px-2 py-0.5 rounded">
@@ -271,151 +259,104 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
               </div>
             )}
 
-            {/* LAYOUTS TAB */}
-            {activeTab === 'layouts' && (
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Choose your layout style 📱
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {LAYOUT_OPTIONS.map(layout => (
-                    <button
-                      key={layout.id}
-                      onClick={() => setSelectedLayout(layout.id)}
-                      className={`p-4 rounded-xl text-left transition-all hover:scale-105 ${
-                        selectedLayout === layout.id
-                          ? 'bg-gradient-primary text-white shadow-xl ring-2 ring-purple-500'
-                          : 'bg-gray-100 dark:bg-gray-800'
-                      }`}
-                    >
-                      {/* Wireframe Preview */}
-                      <div className="mb-3 h-20 bg-white/20 dark:bg-black/20 rounded-lg flex items-center justify-center">
-                        <div className="text-3xl">{layout.emoji}</div>
-                      </div>
-                      <div className="font-display font-bold mb-1">{layout.name}</div>
-                      <div className="text-xs opacity-80">{layout.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TYPOGRAPHY TAB */}
-            {activeTab === 'typography' && (
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Pick your font style 🔤
-                </p>
-                <div className="space-y-3">
-                  {TYPOGRAPHY_STYLES.map(typo => (
-                    <button
-                      key={typo.id}
-                      onClick={() => setSelectedTypography(typo.id)}
-                      className={`w-full p-4 rounded-xl text-left transition-all ${
-                        selectedTypography === typo.id
-                          ? 'bg-gradient-primary text-white shadow-xl ring-2 ring-purple-500'
-                          : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl">{typo.emoji}</span>
-                        <div className="flex-1">
-                          <div className="font-bold">{typo.name}</div>
-                          <div className="text-xs opacity-80">{typo.description}</div>
-                        </div>
-                        {selectedTypography === typo.id && <span>✓</span>}
-                      </div>
-                      {/* Font Preview */}
-                      <div className="mt-2 p-2 bg-white/10 rounded">
-                        <div
-                          className="text-lg font-bold"
-                          style={{
-                            fontFamily: typo.nameFont.family,
-                            fontWeight: typo.nameFont.weight
-                          }}
-                        >
-                          Your Name
-                        </div>
-                        <div
-                          className="text-sm mt-1 opacity-80"
-                          style={{
-                            fontFamily: typo.bioFont.family,
-                            fontWeight: typo.bioFont.weight,
-                            fontStyle: typo.bioFont.style
-                          }}
-                        >
-                          Your bio text
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* PHOTO TAB */}
-            {activeTab === 'photo' && (
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Customize your photo style 📸
-                </p>
-
-                {/* Photo Shape */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Photo Shape</h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { id: 'circle', label: 'Circle', icon: '⭕' },
-                      { id: 'square', label: 'Square', icon: '⬜' },
-                      { id: 'rounded', label: 'Rounded', icon: '▢' },
-                      { id: 'heart', label: 'Heart', icon: '💕' }
-                    ].map(shape => (
-                      <button
-                        key={shape.id}
-                        onClick={() => setPhotoShape(shape.id)}
-                        className={`p-3 rounded-xl text-center transition-all ${
-                          photoShape === shape.id
-                            ? 'bg-gradient-primary text-white shadow-lg'
-                            : 'bg-gray-100 dark:bg-gray-800'
-                        }`}
+            {/* FONTS TAB */}
+            {activeTab === 'fonts' && (
+              <div className="space-y-6">
+                {/* Name Font */}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Name Font</h3>
+                  <select
+                    value={nameFont}
+                    onChange={(e) => setNameFont(e.target.value)}
+                    className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold"
+                    style={{ fontFamily: nameFont }}
+                  >
+                    {GOOGLE_FONTS.map(font => (
+                      <option
+                        key={font.family}
+                        value={font.family}
+                        style={{ fontFamily: font.family }}
                       >
-                        {/* Shape Preview */}
-                        <div className={`w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-pink-400 to-purple-400 ${getPhotoShapeClass()}`}></div>
-                        <div className="text-xs font-bold">{shape.label}</div>
-                      </button>
+                        {font.family} ({font.category})
+                      </option>
                     ))}
+                  </select>
+
+                  {/* Name Size Picker */}
+                  <div className="mt-3">
+                    <label className="text-xs text-gray-600 dark:text-gray-400 mb-2 block">Name Size</label>
+                    <div className="flex gap-2">
+                      {FONT_SIZES.map(size => (
+                        <button
+                          key={size.id}
+                          onClick={() => setNameSize(size.id)}
+                          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-all ${
+                            nameSize === size.id
+                              ? 'bg-gradient-primary text-white shadow-lg'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {size.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Name Preview */}
+                  <div className="mt-3 p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Preview:</p>
+                    <p className={`${nameSizeClass} font-bold text-gray-900 dark:text-white`} style={{ fontFamily: nameFont }}>
+                      {userData?.displayName || 'Your Name'}
+                    </p>
                   </div>
                 </div>
 
-                {/* Photo Border */}
+                {/* Bio Font */}
                 <div>
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Photo Border</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: 'none', label: 'None', desc: 'Clean' },
-                      { id: 'classic', label: 'Classic', desc: 'White border' },
-                      { id: 'metallic', label: 'Metallic', desc: 'Gold shimmer' },
-                      { id: 'scalloped', label: 'Scalloped', desc: 'Decorative' }
-                    ].map(border => (
-                      <button
-                        key={border.id}
-                        onClick={() => setPhotoBorder(border.id)}
-                        className={`p-3 rounded-xl text-left transition-all ${
-                          photoBorder === border.id
-                            ? 'bg-gradient-primary text-white shadow-lg'
-                            : 'bg-gray-100 dark:bg-gray-800'
-                        }`}
+                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Bio Font</h3>
+                  <select
+                    value={bioFont}
+                    onChange={(e) => setBioFont(e.target.value)}
+                    className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    style={{ fontFamily: bioFont }}
+                  >
+                    {GOOGLE_FONTS.map(font => (
+                      <option
+                        key={font.family}
+                        value={font.family}
+                        style={{ fontFamily: font.family }}
                       >
-                        {/* Border Preview */}
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 ${getPhotoBorderClass()}`}></div>
-                          <div className="flex-1">
-                            <div className="font-bold text-sm">{border.label}</div>
-                            <div className="text-xs opacity-80">{border.desc}</div>
-                          </div>
-                        </div>
-                      </button>
+                        {font.family} ({font.category})
+                      </option>
                     ))}
+                  </select>
+
+                  {/* Bio Size Picker */}
+                  <div className="mt-3">
+                    <label className="text-xs text-gray-600 dark:text-gray-400 mb-2 block">Bio Size</label>
+                    <div className="flex gap-2">
+                      {FONT_SIZES.map(size => (
+                        <button
+                          key={size.id}
+                          onClick={() => setBioSize(size.id)}
+                          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-all ${
+                            bioSize === size.id
+                              ? 'bg-gradient-primary text-white shadow-lg'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {size.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bio Preview */}
+                  <div className="mt-3 p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Preview:</p>
+                    <p className={`${bioSizeClass} text-gray-700 dark:text-gray-300`} style={{ fontFamily: bioFont }}>
+                      {userData?.profile?.bio || 'Your bio will appear here with this beautiful font!'}
+                    </p>
                   </div>
                 </div>
               </div>

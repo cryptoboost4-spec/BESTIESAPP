@@ -3,20 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs, getDoc, orderBy, limit } from 'firebase/firestore';
-import Header from '../components/Header';
+import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs, getDoc } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
-import BestieCircleStatus from '../components/BestieCircleStatus';
 import DonationCard from '../components/DonationCard';
+import WeeklySummary from '../components/profile/WeeklySummary';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
 import ProfileWithBubble from '../components/ProfileWithBubble';
 import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
-import PullToRefresh from '../components/PullToRefresh';
-import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -30,9 +27,7 @@ const HomePage = () => {
   const [showRequestAttention, setShowRequestAttention] = useState(false);
   const [attentionTag, setAttentionTag] = useState('');
 
-  // Alerts state
-  const [missedCheckIns, setMissedCheckIns] = useState([]);
-  const [requestsForAttention, setRequestsForAttention] = useState([]);
+  // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
 
   // Scrolling bubble example messages
@@ -112,17 +107,16 @@ const HomePage = () => {
   useEffect(() => {
     if (!currentUser || !userData) return;
 
-    const loadAlerts = async () => {
+    const loadBesties = async () => {
       try {
         // Get user's featured circle
         const featuredCircle = userData.featuredCircle || [];
         if (featuredCircle.length === 0) {
-          setMissedCheckIns([]);
-          setRequestsForAttention([]);
+          setBesties([]);
           return;
         }
 
-        // Load bestie names/info
+        // Load bestie names/info for weekly summary
         const bestiesData = [];
         for (const bestieId of featuredCircle) {
           const userDoc = await getDoc(doc(db, 'users', bestieId));
@@ -136,82 +130,65 @@ const HomePage = () => {
           }
         }
         setBesties(bestiesData);
-
-        const missed = [];
-        const attentionRequests = [];
-
-        // Check each bestie in featured circle for alerts
-        for (const bestieId of featuredCircle) {
-          // Check for missed check-ins (last 48 hours)
-          const twoDaysAgo = new Date();
-          twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
-
-          const checkInsQuery = query(
-            collection(db, 'checkins'),
-            where('userId', '==', bestieId),
-            where('createdAt', '>=', twoDaysAgo),
-            where('status', '==', 'alerted'),
-            orderBy('createdAt', 'desc'),
-            limit(5)
-          );
-
-          const checkInsSnapshot = await getDocs(checkInsQuery);
-          checkInsSnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const bestie = bestiesData.find(b => b.userId === bestieId);
-            missed.push({
-              id: docSnap.id,
-              userName: bestie?.name || 'Bestie',
-              userId: bestieId,
-              checkInData: data,
-              timestamp: data.createdAt?.toDate() || new Date(),
-            });
-          });
-
-          // Check for attention requests
-          const userDoc = await getDoc(doc(db, 'users', bestieId));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data.requestAttention && data.requestAttention.active) {
-              const bestie = bestiesData.find(b => b.userId === bestieId);
-              attentionRequests.push({
-                userId: bestieId,
-                userName: bestie?.name || 'Bestie',
-                tag: data.requestAttention.tag,
-                note: data.requestAttention.note,
-                timestamp: data.requestAttention.timestamp?.toDate() || new Date(),
-              });
-            }
-          }
-        }
-
-        setMissedCheckIns(missed);
-        setRequestsForAttention(attentionRequests);
       } catch (error) {
-        console.error('Error loading alerts:', error);
+        console.error('Error loading besties:', error);
       }
     };
 
-    loadAlerts();
+    loadBesties();
   }, [currentUser, userData]);
 
-  const handleRefresh = async () => {
-    // Reload user data by forcing a re-fetch
-    // The Firestore listeners will automatically update when data changes
-    try {
-      // Trigger a small delay to show the refresh animation
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success('Refreshed! 💜', { duration: 2000 });
-    } catch (error) {
-      console.error('Refresh error:', error);
-      toast.error('Failed to refresh');
+  // Weekly Summary Logic
+  const hasWeekOfActivity = () => {
+    const firstCheckIn = userData?.stats?.firstCheckInDate?.toDate?.() || userData?.stats?.firstCheckInDate;
+    if (!firstCheckIn) return false;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return firstCheckIn <= weekAgo;
+  };
+
+  const getWeeklySummary = () => {
+    if (!hasWeekOfActivity()) {
+      return {
+        status: 'new',
+        emoji: '🌱',
+        message: 'Building your safety journey',
+        tip: 'You\'ll get your weekly summary after you have one week of activity!'
+      };
+    }
+
+    const checkIns = userData?.stats?.totalCheckIns || 0;
+    const totalBesties = besties.length || 0;
+
+    if (checkIns >= 7 && totalBesties >= 3) {
+      return {
+        status: 'excellent',
+        emoji: '🌟',
+        message: 'You\'re absolutely crushing it this week!',
+        tip: 'Keep up the amazing safety habits!'
+      };
+    } else if (checkIns >= 3 || totalBesties >= 3) {
+      return {
+        status: 'good',
+        emoji: '💪',
+        message: 'You\'re doing great! Keep it up!',
+        tip: 'Try to check in regularly and add more besties.'
+      };
+    } else {
+      return {
+        status: 'needsWork',
+        emoji: '💜',
+        message: 'Let\'s build your safety network!',
+        tip: 'Start by adding your closest friends as besties.'
+      };
     }
   };
+
+  const weeklySummary = getWeeklySummary();
 
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
         </div>
@@ -220,17 +197,16 @@ const HomePage = () => {
   }
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen bg-pattern">
-        <OfflineBanner />
-        <Header />
+    <div className="min-h-screen bg-pattern">
+      <OfflineBanner />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
-        {/* Needs Attention Section - Featured Circle Only */}
-        <NeedsAttentionSection
-          missedCheckIns={missedCheckIns}
-          requestsForAttention={requestsForAttention}
-          besties={besties}
+        {/* Weekly Summary */}
+        <WeeklySummary
+          weeklySummary={weeklySummary}
+          hasWeekOfActivity={hasWeekOfActivity()}
+          userData={userData}
+          bestiesCount={besties.length}
         />
 
         {/* Stats Card - Moved above Quick Check-In */}
@@ -278,9 +254,6 @@ const HomePage = () => {
         {activeCheckIns.length === 0 && (
           <>
             <QuickCheckInButtons />
-
-            {/* Bestie Circle Status */}
-            <BestieCircleStatus userId={currentUser?.uid} />
 
             {/* Request Attention Button */}
             {userData?.requestAttention?.active ? (
@@ -634,8 +607,7 @@ const HomePage = () => {
           </div>
         </div>
       )}
-      </div>
-    </PullToRefresh>
+    </div>
   );
 };
 

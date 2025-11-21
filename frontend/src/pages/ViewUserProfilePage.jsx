@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import Header from '../components/Header';
 import CountUp from '../components/CountUp';
 import toast from 'react-hot-toast';
 
@@ -114,7 +113,6 @@ const ViewUserProfilePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
         </div>
@@ -125,7 +123,6 @@ const ViewUserProfilePage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="max-w-4xl mx-auto p-4 pb-20">
           <div className="card p-12 text-center">
             <div className="text-6xl mb-4">🔒</div>
@@ -151,7 +148,6 @@ const ViewUserProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
         {/* Profile Header - ENHANCED */}

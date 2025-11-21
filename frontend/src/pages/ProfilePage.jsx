@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import Header from '../components/Header';
 import LivingCircle from '../components/LivingCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileCompletion from '../components/profile/ProfileCompletion';
-import WeeklySummary from '../components/profile/WeeklySummary';
 import LoginStreak from '../components/profile/LoginStreak';
+import BestieCircleStatus from '../components/BestieCircleStatus';
+import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import BadgesSection from '../components/profile/BadgesSection';
 import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
@@ -221,50 +221,6 @@ const ProfilePage = () => {
     return { tasks, percentage, completed, total: tasks.length };
   };
 
-  const hasWeekOfActivity = () => {
-    if (!firstCheckInDate) return false;
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return firstCheckInDate <= weekAgo;
-  };
-
-  const getWeeklySummary = () => {
-    if (!hasWeekOfActivity()) {
-      return {
-        status: 'new',
-        emoji: '🌱',
-        message: 'Building your safety journey',
-        tip: 'You\'ll get your weekly summary after you have one week of activity!'
-      };
-    }
-
-    const checkIns = userData?.stats?.totalCheckIns || 0;
-    const besties = userData?.stats?.totalBesties || 0;
-
-    if (checkIns >= 7 && besties >= 3) {
-      return {
-        status: 'excellent',
-        emoji: '🌟',
-        message: 'You\'re absolutely crushing it this week!',
-        tip: 'Keep up the amazing safety habits!'
-      };
-    } else if (checkIns >= 3 || besties >= 3) {
-      return {
-        status: 'good',
-        emoji: '💪',
-        message: 'You\'re doing great! Keep it up!',
-        tip: 'Try to check in regularly and add more besties.'
-      };
-    } else {
-      return {
-        status: 'needsWork',
-        emoji: '💜',
-        message: 'Let\'s build your safety network!',
-        tip: 'Start by adding your closest friends as besties.'
-      };
-    }
-  };
-
   const handleTaskNavigation = (task) => {
     if (task.action === 'scrollToPhoto') {
       const photoElement = document.querySelector('.photo-menu-container');
@@ -299,13 +255,11 @@ const ProfilePage = () => {
   };
 
   const profileCompletion = calculateProfileCompletion();
-  const weeklySummary = getWeeklySummary();
   const loginStreak = userData?.loginStreak || 0;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="flex items-center justify-center py-20">
           <div className="spinner"></div>
         </div>
@@ -315,7 +269,6 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
       <ConfettiCelebration trigger={confettiTrigger} type="badge" />
       <ProfileAuraStyles />
 
@@ -330,13 +283,15 @@ const ProfilePage = () => {
           onTaskNavigation={handleTaskNavigation}
         />
 
-        {/* Weekly Summary */}
-        <WeeklySummary
-          weeklySummary={weeklySummary}
-          hasWeekOfActivity={hasWeekOfActivity()}
-          userData={userData}
-          bestiesCount={bestiesCount}
+        {/* Needs Attention Section */}
+        <NeedsAttentionSection
+          missedCheckIns={[]}
+          requestsForAttention={[]}
+          besties={[]}
         />
+
+        {/* Bestie Circle Status */}
+        <BestieCircleStatus userId={currentUser?.uid} />
 
         {/* Login Streak */}
         <LoginStreak loginStreak={loginStreak} />

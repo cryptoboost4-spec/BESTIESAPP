@@ -5,7 +5,6 @@ import { db, storage } from '../services/firebase';
 import { collection, query, where, getDocs, addDoc, getDoc, doc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
-import Header from '../components/Header';
 import { isEnabled } from '../config/features';
 import errorTracker from '../services/errorTracking';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
@@ -1058,7 +1057,6 @@ const CreateCheckInPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className={`max-w-2xl mx-auto p-4 pb-20 ${shouldAutoSubmit ? 'opacity-0 pointer-events-none' : ''}`}>
         <form onSubmit={handleSubmit} className="space-y-6">

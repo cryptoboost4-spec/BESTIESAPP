@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth } from '../services/firebase';
 import { doc, getDoc, addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import Header from '../components/Header';
 
 const AlertViewPage = () => {
   const { alertId } = useParams();
@@ -150,7 +149,6 @@ const AlertViewPage = () => {
   if (!alert) {
     return (
       <div className="min-h-screen bg-pattern">
-        <Header />
         <div className="max-w-2xl mx-auto p-4 text-center mt-20">
           <div className="text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-display text-text-primary mb-2">Alert Not Found</h1>
@@ -168,7 +166,6 @@ const AlertViewPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <Header />
 
       <div className="max-w-2xl mx-auto p-4 pb-20">
         {/* Alert Header */}
