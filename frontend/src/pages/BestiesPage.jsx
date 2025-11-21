@@ -604,7 +604,7 @@ const BestiesPage = () => {
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
                             Most Reliable
                           </div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Earning crowns... 👑</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Earning crowns... 👑</div>
                         </div>
                       </div>
                     </div>
@@ -627,7 +627,7 @@ const BestiesPage = () => {
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
                             Lightning Fast
                           </div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Collecting sparkles... ✨</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Collecting sparkles... ✨</div>
                         </div>
                       </div>
                     </div>
@@ -650,7 +650,7 @@ const BestiesPage = () => {
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                             Safety Superstar
                           </div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Building streaks... 🔥</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Building streaks... 🔥</div>
                         </div>
                       </div>
                     </div>
@@ -673,7 +673,7 @@ const BestiesPage = () => {
                           <div className="font-display text-sm font-bold bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
                             Streak Queen
                           </div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500 italic">Tracking victories... 💪</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Tracking victories... 💪</div>
                         </div>
                       </div>
                     </div>
