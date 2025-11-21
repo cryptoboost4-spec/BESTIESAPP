@@ -537,7 +537,7 @@ const CheckInCard = ({ checkIn }) => {
     });
   };
 
-  const handleUpdateLocation = async () => {
+  const handleUpdateLocation = async (retryCount = 0) => {
     if (!navigator.geolocation) {
       toast.error('Geolocation is not supported by your browser');
       return;
@@ -547,16 +547,18 @@ const CheckInCard = ({ checkIn }) => {
     haptic.medium();
 
     try {
-      // Get current position
+      // Get current position with improved settings
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+          enableHighAccuracy: true,      // Use GPS for better accuracy
+          timeout: 30000,                 // 30 second timeout (increased from 10s)
+          maximumAge: 0                   // Don't use cached location
         });
       });
 
-      const { latitude, longitude } = position.coords;
+      const { latitude, longitude, accuracy } = position.coords;
+
+      console.log(`Location accuracy: ${accuracy} meters`);
 
       // Use reverse geocoding to get address
       const response = await fetch(
@@ -564,7 +566,7 @@ const CheckInCard = ({ checkIn }) => {
       );
       const data = await response.json();
 
-      let locationName = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      let locationName = `GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
       if (data.results && data.results.length > 0) {
         locationName = data.results[0].formatted_address;
       }
@@ -573,20 +575,39 @@ const CheckInCard = ({ checkIn }) => {
       await updateDoc(doc(db, 'checkins', checkIn.id), {
         location: locationName,
         gpsCoords: { lat: latitude, lng: longitude },
+        locationAccuracy: accuracy,
         locationUpdatedAt: Timestamp.now(),
       });
 
       setCurrentLocation(locationName);
-      toast.success('Location updated!');
+      toast.success(`Location updated! (Accuracy: ${Math.round(accuracy)}m)`);
     } catch (error) {
       console.error('Error updating location:', error);
-      if (error.code === 1) {
-        toast.error('Location permission denied. Please enable location access.');
-      } else {
-        toast.error('Failed to update location');
+
+      // Retry logic for timeout errors
+      if (error.code === 3 && retryCount < 2) {
+        toast(`Location timeout. Retrying... (${retryCount + 1}/2)`, {
+          icon: '🔄',
+          duration: 2000
+        });
+        setTimeout(() => handleUpdateLocation(retryCount + 1), 2000);
+        return;
       }
-    } finally {
+
+      if (error.code === 1) {
+        toast.error('Location permission denied. Please enable location access in your browser settings.', { duration: 6000 });
+      } else if (error.code === 2) {
+        toast.error('Location unavailable. Make sure location services are enabled on your device.', { duration: 5000 });
+      } else if (error.code === 3) {
+        toast.error('Location request timed out. Please try again or move to an area with better GPS signal.', { duration: 5000 });
+      } else {
+        toast.error('Failed to update location. Please try again.');
+      }
       setUpdatingLocation(false);
+    } finally {
+      if (retryCount === 0) {
+        setUpdatingLocation(false);
+      }
     }
   };
 
@@ -728,6 +749,14 @@ const CheckInCard = ({ checkIn }) => {
             Photos ({photoURLs.length}/5)
           </div>
 
+          {/* Placeholder broken image when no photos */}
+          {photoURLs.length === 0 && (
+            <div className={`mb-3 p-8 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-gray-100'} flex flex-col items-center justify-center border-2 border-dashed ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+              <div className="text-6xl mb-2 opacity-50">🖼️</div>
+              <div className={`text-sm font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No photos yet</div>
+            </div>
+          )}
+
           {/* Photo grid */}
           {photoURLs.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
@@ -848,6 +877,24 @@ const CheckInCard = ({ checkIn }) => {
           >
             📍 {updatingLocation ? 'Updating Location...' : 'Note Current Location'}
           </button>
+        </div>
+      )}
+
+      {/* Meeting With & Social Media */}
+      {(checkIn.meetingWith || checkIn.socialMediaLinks) && (
+        <div className="mb-4">
+          {checkIn.meetingWith && (
+            <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-50'} p-3 rounded-xl mb-2`}>
+              <div className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-1`}>MEETING WITH:</div>
+              <p className="text-sm text-text-primary font-semibold">{checkIn.meetingWith}</p>
+            </div>
+          )}
+          {checkIn.socialMediaLinks && (
+            <div className={`${isDark ? 'bg-purple-900/30' : 'bg-purple-50'} p-3 rounded-xl border-2 ${isDark ? 'border-purple-800' : 'border-purple-200'}`}>
+              <div className={`text-xs font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'} mb-1`}>THEIR SOCIAL MEDIA:</div>
+              <p className="text-sm text-text-primary">{checkIn.socialMediaLinks}</p>
+            </div>
+          )}
         </div>
       )}
 
