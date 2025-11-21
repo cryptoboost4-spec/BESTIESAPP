@@ -54,7 +54,8 @@ export const BACKGROUNDS = {
       gradient: 'linear-gradient(135deg, #9DC183 0%, #E8F5E9 100%)',
       pattern: 'geometric',
       description: 'Fresh green with geometric touches'
-    },
+    }
+  ],
 
   // 💄 BEAUTY & GLAM
   beauty: [
