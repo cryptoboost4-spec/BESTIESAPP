@@ -70,11 +70,6 @@ const HomePage = () => {
     '📱 Want to chat'
   ];
 
-  // Random supportive message (changes on each page load)
-  const welcomeMessage = useMemo(() => {
-    return SUPPORTIVE_MESSAGES[Math.floor(Math.random() * SUPPORTIVE_MESSAGES.length)];
-  }, []); // Empty deps = only runs once on mount
-
   // Rotate through example messages every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {

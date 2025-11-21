@@ -21,8 +21,6 @@ import BestieCard from '../components/BestieCard';
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
-import ActivityFilters from '../components/besties/ActivityFilters';
-import ActivityFeed from '../components/besties/ActivityFeed';
 import EmptyState from '../components/besties/EmptyState';
 import toast from 'react-hot-toast';
 
@@ -35,12 +33,8 @@ const BestiesPage = () => {
   const [loading, setLoading] = useState(true);
 
   // Activity feed state
-  const [activityFeed, setActivityFeed] = useState([]);
   const [missedCheckIns, setMissedCheckIns] = useState([]);
   const [requestsForAttention, setRequestsForAttention] = useState([]);
-
-  // Filter state
-  const [activeFilter, setActiveFilter] = useState('all');
 
   // Rankings period state (weekly, monthly, yearly)
   const [rankingsPeriod, setRankingsPeriod] = useState('weekly');
@@ -50,7 +44,6 @@ const BestiesPage = () => {
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
-  const [reactions, setReactions] = useState({}); // { checkInId: [reactions] }
 
   // Load besties
   useEffect(() => {
@@ -125,15 +118,14 @@ const BestiesPage = () => {
     };
   }, [currentUser]);
 
-  // Load activity feed - only when page is visible
+  // Load needs attention data - only when page is visible
   useEffect(() => {
     if (!currentUser || besties.length === 0) return;
 
-    const loadActivityFeed = async () => {
+    const loadNeedsAttention = async () => {
       // Only load if page is visible
       if (document.hidden) return;
 
-      const activities = [];
       const missed = [];
       const attentionRequests = [];
 
@@ -146,7 +138,7 @@ const BestiesPage = () => {
 
       for (const bestieId of bestieIds) {
         try {
-          // Get recent check-ins
+          // Get recent check-ins to find missed ones
           const checkInsQuery = query(
             collection(db, 'checkins'),
             where('userId', '==', bestieId),
@@ -157,24 +149,14 @@ const BestiesPage = () => {
 
           const checkInsSnapshot = await getDocs(checkInsQuery);
 
-          checkInsSnapshot.forEach((doc) => {
-            const data = doc.data();
+          checkInsSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
             const bestie = besties.find(b => b.userId === bestieId);
-
-            activities.push({
-              id: doc.id,
-              type: 'checkin',
-              checkInData: data,
-              userName: bestie?.name || 'Bestie',
-              userId: bestieId,
-              timestamp: data.createdAt?.toDate() || new Date(),
-              status: data.status,
-            });
 
             // Check for missed check-ins
             if (data.status === 'alerted') {
               missed.push({
-                id: doc.id,
+                id: docSnap.id,
                 userName: bestie?.name || 'Bestie',
                 userId: bestieId,
                 checkInData: data,
@@ -198,35 +180,10 @@ const BestiesPage = () => {
               });
             }
           }
-
-          // Load recent achievements/badges
-          const badgesDoc = await getDoc(doc(db, 'badges', bestieId));
-          if (badgesDoc.exists()) {
-            const badgesData = badgesDoc.data();
-            const recentBadges = badgesData.badges?.filter(b => {
-              const earnedDate = b.earnedAt?.toDate();
-              return earnedDate && earnedDate > twoDaysAgo;
-            }) || [];
-
-            recentBadges.forEach(badge => {
-              const bestie = besties.find(b => b.userId === bestieId);
-              activities.push({
-                id: `badge-${bestieId}-${badge.id}`,
-                type: 'badge',
-                userName: bestie?.name || 'Bestie',
-                userId: bestieId,
-                badge: badge,
-                timestamp: badge.earnedAt?.toDate() || new Date(),
-              });
-            });
-          }
         } catch (error) {
           console.error('Error loading activity for bestie:', error);
         }
       }
-
-      // Sort activities by timestamp (newest first)
-      activities.sort((a, b) => b.timestamp - a.timestamp);
 
       // Filter alerts to only show selected besties (featured circle)
       const featuredCircle = userData?.featuredCircle || [];
@@ -237,18 +194,17 @@ const BestiesPage = () => {
         ? attentionRequests.filter(a => featuredCircle.includes(a.userId))
         : attentionRequests;
 
-      setActivityFeed(activities);
       setMissedCheckIns(filteredMissed);
       setRequestsForAttention(filteredAttention);
     };
 
     // Initial load
-    loadActivityFeed();
+    loadNeedsAttention();
 
     // Refresh when page becomes visible
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        loadActivityFeed();
+        loadNeedsAttention();
       }
     };
 
@@ -274,68 +230,10 @@ const BestiesPage = () => {
   }; */
 
   // Get visual indicators for a bestie
-  const getBestieIndicators = (bestie) => {
-    const indicators = [];
-
-    // Check recent activity for indicators
-    const bestieActivities = activityFeed.filter(a => a.userId === bestie.userId);
-
-    // Fast responder - if they have activity in last 5 min
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
-    if (bestieActivities.some(a => a.timestamp > fiveMinAgo)) {
-      indicators.push({ icon: '⚡', tooltip: 'Fast responder' });
-    }
-
-    // Reliable - if they have high completion rate (would need to calculate from Firestore)
-    const completedCount = bestieActivities.filter(a => a.status === 'completed').length;
-    if (completedCount > 5) {
-      indicators.push({ icon: '🛡️', tooltip: 'Very reliable' });
-    }
-
-    // Active streak - if they have check-ins multiple days in a row
-    indicators.push({ icon: '🔥', tooltip: '7-day streak' });
-
-    // Night check-ins - if they often check in at night
-    const nightCheckIns = bestieActivities.filter(a => {
-      const hour = a.timestamp.getHours();
-      return hour >= 21 || hour <= 6;
-    });
-    if (nightCheckIns.length > 2) {
-      indicators.push({ icon: '🌙', tooltip: 'Night owl' });
-    }
-
-    return indicators.slice(0, 3); // Max 3 indicators
+  const getBestieIndicators = () => {
+    // Simplified - can be expanded later with real metrics
+    return [];
   };
-
-  // Load reactions for check-ins
-  useEffect(() => {
-    if (activityFeed.length === 0) return;
-
-    const loadReactions = async () => {
-      const reactionsData = {};
-
-      for (const activity of activityFeed) {
-        if (activity.type === 'checkin') {
-          try {
-            const reactionsSnapshot = await getDocs(
-              collection(db, 'checkins', activity.id, 'reactions')
-            );
-            reactionsData[activity.id] = reactionsSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-          } catch (error) {
-            console.error('Error loading reactions:', error);
-            reactionsData[activity.id] = [];
-          }
-        }
-      }
-
-      setReactions(reactionsData);
-    };
-
-    loadReactions();
-  }, [activityFeed]);
 
   // Load comments for selected check-in
   useEffect(() => {
@@ -361,45 +259,6 @@ const BestiesPage = () => {
 
     loadComments();
   }, [selectedCheckIn, showComments]);
-
-  // Add reaction to check-in
-  const addReaction = async (checkInId, emoji) => {
-    try {
-      // Check if user already reacted with this emoji
-      const existingReaction = reactions[checkInId]?.find(
-        r => r.userId === currentUser.uid && r.emoji === emoji
-      );
-
-      if (existingReaction) {
-        toast('You already reacted with this!', { icon: emoji });
-        return;
-      }
-
-      await addDoc(collection(db, 'checkins', checkInId, 'reactions'), {
-        userId: currentUser.uid,
-        userName: userData?.displayName || 'Anonymous',
-        emoji: emoji,
-        timestamp: Timestamp.now(),
-      });
-
-      // Reload reactions for this check-in
-      const reactionsSnapshot = await getDocs(
-        collection(db, 'checkins', checkInId, 'reactions')
-      );
-      setReactions(prev => ({
-        ...prev,
-        [checkInId]: reactionsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      }));
-
-      toast.success('Reaction added!');
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-      toast.error('Failed to add reaction');
-    }
-  };
 
   // Add comment to check-in
   const addComment = async () => {
@@ -433,50 +292,18 @@ const BestiesPage = () => {
     }
   };
 
-  // Filter besties
+  // Filter besties - simplified version
   const getFilteredBesties = () => {
-    let filtered = [...besties];
-
-    switch (activeFilter) {
-      case 'circle':
-        filtered = filtered.filter(b => b.isFavorite);
-        break;
-      case 'active':
-        // Filter besties with check-ins in last hour
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-        filtered = filtered.filter(b =>
-          activityFeed.some(a => a.userId === b.userId && a.timestamp > oneHourAgo && a.status === 'active')
-        );
-        break;
-      default:
-        // Sort by most recent activity first, then favorites, then alphabetical
-        filtered.sort((a, b) => {
-          // Check for recent activity
-          const aRecent = activityFeed.find(f => f.userId === a.userId);
-          const bRecent = activityFeed.find(f => f.userId === b.userId);
-
-          // If both have recent activity, sort by timestamp
-          if (aRecent && bRecent) {
-            return bRecent.timestamp - aRecent.timestamp;
-          }
-
-          // If one has recent activity and the other doesn't
-          if (aRecent && !bRecent) return -1;
-          if (!aRecent && bRecent) return 1;
-
-          // If neither has recent activity, favorites first
-          if (a.isFavorite && !b.isFavorite) return -1;
-          if (!a.isFavorite && b.isFavorite) return 1;
-
-          // Finally, alphabetical
-          return (a.name || '').localeCompare(b.name || '');
-        });
-    }
-
+    const filtered = [...besties];
+    // Sort: favorites first, then alphabetical
+    filtered.sort((a, b) => {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
     return filtered;
   };
 
-  // const rankings = getPowerRankings(); // TODO: Implement rankings when metrics are available
   const filteredBesties = getFilteredBesties();
 
   if (loading) {
