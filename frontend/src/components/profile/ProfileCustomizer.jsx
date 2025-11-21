@@ -20,7 +20,6 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [customNameFont, setCustomNameFont] = useState(userData?.profile?.customization?.customNameFont || '');
   const [customBioFont, setCustomBioFont] = useState(userData?.profile?.customization?.customBioFont || '');
   const [saving, setSaving] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const [backgroundSearch, setBackgroundSearch] = useState('');
   const [previewZoom, setPreviewZoom] = useState(1);
   const [history, setHistory] = useState([]);
@@ -194,7 +193,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, historyIndex, history, onClose]);
+  }, [activeTab, historyIndex, history, onClose, handleSave, handleUndo, handleRedo]);
 
   const handleSave = async () => {
     setSaving(true);
