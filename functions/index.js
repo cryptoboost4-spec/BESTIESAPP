@@ -60,12 +60,21 @@ exports.extendCheckIn = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   }
-  
+
   const { checkInId, additionalMinutes } = data;
-  
+
+  // Validate additionalMinutes - only allow the button values
+  const validExtensions = [15, 30, 60];
+  if (!validExtensions.includes(additionalMinutes)) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Extension must be 15, 30, or 60 minutes'
+    );
+  }
+
   const checkInRef = db.collection('checkins').doc(checkInId);
   const checkIn = await checkInRef.get();
-  
+
   if (!checkIn.exists || checkIn.data().userId !== context.auth.uid) {
     throw new functions.https.HttpsError('permission-denied', 'Invalid check-in');
   }
@@ -924,6 +933,17 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
 
   if (!amount || !type) {
     throw new functions.https.HttpsError('invalid-argument', 'Missing amount or type');
+  }
+
+  // Validate amount - only allow specific values
+  const validAmounts = type === 'subscription' ? [1] : [1, 5, 10];
+  if (!validAmounts.includes(amount)) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      type === 'subscription'
+        ? 'SMS subscription must be $1/month'
+        : 'Donation amount must be $1, $5, or $10 per month'
+    );
   }
 
   const userDoc = await db.collection('users').doc(context.auth.uid).get();
