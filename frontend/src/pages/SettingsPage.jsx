@@ -861,7 +861,7 @@ const SettingsPage = () => {
                 <div className="text-sm text-text-secondary">
                   {userData?.settings?.holdData
                     ? 'Data kept indefinitely'
-                    : 'Data deleted after 24 hours'}
+                    : 'Data deleted after 7 days'}
                 </div>
               </div>
               <button
