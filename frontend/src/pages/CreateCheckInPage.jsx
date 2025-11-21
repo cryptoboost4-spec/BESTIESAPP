@@ -406,20 +406,18 @@ const CreateCheckInPage = () => {
   // Auto-submit quick check-ins after besties are loaded
   useEffect(() => {
     if (shouldAutoSubmit && selectedBesties.length > 0 && !loading) {
-      // Besties are loaded and auto-selected, now trigger submit
+      // Besties are loaded and auto-selected, now trigger submit IMMEDIATELY
       console.log('Auto-submitting quick check-in with besties:', selectedBesties);
 
-      // Small delay to ensure all state is ready
-      setTimeout(() => {
-        const submitBtn = document.querySelector('#create-checkin-submit-btn');
-        if (submitBtn && !submitBtn.disabled) {
-          console.log('Clicking submit button');
-          submitBtn.click();
-          setShouldAutoSubmit(false); // Reset flag
-        } else {
-          console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
-        }
-      }, 200);
+      // Trigger submit immediately without delay
+      const submitBtn = document.querySelector('#create-checkin-submit-btn');
+      if (submitBtn && !submitBtn.disabled) {
+        console.log('Clicking submit button');
+        submitBtn.click();
+        setShouldAutoSubmit(false); // Reset flag
+      } else {
+        console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
+      }
     }
   }, [shouldAutoSubmit, selectedBesties, loading]);
 
@@ -574,7 +572,14 @@ const CreateCheckInPage = () => {
           const geocoder = new window.google.maps.Geocoder();
           geocoder.geocode({ location: coords }, (results, status) => {
             if (status === 'OK' && results[0]) {
-              setLocationInput(results[0].formatted_address);
+              const address = results[0].formatted_address;
+              setLocationInput(address); // UPDATE: This now updates the input field
+              console.log('Pin placed, location updated to:', address);
+            } else {
+              // Fallback to coordinates if geocoding fails
+              const coordsString = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
+              setLocationInput(coordsString);
+              console.log('Pin placed, using coordinates:', coordsString);
             }
           });
 
@@ -1036,7 +1041,7 @@ const CreateCheckInPage = () => {
     <div className="min-h-screen bg-pattern">
       <Header />
 
-      <div className="max-w-2xl mx-auto p-4 pb-20">
+      <div className={`max-w-2xl mx-auto p-4 pb-20 ${shouldAutoSubmit ? 'opacity-0 pointer-events-none' : ''}`}>
         <div className="mb-6">
           <h1 className="text-3xl font-display text-text-primary mb-2">Create Check-In</h1>
           <p className="text-text-secondary">{getSupportiveMessage()}</p>
