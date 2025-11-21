@@ -20,7 +20,6 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [customNameFont, setCustomNameFont] = useState(userData?.profile?.customization?.customNameFont || '');
   const [customBioFont, setCustomBioFont] = useState(userData?.profile?.customization?.customBioFont || '');
   const [saving, setSaving] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
 
   // Popular Google Fonts list
   const POPULAR_FONTS = [
