@@ -6,9 +6,9 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs, getDoc, orderBy, limit } from 'firebase/firestore';
 import Header from '../components/Header';
 import CheckInCard from '../components/CheckInCard';
-import QuickButtons from '../components/QuickButtons';
+import QuickCheckInButtons from '../components/QuickCheckInButtons';
+import BestieCircleStatus from '../components/BestieCircleStatus';
 import DonationCard from '../components/DonationCard';
-import TemplateSelector from '../components/TemplateSelector';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
 import ProfileWithBubble from '../components/ProfileWithBubble';
@@ -48,7 +48,6 @@ const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activeCheckIns, setActiveCheckIns] = useState([]);
-  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Request Attention state
@@ -117,7 +116,7 @@ const HomePage = () => {
     );
 
     const unsubscribeCheckIns = onSnapshot(
-      checkInsQuery, 
+      checkInsQuery,
       (snapshot) => {
         const checkIns = [];
         snapshot.forEach((doc) => {
@@ -133,30 +132,8 @@ const HomePage = () => {
       }
     );
 
-    // Listen to templates
-    const templatesQuery = query(
-      collection(db, 'templates'),
-      where('userId', '==', currentUser.uid)
-    );
-
-    const unsubscribeTemplates = onSnapshot(
-      templatesQuery, 
-      (snapshot) => {
-        const temps = [];
-        snapshot.forEach((doc) => {
-          temps.push({ id: doc.id, ...doc.data() });
-        });
-        setTemplates(temps);
-      },
-      (error) => {
-        console.error('Error loading templates:', error);
-        setTemplates([]);
-      }
-    );
-
     return () => {
       unsubscribeCheckIns();
-      unsubscribeTemplates();
     };
   }, [currentUser]);
 
@@ -247,14 +224,6 @@ const HomePage = () => {
     loadAlerts();
   }, [currentUser, userData]);
 
-  const handleQuickCheckIn = (minutes) => {
-    navigate('/create', { state: { quickMinutes: minutes } });
-  };
-
-  const handleTemplateSelect = (template) => {
-    navigate('/create', { state: { template } });
-  };
-
   const handleRefresh = async () => {
     // Reload user data by forcing a re-fetch
     // The Firestore listeners will automatically update when data changes
@@ -308,18 +277,10 @@ const HomePage = () => {
         {/* Quick Check-In Buttons */}
         {activeCheckIns.length === 0 && (
           <>
-            <QuickButtons onQuickCheckIn={handleQuickCheckIn} />
+            <QuickCheckInButtons />
 
-            {/* Create Custom Check-In Button - Moved here! */}
-            <button
-              onClick={() => {
-                haptic.light();
-                navigate('/create');
-              }}
-              className="w-full btn btn-primary text-lg py-4 mb-4"
-            >
-              ✨ Create Custom Check-In
-            </button>
+            {/* Bestie Circle Status */}
+            <BestieCircleStatus userId={currentUser?.uid} />
 
             {/* Request Attention Button */}
             {userData?.requestAttention?.active ? (
@@ -422,8 +383,8 @@ const HomePage = () => {
           </>
         )}
 
-        {/* Templates */}
-        {templates.length > 0 && activeCheckIns.length === 0 && (
+        {/* Templates - Hidden for now */}
+        {/* {templates.length > 0 && activeCheckIns.length === 0 && (
           <div className="mb-6">
             <h2 className="text-xl font-display text-text-primary mb-4">Your Templates</h2>
             <TemplateSelector
@@ -431,25 +392,25 @@ const HomePage = () => {
               onSelect={handleTemplateSelect}
             />
           </div>
-        )}
+        )} */}
 
         {/* Stats Card */}
         <div className="card p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
             <button
-              onClick={() => navigate('/history')}
+              onClick={() => navigate('/profile')}
               className="text-primary font-semibold hover:underline text-sm"
             >
-              View History →
+              View Profile →
             </button>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <div className="text-3xl font-display text-primary">
                 {userData?.stats?.completedCheckIns || 0}
               </div>
-              <div className="text-sm text-text-secondary">Safe Check-ins</div>
+              <div className="text-sm text-text-secondary">Check-ins</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-display text-secondary">
@@ -458,10 +419,16 @@ const HomePage = () => {
               <div className="text-sm text-text-secondary">Besties</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-display text-accent">
-                {activeCheckIns.length}
+              <div className="text-3xl font-display text-orange-500">
+                {userData?.stats?.currentStreak || 0} 🔥
               </div>
-              <div className="text-sm text-text-secondary">Active Now</div>
+              <div className="text-sm text-text-secondary">Current Streak</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-display text-accent">
+                {userData?.stats?.longestStreak || 0} 👑
+              </div>
+              <div className="text-sm text-text-secondary">Longest Streak</div>
             </div>
           </div>
         </div>
