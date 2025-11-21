@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
+import haptic from '../utils/hapticFeedback';
 
 /**
- * Smart Add to Home Screen prompt
+ * Enhanced PWA Install Prompt
+ * - Captures beforeinstallprompt event for native install
  * - Shows after first check-in completion
- * - Detects iOS vs Android
- * - Shows device-specific instructions with animations
- * - Only shows once per user
+ * - Detects iOS vs Android vs Desktop
+ * - Uses native prompt when available, falls back to manual instructions
+ * - Retry logic: if dismissed, ask again after next check-in
  */
 const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -15,10 +17,37 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
   const [isAndroid, setIsAndroid] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
   const [isChrome, setIsChrome] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canUseNativePrompt, setCanUseNativePrompt] = useState(false);
+
+  // Capture beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent Chrome from automatically showing the prompt
+      e.preventDefault();
+      console.log('beforeinstallprompt event captured');
+      // Save the event for later use
+      setDeferredPrompt(e);
+      setCanUseNativePrompt(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Check if app is already installed
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
+      setDeferredPrompt(null);
+      setCanUseNativePrompt(false);
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   useEffect(() => {
-    // Don't show if user dismissed it before
-    if (userData?.settings?.dismissedAddToHomeScreen) {
+    // Don't show if user permanently dismissed it
+    if (userData?.settings?.dismissedAddToHomeScreen === true) {
       return;
     }
 
@@ -39,16 +68,34 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
                        window.navigator.standalone === true;
 
-    // Only show if:
-    // 1. Not already installed
-    // 2. On mobile (iOS or Android)
-    // 3. Has completed at least one check-in
-    // 4. Using appropriate browser (Safari for iOS, Chrome for Android)
-    if (!isInstalled &&
-        (detectedIOS || detectedAndroid) &&
-        userData?.stats?.completedCheckIns > 0 &&
-        ((detectedIOS && detectedSafari) || (detectedAndroid && detectedChrome))) {
+    if (isInstalled) {
+      return;
+    }
 
+    // Determine if we should show the prompt
+    const shouldShow = () => {
+      const completedCheckIns = userData?.stats?.completedCheckIns || 0;
+      const lastDismissedAt = userData?.settings?.lastDismissedInstallPrompt;
+
+      // Show after first check-in
+      if (completedCheckIns >= 1) {
+        // If never dismissed, show it
+        if (!lastDismissedAt) {
+          return true;
+        }
+
+        // If dismissed before, check if user has completed another check-in since
+        const dismissedAtCheckInCount = userData?.settings?.dismissedAtCheckInCount || 0;
+        if (completedCheckIns > dismissedAtCheckInCount) {
+          // User completed another check-in since dismissing, ask again
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    if (shouldShow()) {
       // Show prompt after small delay
       setTimeout(() => {
         setShowPrompt(true);
@@ -56,10 +103,59 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
     }
   }, [userData]);
 
-  const handleDismiss = async () => {
-    setShowPrompt(false);
+  const handleInstall = async () => {
+    if (deferredPrompt && canUseNativePrompt) {
+      // Use native browser prompt
+      haptic.medium();
+      deferredPrompt.prompt();
 
-    // Save to Firestore so we don't show again
+      // Wait for the user's response
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        setShowPrompt(false);
+        // Save that user installed
+        if (currentUser) {
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            'settings.installedPWA': true,
+          });
+        }
+      } else if (outcome === 'dismissed') {
+        console.log('User dismissed the install prompt');
+        handleNoThanks();
+      }
+
+      // Clear the deferredPrompt
+      setDeferredPrompt(null);
+      setCanUseNativePrompt(false);
+    }
+  };
+
+  const handleNoThanks = async () => {
+    setShowPrompt(false);
+    haptic.light();
+
+    // Save dismissal with current check-in count
+    // This allows us to ask again after next check-in
+    if (currentUser) {
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          'settings.lastDismissedInstallPrompt': new Date(),
+          'settings.dismissedAtCheckInCount': userData?.stats?.completedCheckIns || 0,
+        });
+      } catch (error) {
+        console.error('Error saving dismissal:', error);
+      }
+    }
+  };
+
+  const handleDismissForever = async () => {
+    setShowPrompt(false);
+    haptic.light();
+
+    // Save to Firestore so we never show again
     if (currentUser) {
       try {
         await updateDoc(doc(db, 'users', currentUser.uid), {
@@ -71,16 +167,11 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
     }
   };
 
-  const handleLater = () => {
-    setShowPrompt(false);
-    // Don't save to Firestore - will show again next session
-  };
-
   if (!showPrompt) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-white rounded-t-3xl md:rounded-3xl max-w-md w-full p-6 animate-slide-up shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 rounded-t-3xl md:rounded-3xl max-w-md w-full p-6 animate-slide-up shadow-2xl">
         {/* Header */}
         <div className="text-center mb-4">
           <div className="text-4xl mb-2">📱</div>
@@ -92,10 +183,25 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
           </p>
         </div>
 
-        {/* iOS Instructions */}
+        {/* Native Prompt Button (Chrome, Edge, Samsung Internet, Opera) */}
+        {canUseNativePrompt && deferredPrompt && (
+          <div className="mb-6">
+            <button
+              onClick={handleInstall}
+              className="w-full btn btn-primary text-lg py-4"
+            >
+              📲 Install App
+            </button>
+            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+              One tap to add Besties to your home screen!
+            </p>
+          </div>
+        )}
+
+        {/* iOS Instructions (Safari only, no native prompt available) */}
         {isIOS && isSafari && (
-          <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-            <h3 className="font-semibold text-blue-900 mb-3 text-center">📲 Quick Setup:</h3>
+          <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 text-center">📲 Quick Setup:</h3>
 
             <div className="space-y-3">
               {/* Step 1 */}
@@ -104,7 +210,7 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
                   1
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     Tap the <strong>Share button</strong> at the bottom of Safari
                   </p>
                   {/* Animated iOS share icon */}
@@ -124,7 +230,7 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
                   2
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     Scroll down and tap <strong>"Add to Home Screen"</strong>
                   </p>
                   {/* Animated finger pointing down */}
@@ -140,20 +246,20 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
                   3
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     Tap <strong>"Add"</strong> in the top right
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">✅ Done! Find Besties on your home screen</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">✅ Done! Find Besties on your home screen</p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Android Instructions */}
-        {isAndroid && isChrome && (
-          <div className="mb-6 p-4 bg-gradient-to-br from-green-50 to-blue-50 rounded-xl border-2 border-green-200">
-            <h3 className="font-semibold text-green-900 mb-3 text-center">📲 Quick Setup:</h3>
+        {/* Android Manual Instructions (fallback when native prompt not available) */}
+        {isAndroid && isChrome && !canUseNativePrompt && (
+          <div className="mb-6 p-4 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30 rounded-xl border-2 border-green-200 dark:border-green-700">
+            <h3 className="font-semibold text-green-900 dark:text-green-100 mb-3 text-center">📲 Quick Setup:</h3>
 
             <div className="space-y-3">
               {/* Step 1 */}
@@ -162,7 +268,7 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
                   1
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     Tap the <strong>menu button</strong> (⋮) at the top right
                   </p>
                   {/* Animated dots */}
@@ -182,7 +288,7 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
                   2
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>
                   </p>
                   {/* Animated finger pointing */}
@@ -198,10 +304,10 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
                   3
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     Tap <strong>"Install"</strong>
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">✅ Done! Find Besties on your home screen</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">✅ Done! Find Besties on your home screen</p>
                 </div>
               </div>
             </div>
@@ -210,31 +316,53 @@ const AddToHomeScreenPrompt = ({ currentUser, userData }) => {
 
         {/* Wrong browser warning for iOS */}
         {isIOS && !isSafari && (
-          <div className="mb-6 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-300">
-            <p className="text-sm text-yellow-900 text-center">
+          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-xl border-2 border-yellow-300 dark:border-yellow-700">
+            <p className="text-sm text-yellow-900 dark:text-yellow-100 text-center">
               ⚠️ You're using {isChrome ? 'Chrome' : 'a browser'}. To add Besties to your home screen, please open this page in <strong>Safari</strong>.
             </p>
           </div>
         )}
 
+        {/* Desktop Instructions */}
+        {!isIOS && !isAndroid && canUseNativePrompt && (
+          <div className="mb-6">
+            <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+              Click the button above to install Besties on your computer for quick access!
+            </p>
+          </div>
+        )}
+
         {/* Buttons */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-3">
+            <button
+              onClick={handleNoThanks}
+              className="flex-1 btn btn-secondary"
+            >
+              No Thanks
+            </button>
+            {!canUseNativePrompt && (
+              <button
+                onClick={handleDismissForever}
+                className="flex-1 btn btn-primary"
+              >
+                Got It!
+              </button>
+            )}
+          </div>
           <button
-            onClick={handleLater}
-            className="flex-1 btn btn-secondary"
+            onClick={handleDismissForever}
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 py-1"
           >
-            Maybe Later
-          </button>
-          <button
-            onClick={handleDismiss}
-            className="flex-1 btn btn-primary"
-          >
-            Got It!
+            Don't show this again
           </button>
         </div>
 
-        <p className="text-xs text-center text-gray-500 mt-3">
-          This makes Besties faster and easier to access 💜
+        <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-3">
+          {canUseNativePrompt
+            ? "This makes Besties faster and easier to access 💜"
+            : "Installing makes Besties work offline and load faster 💜"
+          }
         </p>
       </div>
 
