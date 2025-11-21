@@ -6,6 +6,7 @@ import { db, storage } from '../services/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
+import html2canvas from 'html2canvas';
 import Header from '../components/Header';
 import BestieCircle from '../components/BestieCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
@@ -248,6 +249,68 @@ const ProfilePage = () => {
     }
   };
 
+  const handleShareProfileCard = async () => {
+    const profileCard = document.getElementById('profile-card-shareable');
+    if (!profileCard) {
+      toast.error('Could not capture profile card');
+      return;
+    }
+
+    try {
+      toast('Generating image...', { icon: '📸' });
+
+      // Capture the profile card as canvas
+      const canvas = await html2canvas(profileCard, {
+        backgroundColor: null,
+        scale: 2, // Higher quality
+        logging: false,
+      });
+
+      // Convert to blob
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to generate image');
+          return;
+        }
+
+        // Try to share via Web Share API if available
+        if (navigator.share && navigator.canShare({ files: [new File([blob], 'profile.png', { type: 'image/png' })] })) {
+          const file = new File([blob], 'my-besties-profile.png', { type: 'image/png' });
+          navigator.share({
+            title: 'My Besties Profile',
+            text: 'Check out my Besties profile! 💜',
+            files: [file],
+          }).then(() => {
+            toast.success('Profile card shared! 💜');
+          }).catch((err) => {
+            if (err.name !== 'AbortError') {
+              // User cancelled, fallback to download
+              downloadImage(blob);
+            }
+          });
+        } else {
+          // Fallback: download the image
+          downloadImage(blob);
+        }
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error sharing profile card:', error);
+      toast.error('Failed to share profile card');
+    }
+  };
+
+  const downloadImage = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'my-besties-profile.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Profile card downloaded! 📥');
+  };
+
   const handleToggleFeaturedBadge = async (badgeId) => {
     let newFeaturedBadges = [...featuredBadgeIds];
 
@@ -441,6 +504,7 @@ const ProfilePage = () => {
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
         {/* Profile Header - Beautiful Profile Card */}
         <div
+          id="profile-card-shareable"
           className={`card p-8 mb-6 text-center relative overflow-hidden shadow-2xl profile-card-aura-${currentAura}`}
           style={{ background: currentGradient }}
         >
@@ -460,6 +524,15 @@ const ProfilePage = () => {
               title="Edit profile"
             >
               ✏️
+            </button>
+
+            {/* Share Profile Card as Image */}
+            <button
+              onClick={handleShareProfileCard}
+              className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
+              title="Share profile card as image"
+            >
+              📸
             </button>
 
             {/* Color Picker Button */}
