@@ -186,8 +186,6 @@ const CreateCheckInPage = () => {
   const [notesExpanded, setNotesExpanded] = useState(false); // Track if notes section is expanded
   const [photosExpanded, setPhotosExpanded] = useState(false); // Track if photos section is expanded
   const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false); // Flag for auto-submit after besties load
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false); // Track if location dropdown is visible
-  const [socialMediaExpanded, setSocialMediaExpanded] = useState(false); // Track if social media input is expanded
 
   // Map default center (San Francisco)
   const mapCenter = { lat: 37.7749, lng: -122.4194 };
@@ -197,6 +195,23 @@ const CreateCheckInPage = () => {
   const fileInputRef = useRef(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
+
+  // Get supportive, girl-best-friend message
+  const getSupportiveMessage = () => {
+    const messages = [
+      "Let's make sure you're safe out there, babe! 💕",
+      "Your safety is everything to us! Let's set this up together 🤗",
+      "We've got your back, bestie! Let's get you protected ✨",
+      "Setting up your safety net - because you matter so much! 💜",
+      "Let's make sure you can have fun worry-free, love! 🌟",
+      "Your besties are here to watch over you! Let's do this 💪",
+      "Keep yourself safe while living your best life! 🦋",
+      "We're all about keeping our girl protected! Let's go 💝",
+    ];
+    // Use hour of day to get consistent but varied messages
+    const hour = new Date().getHours();
+    return messages[hour % messages.length];
+  };
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -573,33 +588,6 @@ const CreateCheckInPage = () => {
         }
       });
 
-      // Handle map drag - update location instantly when map is dragged
-      mapInstanceRef.current.addListener('dragend', () => {
-        if (!mapLocked) {
-          // Get the center of the map (where the pin is)
-          const mapCenter = mapInstanceRef.current.getCenter();
-          const coords = { lat: mapCenter.lat(), lng: mapCenter.lng() };
-
-          // Save the center coordinates
-          setGpsCoords(coords);
-
-          // Reverse geocode to get address and update search bar
-          const geocoder = new window.google.maps.Geocoder();
-          geocoder.geocode({ location: coords }, (results, status) => {
-            if (status === 'OK' && results[0]) {
-              const address = results[0].formatted_address;
-              setLocationInput(address);
-              console.log('Map dragged, location updated to:', address);
-            } else {
-              // Fallback to coordinates if geocoding fails
-              const coordsString = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
-              setLocationInput(coordsString);
-              console.log('Map dragged, using coordinates:', coordsString);
-            }
-          });
-        }
-      });
-
       // Show reminder on single click when locked
       mapInstanceRef.current.addListener('click', () => {
         if (mapLocked) {
@@ -944,7 +932,7 @@ const CreateCheckInPage = () => {
           const now = new Date();
           const alertTime = new Date(now.getTime() + duration * 60 * 1000);
 
-          // Upload photos if provided - only if user actually selected photos
+          // Upload photos if provided
           const photoURLs = [];
           if (photoFiles.length > 0) {
             for (let i = 0; i < photoFiles.length; i++) {
@@ -967,9 +955,6 @@ const CreateCheckInPage = () => {
             }
           }
 
-          // Filter out any undefined/null/empty values before saving
-          const validPhotoURLs = photoURLs.filter(url => url && url.trim() !== '');
-
           // Get current privacy setting and circle snapshot
           const privacyLevel = userData?.privacySettings?.checkInVisibility || 'all_besties';
           const circleSnapshot = userData?.featuredCircle || [];
@@ -984,17 +969,13 @@ const CreateCheckInPage = () => {
             notes: notes || null,
             meetingWith: meetingWith || null,
             socialMediaLinks: socialMediaLinks || null, // Save social media links
+            photoURLs: photoURLs,
             status: 'active',
             privacyLevel: privacyLevel,
             circleSnapshot: circleSnapshot,
             createdAt: Timestamp.now(),
             lastUpdate: Timestamp.now(),
           };
-
-          // Only add photoURLs field if there are valid photos
-          if (validPhotoURLs.length > 0) {
-            checkInData.photoURLs = validPhotoURLs;
-          }
 
           // Add document and get reference
           const docRef = await addDoc(collection(db, 'checkins'), checkInData);
@@ -1061,11 +1042,16 @@ const CreateCheckInPage = () => {
       <Header />
 
       <div className={`max-w-2xl mx-auto p-4 pb-20 ${shouldAutoSubmit ? 'opacity-0 pointer-events-none' : ''}`}>
+        <div className="mb-6">
+          <h1 className="text-3xl font-display text-text-primary mb-2">Create Check-In</h1>
+          <p className="text-text-secondary">{getSupportiveMessage()}</p>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Location with Map */}
           <div className="card p-0 overflow-hidden">
-            <label className="block text-lg font-display text-text-primary p-6 pb-3 text-center">
-              Create Check-In
+            <label className="block text-lg font-display text-text-primary p-6 pb-3">
+              Where are you going? 📍
             </label>
 
             {/* Map with overlays */}
@@ -1084,37 +1070,11 @@ const CreateCheckInPage = () => {
                   type="text"
                   value={locationInput}
                   onChange={(e) => setLocationInput(e.target.value)}
-                  onFocus={() => setShowLocationDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
                   className="input w-full shadow-lg"
                   placeholder="Search for a place..."
                   required
                   autoComplete="off"
                 />
-                {/* Location dropdown */}
-                {showLocationDropdown && isEnabled('gpsLocation') && (
-                  <div className="mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleGetLocation();
-                        setShowLocationDropdown(false);
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-                    >
-                      <svg
-                        className="w-5 h-5 text-primary"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle cx="12" cy="12" r="3" strokeWidth={2} />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v4m0 12v4M2 12h4m12 0h4" />
-                      </svg>
-                      <span className="font-semibold text-text-primary">Your Location</span>
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Fixed center pin - doesn't move, map moves underneath */}
@@ -1155,7 +1115,7 @@ const CreateCheckInPage = () => {
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              💡 <strong className="text-primary">Double-tap to unlock the map,</strong> then drag to move it and double-tap again to save
+              💡 <strong className="text-primary">Double-tap to unlock the map,</strong> then drag to move it and double-tap again to save the pin location, or search for a place, or click the crosshair to use GPS
             </p>
           </div>
 
@@ -1173,42 +1133,16 @@ const CreateCheckInPage = () => {
                 className="input mb-3"
                 placeholder="e.g., Alex, Sarah, John..."
               />
-
-              {/* Social Media Button/Input */}
-              {socialMediaExpanded ? (
-                <div className="animate-fade-in">
-                  <label className="block text-sm font-semibold text-text-secondary mb-2">
-                    Their Social Media
-                  </label>
-                  <input
-                    type="text"
-                    value={socialMediaLinks}
-                    onChange={(e) => setSocialMediaLinks(e.target.value)}
-                    className="input mb-2"
-                    placeholder="e.g., @username on Instagram, facebook.com/profile..."
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setSocialMediaExpanded(false)}
-                    className="w-full btn btn-secondary text-sm py-2"
-                  >
-                    Done
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setSocialMediaExpanded(true)}
-                  className={`w-full border-2 ${
-                    socialMediaLinks
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary hover:bg-primary/5'
-                  } rounded-xl p-3 text-sm font-semibold transition-all`}
-                >
-                  {socialMediaLinks ? '✓ Social Media Added' : '📱 Add Their Social Media'}
-                </button>
-              )}
+              <label className="block text-sm font-semibold text-text-secondary mb-2">
+                Their Social Media (Optional)
+              </label>
+              <input
+                type="text"
+                value={socialMediaLinks}
+                onChange={(e) => setSocialMediaLinks(e.target.value)}
+                className="input"
+                placeholder="e.g., @username on Instagram, facebook.com/profile..."
+              />
             </div>
 
             {/* Duration */}

@@ -45,9 +45,14 @@ const OnboardingFlow = ({ onComplete }) => {
   const currentSlide = slides[slideIndex];
 
   const handleSaveName = async () => {
+    if (!displayName.trim()) {
+      toast.error('Please enter a name');
+      return;
+    }
+
     try {
       await updateDoc(doc(db, 'users', currentUser.uid), {
-        displayName: displayName.trim() || 'Anonymous',
+        displayName: displayName.trim(),
       });
       setStep('photo');
     } catch (error) {

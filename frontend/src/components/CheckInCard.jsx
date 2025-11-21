@@ -694,7 +694,14 @@ const CheckInCard = ({ checkIn }) => {
 
         {/* Extend Buttons - Right under timer */}
         {!isAlerted && (
-          <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            <button
+              onClick={() => handleExtend(10)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 active:scale-95"
+            >
+              +10m
+            </button>
             <button
               onClick={() => handleExtend(15)}
               disabled={extendingButton !== null}
@@ -710,11 +717,11 @@ const CheckInCard = ({ checkIn }) => {
               +30m
             </button>
             <button
-              onClick={() => handleExtend(60)}
+              onClick={() => handleExtend(45)}
               disabled={extendingButton !== null}
               className="btn btn-secondary text-sm py-2 active:scale-95"
             >
-              +60m
+              +45m
             </button>
           </div>
         )}
