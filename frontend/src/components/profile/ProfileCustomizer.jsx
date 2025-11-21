@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
@@ -109,7 +109,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   };
 
   // Undo function
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       const state = history[newIndex];
@@ -124,10 +124,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       setHistoryIndex(newIndex);
       toast('Undo', { icon: '↶' });
     }
-  };
+  }, [historyIndex, history]);
 
   // Redo function
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       const state = history[newIndex];
@@ -142,7 +142,33 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       setHistoryIndex(newIndex);
       toast('Redo', { icon: '↷' });
     }
-  };
+  }, [historyIndex, history]);
+
+  // Save function
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        'profile.customization': {
+          background: selectedBackground,
+          layout: selectedLayout,
+          typography: selectedTypography,
+          photoShape,
+          photoBorder,
+          specialEffect: selectedSpecialEffect,
+          customNameFont,
+          customBioFont
+        }
+      });
+      toast.success('Profile style saved! 💜');
+      if (onClose) onClose();
+    } catch (error) {
+      console.error('Error saving customization:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
+  }, [currentUser.uid, selectedBackground, selectedLayout, selectedTypography, photoShape, photoBorder, selectedSpecialEffect, customNameFont, customBioFont, onClose]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -193,32 +219,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, historyIndex, history, onClose, handleSave, handleUndo, handleRedo]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        'profile.customization': {
-          background: selectedBackground,
-          layout: selectedLayout,
-          typography: selectedTypography,
-          photoShape,
-          photoBorder,
-          specialEffect: selectedSpecialEffect,
-          customNameFont,
-          customBioFont
-        }
-      });
-      toast.success('Profile style saved! 💜');
-      if (onClose) onClose();
-    } catch (error) {
-      console.error('Error saving customization:', error);
-      toast.error('Failed to save changes');
-    } finally {
-      setSaving(false);
-    }
-  };
+  }, [activeTab, handleSave, handleUndo, handleRedo, onClose]);
 
   const copyStyleCode = () => {
     const styleCode = JSON.stringify({

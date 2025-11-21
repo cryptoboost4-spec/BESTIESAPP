@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.b07bd483.css",
-    "main.js": "/static/js/main.f9c54079.js",
+    "main.js": "/static/js/main.1451b051.js",
     "static/js/683.d78df1c5.chunk.js": "/static/js/683.d78df1c5.chunk.js",
     "static/js/299.2f7f4a2d.chunk.js": "/static/js/299.2f7f4a2d.chunk.js",
     "static/css/43.e40f33df.chunk.css": "/static/css/43.e40f33df.chunk.css",
@@ -29,12 +29,12 @@
     "static/js/475.db488b31.chunk.js": "/static/js/475.db488b31.chunk.js",
     "static/js/298.978c0eee.chunk.js": "/static/js/298.978c0eee.chunk.js",
     "static/css/29.5e1b950e.chunk.css": "/static/css/29.5e1b950e.chunk.css",
-    "static/js/29.bf3c3227.chunk.js": "/static/js/29.bf3c3227.chunk.js",
+    "static/js/29.f2ffa068.chunk.js": "/static/js/29.f2ffa068.chunk.js",
     "static/js/838.56c42a53.chunk.js": "/static/js/838.56c42a53.chunk.js",
     "static/js/639.0fc60e55.chunk.js": "/static/js/639.0fc60e55.chunk.js",
     "index.html": "/index.html",
     "main.b07bd483.css.map": "/static/css/main.b07bd483.css.map",
-    "main.f9c54079.js.map": "/static/js/main.f9c54079.js.map",
+    "main.1451b051.js.map": "/static/js/main.1451b051.js.map",
     "683.d78df1c5.chunk.js.map": "/static/js/683.d78df1c5.chunk.js.map",
     "299.2f7f4a2d.chunk.js.map": "/static/js/299.2f7f4a2d.chunk.js.map",
     "43.e40f33df.chunk.css.map": "/static/css/43.e40f33df.chunk.css.map",
@@ -62,12 +62,12 @@
     "475.db488b31.chunk.js.map": "/static/js/475.db488b31.chunk.js.map",
     "298.978c0eee.chunk.js.map": "/static/js/298.978c0eee.chunk.js.map",
     "29.5e1b950e.chunk.css.map": "/static/css/29.5e1b950e.chunk.css.map",
-    "29.bf3c3227.chunk.js.map": "/static/js/29.bf3c3227.chunk.js.map",
+    "29.f2ffa068.chunk.js.map": "/static/js/29.f2ffa068.chunk.js.map",
     "838.56c42a53.chunk.js.map": "/static/js/838.56c42a53.chunk.js.map",
     "639.0fc60e55.chunk.js.map": "/static/js/639.0fc60e55.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.b07bd483.css",
-    "static/js/main.f9c54079.js"
+    "static/js/main.1451b051.js"
   ]
 }
