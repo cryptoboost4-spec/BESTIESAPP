@@ -22,6 +22,9 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [backgroundSearch, setBackgroundSearch] = useState('');
+  const [previewZoom, setPreviewZoom] = useState(1);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Popular Google Fonts list
   const POPULAR_FONTS = [
@@ -47,6 +50,23 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     { name: 'Cormorant Garamond', category: 'serif' }
   ];
 
+  // Initialize history on mount with current state
+  useEffect(() => {
+    const initialState = {
+      background: selectedBackground,
+      layout: selectedLayout,
+      typography: selectedTypography,
+      specialEffect: selectedSpecialEffect,
+      photoShape,
+      photoBorder,
+      customNameFont,
+      customBioFont
+    };
+    setHistory([initialState]);
+    setHistoryIndex(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load fonts when typography changes
   useEffect(() => {
     const typography = getTypographyById(selectedTypography);
@@ -68,6 +88,113 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     if (customNameFont) loadCustomFont(customNameFont);
     if (customBioFont) loadCustomFont(customBioFont);
   }, [customNameFont, customBioFont]);
+
+  // Save current state to history
+  const saveToHistory = () => {
+    const currentState = {
+      background: selectedBackground,
+      layout: selectedLayout,
+      typography: selectedTypography,
+      specialEffect: selectedSpecialEffect,
+      photoShape,
+      photoBorder,
+      customNameFont,
+      customBioFont
+    };
+
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      return [...newHistory, currentState];
+    });
+    setHistoryIndex(prev => prev + 1);
+  };
+
+  // Undo function
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const state = history[newIndex];
+      setSelectedBackground(state.background);
+      setSelectedLayout(state.layout);
+      setSelectedTypography(state.typography);
+      setSelectedSpecialEffect(state.specialEffect);
+      setPhotoShape(state.photoShape);
+      setPhotoBorder(state.photoBorder);
+      setCustomNameFont(state.customNameFont);
+      setCustomBioFont(state.customBioFont);
+      setHistoryIndex(newIndex);
+      toast('Undo', { icon: '↶' });
+    }
+  };
+
+  // Redo function
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      const state = history[newIndex];
+      setSelectedBackground(state.background);
+      setSelectedLayout(state.layout);
+      setSelectedTypography(state.typography);
+      setSelectedSpecialEffect(state.specialEffect);
+      setPhotoShape(state.photoShape);
+      setPhotoBorder(state.photoBorder);
+      setCustomNameFont(state.customNameFont);
+      setCustomBioFont(state.customBioFont);
+      setHistoryIndex(newIndex);
+      toast('Redo', { icon: '↷' });
+    }
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // ESC to close
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      // Ctrl+S or Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+
+      // Ctrl+Z or Cmd+Z to undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // Ctrl+Y or Cmd+Shift+Z to redo
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      // Arrow keys to switch tabs
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const tabs = ['vibes', 'backgrounds', 'layouts', 'typography', 'photo'];
+        const currentIndex = tabs.indexOf(activeTab);
+        if (currentIndex !== -1) {
+          e.preventDefault();
+          if (e.key === 'ArrowLeft') {
+            const newIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
+            setActiveTab(tabs[newIndex]);
+          } else {
+            const newIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
+            setActiveTab(tabs[newIndex]);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, historyIndex, history, onClose]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -92,6 +219,25 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const copyStyleCode = () => {
+    const styleCode = JSON.stringify({
+      background: selectedBackground,
+      layout: selectedLayout,
+      typography: selectedTypography,
+      photoShape,
+      photoBorder,
+      specialEffect: selectedSpecialEffect,
+      customNameFont,
+      customBioFont
+    }, null, 2);
+
+    navigator.clipboard.writeText(styleCode).then(() => {
+      toast.success('Style code copied to clipboard! 📋');
+    }).catch(() => {
+      toast.error('Failed to copy style code');
+    });
   };
 
 
@@ -175,15 +321,45 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-0">
       <div className="bg-white dark:bg-gray-900 w-full h-full md:h-[90vh] md:max-h-[900px] md:max-w-6xl md:rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
         {/* LIVE PREVIEW - Always visible: Top half on mobile, left side on desktop */}
-        <div className="flex md:w-2/5 bg-gray-50 dark:bg-gray-800 p-3 md:p-6 items-center justify-center border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto h-1/2 md:h-auto">
-          <div className="w-full max-w-sm">
-            <h3 className="text-xs md:text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 md:mb-3 text-center">Live Preview</h3>
-            <div
-              key={`${selectedBackground}-${selectedLayout}-${selectedTypography}-${selectedSpecialEffect}-${photoShape}-${photoBorder}`}
-              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''} rounded-xl md:rounded-2xl overflow-hidden shadow-xl scale-[0.75] md:scale-100 origin-top transition-all duration-300 ease-out animate-fadeIn`}
-              style={{ background: currentBackground?.gradient || '#fff' }}
-            >
-              <LayoutComponent {...layoutProps} />
+        <div className="flex flex-col md:w-2/5 bg-gray-50 dark:bg-gray-800 p-3 md:p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto h-1/2 md:h-auto">
+          <div className="flex items-center justify-between mb-2 md:mb-3">
+            <h3 className="text-xs md:text-sm font-bold text-gray-600 dark:text-gray-400">Live Preview</h3>
+            {/* Zoom controls */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPreviewZoom(Math.max(0.5, previewZoom - 0.1))}
+                disabled={previewZoom <= 0.5}
+                className="w-6 h-6 rounded-md bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-xs font-bold transition-all"
+                title="Zoom out"
+              >
+                −
+              </button>
+              <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[3rem] text-center">
+                {Math.round(previewZoom * 100)}%
+              </span>
+              <button
+                onClick={() => setPreviewZoom(Math.min(1.5, previewZoom + 0.1))}
+                disabled={previewZoom >= 1.5}
+                className="w-6 h-6 rounded-md bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-xs font-bold transition-all"
+                title="Zoom in"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-sm">
+              <div
+                key={`${selectedBackground}-${selectedLayout}-${selectedTypography}-${selectedSpecialEffect}-${photoShape}-${photoBorder}`}
+                className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''} rounded-xl md:rounded-2xl overflow-hidden shadow-xl origin-center transition-all duration-300 ease-out animate-fadeIn`}
+                style={{
+                  background: currentBackground?.gradient || '#fff',
+                  transform: `scale(${previewZoom * 0.75})`,
+                  transformOrigin: 'center'
+                }}
+              >
+                <LayoutComponent {...layoutProps} />
+              </div>
             </div>
           </div>
         </div>
@@ -193,12 +369,34 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           {/* Header - Sticky */}
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <div className="flex items-center justify-between p-2 md:p-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 md:gap-2">
                 <h2 className="text-base md:text-lg font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                   Customize ✨
                 </h2>
+
+                {/* Undo/Redo buttons */}
+                <div className="flex gap-0.5 md:gap-1">
+                  <button
+                    onClick={handleUndo}
+                    disabled={historyIndex <= 0}
+                    className="p-1 md:p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs md:text-sm"
+                    title="Undo (Ctrl+Z)"
+                  >
+                    ↶
+                  </button>
+                  <button
+                    onClick={handleRedo}
+                    disabled={historyIndex >= history.length - 1}
+                    className="p-1 md:p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs md:text-sm"
+                    title="Redo (Ctrl+Y)"
+                  >
+                    ↷
+                  </button>
+                </div>
+
                 <button
                   onClick={() => {
+                    saveToHistory();
                     // Randomize everything!
                     const allBackgrounds = Object.values(BACKGROUNDS).flat();
                     const randomBg = allBackgrounds[Math.floor(Math.random() * allBackgrounds.length)];
@@ -229,6 +427,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
               <button
                 onClick={onClose}
                 className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-sm md:text-base transition-all"
+                title="Close (ESC)"
               >
                 ✕
               </button>
@@ -286,6 +485,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                       <button
                         key={effect.id}
                         onClick={() => {
+                          saveToHistory();
                           setSelectedSpecialEffect(effect.id);
                           toast(`${effect.name} effect applied! ${effect.emoji}`);
                         }}
@@ -378,6 +578,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                           <button
                             key={bg.id}
                             onClick={() => {
+                              saveToHistory();
                               setSelectedBackground(bg.id);
                               toast(`${bg.name} applied! 🎨`);
                             }}
@@ -448,6 +649,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                     <button
                       key={layout.id}
                       onClick={() => {
+                        saveToHistory();
                         setSelectedLayout(layout.id);
                         toast(`${layout.name} layout applied! ${layout.emoji}`);
                       }}
@@ -499,7 +701,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                   {TYPOGRAPHY_STYLES.map(typo => (
                     <button
                       key={typo.id}
-                      onClick={() => setSelectedTypography(typo.id)}
+                      onClick={() => {
+                        saveToHistory();
+                        setSelectedTypography(typo.id);
+                      }}
                       className={`w-full p-5 rounded-xl text-left transition-all ${
                         selectedTypography === typo.id
                           ? 'bg-gradient-primary text-white shadow-xl ring-2 ring-purple-500'
@@ -729,7 +934,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                     ].map(shape => (
                       <button
                         key={shape.id}
-                        onClick={() => setPhotoShape(shape.id)}
+                        onClick={() => {
+                          saveToHistory();
+                          setPhotoShape(shape.id);
+                        }}
                         className={`p-3 rounded-xl text-center transition-all hover:scale-105 ${
                           photoShape === shape.id
                             ? 'bg-gradient-primary text-white shadow-lg ring-2 ring-purple-500'
@@ -761,6 +969,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                       <button
                         key={border.id}
                         onClick={() => {
+                          saveToHistory();
                           setPhotoBorder(border.id);
                           toast(`${border.label} border applied! ${border.icon}`);
                         }}
@@ -795,6 +1004,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             <div className="flex gap-2">
               <button
                 onClick={() => {
+                  saveToHistory();
                   // Reset to defaults
                   setSelectedBackground('pearl-elegance');
                   setSelectedLayout('classic');
@@ -813,15 +1023,25 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                 <span className="sm:hidden">↺</span>
               </button>
               <button
+                onClick={copyStyleCode}
+                className="flex-shrink-0 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-3 md:px-4 rounded-lg font-semibold text-xs md:text-sm transition-all"
+                title="Copy style code to share"
+              >
+                <span className="hidden sm:inline">📋 Copy</span>
+                <span className="sm:hidden">📋</span>
+              </button>
+              <button
                 onClick={handleSave}
                 disabled={saving}
                 className="flex-1 bg-gradient-primary text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                title="Save changes (Ctrl+S)"
               >
-                {saving ? 'Saving...' : '💾 Save Changes'}
+                {saving ? 'Saving...' : '💾 Save'}
               </button>
             </div>
             <p className="text-[10px] md:text-xs text-center text-gray-500 dark:text-gray-400">
-              Your changes will be visible in your profile and shared cards
+              ⌨️ <span className="hidden sm:inline">Shortcuts: ESC to close • Ctrl+S to save • Ctrl+Z/Y to undo/redo • ← → to switch tabs</span>
+              <span className="sm:hidden">ESC=close • Ctrl+S=save</span>
             </p>
           </div>
         </div>
