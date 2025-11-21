@@ -35,22 +35,36 @@ const CheckInHistoryPage = () => {
         }
       });
 
-      const names = { ...bestieNames };
-      for (const bestieId of uniqueBestieIds) {
-        if (!names[bestieId]) {
-          try {
-            const bestieDoc = await getDoc(doc(db, 'users', bestieId));
-            if (bestieDoc.exists()) {
-              const bestieData = bestieDoc.data();
-              names[bestieId] = bestieData.displayName || 'Unknown';
-            }
-          } catch (error) {
-            console.error('Error fetching bestie name:', error);
-            names[bestieId] = 'Unknown';
+      setBestieNames(prevNames => {
+        const names = { ...prevNames };
+        const promises = [];
+
+        for (const bestieId of uniqueBestieIds) {
+          if (!names[bestieId]) {
+            promises.push(
+              getDoc(doc(db, 'users', bestieId))
+                .then(bestieDoc => {
+                  if (bestieDoc.exists()) {
+                    const bestieData = bestieDoc.data();
+                    names[bestieId] = bestieData.displayName || 'Unknown';
+                  } else {
+                    names[bestieId] = 'Unknown';
+                  }
+                })
+                .catch(error => {
+                  console.error('Error fetching bestie name:', error);
+                  names[bestieId] = 'Unknown';
+                })
+            );
           }
         }
-      }
-      setBestieNames(names);
+
+        if (promises.length > 0) {
+          Promise.all(promises).then(() => setBestieNames({ ...names }));
+        }
+
+        return names;
+      });
     };
 
     if (history.length > 0) {
@@ -471,7 +485,7 @@ const CheckInHistoryPage = () => {
                                 >
                                   <img
                                     src={url}
-                                    alt={`Check-in photo ${idx + 1}`}
+                                    alt={`Check-in ${idx + 1}`}
                                     className="w-full h-full object-cover hover:opacity-80 transition-opacity"
                                   />
                                 </a>
