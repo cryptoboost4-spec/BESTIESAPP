@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, storage } from '../services/firebase';
 import { collection, query, where, getDocs, addDoc, getDoc, doc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -164,7 +163,6 @@ const CheckInLoader = () => {
 
 const CreateCheckInPage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
-  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
 

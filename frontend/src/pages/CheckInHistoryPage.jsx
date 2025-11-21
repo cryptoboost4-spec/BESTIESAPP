@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, orderBy, limit, startAfter } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
@@ -10,7 +9,6 @@ const ITEMS_PER_PAGE = 20;
 
 const CheckInHistoryPage = () => {
   const { currentUser, userData } = useAuth();
-  const { isDark } = useDarkMode();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);

@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/firebase';
 import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import useFormValidation from '../hooks/useFormValidation';
 
 const LoginPage = () => {
-  const { isDark } = useDarkMode();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -17,8 +15,7 @@ const LoginPage = () => {
     errors,
     handleChange,
     handleBlur,
-    validateAll,
-    reset: resetForm
+    validateAll
   } = useFormValidation(
     { email: '', password: '', displayName: '' },
     {

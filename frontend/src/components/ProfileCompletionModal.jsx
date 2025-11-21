@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import ConfettiCelebration from './ConfettiCelebration';
 
 const ProfileCompletionModal = ({ isOpen, onClose }) => {
-  const { isDark } = useDarkMode();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {

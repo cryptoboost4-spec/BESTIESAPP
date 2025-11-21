@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
 import '../styles/AddBestieModal.css';
 
 const AddBestieModal = ({ onClose, onSuccess }) => {
   const { currentUser, userData } = useAuth();
-  const { isDark } = useDarkMode();
   const [showCelebration, setShowCelebration] = useState(false);
 
   const shareUrl = `https://bestiesapp.web.app/?invite=${currentUser?.uid}`;

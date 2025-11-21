@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, storage, authService } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,7 +13,6 @@ import ProfileCompletionModal from '../components/ProfileCompletionModal';
 const EditProfilePage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
-  const { isDark } = useDarkMode();
 
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [bio, setBio] = useState(userData?.profile?.bio || '');

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 /**
  * Real-time form validation hook
@@ -39,7 +39,7 @@ const useFormValidation = (initialValues, validationRules) => {
 
     // Phone validation
     if (rules.phone) {
-      const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+      const phoneRegex = /^[\d\s+\-()]+$/;
       if (!phoneRegex.test(value)) {
         return rules.phoneMessage || 'Please enter a valid phone number 📱';
       }

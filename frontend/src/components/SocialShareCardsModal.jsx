@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -8,7 +7,6 @@ import html2canvas from 'html2canvas';
 
 const SocialShareCardsModal = ({ onClose }) => {
   const { userData, currentUser } = useAuth();
-  const { isDark } = useDarkMode();
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingImage, setGeneratingImage] = useState(false);

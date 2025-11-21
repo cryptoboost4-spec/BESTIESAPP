@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDocs } from 'firebase/firestore';
@@ -46,7 +45,6 @@ const SUPPORTIVE_MESSAGES = [
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
-  const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [activeCheckIns, setActiveCheckIns] = useState([]);
   const [templates, setTemplates] = useState([]);

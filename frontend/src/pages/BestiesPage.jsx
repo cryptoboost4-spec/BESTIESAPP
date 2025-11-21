@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
 import { db } from '../services/firebase';
 import {
   collection,
@@ -26,7 +25,6 @@ import toast from 'react-hot-toast';
 const BestiesPage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
-  const { isDark } = useDarkMode();
   const [besties, setBesties] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
