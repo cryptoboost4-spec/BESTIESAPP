@@ -458,7 +458,7 @@ exports.onBestieCountUpdate = functions.firestore
     }
   });
 
-// Remove from bestieUserIds when bestie relationship is deleted
+// Remove from bestieUserIds and featuredCircle when bestie relationship is deleted
 exports.onBestieDeleted = functions.firestore
   .document('besties/{bestieId}')
   .onDelete(async (snap, context) => {
@@ -466,12 +466,14 @@ exports.onBestieDeleted = functions.firestore
 
     // Only remove if the relationship was accepted
     if (bestie.status === 'accepted' && bestie.requesterId && bestie.recipientId) {
-      // Remove from both users' bestieUserIds arrays
+      // Remove from both users' bestieUserIds and featuredCircle arrays
       await db.collection('users').doc(bestie.requesterId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayRemove(bestie.recipientId)
+        bestieUserIds: admin.firestore.FieldValue.arrayRemove(bestie.recipientId),
+        featuredCircle: admin.firestore.FieldValue.arrayRemove(bestie.recipientId)
       });
       await db.collection('users').doc(bestie.recipientId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayRemove(bestie.requesterId)
+        bestieUserIds: admin.firestore.FieldValue.arrayRemove(bestie.requesterId),
+        featuredCircle: admin.firestore.FieldValue.arrayRemove(bestie.requesterId)
       });
     }
   });
