@@ -108,7 +108,7 @@ const BestieCard = ({ bestie, onRemove }) => {
               <div
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowMenu(!showMenu);
+                  setShowProfileMenu(!showProfileMenu);
                 }}
                 className="cursor-pointer"
               >
@@ -122,12 +122,12 @@ const BestieCard = ({ bestie, onRemove }) => {
               </div>
 
               {/* Dropdown Menu - appears below profile picture */}
-              {showMenu && (
+              {showProfileMenu && (
                 <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 z-50 min-w-[180px]">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowMenu(false);
+                      setShowProfileMenu(false);
                       navigate(`/user/${bestie.userId}`);
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700 first:rounded-t-lg"
@@ -149,7 +149,7 @@ const BestieCard = ({ bestie, onRemove }) => {
                       } else {
                         toast.error('No phone number available');
                       }
-                      setShowMenu(false);
+                      setShowProfileMenu(false);
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
                   >
@@ -158,7 +158,7 @@ const BestieCard = ({ bestie, onRemove }) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowMenu(false);
+                      setShowProfileMenu(false);
                       setShowDeleteModal(true);
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-semibold text-red-600 last:rounded-b-lg"

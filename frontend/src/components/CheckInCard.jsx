@@ -112,11 +112,11 @@ const SafeLoader = () => {
 
           {/* Celebration message */}
           <h2 className="font-display text-3xl md:text-4xl bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent mb-3 leading-tight">
-            {selectedMessage.text}
+            {message.text}
           </h2>
 
         <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
-          {message}
+          {message.subtext}
         </p>
 
           {/* Celebrating animation */}

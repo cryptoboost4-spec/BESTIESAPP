@@ -24,6 +24,7 @@ const CheckInLoader = () => {
   const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Elegant floating elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -46,6 +47,9 @@ const CheckInLoader = () => {
         ))}
       </div>
 
+      {/* Luxury content card */}
+      <div className="w-full max-w-lg text-center relative z-10">
+        <div className="relative bg-white/95 backdrop-blur-xl rounded-[2rem] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/50">
         {/* Message */}
         <h2 className="font-display text-3xl text-gradient mb-4">
           Creating your check-in!
@@ -92,6 +96,7 @@ const CheckInLoader = () => {
           </p>
         </div>
       </div>
+    </div>
 
       <style>{`
         @keyframes float-elegant {
@@ -152,7 +157,7 @@ const CheckInLoader = () => {
           stroke-dasharray: 100;
         }
       `}</style>
-    </div>
+    </>
   );
 };
 

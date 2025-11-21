@@ -3226,7 +3226,6 @@ const AboutBestiesPage = () => {
               </div>
             </div>
           </div>
-        </div>
 
         {/* Our Mission */}
         <div className="card p-8 mb-6 bg-gradient-to-br from-pink-50 to-purple-50">
