@@ -3,19 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import ProfileWithBubble from './ProfileWithBubble';
 
 const BestieCard = ({ bestie, onRemove }) => {
   const navigate = useNavigate();
   const [userPhoto, setUserPhoto] = useState(null);
+  const [requestAttention, setRequestAttention] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteChallenge, setDeleteChallenge] = useState('');
   const menuRef = useRef(null);
 
-  // Fetch user's profile photo
+  // Fetch user's profile photo and request attention status
   useEffect(() => {
-    const fetchUserPhoto = async () => {
+    const fetchUserData = async () => {
       if (!bestie?.userId) {
         setLoading(false);
         return;
@@ -26,15 +28,16 @@ const BestieCard = ({ bestie, onRemove }) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserPhoto(userData.photoURL);
+          setRequestAttention(userData.requestAttention);
         }
       } catch (error) {
-        console.error('Error fetching user photo:', error);
+        console.error('Error fetching user data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserPhoto();
+    fetchUserData();
   }, [bestie?.userId]);
 
   // Close menu when clicking outside
@@ -101,17 +104,6 @@ const BestieCard = ({ bestie, onRemove }) => {
     }
   };
 
-  // Get first character safely
-  const getInitial = () => {
-    if (bestie.name && typeof bestie.name === 'string' && bestie.name.length > 0) {
-      return bestie.name[0].toUpperCase();
-    }
-    if (bestie.phone && typeof bestie.phone === 'string' && bestie.phone.length > 0) {
-      return bestie.phone[0];
-    }
-    return '?';
-  };
-
   return (
     <>
       <div
@@ -166,19 +158,17 @@ const BestieCard = ({ bestie, onRemove }) => {
         </div>
 
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display text-lg flex-shrink-0 overflow-hidden">
-            {loading ? (
-              <div className="w-full h-full bg-gray-200 animate-pulse"></div>
-            ) : userPhoto ? (
-              <img
-                src={userPhoto}
-                alt={bestie.name || 'Bestie'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              getInitial()
-            )}
-          </div>
+          {loading ? (
+            <div className="w-12 h-12 bg-gray-200 animate-pulse rounded-full flex-shrink-0"></div>
+          ) : (
+            <ProfileWithBubble
+              photoURL={userPhoto}
+              name={bestie.name || bestie.phone || 'Unknown'}
+              requestAttention={requestAttention}
+              size="lg"
+              showBubble={true}
+            />
+          )}
           <div className="flex-1 min-w-0 pr-8">
             <div className="font-semibold text-text-primary truncate">
               {bestie.name || bestie.phone || 'Unknown'}

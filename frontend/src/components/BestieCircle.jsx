@@ -4,6 +4,7 @@ import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import BestieRequestModal from './BestieRequestModal';
+import ProfileWithBubble from './ProfileWithBubble';
 
 const BestieCircle = ({ userId, onAddClick }) => {
   const navigate = useNavigate();
@@ -41,20 +42,24 @@ const BestieCircle = ({ userId, onAddClick }) => {
       for (const docSnap of requesterQuery.docs) {
         const data = docSnap.data();
         const userDoc = await getDoc(doc(db, 'users', data.recipientId));
+        const userData = userDoc.exists() ? userDoc.data() : {};
         bestiesList.push({
           id: data.recipientId,
-          name: userDoc.exists() ? userDoc.data().displayName : 'Bestie',
-          photoURL: userDoc.exists() ? userDoc.data().photoURL : null,
+          name: userData.displayName || 'Bestie',
+          photoURL: userData.photoURL || null,
+          requestAttention: userData.requestAttention || null,
         });
       }
 
       for (const docSnap of recipientQuery.docs) {
         const data = docSnap.data();
         const userDoc = await getDoc(doc(db, 'users', data.requesterId));
+        const userData = userDoc.exists() ? userDoc.data() : {};
         bestiesList.push({
           id: data.requesterId,
-          name: userDoc.exists() ? userDoc.data().displayName : 'Bestie',
-          photoURL: userDoc.exists() ? userDoc.data().photoURL : null,
+          name: userData.displayName || 'Bestie',
+          photoURL: userData.photoURL || null,
+          requestAttention: userData.requestAttention || null,
         });
       }
 
@@ -222,15 +227,20 @@ const BestieCircle = ({ userId, onAddClick }) => {
                     {/* Bestie Circle - clickable with unique color, responsive size */}
                     <button
                       onClick={() => setSelectedSlot(selectedSlot === index ? null : index)}
-                      className={`relative w-16 h-16 md:w-20 md:h-20 ${slotColors[index]} rounded-full flex items-center justify-center text-white text-xl md:text-2xl font-display shadow-xl border-4 border-white hover:scale-110 hover:shadow-2xl transition-all duration-300 overflow-hidden ring-2 ring-purple-200 hover:ring-4 hover:ring-purple-300`}
+                      className={`relative hover:scale-110 transition-all duration-300`}
                     >
-                      {bestie.photoURL ? (
-                        <img src={bestie.photoURL} alt={bestie.name || 'Bestie'} className="w-full h-full object-cover" />
-                      ) : (
-                        bestie.name?.[0] || '?'
-                      )}
+                      <div className={`w-16 h-16 md:w-20 md:h-20 ${slotColors[index]} rounded-full shadow-xl border-4 border-white hover:shadow-2xl ring-2 ring-purple-200 hover:ring-4 hover:ring-purple-300 overflow-hidden flex items-center justify-center`}>
+                        <ProfileWithBubble
+                          photoURL={bestie.photoURL}
+                          name={bestie.name || 'Bestie'}
+                          requestAttention={bestie.requestAttention}
+                          size="xl"
+                          showBubble={true}
+                          className="w-full h-full"
+                        />
+                      </div>
                       {/* Subtle pulse effect on hover */}
-                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity rounded-full"></div>
+                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity rounded-full pointer-events-none"></div>
                     </button>
 
                     {/* Name Tooltip - improved */}
@@ -337,13 +347,13 @@ const BestieCircle = ({ userId, onAddClick }) => {
                     onClick={() => handleReplaceBestie(bestie)}
                     className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <div className="w-10 h-10 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-display overflow-hidden">
-                      {bestie.photoURL ? (
-                        <img src={bestie.photoURL} alt={bestie.name || 'Bestie'} className="w-full h-full object-cover" />
-                      ) : (
-                        bestie.name?.[0] || '?'
-                      )}
-                    </div>
+                    <ProfileWithBubble
+                      photoURL={bestie.photoURL}
+                      name={bestie.name || 'Unknown'}
+                      requestAttention={bestie.requestAttention}
+                      size="md"
+                      showBubble={true}
+                    />
                     <div className="text-left">
                       <div className="font-semibold">{bestie.name || 'Unknown'}</div>
                     </div>

@@ -38,6 +38,9 @@ const BestiesPage = () => {
   // Modal state
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
   const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [reactions, setReactions] = useState({}); // { checkInId: [reactions] }
 
   // Load besties
   useEffect(() => {
@@ -285,9 +288,74 @@ const BestiesPage = () => {
     return indicators.slice(0, 3); // Max 3 indicators
   };
 
+  // Load reactions for check-ins
+  useEffect(() => {
+    if (activityFeed.length === 0) return;
+
+    const loadReactions = async () => {
+      const reactionsData = {};
+
+      for (const activity of activityFeed) {
+        if (activity.type === 'checkin') {
+          try {
+            const reactionsSnapshot = await getDocs(
+              collection(db, 'checkins', activity.id, 'reactions')
+            );
+            reactionsData[activity.id] = reactionsSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+          } catch (error) {
+            console.error('Error loading reactions:', error);
+            reactionsData[activity.id] = [];
+          }
+        }
+      }
+
+      setReactions(reactionsData);
+    };
+
+    loadReactions();
+  }, [activityFeed]);
+
+  // Load comments for selected check-in
+  useEffect(() => {
+    if (!selectedCheckIn || !showComments) return;
+
+    const loadComments = async () => {
+      try {
+        const commentsQuery = query(
+          collection(db, 'checkins', selectedCheckIn.id, 'comments'),
+          orderBy('timestamp', 'asc')
+        );
+        const commentsSnapshot = await getDocs(commentsQuery);
+        const commentsData = commentsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setComments(commentsData);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        setComments([]);
+      }
+    };
+
+    loadComments();
+  }, [selectedCheckIn, showComments]);
+
   // Add reaction to check-in
   const addReaction = async (checkInId, emoji) => {
     try {
+      // Check if user already reacted with this emoji
+      const existingReaction = reactions[checkInId]?.find(
+        r => r.userId === currentUser.uid && r.emoji === emoji
+      );
+
+      if (existingReaction) {
+        toast('You already reacted with this!', { icon: emoji });
+        return;
+      }
+
       await addDoc(collection(db, 'checkins', checkInId, 'reactions'), {
         userId: currentUser.uid,
         userName: userData?.displayName || 'Anonymous',
@@ -295,10 +363,54 @@ const BestiesPage = () => {
         timestamp: Timestamp.now(),
       });
 
+      // Reload reactions for this check-in
+      const reactionsSnapshot = await getDocs(
+        collection(db, 'checkins', checkInId, 'reactions')
+      );
+      setReactions(prev => ({
+        ...prev,
+        [checkInId]: reactionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+      }));
+
       toast.success('Reaction added!');
     } catch (error) {
       console.error('Error adding reaction:', error);
       toast.error('Failed to add reaction');
+    }
+  };
+
+  // Add comment to check-in
+  const addComment = async () => {
+    if (!newComment.trim() || !selectedCheckIn) return;
+
+    try {
+      await addDoc(collection(db, 'checkins', selectedCheckIn.id, 'comments'), {
+        userId: currentUser.uid,
+        userName: userData?.displayName || 'Anonymous',
+        userPhoto: userData?.photoURL || null,
+        text: newComment.trim(),
+        timestamp: Timestamp.now(),
+      });
+
+      // Reload comments
+      const commentsQuery = query(
+        collection(db, 'checkins', selectedCheckIn.id, 'comments'),
+        orderBy('timestamp', 'asc')
+      );
+      const commentsSnapshot = await getDocs(commentsQuery);
+      setComments(commentsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })));
+
+      setNewComment('');
+      toast.success('Comment added!');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('Failed to add comment');
     }
   };
 
@@ -564,37 +676,55 @@ const BestiesPage = () => {
 
                           {/* Reactions - Compact on Mobile */}
                           {activity.status !== 'alerted' && (
-                            <div className="mt-3 flex items-center gap-2 flex-wrap">
-                              <button
-                                onClick={() => addReaction(activity.id, '💜')}
-                                className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                                title="Proud"
-                              >
-                                💜
-                              </button>
-                              <button
-                                onClick={() => addReaction(activity.id, '😮‍💨')}
-                                className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                                title="Relieved"
-                              >
-                                😮‍💨
-                              </button>
-                              <button
-                                onClick={() => addReaction(activity.id, '🎉')}
-                                className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                                title="Celebrate"
-                              >
-                                🎉
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedCheckIn(activity);
-                                  setShowComments(true);
-                                }}
-                                className="ml-auto text-xs md:text-sm text-primary hover:underline font-semibold"
-                              >
-                                💬 Comment
-                              </button>
+                            <div className="mt-3">
+                              <div className="flex items-center gap-2 flex-wrap mb-2">
+                                <button
+                                  onClick={() => addReaction(activity.id, '💜')}
+                                  className="text-xl md:text-2xl hover:scale-110 transition-transform"
+                                  title="Proud"
+                                >
+                                  💜
+                                </button>
+                                <button
+                                  onClick={() => addReaction(activity.id, '😮‍💨')}
+                                  className="text-xl md:text-2xl hover:scale-110 transition-transform"
+                                  title="Relieved"
+                                >
+                                  😮‍💨
+                                </button>
+                                <button
+                                  onClick={() => addReaction(activity.id, '🎉')}
+                                  className="text-xl md:text-2xl hover:scale-110 transition-transform"
+                                  title="Celebrate"
+                                >
+                                  🎉
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedCheckIn(activity);
+                                    setShowComments(true);
+                                  }}
+                                  className="ml-auto text-xs md:text-sm text-primary hover:underline font-semibold"
+                                >
+                                  💬 Comment
+                                </button>
+                              </div>
+                              {/* Show reaction counts */}
+                              {reactions[activity.id] && reactions[activity.id].length > 0 && (
+                                <div className="flex items-center gap-2 text-xs text-gray-600">
+                                  {/* Group reactions by emoji */}
+                                  {Object.entries(
+                                    reactions[activity.id].reduce((acc, r) => {
+                                      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                                      return acc;
+                                    }, {})
+                                  ).map(([emoji, count]) => (
+                                    <span key={emoji} className="bg-gray-100 px-2 py-1 rounded-full">
+                                      {emoji} {count}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -791,23 +921,101 @@ const BestiesPage = () => {
 
       {/* Comments Modal - Mobile Optimized */}
       {showComments && selectedCheckIn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-display text-text-primary mb-3 md:mb-4">
-              💬 Comments
-            </h2>
-            <p className="text-sm md:text-base text-text-secondary mb-4">
-              Coming soon! You'll be able to comment on your besties' check-ins.
-            </p>
-            <button
-              onClick={() => {
-                setShowComments(false);
-                setSelectedCheckIn(null);
-              }}
-              className="w-full btn btn-primary"
-            >
-              Close
-            </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center">
+          <div className="bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
+            {/* Header */}
+            <div className="p-4 md:p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl md:text-2xl font-display text-text-primary">
+                  💬 Comments
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowComments(false);
+                    setSelectedCheckIn(null);
+                    setComments([]);
+                    setNewComment('');
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="text-sm text-text-secondary mt-1">
+                {selectedCheckIn.userName}'s check-in
+              </p>
+            </div>
+
+            {/* Comments List - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+              {comments.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">💬</div>
+                  <p className="text-text-secondary text-sm">
+                    No comments yet. Be the first to comment!
+                  </p>
+                </div>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-3">
+                    {/* User Avatar */}
+                    <div className="flex-shrink-0">
+                      {comment.userPhoto ? (
+                        <img
+                          src={comment.userPhoto}
+                          alt={comment.userName}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center text-white text-sm font-display">
+                          {comment.userName?.[0] || '?'}
+                        </div>
+                      )}
+                    </div>
+                    {/* Comment Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-gray-100 rounded-2xl px-3 py-2">
+                        <p className="font-semibold text-sm text-text-primary">
+                          {comment.userName}
+                        </p>
+                        <p className="text-sm text-text-primary break-words">
+                          {comment.text}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 px-3">
+                        {comment.timestamp?.toDate ? getTimeAgo(comment.timestamp.toDate()) : 'Just now'}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Add Comment Input */}
+            <div className="p-4 md:p-6 border-t border-gray-200 flex-shrink-0">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      addComment();
+                    }
+                  }}
+                  placeholder="Add a comment..."
+                  className="flex-1 px-4 py-2 rounded-full border-2 border-gray-200 focus:border-primary focus:outline-none text-sm"
+                />
+                <button
+                  onClick={addComment}
+                  disabled={!newComment.trim()}
+                  className="btn btn-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

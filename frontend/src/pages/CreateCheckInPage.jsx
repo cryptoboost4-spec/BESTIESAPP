@@ -9,6 +9,7 @@ import Header from '../components/Header';
 import { isEnabled } from '../config/features';
 import errorTracker from '../services/errorTracking';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
+import ProfileWithBubble from '../components/ProfileWithBubble';
 
 // Cute skeleton loader for check-in creation
 const CheckInLoader = () => {
@@ -27,7 +28,7 @@ const CheckInLoader = () => {
       setMessageIndex((prev) => (prev + 1) % messages.length);
     }, 1500);
     return () => clearInterval(interval);
-  }, []);
+  }, [messages.length]);
 
   return (
     <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
@@ -227,7 +228,7 @@ const CreateCheckInPage = () => {
 
         console.log('✅ Circle besties after filtering:', circleBesties);
 
-        // Fetch full user data for each bestie to get displayName and photoURL
+        // Fetch full user data for each bestie to get displayName, photoURL, and requestAttention
         const bestiesWithUserData = await Promise.all(
           circleBesties.map(async (bestie) => {
             try {
@@ -240,6 +241,7 @@ const CreateCheckInPage = () => {
                   photoURL: userData.photoURL || null,
                   email: userData.email || bestie.email,
                   phone: userData.phoneNumber || bestie.phone,
+                  requestAttention: userData.requestAttention || null,
                 };
               }
               return bestie;
@@ -896,24 +898,13 @@ const CreateCheckInPage = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {bestie.photoURL ? (
-                          <img
-                            src={bestie.photoURL}
-                            alt={bestie.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                            onError={(e) => {
-                              // Fallback to gradient circle if image fails to load
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div
-                          className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display"
-                          style={{ display: bestie.photoURL ? 'none' : 'flex' }}
-                        >
-                          {bestie.name?.[0]?.toUpperCase() || bestie.email?.[0]?.toUpperCase() || '?'}
-                        </div>
+                        <ProfileWithBubble
+                          photoURL={bestie.photoURL}
+                          name={bestie.name || bestie.email || 'Unknown'}
+                          requestAttention={bestie.requestAttention}
+                          size="md"
+                          showBubble={true}
+                        />
                         <div>
                           <div className="font-semibold text-text-primary">{bestie.name || bestie.email || 'Unknown'}</div>
                           <div className="text-sm text-text-secondary">

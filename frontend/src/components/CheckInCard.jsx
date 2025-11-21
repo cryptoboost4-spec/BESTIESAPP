@@ -26,7 +26,7 @@ const SafeLoader = () => {
       setMessageIndex((prev) => (prev + 1) % messages.length);
     }, 1200);
     return () => clearInterval(interval);
-  }, []);
+  }, [messages.length]);
 
   return (
     <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
