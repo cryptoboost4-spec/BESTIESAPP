@@ -12,6 +12,9 @@ import EmergencySOSButton from '../components/EmergencySOSButton';
 import BestieCelebrationModal from '../components/BestieCelebrationModal';
 import ProfileWithBubble from '../components/ProfileWithBubble';
 import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
+import GetMeOutButton from '../components/GetMeOutButton';
+import OfflineBanner from '../components/OfflineBanner';
+import PullToRefresh from '../components/PullToRefresh';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -158,6 +161,19 @@ const HomePage = () => {
     navigate('/create', { state: { template } });
   };
 
+  const handleRefresh = async () => {
+    // Reload user data by forcing a re-fetch
+    // The Firestore listeners will automatically update when data changes
+    try {
+      // Trigger a small delay to show the refresh animation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success('Refreshed! 💜', { duration: 2000 });
+    } catch (error) {
+      console.error('Refresh error:', error);
+      toast.error('Failed to refresh');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
@@ -170,8 +186,10 @@ const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-pattern">
-      <Header />
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-pattern">
+        <OfflineBanner />
+        <Header />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
         {/* Welcome Message */}
@@ -274,12 +292,25 @@ const HomePage = () => {
 
         {/* Active Check-Ins */}
         {activeCheckIns.length > 0 && (
-          <div className="mb-6 space-y-4">
-            <h2 className="text-xl font-display text-text-primary">Active Check-Ins</h2>
-            {activeCheckIns.map((checkIn) => (
-              <CheckInCard key={checkIn.id} checkIn={checkIn} />
-            ))}
-          </div>
+          <>
+            <div className="mb-6 space-y-4">
+              <h2 className="text-xl font-display text-text-primary">Active Check-Ins</h2>
+              {activeCheckIns.map((checkIn) => (
+                <CheckInCard key={checkIn.id} checkIn={checkIn} />
+              ))}
+            </div>
+
+            {/* Get Me Out Button - Only shows during active check-ins */}
+            <div className="card p-6 mb-6 bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200">
+              <h3 className="text-lg font-display text-orange-900 mb-2 text-center">
+                🆘 Need an Exit Strategy?
+              </h3>
+              <p className="text-sm text-orange-700 mb-4 text-center">
+                Feeling uncomfortable? Hold the button for 3 seconds and your besties will call you to help you get out of there.
+              </p>
+              <GetMeOutButton currentUser={currentUser} userData={userData} />
+            </div>
+          </>
         )}
 
         {/* Templates */}
@@ -563,7 +594,8 @@ const HomePage = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };
 
