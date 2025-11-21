@@ -107,9 +107,7 @@ const CircleHealthPage = () => {
   const avgAlertResponse = connections.length > 0
     ? connections.reduce((sum, c) => sum + (c.breakdown?.alertResponse || 0), 0) / connections.length
     : 0;
-  const avgStoryEngagement = connections.length > 0
-    ? connections.reduce((sum, c) => sum + (c.breakdown?.storyEngagement || 0), 0) / connections.length
-    : 0;
+  // Story engagement removed for now since feature isn't live yet
   const avgRecency = connections.length > 0
     ? connections.reduce((sum, c) => sum + (c.breakdown?.recency || 0), 0) / connections.length
     : 0;
@@ -150,15 +148,8 @@ const CircleHealthPage = () => {
     });
   }
 
-  if (avgStoryEngagement < 15) {
-    tips.push({
-      icon: '📸',
-      title: 'Post a Circle Story',
-      description: 'Share what you\'re up to! Your besties want to see your life, not just hear from you when something\'s wrong.',
-      action: 'Coming Soon',
-      priority: 'medium',
-    });
-  }
+  // Story feature coming soon - don't show tip since users can't act on it yet
+  // Removed to avoid confusion
 
   if (avgAlertResponse < 25) {
     tips.push({
@@ -324,22 +315,27 @@ const CircleHealthPage = () => {
                   <p className="text-sm text-gray-600 mt-1">They drop everything when you need them</p>
                 </div>
 
-                {/* Story Engagement */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">📸</span>
-                      <span className="font-semibold text-text-primary">Story Vibes</span>
+                {/* Story Engagement - Coming Soon */}
+                <div className="relative">
+                  <div className="opacity-40">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">📸</span>
+                        <span className="font-semibold text-text-primary">Story Vibes</span>
+                        <span className="text-xs font-bold bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                          Coming Soon
+                        </span>
+                      </div>
+                      <span className="font-bold text-gray-400">-/25</span>
                     </div>
-                    <span className="font-bold text-gradient">{Math.round(avgStoryEngagement)}/25</span>
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-gray-300 to-gray-300"
+                        style={{ width: '0%' }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">Share moments with your circle (launching soon!)</p>
                   </div>
-                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-pink-400 to-purple-400 transition-all duration-500"
-                      style={{ width: `${(avgStoryEngagement / 25) * 100}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">Staying in the loop with each other's lives</p>
                 </div>
 
                 {/* Featured Circle */}
