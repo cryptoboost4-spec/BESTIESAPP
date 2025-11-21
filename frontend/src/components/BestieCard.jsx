@@ -94,82 +94,85 @@ const BestieCard = ({ bestie, onRemove }) => {
     return null;
   }
 
-  const handleClick = (e) => {
-    // Don't navigate if clicking on menu button
-    if (e.target.closest('.menu-button')) {
-      return;
-    }
-    if (bestie.userId) {
-      navigate(`/user/${bestie.userId}`);
-    }
-  };
-
   return (
     <>
       <div
-        className="card p-4 cursor-pointer hover:shadow-lg transition-all hover:transform hover:-translate-y-1 relative"
-        onClick={handleClick}
+        className="card p-4 hover:shadow-lg transition-all hover:transform hover:-translate-y-1 relative"
       >
-        {/* Menu Button */}
-        <div className="absolute top-3 right-3" ref={menuRef}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
-            className="menu-button w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-            </svg>
-          </button>
-
-          {/* Dropdown Menu */}
-          {showMenu && (
-            <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border-2 border-gray-200 z-50 min-w-[160px]">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  navigate(`/user/${bestie.userId}`);
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700 first:rounded-t-lg"
-              >
-                👤 View Profile
-              </button>
-              <button
-                onClick={handleToggleCircle}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
-              >
-                {bestie.isFavorite ? '💔 Remove from Circle' : '💜 Add to Circle'}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  setShowDeleteModal(true);
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-semibold text-red-600 last:rounded-b-lg"
-              >
-                🗑️ Remove Bestie
-              </button>
-            </div>
-          )}
-        </div>
-
         <div className="flex items-center gap-3 mb-3">
           {loading ? (
             <div className="w-12 h-12 bg-gray-200 animate-pulse rounded-full flex-shrink-0"></div>
           ) : (
-            <ProfileWithBubble
-              photoURL={userPhoto}
-              name={bestie.name || bestie.phone || 'Unknown'}
-              requestAttention={requestAttention}
-              size="lg"
-              showBubble={true}
-            />
+            <div className="relative" ref={menuRef}>
+              {/* Click on profile picture to show menu */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className="cursor-pointer"
+              >
+                <ProfileWithBubble
+                  photoURL={userPhoto}
+                  name={bestie.name || bestie.phone || 'Unknown'}
+                  requestAttention={requestAttention}
+                  size="lg"
+                  showBubble={true}
+                />
+              </div>
+
+              {/* Dropdown Menu - appears below profile picture */}
+              {showMenu && (
+                <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 z-50 min-w-[180px]">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      navigate(`/user/${bestie.userId}`);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700 first:rounded-t-lg"
+                  >
+                    👤 View Profile
+                  </button>
+                  <button
+                    onClick={handleToggleCircle}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
+                  >
+                    {bestie.isFavorite ? '💔 Remove from Circle' : '💜 Add to Circle'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const phone = bestie.phone;
+                      if (phone) {
+                        window.location.href = `sms:${phone}`;
+                      } else {
+                        toast.error('No phone number available');
+                      }
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-semibold text-gray-700"
+                  >
+                    💬 Send Message
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      setShowDeleteModal(true);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-semibold text-red-600 last:rounded-b-lg"
+                  >
+                    🗑️ Delete Bestie
+                  </button>
+                </div>
+              )}
+            </div>
           )}
-          <div className="flex-1 min-w-0 pr-8">
+          <div
+            className="flex-1 min-w-0 cursor-pointer"
+            onClick={() => bestie.userId && navigate(`/user/${bestie.userId}`)}
+          >
             <div className="font-semibold text-text-primary truncate">
               {bestie.name || bestie.phone || 'Unknown'}
             </div>
