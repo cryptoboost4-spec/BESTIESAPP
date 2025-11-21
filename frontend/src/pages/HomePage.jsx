@@ -282,6 +282,45 @@ const HomePage = () => {
             {/* Bestie Circle Status */}
             <BestieCircleStatus userId={currentUser?.uid} />
 
+            {/* Stats Card */}
+            <div className="card p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="text-primary font-semibold hover:underline text-sm"
+                >
+                  View Profile →
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-display text-primary">
+                    {userData?.stats?.completedCheckIns || 0}
+                  </div>
+                  <div className="text-sm text-text-secondary">Check-ins</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-display text-secondary">
+                    {userData?.stats?.totalBesties || 0}
+                  </div>
+                  <div className="text-sm text-text-secondary">Besties</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-display text-orange-500">
+                    {userData?.stats?.currentStreak || 0} 🔥
+                  </div>
+                  <div className="text-sm text-text-secondary">Current Streak</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-display text-accent">
+                    {userData?.stats?.longestStreak || 0} 👑
+                  </div>
+                  <div className="text-sm text-text-secondary">Longest Streak</div>
+                </div>
+              </div>
+            </div>
+
             {/* Request Attention Button */}
             {userData?.requestAttention?.active ? (
               <div className="card p-4 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-700">
@@ -393,45 +432,6 @@ const HomePage = () => {
             />
           </div>
         )} */}
-
-        {/* Stats Card */}
-        <div className="card p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
-            <button
-              onClick={() => navigate('/profile')}
-              className="text-primary font-semibold hover:underline text-sm"
-            >
-              View Profile →
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className="text-3xl font-display text-primary">
-                {userData?.stats?.completedCheckIns || 0}
-              </div>
-              <div className="text-sm text-text-secondary">Check-ins</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-display text-secondary">
-                {userData?.stats?.totalBesties || 0}
-              </div>
-              <div className="text-sm text-text-secondary">Besties</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-display text-orange-500">
-                {userData?.stats?.currentStreak || 0} 🔥
-              </div>
-              <div className="text-sm text-text-secondary">Current Streak</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-display text-accent">
-                {userData?.stats?.longestStreak || 0} 👑
-              </div>
-              <div className="text-sm text-text-secondary">Longest Streak</div>
-            </div>
-          </div>
-        </div>
 
         {/* You're Part of Something Special - Appreciation Card */}
         <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-100 dark:border-purple-700">
