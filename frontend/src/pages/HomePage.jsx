@@ -91,7 +91,6 @@ const HomePage = () => {
 
     const pendingInvite = localStorage.getItem('pending_invite');
     if (pendingInvite && !currentUser) {
-      console.log('📨 Pending invite detected, redirecting to login...');
       navigate('/login');
     }
   }, [currentUser, authLoading, navigate]);

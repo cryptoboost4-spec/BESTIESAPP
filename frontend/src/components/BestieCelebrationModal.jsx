@@ -93,7 +93,6 @@ const BestieCelebrationModal = () => {
           setCurrentCelebration(celebrations[0]);
           setCurrentCelebrationId(celebrations[0].id);
           setShow(true);
-          console.log(`🎉 Found ${celebrations.length} celebration(s) to show`);
         }
       } catch (error) {
         console.error('Error checking for celebrations:', error);
@@ -110,7 +109,6 @@ const BestieCelebrationModal = () => {
         await updateDoc(doc(db, 'bestie_celebrations', currentCelebrationId), {
           seen: true,
         });
-        console.log('✅ Celebration marked as seen');
       } catch (error) {
         console.error('Error marking celebration as seen:', error);
       }
@@ -123,7 +121,6 @@ const BestieCelebrationModal = () => {
       setCelebrationQueue(remainingQueue);
       setCurrentCelebration(remainingQueue[0]);
       setCurrentCelebrationId(remainingQueue[0].id);
-      console.log(`📋 Showing next celebration (${remainingQueue.length} remaining)`);
     } else {
       // No more celebrations, hide modal
       setShow(false);
