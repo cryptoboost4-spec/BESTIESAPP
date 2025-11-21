@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import haptic from '../utils/hapticFeedback';
 
 const InviteFriendsModal = ({ onClose }) => {
-  const { currentUser, userData } = useAuth();
+  const { currentUser } = useAuth();
   const [copied, setCopied] = useState(false);
 
   // Generate invite link with user's unique referral code

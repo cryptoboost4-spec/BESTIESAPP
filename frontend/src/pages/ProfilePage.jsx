@@ -9,7 +9,6 @@ import ProfileCard from '../components/profile/ProfileCard';
 import ProfileCompletion from '../components/profile/ProfileCompletion';
 import LoginStreak from '../components/profile/LoginStreak';
 import BestieCircleStatus from '../components/BestieCircleStatus';
-import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import BadgesSection from '../components/profile/BadgesSection';
 import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
