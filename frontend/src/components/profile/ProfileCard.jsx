@@ -4,7 +4,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
 import toast from 'react-hot-toast';
-import html2canvas from 'html2canvas';
 
 const GRADIENT_OPTIONS = [
   { id: 'pink', name: 'Pink Dream', gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)' },
@@ -104,63 +103,6 @@ const ProfileCard = ({ currentUser, userData }) => {
       console.error('Error updating aura:', error);
       toast.error('Failed to update aura');
     }
-  };
-
-  const handleShareProfileCard = async () => {
-    const profileCard = document.getElementById('profile-card-shareable');
-    if (!profileCard) {
-      toast.error('Could not capture profile card');
-      return;
-    }
-
-    try {
-      toast('Generating image...', { icon: '📸' });
-
-      const canvas = await html2canvas(profileCard, {
-        backgroundColor: null,
-        scale: 2,
-        logging: false,
-      });
-
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          toast.error('Failed to generate image');
-          return;
-        }
-
-        if (navigator.share && navigator.canShare({ files: [new File([blob], 'profile.png', { type: 'image/png' })] })) {
-          const file = new File([blob], 'my-besties-profile.png', { type: 'image/png' });
-          navigator.share({
-            title: 'My Besties Profile',
-            text: 'Check out my Besties profile! 💜',
-            files: [file],
-          }).then(() => {
-            toast.success('Profile card shared! 💜');
-          }).catch((err) => {
-            if (err.name !== 'AbortError') {
-              downloadImage(blob);
-            }
-          });
-        } else {
-          downloadImage(blob);
-        }
-      }, 'image/png');
-    } catch (error) {
-      console.error('Error sharing profile card:', error);
-      toast.error('Failed to share profile card');
-    }
-  };
-
-  const downloadImage = (blob) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'my-besties-profile.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success('Profile card downloaded! 📥');
   };
 
   return (
