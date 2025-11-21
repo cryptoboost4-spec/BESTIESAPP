@@ -1,39 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { db } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useState } from 'react';
 import apiService from '../services/api';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 
 const BestieRequestCard = ({ request, onRequestHandled }) => {
   const [loading, setLoading] = useState(false);
-  const [userPhoto, setUserPhoto] = useState(null);
-  const [photoLoading, setPhotoLoading] = useState(true);
   const [isHidden, setIsHidden] = useState(false);
   const { executeOptimistic } = useOptimisticUpdate();
 
-  // Fetch requester's profile photo
-  useEffect(() => {
-    const fetchUserPhoto = async () => {
-      if (!request?.requesterId) {
-        setPhotoLoading(false);
-        return;
-      }
-
-      try {
-        const userDoc = await getDoc(doc(db, 'users', request.requesterId));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUserPhoto(userData.photoURL);
-        }
-      } catch (error) {
-        console.error('Error fetching user photo:', error);
-      } finally {
-        setPhotoLoading(false);
-      }
-    };
-
-    fetchUserPhoto();
-  }, [request?.requesterId]);
+  // Use photo from request data instead of fetching from users collection
+  const userPhoto = request?.requesterPhotoURL || null;
 
   const handleAccept = async () => {
     await executeOptimistic({
@@ -117,9 +92,7 @@ const BestieRequestCard = ({ request, onRequestHandled }) => {
     <div className="card p-4 border-2 border-primary/20 animate-fade-in">
       <div className="flex items-center gap-3 mb-3">
         <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display text-lg overflow-hidden">
-          {photoLoading ? (
-            <div className="w-full h-full bg-gray-200 animate-pulse"></div>
-          ) : userPhoto ? (
+          {userPhoto ? (
             <img
               src={userPhoto}
               alt={request.requesterName || 'Bestie'}

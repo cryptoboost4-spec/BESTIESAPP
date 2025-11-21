@@ -425,6 +425,14 @@ exports.onBestieCountUpdate = functions.firestore
         'stats.totalBesties': admin.firestore.FieldValue.increment(1)
       });
 
+      // Add to bestieUserIds array for privacy enforcement
+      await db.collection('users').doc(newData.requesterId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.recipientId)
+      });
+      await db.collection('users').doc(newData.recipientId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.requesterId)
+      });
+
       // Update analytics cache: pending → accepted
       await cacheRef.set({
         acceptedBesties: admin.firestore.FieldValue.increment(1),
@@ -444,6 +452,24 @@ exports.onBestieCountUpdate = functions.firestore
         totalBesties: admin.firestore.FieldValue.increment(-1),
         lastUpdated: admin.firestore.Timestamp.now(),
       }, { merge: true });
+    }
+  });
+
+// Remove from bestieUserIds when bestie relationship is deleted
+exports.onBestieDeleted = functions.firestore
+  .document('besties/{bestieId}')
+  .onDelete(async (snap, context) => {
+    const bestie = snap.data();
+
+    // Only remove if the relationship was accepted
+    if (bestie.status === 'accepted' && bestie.requesterId && bestie.recipientId) {
+      // Remove from both users' bestieUserIds arrays
+      await db.collection('users').doc(bestie.requesterId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayRemove(bestie.recipientId)
+      });
+      await db.collection('users').doc(bestie.recipientId).update({
+        bestieUserIds: admin.firestore.FieldValue.arrayRemove(bestie.requesterId)
+      });
     }
   });
 

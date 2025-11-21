@@ -80,8 +80,10 @@ export const AuthProvider = ({ children }) => {
             recipientId: user.uid,
             recipientName: userData.displayName || user.displayName || 'Unknown',
             recipientPhone: user.phoneNumber || user.email,
+            recipientPhotoURL: userData.photoURL || user.photoURL || null,
             requesterName: inviterData.displayName || 'Unknown',
             requesterPhone: inviterData.phoneNumber || inviterData.email,
+            requesterPhotoURL: inviterData.photoURL || null,
           });
           found = true;
 
@@ -109,8 +111,10 @@ export const AuthProvider = ({ children }) => {
           createdAt: Timestamp.now(),
           requesterName: inviterData.displayName || 'Unknown',
           requesterPhone: inviterData.phoneNumber || inviterData.email,
+          requesterPhotoURL: inviterData.photoURL || null,
           recipientName: userData.displayName || user.displayName || 'Unknown',
           recipientPhone: user.phoneNumber || user.email,
+          recipientPhotoURL: userData.photoURL || user.photoURL || null,
         });
 
         // Notify inviter that new bestie added them

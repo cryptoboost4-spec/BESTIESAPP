@@ -43,6 +43,7 @@ async function sendBestieRequest(req, res, config) {
       requesterId,
       requesterName: requesterData.displayName,
       requesterPhone: requesterData.phoneNumber,
+      requesterPhotoURL: requesterData.photoURL || null,
       recipientId: recipientId || null,
       recipientPhone,
       recipientName,

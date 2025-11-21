@@ -33,19 +33,20 @@ service cloud.firestore {
         // Privacy level: circle - selected besties OR circle members can see
         (privacyLevel == 'circle' && (inBestieIds || inCircle)) ||
         // Privacy level: all_besties OR old check-ins without privacyLevel
-        // SECURITY NOTE: We allow any signed-in user for 'all_besties' because Firestore
-        // rules cannot query the besties collection to verify relationships.
-        // Frontend (ViewUserProfilePage) MUST verify bestie relationship before displaying.
-        // TODO: Implement bestieUserIds array on user documents for proper verification.
-        (privacyLevel == 'all_besties' || defaultPrivacy)
+        // Must be a bestie of the check-in owner (verified via bestieUserIds array)
+        (privacyLevel == 'all_besties' || defaultPrivacy) &&
+        request.auth.uid in get(/databases/$(database)/documents/users/$(checkIn.userId)).data.bestieUserIds
       );
     }
     
     // Users collection
     match /users/{userId} {
-      allow read: if isSignedIn();
+      // Only owner, besties, and admins can read profiles
+      allow read: if isOwner(userId) ||
+                     isAdmin() ||
+                     (isSignedIn() && request.auth.uid in resource.data.bestieUserIds);
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId) && 
+      allow update: if isOwner(userId) &&
         (!request.resource.data.keys().hasAny(['role', 'banned']));
       allow delete: if isAdmin();
     }
