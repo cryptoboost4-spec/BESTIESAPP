@@ -15,7 +15,6 @@ import {
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
-import { notificationService } from '../services/notificationService';
 
 const AuthContext = createContext();
 
@@ -38,28 +37,25 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const inviterRef = doc(db, 'users', inviterUID);
-      const inviterSnap = await getDoc(inviterRef);
-
-      if (!inviterSnap.exists()) {
-        localStorage.removeItem('pending_invite');
-        localStorage.removeItem('inviter_info');
-        return;
-      }
-
-      const inviterData = inviterSnap.data();
-
       // Get current user's data for name fields
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.exists() ? userSnap.data() : {};
 
-      // Store inviter info for welcome screen (only for new users during onboarding)
-      localStorage.setItem('inviter_info', JSON.stringify({
-        uid: inviterUID,
-        displayName: inviterData.displayName,
-        photoURL: inviterData.photoURL,
-      }));
+      // Get inviter info from localStorage (set during URL param capture)
+      const cachedInviterInfo = localStorage.getItem('inviter_info');
+      let inviterDisplayName = 'Your Bestie';
+      let inviterPhotoURL = null;
+
+      if (cachedInviterInfo) {
+        try {
+          const inviterInfo = JSON.parse(cachedInviterInfo);
+          inviterDisplayName = inviterInfo.displayName || 'Your Bestie';
+          inviterPhotoURL = inviterInfo.photoURL;
+        } catch (e) {
+          console.log('Could not parse cached inviter info');
+        }
+      }
 
       // Check if bestie already exists (any direction or by phone)
       const queries = [
@@ -80,54 +76,31 @@ export const AuthProvider = ({ children }) => {
             recipientName: userData.displayName || user.displayName || 'Unknown',
             recipientPhone: user.phoneNumber || user.email,
             recipientPhotoURL: userData.photoURL || user.photoURL || null,
-            requesterName: inviterData.displayName || 'Unknown',
-            requesterPhone: inviterData.phoneNumber || inviterData.email,
-            requesterPhotoURL: inviterData.photoURL || null,
           });
           found = true;
 
-          // Notify both users that they're now connected
-          try {
-            await notificationService.notifyBestieAccepted(
-              inviterUID,
-              userData.displayName || user.displayName || 'Someone'
-            );
-            // Note: Don't notify the new user (they just signed up via invite)
-          } catch (err) {
-            console.error('Failed to send bestie notification:', err);
-          }
+          // Note: Notifications are handled by Cloud Functions
           break;
         }
       }
 
       if (!found) {
         // No existing connection - create a new bestie
+        // Using cached inviter info to avoid permission errors
         await addDoc(collection(db, 'besties'), {
           requesterId: inviterUID,
           recipientId: user.uid,
           status: 'accepted',
           acceptedAt: Timestamp.now(),
           createdAt: Timestamp.now(),
-          requesterName: inviterData.displayName || 'Unknown',
-          requesterPhone: inviterData.phoneNumber || inviterData.email,
-          requesterPhotoURL: inviterData.photoURL || null,
+          requesterName: inviterDisplayName,
+          requesterPhotoURL: inviterPhotoURL,
           recipientName: userData.displayName || user.displayName || 'Unknown',
           recipientPhone: user.phoneNumber || user.email,
           recipientPhotoURL: userData.photoURL || user.photoURL || null,
         });
 
-        // Notify inviter that new bestie added them
-        try {
-          await notificationService.createNotification(
-            inviterUID,
-            'bestie_request',
-            'New Bestie!',
-            `${userData.displayName || user.displayName || 'Someone'} added you as a bestie!`,
-            { bestieName: userData.displayName || user.displayName || 'Someone', bestieId: user.uid }
-          );
-        } catch (err) {
-          console.error('Failed to send bestie notification:', err);
-        }
+        // Note: Notifications are handled by Cloud Functions
       }
 
       // Create celebration documents for BOTH users
@@ -136,17 +109,17 @@ export const AuthProvider = ({ children }) => {
         await addDoc(collection(db, 'bestie_celebrations'), {
           userId: user.uid,
           bestieId: inviterUID,
-          bestieName: inviterData.displayName || 'Unknown',
-          bestiePhotoURL: inviterData.photoURL || null,
+          bestieName: inviterDisplayName,
+          bestiePhotoURL: inviterPhotoURL,
           seen: false,
           createdAt: Timestamp.now(),
         });
 
-        // Celebration for the inviter
+        // Celebration for the inviter (they'll see the new user's name)
         await addDoc(collection(db, 'bestie_celebrations'), {
           userId: inviterUID,
           bestieId: user.uid,
-          bestieName: userData.displayName || user.displayName || 'Unknown',
+          bestieName: userData.displayName || user.displayName || 'Someone',
           bestiePhotoURL: userData.photoURL || user.photoURL || null,
           seen: false,
           createdAt: Timestamp.now(),
@@ -233,15 +206,7 @@ export const AuthProvider = ({ children }) => {
             onboardingCompleted: false, // New users need onboarding
           });
 
-          // Send welcome notification
-          try {
-            await notificationService.notifyWelcome(
-              user.uid,
-              user.displayName || 'New User'
-            );
-          } catch (err) {
-            console.error('Failed to send welcome notification:', err);
-          }
+          // Note: Welcome notification is handled by Cloud Functions
         } else {
           // Returning user - update last active timestamp
           const updates = { lastActive: Timestamp.now() };
