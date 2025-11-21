@@ -145,7 +145,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       circle: 'rounded-full',
       square: 'rounded-none',
       rounded: 'rounded-2xl',
-      heart: 'rounded-full'
+      heart: 'heart-shape'
     };
     return shapes[photoShape] || 'rounded-full';
   };
@@ -162,33 +162,13 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-0">
-      {/* Mobile Preview Modal */}
-      {showPreview && (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 md:hidden">
-          <button
-            onClick={() => setShowPreview(false)}
-            className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl"
-          >
-            ✕
-          </button>
-          <div className="max-w-sm w-full">
-            <div
-              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''}`}
-              style={{ background: currentBackground?.gradient || '#fff' }}
-            >
-              <LayoutComponent {...layoutProps} />
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="bg-white dark:bg-gray-900 w-full h-full md:h-[90vh] md:max-h-[900px] md:max-w-6xl md:rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
-        {/* LIVE PREVIEW - Desktop Left, Hidden on Mobile */}
-        <div className="hidden md:flex md:w-2/5 bg-gray-50 dark:bg-gray-800 p-6 items-center justify-center border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
+        {/* LIVE PREVIEW - Always visible: Top half on mobile, left side on desktop */}
+        <div className="flex md:w-2/5 bg-gray-50 dark:bg-gray-800 p-3 md:p-6 items-center justify-center border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto h-1/2 md:h-auto">
           <div className="w-full max-w-sm">
-            <h3 className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-3 text-center">Preview</h3>
+            <h3 className="text-xs md:text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 md:mb-3 text-center">Live Preview</h3>
             <div
-              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''} rounded-2xl overflow-hidden shadow-xl`}
+              className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} ${currentSpecialEffect?.cssClass || ''} rounded-xl md:rounded-2xl overflow-hidden shadow-xl scale-[0.75] md:scale-100 origin-top`}
               style={{ background: currentBackground?.gradient || '#fff' }}
             >
               <LayoutComponent {...layoutProps} />
@@ -196,25 +176,25 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           </div>
         </div>
 
-        {/* OPTIONS PANEL */}
-        <div className="flex-1 flex flex-col h-full md:h-auto">
+        {/* OPTIONS PANEL - Bottom half on mobile, right side on desktop */}
+        <div className="flex-1 flex flex-col h-1/2 md:h-auto">
           {/* Header - Sticky */}
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <div className="flex items-center justify-between p-4">
-              <h2 className="text-lg md:text-xl font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+            <div className="flex items-center justify-between p-2 md:p-4">
+              <h2 className="text-base md:text-lg font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                 Customize ✨
               </h2>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700"
+                className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-sm md:text-base"
               >
                 ✕
               </button>
             </div>
 
             {/* Tab Navigation - Scrollable */}
-            <div className="overflow-x-auto px-4 pb-3">
-              <div className="flex gap-2 min-w-max">
+            <div className="overflow-x-auto px-2 md:px-4 pb-2 md:pb-3">
+              <div className="flex gap-1 md:gap-2 min-w-max">
                 {[
                   { id: 'vibes', label: 'Vibes', emoji: '✨' },
                   { id: 'backgrounds', label: 'Backgrounds', emoji: '🎨' },
@@ -225,13 +205,13 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+                    className={`px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
                       activeTab === tab.id
                         ? 'bg-gradient-primary text-white shadow-lg'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                     }`}
                   >
-                    {tab.emoji} {tab.label}
+                    <span className="md:inline">{tab.emoji}</span> <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 ))}
               </div>
@@ -239,14 +219,14 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           </div>
 
           {/* Content Area - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4">
             {/* VIBES TAB - Special Effects */}
             {activeTab === 'vibes' && (
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-2 md:mb-4">
                   Add special effects to your profile ✨
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3">
                   {SPECIAL_EFFECTS.map(effect => {
                     return (
                       <button
@@ -262,14 +242,14 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                         }`}
                       >
                         {/* Effect Preview with Animation */}
-                        <div className={`h-32 p-3 flex flex-col items-center justify-center text-center relative ${effect.cssClass || ''}`}>
-                          <div className={`text-4xl mb-2 z-10 relative ${selectedSpecialEffect === effect.id ? 'animate-bounce' : ''}`}>
+                        <div className={`h-20 md:h-32 p-2 md:p-3 flex flex-col items-center justify-center text-center relative ${effect.cssClass || ''}`}>
+                          <div className={`text-2xl md:text-4xl mb-1 md:mb-2 z-10 relative ${selectedSpecialEffect === effect.id ? 'animate-bounce' : ''}`}>
                             {effect.emoji}
                           </div>
-                          <div className={`text-sm font-bold z-10 relative ${selectedSpecialEffect === effect.id ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                          <div className={`text-[10px] md:text-sm font-bold z-10 relative ${selectedSpecialEffect === effect.id ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                             {effect.name}
                           </div>
-                          <div className={`text-xs z-10 relative mt-1 ${selectedSpecialEffect === effect.id ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <div className={`text-[8px] md:text-xs z-10 relative mt-0.5 md:mt-1 hidden md:block ${selectedSpecialEffect === effect.id ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
                             {effect.description}
                           </div>
                           {selectedSpecialEffect === effect.id && (
@@ -288,7 +268,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             {/* BACKGROUNDS TAB */}
             {activeTab === 'backgrounds' && (
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-2 md:mb-4">
                   Pick your aesthetic 🎨
                 </p>
                 {BACKGROUND_CATEGORIES.map(category => {
@@ -296,11 +276,11 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                   if (backgrounds.length === 0) return null;
 
                   return (
-                    <div key={category} className="mb-6">
-                      <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    <div key={category} className="mb-4 md:mb-6">
+                      <h3 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 md:mb-3">
                         {getCategoryName(category)}
                       </h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3">
                         {backgrounds.map(bg => (
                           <button
                             key={bg.id}
@@ -311,18 +291,18 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                           >
                             {/* Mini Card Preview */}
                             <div
-                              className="h-24 flex items-center justify-center relative"
+                              className="h-16 md:h-24 flex items-center justify-center relative"
                               style={{ background: bg.gradient }}
                             >
                               {/* Tiny profile preview */}
                               <div className="flex flex-col items-center">
-                                <div className="w-8 h-8 rounded-full bg-white/80 mb-1"></div>
-                                <div className="text-[10px] font-bold text-white drop-shadow-lg bg-black/30 px-2 py-0.5 rounded">
+                                <div className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-white/80 mb-0.5 md:mb-1"></div>
+                                <div className="text-[8px] md:text-[10px] font-bold text-white drop-shadow-lg bg-black/30 px-1 md:px-2 py-0.5 rounded truncate max-w-full">
                                   {bg.name}
                                 </div>
                               </div>
                               {selectedBackground === bg.id && (
-                                <div className="absolute top-2 right-2 bg-white rounded-full w-5 h-5 flex items-center justify-center text-purple-600 text-xs">
+                                <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-white rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center text-purple-600 text-[10px] md:text-xs">
                                   ✓
                                 </div>
                               )}
@@ -339,26 +319,26 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             {/* LAYOUTS TAB */}
             {activeTab === 'layouts' && (
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-2 md:mb-4">
                   Choose your layout style 📱
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
                   {LAYOUT_OPTIONS.map(layout => (
                     <button
                       key={layout.id}
                       onClick={() => setSelectedLayout(layout.id)}
-                      className={`p-4 rounded-xl text-left transition-all hover:scale-105 ${
+                      className={`p-2 md:p-4 rounded-xl text-left transition-all hover:scale-105 ${
                         selectedLayout === layout.id
                           ? 'bg-gradient-primary text-white shadow-xl ring-2 ring-purple-500'
                           : 'bg-gray-100 dark:bg-gray-800'
                       }`}
                     >
                       {/* Wireframe Preview */}
-                      <div className="mb-3 h-20 bg-white/20 dark:bg-black/20 rounded-lg flex items-center justify-center">
-                        <div className="text-3xl">{layout.emoji}</div>
+                      <div className="mb-2 md:mb-3 h-12 md:h-20 bg-white/20 dark:bg-black/20 rounded-lg flex items-center justify-center">
+                        <div className="text-xl md:text-3xl">{layout.emoji}</div>
                       </div>
-                      <div className="font-display font-bold mb-1">{layout.name}</div>
-                      <div className="text-xs opacity-80">{layout.description}</div>
+                      <div className="font-display font-bold text-xs md:text-base mb-0.5 md:mb-1">{layout.name}</div>
+                      <div className="text-[10px] md:text-xs opacity-80 hidden md:block">{layout.description}</div>
                     </button>
                   ))}
                 </div>
@@ -558,19 +538,11 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           </div>
 
           {/* Footer - Sticky */}
-          <div className="flex-shrink-0 p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex gap-2">
-            {/* Mobile Preview Button */}
-            <button
-              onClick={() => setShowPreview(true)}
-              className="md:hidden flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg font-semibold text-sm"
-            >
-              👁️ Preview
-            </button>
-            {/* Save Button */}
+          <div className="flex-shrink-0 p-2 md:p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 bg-gradient-primary text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              className="w-full bg-gradient-primary text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
             >
               {saving ? 'Saving...' : '💾 Save'}
             </button>
