@@ -3,6 +3,18 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Toaster } from 'react-hot-toast';
 import { auth } from './services/firebase';
 
+// Context
+import { AuthProvider } from './contexts/AuthContext';
+import { DarkModeProvider } from './contexts/DarkModeContext';
+
+// Components
+import ErrorBoundary from './components/ErrorBoundary';
+import AdminRoute from './components/AdminRoute';
+import ScrollToTop from './components/ScrollToTop';
+
+// Services
+import errorTracker from './services/errorTracking';
+
 // Eagerly loaded pages (critical for initial load)
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
@@ -30,18 +42,6 @@ const AlertViewPage = lazy(() => import('./pages/AlertViewPage'));
 const SubscriptionSuccessPage = lazy(() => import('./pages/SubscriptionSuccessPage'));
 const SubscriptionCancelPage = lazy(() => import('./pages/SubscriptionCancelPage'));
 const AboutBestiesPage = lazy(() => import('./pages/AboutBestiesPage'));
-
-// Context
-import { AuthProvider } from './contexts/AuthContext';
-import { DarkModeProvider } from './contexts/DarkModeContext';
-
-// Components
-import ErrorBoundary from './components/ErrorBoundary';
-import AdminRoute from './components/AdminRoute';
-import ScrollToTop from './components/ScrollToTop';
-
-// Services
-import errorTracker from './services/errorTracking';
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
