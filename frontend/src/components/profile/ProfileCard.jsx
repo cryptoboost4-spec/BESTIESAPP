@@ -379,6 +379,15 @@ const ProfileCard = ({ currentUser, userData }) => {
       {/* Social Sharing Icons - Cute & Small */}
       <div className="mt-6 relative z-10">
         <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Share your profile:</p>
+
+        {/* Download Card Button */}
+        <button
+          onClick={handleShareProfileCard}
+          className="mb-3 px-4 py-2 bg-gradient-primary text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+        >
+          📸 Download Profile Card
+        </button>
+
         <div className="flex gap-2 justify-center flex-wrap">
           {/* Facebook */}
           <button
