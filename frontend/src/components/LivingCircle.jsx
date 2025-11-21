@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../services/firebase';
+import { db, auth } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import BestieCircleShareModal from './BestieCircleShareModal';
@@ -24,7 +24,8 @@ const LivingCircle = ({ userId, onAddClick }) => {
   const [connectionStrengths, setConnectionStrengths] = useState({});
   const [lastSeen, setLastSeen] = useState({});
   const [loadingConnections, setLoadingConnections] = useState(true);
-  const [showCircleCheck, setShowCircleCheck] = useState(false);
+  const [overallHealth, setOverallHealth] = useState(0);
+  const [showVibeTooltip, setShowVibeTooltip] = useState(false);
 
   const loadBesties = async () => {
     if (!userId) return;
@@ -80,12 +81,17 @@ const LivingCircle = ({ userId, onAddClick }) => {
           }
         }
 
+        // Check if current user is in their featured circle (mutual)
+        const theirFeaturedCircle = userData.featuredCircle || [];
+        const isMutual = theirFeaturedCircle.includes(userId);
+
         bestiesList.push({
           id: data.recipientId,
           name: userData.displayName || 'Bestie',
           photoURL: userData.photoURL || null,
           requestAttention: userData.requestAttention || null,
           hasActiveCheckIn: hasActiveCheckIn,
+          isMutual: isMutual,
         });
       }
 
@@ -119,12 +125,17 @@ const LivingCircle = ({ userId, onAddClick }) => {
           }
         }
 
+        // Check if current user is in their featured circle (mutual)
+        const theirFeaturedCircle = userData.featuredCircle || [];
+        const isMutual = theirFeaturedCircle.includes(userId);
+
         bestiesList.push({
           id: data.requesterId,
           name: userData.displayName || 'Bestie',
           photoURL: userData.photoURL || null,
           requestAttention: userData.requestAttention || null,
           hasActiveCheckIn: hasActiveCheckIn,
+          isMutual: isMutual,
         });
       }
 
@@ -185,6 +196,13 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
     setConnectionStrengths(strengths);
     setLastSeen(lastSeenData);
+
+    // Calculate overall health
+    const scores = Object.values(strengths).map(s => s.total);
+    const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const healthWithPenalty = besties.length < 5 ? avgScore * (besties.length / 5) : avgScore;
+    setOverallHealth(Math.round(healthWithPenalty));
+
     setLoadingConnections(false);
   };
 
@@ -231,32 +249,6 @@ const LivingCircle = ({ userId, onAddClick }) => {
   const handleViewProfile = (bestieId) => {
     navigate(`/user/${bestieId}`);
     setSelectedSlot(null);
-  };
-
-  const handleCircleCheck = async () => {
-    // Track interaction
-    try {
-      const now = Timestamp.now();
-      for (const bestie of circleBesties) {
-        await addDoc(collection(db, 'interactions'), {
-          userId: userId,
-          bestieId: bestie.id,
-          type: 'circle_check',
-          checkInId: null,
-          alertId: null,
-          metadata: {},
-          createdAt: now,
-        });
-      }
-
-      toast.success('Circle checked! 💚');
-      setShowCircleCheck(false);
-
-      // Reload to show updated data
-      loadConnectionData(circleBesties);
-    } catch (error) {
-      console.error('Error tracking circle check:', error);
-    }
   };
 
   const getStatusInfo = (bestie) => {
@@ -308,22 +300,19 @@ const LivingCircle = ({ userId, onAddClick }) => {
   }
 
   return (
-    <div className="card p-6 md:p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden">
+    <div
+      className="card p-6 md:p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden"
+      onClick={() => {
+        if (showVibeTooltip) setShowVibeTooltip(false);
+      }}
+    >
       {/* Animated background gradient */}
       <div className="absolute inset-0 opacity-30 animate-gradient-shift pointer-events-none"></div>
 
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl md:text-2xl font-display text-gradient">Your Living Circle</h3>
-          {circleBesties.length > 0 && (
-            <button
-              onClick={() => setShowCircleCheck(true)}
-              className="btn btn-primary text-sm py-2 px-4 flex items-center gap-2"
-            >
-              <span>Check Circle</span>
-              <span className="text-lg">🌅</span>
-            </button>
-          )}
+        <div className="text-center mb-6">
+          <h3 className="text-2xl md:text-3xl font-display text-gradient mb-1">Your Inner Circle</h3>
+          <p className="text-sm text-gray-600">The 5 who have your back, always</p>
         </div>
 
         {/* Circle Container - Responsive sizing */}
@@ -377,30 +366,106 @@ const LivingCircle = ({ userId, onAddClick }) => {
                     className="animate-pulse-connection"
                   />
 
-                  {/* Particle effect for strong connections */}
-                  {strengthScore >= 70 && (
-                    <circle
-                      cx="50%"
-                      cy="50%"
-                      r="3"
-                      fill={connectionColor}
-                      opacity={opacity * 2}
-                      className="animate-particle"
-                      style={{
-                        '--target-x': `${x}%`,
-                        '--target-y': `${y}%`,
-                        animationDelay: `${index * 0.5}s`,
-                      }}
-                    />
+                  {/* Flowing particles - always visible, more for stronger connections */}
+                  {bestie && (
+                    <>
+                      {/* Primary particle - always flows */}
+                      <circle
+                        cx="50%"
+                        cy="50%"
+                        r={strengthScore >= 50 ? "4" : "3"}
+                        fill="#10b981"
+                        opacity={0.4 + (strengthScore / 100) * 0.6}
+                        className="animate-particle"
+                        style={{
+                          '--target-x': `${x}%`,
+                          '--target-y': `${y}%`,
+                          animationDelay: `${index * 0.5}s`,
+                          animationDuration: strengthScore >= 70 ? '2s' : '3s',
+                        }}
+                      />
+                      {/* Secondary particle for strong connections */}
+                      {strengthScore >= 50 && (
+                        <circle
+                          cx="50%"
+                          cy="50%"
+                          r="3"
+                          fill="#34d399"
+                          opacity={0.5}
+                          className="animate-particle"
+                          style={{
+                            '--target-x': `${x}%`,
+                            '--target-y': `${y}%`,
+                            animationDelay: `${index * 0.5 + 1}s`,
+                            animationDuration: '2.5s',
+                          }}
+                        />
+                      )}
+                      {/* Third particle for unbreakable connections */}
+                      {strengthScore >= 90 && (
+                        <circle
+                          cx="50%"
+                          cy="50%"
+                          r="4"
+                          fill="#10b981"
+                          opacity={0.7}
+                          className="animate-particle"
+                          style={{
+                            '--target-x': `${x}%`,
+                            '--target-y': `${y}%`,
+                            animationDelay: `${index * 0.5 + 0.5}s`,
+                            animationDuration: '1.8s',
+                          }}
+                        />
+                      )}
+                    </>
                   )}
                 </svg>
               );
             })}
 
-            {/* Center Circle (YOU) */}
+            {/* Center Circle - Circle Health Score */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-primary rounded-full flex items-center justify-center text-white text-sm md:text-base font-display shadow-2xl border-4 border-white ring-4 ring-purple-200 animate-breathe">
-                YOU
+              <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-primary rounded-full flex flex-col items-center justify-center text-white shadow-2xl border-4 border-white ring-4 ring-purple-200 animate-breathe relative group">
+                {loadingConnections ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : circleBesties.length === 0 ? (
+                  <div className="text-center px-2">
+                    <div className="text-2xl mb-0.5">💜</div>
+                    <div className="text-[10px] font-semibold leading-tight">Begin<br/>Here</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl md:text-3xl font-bold leading-none">{overallHealth}</div>
+                    <div className="text-xs font-semibold opacity-90">Your Vibe</div>
+
+                    {/* Info Tooltip for Context - Mobile & Desktop Friendly */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowVibeTooltip(!showVibeTooltip);
+                      }}
+                      className="absolute -top-2 -right-2 w-6 h-6 md:w-5 md:h-5 bg-white rounded-full flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform active:scale-95 z-40"
+                    >
+                      <span className="text-sm md:text-xs">ℹ️</span>
+                    </button>
+                    {showVibeTooltip && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 z-50 animate-fade-in">
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl max-w-xs">
+                          <div className="font-bold mb-1">Your Circle Strength</div>
+                          <div className="text-white/90 text-xs whitespace-normal w-48">
+                            {overallHealth >= 90 && "🔥 Unbreakable - You and your circle are inseparable!"}
+                            {overallHealth >= 70 && overallHealth < 90 && "⚡ Powerful - Strong bonds, keep nurturing them!"}
+                            {overallHealth >= 50 && overallHealth < 70 && "💪 Strong - Solid friendships, growing stronger!"}
+                            {overallHealth >= 30 && overallHealth < 50 && "🔆 Growing - Building momentum together!"}
+                            {overallHealth < 30 && "🌱 Spark - Just getting started, lots of potential!"}
+                          </div>
+                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-pink-600"></div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
@@ -432,7 +497,14 @@ const LivingCircle = ({ userId, onAddClick }) => {
                         onClick={() => setSelectedSlot(selectedSlot === index ? null : index)}
                         className="relative hover:scale-110 transition-all duration-300"
                       >
-                        <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full shadow-xl border-4 border-white hover:shadow-2xl ${status.ringColor} ring-4 hover:ring-6 overflow-hidden flex items-center justify-center relative animate-breathe-subtle`}
+                        <div
+                          className={`w-14 h-14 md:w-16 md:h-16 rounded-full shadow-xl border-4 border-white hover:shadow-2xl ${
+                            connectionStrength?.total >= 90
+                              ? 'ring-6 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
+                              : `${status.ringColor} ring-4`
+                          } hover:ring-6 overflow-hidden flex items-center justify-center relative ${
+                            connectionStrength?.total >= 90 ? 'animate-breathe-glow' : 'animate-breathe-subtle'
+                          }`}
                           style={{ animationDelay: `${index * 0.3}s` }}
                         >
                           <ProfileWithBubble
@@ -448,24 +520,60 @@ const LivingCircle = ({ userId, onAddClick }) => {
                           <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${status.color} rounded-full border-2 border-white flex items-center justify-center text-xs shadow-lg animate-pulse-gentle`}>
                             {status.emoji}
                           </div>
+
+                          {/* Connection Strength Badge - Always Visible with Special Styling for Unbreakable */}
+                          {connectionStrength && !loadingConnections && (
+                            <div
+                              className={`absolute -top-1 -left-1 w-8 h-8 rounded-full border-2 flex items-center justify-center shadow-lg ${
+                                connectionStrength.total >= 90
+                                  ? 'bg-gradient-to-br from-amber-400 to-orange-500 border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.8)] animate-pulse-glow'
+                                  : 'bg-gradient-to-br from-white to-gray-100 border-purple-300'
+                              }`}
+                            >
+                              <span className="text-base">{getConnectionEmoji(connectionStrength.total)}</span>
+                            </div>
+                          )}
+
+                          {/* Mutual Circle Badge - Top Right */}
+                          {bestie.isMutual && (
+                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-pulse-gentle">
+                              <span className="text-xs">💕</span>
+                            </div>
+                          )}
                         </div>
                       </button>
 
                       {/* Enhanced Tooltip with Connection Strength */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 transform group-hover:-translate-y-1">
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-2xl">
-                          <div className="font-bold mb-1">{bestie.name || 'Unknown'}</div>
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl min-w-max">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="font-bold text-sm">{bestie.name || 'Unknown'}</div>
+                            {bestie.isMutual && (
+                              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                💕 Mutual
+                              </span>
+                            )}
+                          </div>
                           {connectionStrength && !loadingConnections && (
-                            <div className="flex items-center gap-2 text-white/90">
-                              <span>{getConnectionEmoji(connectionStrength.total)}</span>
-                              <span>{connectionStrength.total}/100</span>
-                              <span className="text-white/70">•</span>
-                              <span className="capitalize">{connectionStrength.level}</span>
-                            </div>
+                            <>
+                              <div className="flex items-center gap-2 text-white/90 mb-1">
+                                <span className="text-lg">{getConnectionEmoji(connectionStrength.total)}</span>
+                                <span>{connectionStrength.total}/100</span>
+                                <span className="capitalize px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                                  {connectionStrength.level}
+                                </span>
+                              </div>
+                            </>
                           )}
                           {lastSeenTime && (
-                            <div className="text-white/70 text-xs mt-1">
-                              Last: {formatTimeAgo(lastSeenTime)}
+                            <div className="text-white/90 text-xs mt-2 flex items-center gap-1">
+                              <span>💬</span>
+                              <span>Last connected: {formatTimeAgo(lastSeenTime)}</span>
+                            </div>
+                          )}
+                          {bestie.isMutual && (
+                            <div className="text-white/80 text-xs mt-2 italic">
+                              You're both in each other's top 5 ✨
                             </div>
                           )}
                           <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-600"></div>
@@ -499,10 +607,18 @@ const LivingCircle = ({ userId, onAddClick }) => {
                   ) : (
                     <button
                       onClick={() => setShowShareModal(true)}
-                      className={`w-14 h-14 md:w-16 md:h-16 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-2xl md:text-3xl font-bold hover:scale-110 hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl animate-pulse-slow`}
-                      title="Invite a bestie to your circle"
+                      className={`w-14 h-14 md:w-16 md:h-16 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex flex-col items-center justify-center ${slotColors[index].replace('bg-', 'text-')} font-bold hover:scale-110 hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl animate-pulse-slow relative group`}
+                      title="Add someone who has your back"
                     >
-                      +
+                      <span className="text-2xl">+</span>
+                      <span className="text-[8px] opacity-70 mt-0.5">Add</span>
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20">
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap shadow-xl">
+                          {circleBesties.length === 0 ? "Your first bestie ✨" : "Add another one 💜"}
+                          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-600"></div>
+                        </div>
+                      </div>
                     </button>
                   )}
                 </div>
@@ -511,28 +627,42 @@ const LivingCircle = ({ userId, onAddClick }) => {
           </div>
         </div>
 
-        {/* Info - Enhanced */}
-        <div className="text-center mt-6">
-          <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border-2 border-purple-200 mb-2">
+        {/* Info - Enhanced with Progress */}
+        <div className="text-center mt-6 space-y-3">
+          <div className="inline-flex items-center gap-2 bg-white px-4 py-3 rounded-full shadow-md border-2 border-purple-200">
             <span className="text-2xl">⭐</span>
-            <span className="font-display text-base md:text-lg text-gradient font-bold">
-              {circleBesties.length}/5 Circle Members
-            </span>
+            <div className="text-left">
+              <div className="font-display text-base md:text-lg text-gradient font-bold leading-tight">
+                {circleBesties.length}/5 In Your Circle
+              </div>
+              {circleBesties.length > 0 && !loadingConnections && (
+                <div className="text-xs text-gray-600">
+                  {overallHealth >= 90 && "Unbreakable vibes 🔥"}
+                  {overallHealth >= 70 && overallHealth < 90 && "Super strong energy ⚡"}
+                  {overallHealth >= 50 && overallHealth < 70 && "Solid connections 💪"}
+                  {overallHealth >= 30 && overallHealth < 50 && "Building momentum 🔆"}
+                  {overallHealth < 30 && "Just getting started 🌱"}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="text-xs md:text-sm text-gray-600 mt-2">
+          <div className="text-xs md:text-sm text-gray-600">
             {circleBesties.length === 5
-              ? "Your circle is complete! 🎉"
+              ? "Your circle is complete! Keep nurturing these connections 💜"
               : circleBesties.length === 0
-              ? "Start building your safety network"
-              : `Add ${5 - circleBesties.length} more to complete your circle`}
+              ? "Your 5 closest people - the ones you can call at 3am. Start building your circle ✨"
+              : circleBesties.length === 1
+              ? "Amazing start! Add 4 more to complete your inner circle 🌟"
+              : `${5 - circleBesties.length} more to go! You're building something special 💫`}
           </div>
 
           {circleBesties.length > 0 && !loadingConnections && (
             <button
               onClick={() => navigate('/circle-health')}
-              className="mt-3 text-primary font-semibold text-sm hover:underline flex items-center gap-2 mx-auto"
+              className="mt-2 px-6 py-2 bg-gradient-primary text-white rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2 mx-auto"
             >
-              View Circle Health Dashboard →
+              <span>See Your Stats</span>
+              <span className="text-base">✨</span>
             </button>
           )}
         </div>
@@ -540,6 +670,19 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       {/* CSS Animations */}
       <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out forwards;
+        }
         @keyframes breathe {
           0%, 100% {
             transform: scale(1);
@@ -553,6 +696,32 @@ const LivingCircle = ({ userId, onAddClick }) => {
         }
         .animate-breathe-subtle {
           animation: breathe 5s ease-in-out infinite;
+        }
+        @keyframes breathe-glow {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 10px 40px rgba(251, 191, 36, 0.4), 0 0 20px rgba(251, 191, 36, 0.6);
+          }
+          50% {
+            transform: scale(1.05);
+            box-shadow: 0 15px 60px rgba(251, 191, 36, 0.6), 0 0 30px rgba(251, 191, 36, 0.8);
+          }
+        }
+        .animate-breathe-glow {
+          animation: breathe-glow 3s ease-in-out infinite;
+        }
+        @keyframes pulse-glow {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+        .animate-pulse-glow {
+          animation: pulse-glow 2s ease-in-out infinite;
         }
         @keyframes pulse-gentle {
           0%, 100% {
@@ -666,135 +835,6 @@ const LivingCircle = ({ userId, onAddClick }) => {
           circleCount={circleBesties.length}
         />
       )}
-
-      {/* Circle Check Modal */}
-      {showCircleCheck && (
-        <CircleCheckModal
-          besties={circleBesties}
-          connectionStrengths={connectionStrengths}
-          getStatusInfo={getStatusInfo}
-          onClose={() => setShowCircleCheck(false)}
-          onComplete={handleCircleCheck}
-        />
-      )}
-    </div>
-  );
-};
-
-// Daily Circle Check Modal Component
-const CircleCheckModal = ({ besties, connectionStrengths, getStatusInfo, onClose, onComplete }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [checking, setChecking] = useState(false);
-
-  const currentBestie = besties[currentIndex];
-  const status = currentBestie ? getStatusInfo(currentBestie) : null;
-  const connectionStrength = currentBestie ? connectionStrengths[currentBestie.id] : null;
-
-  const handleNext = () => {
-    if (currentIndex < besties.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      setChecking(true);
-      onComplete();
-    }
-  };
-
-  if (!currentBestie) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-gradient-to-br from-white via-purple-50 to-pink-50 rounded-2xl p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        {/* Progress Indicator */}
-        <div className="flex gap-2 mb-6">
-          {besties.map((_, idx) => (
-            <div
-              key={idx}
-              className={`flex-1 h-2 rounded-full transition-all duration-300 ${
-                idx <= currentIndex ? 'bg-gradient-primary' : 'bg-gray-200'
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Bestie Display */}
-        <div className="text-center mb-6">
-          <div className="relative inline-block mb-4">
-            <div className={`w-32 h-32 rounded-full ${status.ringColor} ring-8 overflow-hidden shadow-2xl animate-breathe`}>
-              {currentBestie.photoURL ? (
-                <img
-                  src={currentBestie.photoURL}
-                  alt={currentBestie.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-primary flex items-center justify-center text-white font-display text-4xl">
-                  {currentBestie.name[0]?.toUpperCase() || '?'}
-                </div>
-              )}
-              <div className={`absolute -bottom-2 -right-2 w-10 h-10 ${status.color} rounded-full border-4 border-white flex items-center justify-center text-xl shadow-lg`}>
-                {status.emoji}
-              </div>
-            </div>
-          </div>
-
-          <h3 className="text-2xl font-display text-gradient mb-2">{currentBestie.name}</h3>
-
-          {/* Status */}
-          <div className="text-sm font-semibold text-gray-700 mb-4">
-            {status.label}
-          </div>
-
-          {/* Connection Strength */}
-          {connectionStrength && (
-            <div className="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-lg border-2 border-purple-200 mb-4">
-              <span className="text-2xl">{getConnectionEmoji(connectionStrength.total)}</span>
-              <div className="text-left">
-                <div className="text-xs text-gray-500">Connection</div>
-                <div className="font-bold text-lg text-gradient">{connectionStrength.total}/100</div>
-              </div>
-              <span className="text-sm capitalize font-semibold text-gray-600">{connectionStrength.level}</span>
-            </div>
-          )}
-
-          {/* Action based on status */}
-          {currentBestie.requestAttention?.active && (
-            <div className="bg-purple-100 border-2 border-purple-300 rounded-xl p-4 mb-4">
-              <div className="font-semibold text-purple-900 mb-2">💜 Needs your support</div>
-              <div className="text-sm text-purple-700">{currentBestie.requestAttention.note || 'Could use a friend right now'}</div>
-            </div>
-          )}
-
-          {currentBestie.hasActiveCheckIn && (
-            <div className="bg-yellow-100 border-2 border-yellow-300 rounded-xl p-4 mb-4">
-              <div className="font-semibold text-yellow-900 mb-1">⏰ Active check-in</div>
-              <div className="text-sm text-yellow-700">They're checking in somewhere</div>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 btn btn-secondary"
-          >
-            Close
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={checking}
-            className="flex-1 btn btn-primary flex items-center justify-center gap-2"
-          >
-            {checking ? (
-              'Completing...'
-            ) : currentIndex < besties.length - 1 ? (
-              <>Next <span>→</span></>
-            ) : (
-              <>Complete ✓</>
-            )}
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
