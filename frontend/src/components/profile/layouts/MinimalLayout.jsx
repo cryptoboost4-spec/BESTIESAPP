@@ -66,7 +66,7 @@ const MinimalLayout = ({
       {/* Bio - Minimal */}
       {bio && (
         <p
-          className={`${bioSizeClass || 'text-sm'} text-gray-600 dark:text-gray-400 max-w-xs mx-auto mb-6 leading-relaxed`}
+          className={`${bioSizeClass || 'text-lg'} text-gray-600 dark:text-gray-400 max-w-xs mx-auto mb-6 leading-relaxed`}
           style={bioStyle}
         >
           {bio}

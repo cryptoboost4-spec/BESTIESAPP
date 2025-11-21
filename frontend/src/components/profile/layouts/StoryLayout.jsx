@@ -60,7 +60,7 @@ const StoryLayout = ({
       {/* Bio - Overlaid */}
       {bio && (
         <p
-          className={`${bioSizeClass || 'text-lg'} text-white drop-shadow-lg max-w-xs mx-auto mb-6 z-10 relative`}
+          className={`${bioSizeClass || 'text-xl'} text-white drop-shadow-lg max-w-xs mx-auto mb-6 z-10 relative`}
           style={{...bioStyle, textShadow: '0 1px 5px rgba(0,0,0,0.3)'}}
         >
           "{bio}"

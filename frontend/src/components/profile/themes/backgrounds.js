@@ -54,6 +54,15 @@ export const BACKGROUNDS = {
       gradient: 'linear-gradient(135deg, #9DC183 0%, #E8F5E9 100%)',
       pattern: 'geometric',
       description: 'Fresh green with geometric touches'
+    },
+    {
+      id: 'botanical-print',
+      name: '🌿 Botanical Print',
+      category: 'plantMom',
+      gradient: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 50%, #A5D6A7 100%)',
+      pattern: 'leaves',
+      description: 'Illustrated leafy pattern',
+      illustrated: true
     }
   ],
 
@@ -99,6 +108,24 @@ export const BACKGROUNDS = {
       pattern: 'shine',
       description: 'Glossy pink perfection'
     },
+    {
+      id: 'lipstick-kisses',
+      name: '💄 Lipstick Kisses',
+      category: 'beauty',
+      gradient: 'linear-gradient(135deg, #FFC0CB 0%, #FFB6C1 50%, #FF69B4 100%)',
+      pattern: 'hearts',
+      description: 'Playful pink lip print vibes',
+      illustrated: true
+    },
+    {
+      id: 'makeup-brushes',
+      name: '✨ Glam Vanity',
+      category: 'beauty',
+      gradient: 'linear-gradient(135deg, #E8C4B8 0%, #D4A574 50%, #F5E6D3 100%)',
+      pattern: 'shimmer',
+      description: 'Chic makeup counter aesthetic',
+      illustrated: true
+    }
   ],
 
   // 🐴 EQUESTRIAN
@@ -171,6 +198,24 @@ export const BACKGROUNDS = {
       pattern: 'foam',
       description: 'Foamy beige perfection'
     },
+    {
+      id: 'coffee-cups',
+      name: '☕ Coffee Shop',
+      category: 'coffee',
+      gradient: 'linear-gradient(135deg, #FFF8E1 0%, #D7CCC8 50%, #8D6E63 100%)',
+      pattern: 'dots',
+      description: 'Cozy coffee cup pattern',
+      illustrated: true
+    },
+    {
+      id: 'latte-art',
+      name: '🎨 Latte Art',
+      category: 'coffee',
+      gradient: 'linear-gradient(135deg, #EFEBE9 0%, #A1887F 50%, #6D4C41 100%)',
+      pattern: 'swirl',
+      description: 'Barista hearts and rosettas',
+      illustrated: true
+    }
   ],
 
   // 🏋️‍♀️ WELLNESS & FITNESS
@@ -207,6 +252,15 @@ export const BACKGROUNDS = {
       pattern: 'organic',
       description: 'Fresh green vitality'
     },
+    {
+      id: 'fitness-vibes',
+      name: '💪 Fitness Vibes',
+      category: 'wellness',
+      gradient: 'linear-gradient(135deg, #FFCCBC 0%, #FF8A65 50%, #FF5722 100%)',
+      pattern: 'energy',
+      description: 'Energetic coral orange',
+      illustrated: true
+    }
   ],
 
   // 📚 BOOKWORM
@@ -359,6 +413,24 @@ export const BACKGROUNDS = {
       pattern: 'luxe',
       description: 'Tan and black chic'
     },
+    {
+      id: 'fashion-week',
+      name: '👠 Fashion Week',
+      category: 'fashion',
+      gradient: 'linear-gradient(135deg, #FFE4E1 0%, #FFB6C1 50%, #FF69B4 100%)',
+      pattern: 'stripes',
+      description: 'Runway stripes and pink',
+      illustrated: true
+    },
+    {
+      id: 'handbag-heaven',
+      name: '👜 Handbag Heaven',
+      category: 'fashion',
+      gradient: 'linear-gradient(135deg, #F5E6D3 0%, #D4A574 50%, #8B7355 100%)',
+      pattern: 'luxury',
+      description: 'Luxe leather tones',
+      illustrated: true
+    }
   ],
 
   // 🎨 CREATIVE & ARTSY
@@ -395,6 +467,24 @@ export const BACKGROUNDS = {
       pattern: 'doodles',
       description: 'Paper texture with doodles'
     },
+    {
+      id: 'paint-splatter',
+      name: '🎨 Paint Splatter',
+      category: 'creative',
+      gradient: 'linear-gradient(135deg, #FFF9C4 0%, #FFB74D 35%, #E57373 65%, #9575CD 100%)',
+      pattern: 'splatter',
+      description: 'Colorful paint drops',
+      illustrated: true
+    },
+    {
+      id: 'music-notes',
+      name: '🎵 Music Vibes',
+      category: 'creative',
+      gradient: 'linear-gradient(135deg, #E1BEE7 0%, #CE93D8 50%, #BA68C8 100%)',
+      pattern: 'notes',
+      description: 'Musical note pattern',
+      illustrated: true
+    }
   ],
 
   // 🌊 BEACH & OCEAN
@@ -467,6 +557,24 @@ export const BACKGROUNDS = {
       pattern: 'strawberry',
       description: 'Pink and berry red'
     },
+    {
+      id: 'butterfly-garden',
+      name: '🦋 Butterfly Garden',
+      category: 'cottagecore',
+      gradient: 'linear-gradient(135deg, #FFF9C4 0%, #F48FB1 50%, #BA68C8 100%)',
+      pattern: 'butterflies',
+      description: 'Fluttering butterfly wings',
+      illustrated: true
+    },
+    {
+      id: 'flower-field',
+      name: '🌸 Flower Field',
+      category: 'cottagecore',
+      gradient: 'linear-gradient(135deg, #FFEBEE 0%, #F8BBD0 35%, #CE93D8 65%, #90CAF9 100%)',
+      pattern: 'blooms',
+      description: 'Dreamy pastel blooms',
+      illustrated: true
+    }
   ],
 
   // 🏙️ CITY GIRL
@@ -539,6 +647,15 @@ export const BACKGROUNDS = {
       pattern: 'warm',
       description: 'Deep brown and orange'
     },
+    {
+      id: 'hot-cocoa',
+      name: '☕ Hot Cocoa',
+      category: 'cozy',
+      gradient: 'linear-gradient(135deg, #8D6E63 0%, #D7CCC8 50%, #FFCCBC 100%)',
+      pattern: 'steam',
+      description: 'Warm chocolate tones',
+      illustrated: true
+    }
   ],
 
   // 🦋 WHIMSICAL & DREAMY
@@ -575,6 +692,24 @@ export const BACKGROUNDS = {
       pattern: 'magic',
       description: 'Pastel rainbow'
     },
+    {
+      id: 'star-gazing',
+      name: '⭐ Star Gazing',
+      category: 'whimsical',
+      gradient: 'linear-gradient(135deg, #1A237E 0%, #3F51B5 50%, #B39DDB 100%)',
+      pattern: 'stars',
+      description: 'Night sky with twinkling stars',
+      illustrated: true
+    },
+    {
+      id: 'moon-phases',
+      name: '🌙 Moon Phases',
+      category: 'whimsical',
+      gradient: 'linear-gradient(135deg, #424242 0%, #78909C 50%, #CFD8DC 100%)',
+      pattern: 'moons',
+      description: 'Celestial moon pattern',
+      illustrated: true
+    }
   ],
 
   // 💎 LUXE & BOUGIE
