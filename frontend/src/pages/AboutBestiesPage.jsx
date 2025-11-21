@@ -3001,6 +3001,10 @@ const AboutBestiesPage = () => {
                   We've all been there - walking home alone at night, going on a first date, traveling somewhere new, or just wanting someone to know you made it home okay. Those moments when you wish your best friend could be right there with you, even when they can't.
                 </p>
               </div>
+              <p className="text-sm text-gray-700">
+                Exploring the world alone? Check in from anywhere. Someone back home is watching out.
+              </p>
+            </div>
 
               <div className="text-center mt-8 p-6 bg-white/60 rounded-2xl backdrop-blur-sm">
                 <p className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
@@ -3025,6 +3029,10 @@ const AboutBestiesPage = () => {
                   </div>
                 </div>
               </div>
+              <p className="text-sm text-gray-700">
+                Getting in a stranger's car? Share your ride details. Your friends are tracking you home.
+              </p>
+            </div>
 
               {/* Right Panel - Content */}
               <div className="bg-white p-12">
@@ -3044,6 +3052,9 @@ const AboutBestiesPage = () => {
                   </div>
                 </div>
               </div>
+              <p className="text-sm text-gray-700">
+                Leaving the club? Your whole crew checks in. Nobody gets left behind.
+              </p>
             </div>
           </div>
 

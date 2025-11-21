@@ -9,20 +9,20 @@ import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 import { useAuth } from '../contexts/AuthContext';
 
-// Cute loader for "I'm Safe" confirmation
+// Luxury loader for "I'm Safe" confirmation
 const SafeLoader = () => {
   const navigate = useNavigate();
   const messages = [
-    "We're so glad you're safe! 💖",
-    "Your besties will be so relieved! ✨",
-    "Taking care of yourself like a queen! 🌸",
-    "You're amazing, bestie! 💕",
-    "See you next time, stay safe! 🦋",
+    { text: "Welcome home, beautiful! 💖", subtext: "We're so relieved you're safe" },
+    { text: "You made it safely! ✨", subtext: "Your besties can rest easy now" },
+    { text: "Safe and sound! 🌸", subtext: "Taking care of yourself like a queen" },
+    { text: "You're home safe! 💕", subtext: "That's all that matters" },
   ];
 
   // Pick one random message
   const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
+  // Redirect to home after 2 seconds
   useEffect(() => {
     // Navigate to home after 2 seconds
     const timer = setTimeout(() => {
@@ -32,40 +32,159 @@ const SafeLoader = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center">
-        {/* Animated celebration hearts */}
-        <div className="relative mb-8">
-          <div className="text-8xl animate-bounce">
-            💚
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Floating celebration elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(25)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-celebration-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2}s`,
+              animationDuration: `${3 + Math.random() * 3}s`,
+              opacity: 0.4 + Math.random() * 0.4,
+            }}
+          >
+            <span className="text-3xl">
+              {['🎉', '✨', '💚', '🌟', '💫', '🎊', '🦋', '🌸'][Math.floor(Math.random() * 8)]}
+            </span>
           </div>
-          <div className="absolute top-0 left-1/4 text-4xl animate-float opacity-70">
-            ✨
-          </div>
-          <div className="absolute top-0 right-1/4 text-4xl animate-float delay-1s opacity-70">
-            💕
-          </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Message */}
-        <h2 className="font-display text-3xl text-gradient mb-4">
-          You're Safe!
-        </h2>
+      {/* Luxury celebration card */}
+      <div className="w-full max-w-lg text-center relative z-10">
+        <div className="relative bg-white/95 backdrop-blur-xl rounded-[2rem] p-10 shadow-[0_20px_60px_rgba(16,185,129,0.3)] border border-emerald-200/50">
+          {/* Decorative corner accents */}
+          <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-emerald-300/50 rounded-tl-xl"></div>
+          <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-green-300/50 rounded-tr-xl"></div>
+          <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-green-300/50 rounded-bl-xl"></div>
+          <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-emerald-300/50 rounded-br-xl"></div>
+
+          {/* Success animation */}
+          <div className="relative w-32 h-32 mx-auto mb-8">
+            {/* Pulsing glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-300 via-green-300 to-teal-300 rounded-full animate-pulse-slow opacity-40 blur-xl"></div>
+
+            {/* Checkmark with heart */}
+            <div className="relative w-32 h-32 flex items-center justify-center">
+              <svg viewBox="0 0 100 100" className="w-28 h-28">
+                <defs>
+                  <linearGradient id="successGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="50%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#6ee7b7" />
+                  </linearGradient>
+                  <filter id="successGlow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* Circle background */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="35"
+                  fill="url(#successGradient)"
+                  filter="url(#successGlow)"
+                  className="animate-scale-bounce"
+                />
+
+                {/* Large checkmark */}
+                <path
+                  d="M30,50 L42,62 L70,34"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="animate-draw-success"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Celebration message */}
+          <h2 className="font-display text-3xl md:text-4xl bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent mb-3 leading-tight">
+            {selectedMessage.text}
+          </h2>
 
         <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
           {message}
         </p>
 
-        {/* Success checkmark animation */}
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-success rounded-full mb-6 animate-scale-up">
-          <span className="text-4xl text-white">✓</span>
-        </div>
+          {/* Celebrating animation */}
+          <div className="flex justify-center items-center gap-3 mb-6">
+            <span className="text-3xl animate-bounce-gentle">🎉</span>
+            <span className="text-3xl animate-bounce-gentle" style={{animationDelay: '0.2s'}}>💚</span>
+            <span className="text-3xl animate-bounce-gentle" style={{animationDelay: '0.4s'}}>✨</span>
+          </div>
 
-        {/* Cute message */}
-        <p className="text-text-secondary">
-          Until next time, bestie! 💜
-        </p>
+          {/* Gentle reminder */}
+          <p className="text-xs text-gray-400 italic">
+            Until next time, stay safe bestie! 💕
+          </p>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes celebration-float {
+          0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100vh) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.3); opacity: 0.2; }
+        }
+        @keyframes scale-bounce {
+          0% { transform: scale(0); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+        @keyframes draw-success {
+          0% { stroke-dasharray: 0, 100; }
+          100% { stroke-dasharray: 100, 0; }
+        }
+        @keyframes bounce-gentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        .animate-celebration-float {
+          animation: celebration-float 5s ease-in-out infinite;
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+        .animate-scale-bounce {
+          animation: scale-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .animate-draw-success {
+          animation: draw-success 0.8s ease-in-out 0.3s forwards;
+          stroke-dasharray: 100;
+          stroke-dashoffset: 100;
+        }
+        .animate-bounce-gentle {
+          animation: bounce-gentle 1s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };
@@ -351,15 +470,28 @@ const CheckInCard = ({ checkIn }) => {
           // Upload each file
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const storageRef = ref(storage, `checkin-photos/${checkIn.userId}/${Date.now()}_${i}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-            newPhotoURLs.push(downloadURL);
+            try {
+              const storageRef = ref(storage, `checkin-photos/${checkIn.userId}/${Date.now()}_${i}_${file.name}`);
+              await uploadBytes(storageRef, file);
+              const downloadURL = await getDownloadURL(storageRef);
+
+              // Only add to array if we got a valid URL
+              if (downloadURL) {
+                newPhotoURLs.push(downloadURL);
+              } else {
+                console.warn(`Failed to get download URL for photo ${i}`);
+              }
+            } catch (photoError) {
+              console.error(`Error uploading photo ${i}:`, photoError);
+              toast.error(`Failed to upload ${file.name}`);
+              // Continue with other photos
+            }
           }
 
-          const updatedPhotoURLs = [...previousPhotoURLs, ...newPhotoURLs];
+          // Filter out any undefined values before updating Firestore
+          const updatedPhotoURLs = [...previousPhotoURLs, ...newPhotoURLs].filter(url => url !== undefined && url !== null);
 
-          // Update Firestore
+          // Update Firestore (Firestore doesn't accept undefined values)
           await updateDoc(doc(db, 'checkins', checkIn.id), {
             photoURLs: updatedPhotoURLs,
           });
@@ -389,7 +521,7 @@ const CheckInCard = ({ checkIn }) => {
 
   const removePhoto = async (index) => {
     const previousPhotoURLs = [...photoURLs];
-    const updatedPhotoURLs = photoURLs.filter((_, i) => i !== index);
+    const updatedPhotoURLs = photoURLs.filter((_, i) => i !== index).filter(url => url !== undefined && url !== null);
 
     await executeOptimistic({
       optimisticUpdate: () => {
@@ -397,6 +529,7 @@ const CheckInCard = ({ checkIn }) => {
         setPhotoURLs(updatedPhotoURLs);
       },
       serverUpdate: async () => {
+        // Ensure no undefined values in Firestore update
         await updateDoc(doc(db, 'checkins', checkIn.id), {
           photoURLs: updatedPhotoURLs,
         });

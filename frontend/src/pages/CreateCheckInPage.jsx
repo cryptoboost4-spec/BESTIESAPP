@@ -11,26 +11,40 @@ import errorTracker from '../services/errorTracking';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 import ProfileWithBubble from '../components/ProfileWithBubble';
 
-// Cute skeleton loader for check-in creation
+// Luxury girly skeleton loader for check-in creation
 const CheckInLoader = () => {
   const messages = [
-    "Setting up your safety net... 💖",
-    "Notifying your besties... ✨",
-    "Your safety is our priority! 🛡️",
-    "Almost there, bestie! 💕",
-    "Getting everything ready... 🌸",
+    { text: "Wrapping you in safety...", subtext: "Your besties will watch over you 💖" },
+    { text: "Building your protection...", subtext: "We've got your back, always ✨" },
+    { text: "Setting up your safety circle...", subtext: "You're never alone with us 🌸" },
+    { text: "Preparing your safety net...", subtext: "Because you deserve to feel secure 💕" },
   ];
 
   // Pick one random message for this check-in
   const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
 
   return (
-    <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center">
-        {/* Animated heart */}
-        <div className="text-8xl mb-6 animate-pulse">
-          💖
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Elegant floating elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-float-elegant"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 4}s`,
+              animationDuration: `${6 + Math.random() * 4}s`,
+              opacity: 0.3 + Math.random() * 0.3,
+            }}
+          >
+            <span className="text-2xl">
+              {['✨', '💎', '🌸', '🦋', '💫', '🌺', '🏵️', '🎀'][Math.floor(Math.random() * 8)]}
+            </span>
+          </div>
+        ))}
+      </div>
 
         {/* Message */}
         <h2 className="font-display text-3xl text-gradient mb-4">
@@ -52,11 +66,92 @@ const CheckInLoader = () => {
           ))}
         </div>
 
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-          <div className="h-full bg-gradient-primary animate-pulse"></div>
+          {/* Elegant loading animation */}
+          <div className="flex justify-center items-center gap-2 mb-8">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full animate-wave"
+                style={{
+                  animationDelay: `${i * 0.15}s`,
+                  animationDuration: '1.5s'
+                }}
+              ></div>
+            ))}
+          </div>
+
+          {/* Silk ribbon progress bar */}
+          <div className="relative w-full h-2 bg-gradient-to-r from-pink-100 via-purple-100 to-fuchsia-100 rounded-full overflow-hidden shadow-inner">
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 via-fuchsia-400 to-pink-400 animate-silk-shimmer bg-[length:300%_100%] opacity-80"></div>
+            <div className="absolute inset-0 bg-white/30 animate-silk-shine"></div>
+          </div>
+
+          {/* Gentle reminder */}
+          <p className="text-xs text-gray-400 mt-6 italic">
+            Taking care of you, always 💕
+          </p>
         </div>
       </div>
+
+      <style>{`
+        @keyframes float-elegant {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px) rotate(0deg);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translateY(-30px) translateX(10px) rotate(5deg);
+            opacity: 0.6;
+          }
+        }
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.2); opacity: 0.2; }
+        }
+        @keyframes pulse-gentle {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        @keyframes wave {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes silk-shimmer {
+          0% { background-position: 0% center; }
+          100% { background-position: 300% center; }
+        }
+        @keyframes silk-shine {
+          0% { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
+          50% { opacity: 0.5; }
+          100% { transform: translateX(200%) skewX(-15deg); opacity: 0; }
+        }
+        @keyframes draw-check {
+          0% { stroke-dasharray: 0, 100; }
+          100% { stroke-dasharray: 100, 0; }
+        }
+        .animate-float-elegant {
+          animation: float-elegant 8s ease-in-out infinite;
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+        .animate-pulse-gentle {
+          animation: pulse-gentle 2s ease-in-out infinite;
+        }
+        .animate-wave {
+          animation: wave 1.5s ease-in-out infinite;
+        }
+        .animate-silk-shimmer {
+          animation: silk-shimmer 3s linear infinite;
+        }
+        .animate-silk-shine {
+          animation: silk-shine 3s ease-in-out infinite;
+        }
+        .animate-draw-check {
+          animation: draw-check 2s ease-in-out infinite;
+          stroke-dasharray: 100;
+        }
+      `}</style>
     </div>
   );
 };
@@ -367,10 +462,13 @@ const CreateCheckInPage = () => {
         gestureHandling: 'greedy', // Allow single-finger drag on mobile
       });
 
-      // Update location when map is dragged
-      mapInstanceRef.current.addListener('dragend', () => {
-        const center = mapInstanceRef.current.getCenter();
-        const coords = { lat: center.lat(), lng: center.lng() };
+      // Update location when map is double-clicked
+      mapInstanceRef.current.addListener('dblclick', (event) => {
+        const clickedLocation = event.latLng;
+        const coords = { lat: clickedLocation.lat(), lng: clickedLocation.lng() };
+
+        // Center map on double-clicked location
+        mapInstanceRef.current.setCenter(clickedLocation);
         setGpsCoords(coords);
 
         // Reverse geocode to get address
@@ -378,6 +476,22 @@ const CreateCheckInPage = () => {
         geocoder.geocode({ location: coords }, (results, status) => {
           if (status === 'OK' && results[0]) {
             setLocationInput(results[0].formatted_address);
+          }
+        });
+
+        // Show success feedback
+        toast.success('📍 Pin location updated!', { duration: 1500 });
+      });
+
+      // Show reminder on single click
+      mapInstanceRef.current.addListener('click', () => {
+        toast('💡 Double-tap to place your pin!', {
+          duration: 2000,
+          icon: '👆',
+          style: {
+            background: '#f3e8ff',
+            color: '#7e22ce',
+            fontWeight: 600,
           }
         });
       });
@@ -624,10 +738,21 @@ const CreateCheckInPage = () => {
           if (photoFiles.length > 0) {
             for (let i = 0; i < photoFiles.length; i++) {
               const file = photoFiles[i];
-              const storageRef = ref(storage, `checkin-photos/${currentUser.uid}/${Date.now()}_${i}_${file.name}`);
-              await uploadBytes(storageRef, file);
-              const downloadURL = await getDownloadURL(storageRef);
-              photoURLs.push(downloadURL);
+              try {
+                const storageRef = ref(storage, `checkin-photos/${currentUser.uid}/${Date.now()}_${i}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                // Only add to array if we got a valid URL
+                if (downloadURL) {
+                  photoURLs.push(downloadURL);
+                } else {
+                  console.warn(`Failed to get download URL for photo ${i}`);
+                }
+              } catch (photoError) {
+                console.error(`Error uploading photo ${i}:`, photoError);
+                // Continue with other photos even if one fails
+              }
             }
           }
 
@@ -789,7 +914,7 @@ const CreateCheckInPage = () => {
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              Drag the map to adjust pin location, search for a place, or click the crosshair to use GPS
+              💡 <strong>Double-tap the map</strong> to place your pin, search for a place, or click the crosshair to use GPS
             </p>
           </div>
 

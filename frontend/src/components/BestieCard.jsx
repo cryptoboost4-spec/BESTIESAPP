@@ -10,7 +10,7 @@ const BestieCard = ({ bestie, onRemove }) => {
   const [userPhoto, setUserPhoto] = useState(null);
   const [requestAttention, setRequestAttention] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showMenu, setShowMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteChallenge, setDeleteChallenge] = useState('');
   const menuRef = useRef(null);
@@ -44,19 +44,19 @@ const BestieCard = ({ bestie, onRemove }) => {
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowMenu(false);
+        setShowProfileMenu(false);
       }
     };
 
-    if (showMenu) {
+    if (showProfileMenu) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showMenu]);
+  }, [showProfileMenu]);
 
   const handleToggleCircle = async (e) => {
     e.stopPropagation();
-    setShowMenu(false);
+    setShowProfileMenu(false);
 
     try {
       await updateDoc(doc(db, 'besties', bestie.id), {
@@ -176,21 +176,47 @@ const BestieCard = ({ bestie, onRemove }) => {
             <div className="font-semibold text-text-primary truncate">
               {bestie.name || bestie.phone || 'Unknown'}
             </div>
-            <div className="text-sm text-text-secondary truncate">
-              {bestie.phone || 'No phone'}
-            </div>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <div className="badge badge-primary text-xs">
-            💜 Bestie
-          </div>
-          {bestie.isFavorite && (
-            <div className="badge bg-purple-100 text-purple-700 text-xs">
-              ⭐ Circle
+            {/* Bestie Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg text-gray-900 truncate">
+                    {bestie.name || bestie.phone || 'Unknown'}
+                  </h3>
+                  {bestie.phone && (
+                    <p className="text-sm text-gray-600 truncate">{bestie.phone}</p>
+                  )}
+                </div>
+                {bestie.isFavorite && (
+                  <div className="flex-shrink-0">
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
+                      ⭐ Circle
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Status badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="badge bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold">
+                  💜 Bestie
+                </div>
+                {bestie.role === 'guardian' && (
+                  <div className="badge bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold">
+                    🛡️ Guardian
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Hover hint */}
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center">
+              💡 Tap profile picture for options
+            </p>
+          </div>
         </div>
       </div>
 

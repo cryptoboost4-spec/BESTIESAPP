@@ -636,63 +636,58 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Profile Completion Bar with Clickable Tasks */}
-        <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
-            <span className="text-2xl font-bold text-gradient">
-              {profileCompletion.completed}/{profileCompletion.total}
-            </span>
-          </div>
-
-          {/* Animated Progress Bar with Shimmer Effect */}
-          <div className="w-full h-4 bg-white rounded-full overflow-hidden mb-4 shadow-inner relative">
-            <div
-              className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
-              style={{ width: `${animatedProgress}%` }}
-            >
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 shimmer-effect"></div>
-            </div>
-            {/* Progress percentage text */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-bold text-gray-700 drop-shadow-sm">
-                {Math.round(profileCompletion.percentage)}%
+        {/* Profile Completion Bar with Clickable Tasks - Hide when 100% complete */}
+        {profileCompletion.percentage < 100 && (
+          <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
+              <span className="text-2xl font-bold text-gradient">
+                {profileCompletion.completed}/{profileCompletion.total}
               </span>
             </div>
-          </div>
 
-          {/* Task List with Navigation */}
-          <div className="space-y-2">
-            {profileCompletion.tasks.map((task, index) => (
-              <div key={index} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-lg">
-                    {task.completed ? '✅' : '⭕'}
-                  </span>
-                  <span className={`text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-700 font-semibold'}`}>
-                    {task.name}
-                  </span>
-                </div>
-                {!task.completed && (task.path || task.action) && (
-                  <button
-                    onClick={() => handleTaskNavigation(task)}
-                    className="btn btn-sm btn-primary text-xs px-3 py-1"
-                  >
-                    Go →
-                  </button>
-                )}
+            {/* Animated Progress Bar with Shimmer Effect */}
+            <div className="w-full h-4 bg-white rounded-full overflow-hidden mb-4 shadow-inner relative">
+              <div
+                className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
+                style={{ width: `${animatedProgress}%` }}
+              >
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 shimmer-effect"></div>
               </div>
-            ))}
-          </div>
-
-          {profileCompletion.percentage === 100 && (
-            <div className="mt-4 p-3 bg-green-50 rounded-lg text-center">
-              <span className="text-2xl">🎉</span>
-              <p className="text-green-700 font-semibold">Profile Complete! You're all set!</p>
+              {/* Progress percentage text */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-bold text-gray-700 drop-shadow-sm">
+                  {Math.round(profileCompletion.percentage)}%
+                </span>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Task List with Navigation */}
+            <div className="space-y-2">
+              {profileCompletion.tasks.map((task, index) => (
+                <div key={index} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-lg">
+                      {task.completed ? '✅' : '⭕'}
+                    </span>
+                    <span className={`text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-700 font-semibold'}`}>
+                      {task.name}
+                    </span>
+                  </div>
+                  {!task.completed && (task.path || task.action) && (
+                    <button
+                      onClick={() => handleTaskNavigation(task)}
+                      className="btn btn-sm btn-primary text-xs px-3 py-1"
+                    >
+                      Go →
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Weekly Summary */}
         <div className="card p-6 mb-6">
@@ -744,7 +739,7 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Featured Badges with Sticky View All */}
+        {/* Your Badges - Show All Earned */}
         <div className="mb-6 relative">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-2xl font-display text-text-primary">Your Badges</h2>
@@ -792,15 +787,18 @@ const ProfilePage = () => {
             </>
           ) : (
             <div className="card p-8 text-center">
-              <div className="text-4xl mb-2">🏆</div>
-              <p className="text-text-secondary mb-3">
-                Earn badges and showcase your favorites here!
+              <div className="text-5xl mb-3">🏆</div>
+              <p className="text-text-primary font-semibold mb-2">
+                Start earning badges!
+              </p>
+              <p className="text-text-secondary text-sm mb-4">
+                Complete check-ins, invite friends, and stay safe to unlock achievements
               </p>
               <button
                 onClick={() => navigate('/badges')}
                 className="btn btn-primary text-sm"
               >
-                View All Badges
+                See All Available Badges
               </button>
             </div>
           )}
