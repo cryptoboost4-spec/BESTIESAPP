@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
@@ -19,30 +19,6 @@ import PullToRefresh from '../components/PullToRefresh';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
-
-// Dynamic supportive messages for girls 💜
-const SUPPORTIVE_MESSAGES = [
-  "Stay safe out there, queen! 👑",
-  "Your besties have your back! 💜",
-  "Looking out for you, babe! ✨",
-  "Let's keep you safe, hun! 🛡️",
-  "Ready to slay safely? 💅",
-  "Your safety squad is here! 🌟",
-  "Go live your life, we got you! 💕",
-  "Be bold, be safe, be you! ⚡",
-  "Adventure awaits safely! 🌸",
-  "Your crew is watching out! 👯‍♀️",
-  "Stay fierce, stay safe! 🔥",
-  "We're here if you need us! 🤗",
-  "Go make memories safely! 📸",
-  "Your safety, your way! 💖",
-  "Protected and empowered! ⭐",
-  "Living your best life safely! 🦋",
-  "Your peace of mind matters! 🌺",
-  "Safe vibes only! ✌️",
-  "Let's keep you covered, sis! 💪",
-  "Confidence + Safety = You! 💎"
-];
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
