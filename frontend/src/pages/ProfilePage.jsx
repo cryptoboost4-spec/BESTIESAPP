@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Header from '../components/Header';
-import LivingCircle from '../components/LivingCircle';
+import BestieCircle from '../components/BestieCircle';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
@@ -323,7 +323,7 @@ const ProfilePage = () => {
               Manage →
             </button>
           </div>
-          <LivingCircle userId={currentUser?.uid} onAddClick={() => navigate('/besties')} />
+          <BestieCircle userId={currentUser?.uid} onAddClick={() => navigate('/besties')} />
         </div>
 
         {/* Donation Status */}
