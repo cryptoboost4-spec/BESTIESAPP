@@ -185,6 +185,7 @@ const CreateCheckInPage = () => {
   const [expandedBestieShare, setExpandedBestieShare] = useState(null); // Track which bestie's share menu is open
   const [notesExpanded, setNotesExpanded] = useState(false); // Track if notes section is expanded
   const [photosExpanded, setPhotosExpanded] = useState(false); // Track if photos section is expanded
+  const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false); // Flag for auto-submit after besties load
 
   // Map default center (San Francisco)
   const mapCenter = { lat: 37.7749, lng: -122.4194 };
@@ -241,18 +242,10 @@ const CreateCheckInPage = () => {
         setDuration(quickDuration);
       }
 
-      // If skipLocation is true, set location and trigger auto-submit
+      // If skipLocation is true, set location and flag for auto-submit
       if (skipLocation) {
         setLocationInput('No location set');
-
-        // Auto-submit after brief delay to let state update
-        setTimeout(() => {
-          // Programmatically submit the form by calling handleSubmit
-          const submitBtn = document.querySelector('#create-checkin-submit-btn');
-          if (submitBtn) {
-            submitBtn.click();
-          }
-        }, 100);
+        setShouldAutoSubmit(true); // Flag to auto-submit once besties are loaded
       }
 
       // Handle rideshare - add rego to notes
@@ -409,6 +402,26 @@ const CreateCheckInPage = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, authLoading]);
+
+  // Auto-submit quick check-ins after besties are loaded
+  useEffect(() => {
+    if (shouldAutoSubmit && selectedBesties.length > 0 && !loading) {
+      // Besties are loaded and auto-selected, now trigger submit
+      console.log('Auto-submitting quick check-in with besties:', selectedBesties);
+
+      // Small delay to ensure all state is ready
+      setTimeout(() => {
+        const submitBtn = document.querySelector('#create-checkin-submit-btn');
+        if (submitBtn && !submitBtn.disabled) {
+          console.log('Clicking submit button');
+          submitBtn.click();
+          setShouldAutoSubmit(false); // Reset flag
+        } else {
+          console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
+        }
+      }, 200);
+    }
+  }, [shouldAutoSubmit, selectedBesties, loading]);
 
   // Load Google Places API
   useEffect(() => {

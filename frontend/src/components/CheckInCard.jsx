@@ -547,40 +547,88 @@ const CheckInCard = ({ checkIn }) => {
     haptic.medium();
 
     try {
-      // Get current position quickly - prioritize speed over accuracy
-      const position = await new Promise((resolve, reject) => {
+      // STEP 1: Get FAST location first (network-based, appears instant to user)
+      const fastPosition = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,     // Faster location (network/WiFi instead of GPS)
-          timeout: 5000,                  // 5 second timeout for speed
+          enableHighAccuracy: false,     // Use network/WiFi for speed
+          timeout: 5000,                  // 5 second timeout
           maximumAge: 10000               // Accept cached location up to 10s old
         });
       });
 
-      const { latitude, longitude, accuracy } = position.coords;
+      const { latitude: fastLat, longitude: fastLng, accuracy: fastAccuracy } = fastPosition.coords;
 
-      console.log(`Location accuracy: ${accuracy} meters`);
+      console.log(`Fast location: ${fastAccuracy} meters accuracy`);
 
-      // Use reverse geocoding to get address
+      // Use reverse geocoding to get address from fast location
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${fastLat},${fastLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
 
-      let locationName = `GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      let locationName = `GPS: ${fastLat.toFixed(6)}, ${fastLng.toFixed(6)}`;
       if (data.results && data.results.length > 0) {
         locationName = data.results[0].formatted_address;
       }
 
-      // Update Firestore
+      // Update Firestore with fast location (user sees this immediately)
       await updateDoc(doc(db, 'checkins', checkIn.id), {
         location: locationName,
-        gpsCoords: { lat: latitude, lng: longitude },
-        locationAccuracy: accuracy,
+        gpsCoords: { lat: fastLat, lng: fastLng },
+        locationAccuracy: fastAccuracy,
         locationUpdatedAt: Timestamp.now(),
       });
 
       setCurrentLocation(locationName);
       toast.success('Location updated!');
+      setUpdatingLocation(false);
+
+      // STEP 2: Get ACCURATE location in background (GPS-based, silently updates)
+      console.log('Getting accurate GPS location in background...');
+      navigator.geolocation.getCurrentPosition(
+        async (accuratePosition) => {
+          const { latitude: accLat, longitude: accLng, accuracy: accAccuracy } = accuratePosition.coords;
+
+          console.log(`Accurate location: ${accAccuracy} meters accuracy (improved from ${fastAccuracy}m)`);
+
+          // Only update if accuracy improved significantly (>50 meters better)
+          if (fastAccuracy - accAccuracy > 50) {
+            // Get address for accurate location
+            const accResponse = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${accLat},${accLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+            );
+            const accData = await accResponse.json();
+
+            let accLocationName = `GPS: ${accLat.toFixed(6)}, ${accLng.toFixed(6)}`;
+            if (accData.results && accData.results.length > 0) {
+              accLocationName = accData.results[0].formatted_address;
+            }
+
+            // Silently update with more accurate location
+            await updateDoc(doc(db, 'checkins', checkIn.id), {
+              location: accLocationName,
+              gpsCoords: { lat: accLat, lng: accLng },
+              locationAccuracy: accAccuracy,
+              locationUpdatedAt: Timestamp.now(),
+            });
+
+            setCurrentLocation(accLocationName);
+            console.log('Location silently updated with accurate GPS');
+          } else {
+            console.log('Accurate location not significantly better, keeping fast location');
+          }
+        },
+        (error) => {
+          // Silently fail on background GPS - fast location is already saved
+          console.log('Background accurate GPS failed (not critical):', error);
+        },
+        {
+          enableHighAccuracy: true,      // Use GPS for accuracy
+          timeout: 15000,                 // 15 second timeout
+          maximumAge: 0                   // Don't use cached location
+        }
+      );
+
     } catch (error) {
       console.error('Error updating location:', error);
       if (error.code === 1) {
@@ -590,7 +638,6 @@ const CheckInCard = ({ checkIn }) => {
       } else {
         toast.error('Failed to update location');
       }
-    } finally {
       setUpdatingLocation(false);
     }
   };
