@@ -405,9 +405,12 @@ const EditProfilePage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 btn btn-primary"
+              className="flex-1 btn btn-primary flex items-center justify-center gap-2"
             >
-              {loading ? 'Saving...' : 'Save Changes'}
+              {loading && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              {loading ? 'Sending verification...' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -450,10 +453,13 @@ const EditProfilePage = () => {
                 </button>
                 <button
                   onClick={handleVerifyPhoneCode}
-                  className="flex-1 btn btn-primary"
+                  className="flex-1 btn btn-primary flex items-center justify-center gap-2"
                   disabled={loading || verificationCode.length !== 6}
                 >
-                  {loading ? 'Verifying...' : 'Verify & Save'}
+                  {loading && (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  {loading ? 'Verifying & Saving...' : 'Verify & Save'}
                 </button>
               </div>
 
