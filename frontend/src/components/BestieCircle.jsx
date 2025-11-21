@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import BestieRequestModal from './BestieRequestModal';
+import BestieCircleShareModal from './BestieCircleShareModal';
 import ProfileWithBubble from './ProfileWithBubble';
 
 const BestieCircle = ({ userId, onAddClick }) => {
@@ -13,7 +13,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
   const [loading, setLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showReplaceModal, setShowReplaceModal] = useState(false);
-  const [showBestieRequestModal, setShowBestieRequestModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const loadBesties = async () => {
     if (!userId) return;
@@ -159,7 +159,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
 
   return (
     <div className="card p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100">
-      <h3 className="text-center text-2xl font-display text-gradient mb-6">Your Safety Circle ⭐</h3>
+      <h3 className="text-center text-2xl font-display text-gradient mb-6">Bestie Circle ⭐</h3>
 
       {/* Circle Container - Responsive sizing */}
       <div className="relative w-full max-w-sm mx-auto aspect-square">
@@ -277,7 +277,7 @@ const BestieCircle = ({ userId, onAddClick }) => {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setShowBestieRequestModal(true)}
+                    onClick={() => setShowShareModal(true)}
                     className={`w-16 h-16 md:w-20 md:h-20 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex items-center justify-center ${slotColors[index].replace('bg-', 'text-')} text-3xl md:text-4xl font-bold hover:scale-110 hover:bg-purple-100 transition-all shadow-lg hover:shadow-xl animate-pulse-slow`}
                     title="Invite a bestie to your circle"
                   >
@@ -373,9 +373,12 @@ const BestieCircle = ({ userId, onAddClick }) => {
         </div>
       )}
 
-      {/* Bestie Request Modal */}
-      {showBestieRequestModal && (
-        <BestieRequestModal onClose={() => setShowBestieRequestModal(false)} />
+      {/* Bestie Circle Share Modal */}
+      {showShareModal && (
+        <BestieCircleShareModal
+          onClose={() => setShowShareModal(false)}
+          circleCount={circleBesties.length}
+        />
       )}
     </div>
   );

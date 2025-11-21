@@ -50,6 +50,11 @@ const Header = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
+              <img
+                src="/icon-192x192.png"
+                alt="Besties"
+                className="w-10 h-10 rounded-lg"
+              />
               <span className="font-display text-2xl text-gradient">Besties</span>
             </Link>
 
