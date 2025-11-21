@@ -21,7 +21,7 @@ const detectUserCountry = (phoneNumber) => {
   // Try phone number first (most reliable)
   if (phoneNumber) {
     // Remove spaces and special characters
-    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    const cleanPhone = phoneNumber.replace(/[\s\-()]/g, '');
 
     // Check country code
     if (cleanPhone.startsWith('+61') || cleanPhone.startsWith('61')) {
