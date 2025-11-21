@@ -6,6 +6,7 @@ import { authService } from '../services/firebase';
 import toast from 'react-hot-toast';
 import NotificationBell from './NotificationBell';
 import ProfileWithBubble from './ProfileWithBubble';
+import AnimatedProfilePicture from './AnimatedProfilePicture';
 
 const Header = () => {
   const { userData } = useAuth();
@@ -89,15 +90,24 @@ const Header = () => {
               <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="hover:opacity-90 transition-opacity"
+                className="hover:opacity-90 transition-opacity relative"
               >
-                <ProfileWithBubble
-                  photoURL={userData?.photoURL}
-                  name={userData?.displayName || 'User'}
-                  requestAttention={userData?.requestAttention}
-                  size="md"
-                  showBubble={true}
-                />
+                {/* Use animated profile picture if no attention request, otherwise show regular with bubble */}
+                {userData?.requestAttention?.active ? (
+                  <ProfileWithBubble
+                    photoURL={userData?.photoURL}
+                    name={userData?.displayName || 'User'}
+                    requestAttention={userData?.requestAttention}
+                    size="md"
+                    showBubble={true}
+                  />
+                ) : (
+                  <AnimatedProfilePicture
+                    photoURL={userData?.photoURL}
+                    name={userData?.displayName || 'User'}
+                    size="md"
+                  />
+                )}
               </button>
 
               {/* Dropdown Menu */}
@@ -209,7 +219,14 @@ const Header = () => {
       </header>
 
       {/* Mobile Navigation - Fixed Bottom Bar */}
-      <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-t shadow-lg z-[100] transition-colors`}>
+      <nav
+        className={`md:hidden fixed bottom-0 left-0 right-0 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-t shadow-lg z-[9999] transition-colors`}
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          width: '100%'
+        }}
+      >
         <div className="flex items-center justify-around py-3 safe-area-inset-bottom">
           <Link
             to="/"

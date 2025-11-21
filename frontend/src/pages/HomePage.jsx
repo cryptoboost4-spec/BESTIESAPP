@@ -267,7 +267,7 @@ const HomePage = () => {
                 </p>
 
                 {/* Preview Example */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border-2 border-purple-200 dark:border-purple-700 flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border-2 border-purple-200 dark:border-purple-700 flex items-center justify-between gap-4 min-h-[120px]">
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-1">Preview:</p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
