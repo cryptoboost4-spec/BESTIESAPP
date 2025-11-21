@@ -456,15 +456,14 @@ const CreateCheckInPage = () => {
           });
           toast.success('🗺️ Map unlocked! Drag to explore', { duration: 2000 });
         } else {
-          // Place pin at double-tapped location
-          const clickedLocation = event.latLng;
-          const coords = { lat: clickedLocation.lat(), lng: clickedLocation.lng() };
+          // Place pin at MAP CENTER (where the fixed pin is displayed)
+          const mapCenter = mapInstanceRef.current.getCenter();
+          const coords = { lat: mapCenter.lat(), lng: mapCenter.lng() };
 
-          // Center map on double-clicked location
-          mapInstanceRef.current.setCenter(clickedLocation);
+          // Save the center coordinates
           setGpsCoords(coords);
 
-          // Reverse geocode to get address
+          // Reverse geocode to get address from the center pin location
           const geocoder = new window.google.maps.Geocoder();
           geocoder.geocode({ location: coords }, (results, status) => {
             if (status === 'OK' && results[0]) {
@@ -473,7 +472,7 @@ const CreateCheckInPage = () => {
           });
 
           // Show success feedback
-          toast.success('📍 Pin location updated!', { duration: 1500 });
+          toast.success('📍 Pin location saved!', { duration: 1500 });
         }
       });
 
@@ -971,7 +970,7 @@ const CreateCheckInPage = () => {
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              💡 <strong>Double-tap to unlock the map,</strong> then double-tap again to place your pin, or search for a place, or click the crosshair to use GPS
+              💡 <strong className="text-primary">Double-tap to unlock the map,</strong> then drag to move it and double-tap again to save the pin location, or search for a place, or click the crosshair to use GPS
             </p>
           </div>
 

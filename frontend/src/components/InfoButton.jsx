@@ -1,37 +1,70 @@
-import React from 'react';
-import toast from 'react-hot-toast';
+import React, { useState, useRef, useEffect } from 'react';
 
 const InfoButton = ({ message }) => {
-  const handleClick = () => {
-    toast((t) => (
-      <div className="text-sm max-w-sm">
-        <div className="flex items-start gap-2">
-          <span className="text-lg">ℹ️</span>
-          <div>
-            <p>{message}</p>
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="mt-2 text-primary text-xs underline hover:no-underline"
-            >
-              Got it!
-            </button>
-          </div>
-        </div>
-      </div>
-    ), { duration: 6000 });
+  const [showTooltip, setShowTooltip] = useState(false);
+  const buttonRef = useRef(null);
+  const tooltipRef = useRef(null);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target) &&
+          !buttonRef.current.contains(event.target)) {
+        setShowTooltip(false);
+      }
+    };
+
+    if (showTooltip) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTooltip]);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    setShowTooltip(!showTooltip);
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="ml-2 text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-purple-400 transition-colors"
-      title="Learn more"
-    >
-      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-      </svg>
-    </button>
+    <div className="relative inline-block ml-2">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleClick}
+        className="text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-purple-400 transition-colors"
+        title="Learn more"
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        </svg>
+      </button>
+
+      {/* Tooltip Bubble */}
+      {showTooltip && (
+        <div
+          ref={tooltipRef}
+          className="absolute left-0 top-full mt-2 z-50 animate-scale-up"
+          style={{ minWidth: '250px', maxWidth: '300px' }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-4">
+            <div className="flex items-start gap-2">
+              <span className="text-lg flex-shrink-0">ℹ️</span>
+              <div className="flex-1">
+                <p className="text-sm text-gray-700 dark:text-gray-200">{message}</p>
+                <button
+                  onClick={() => setShowTooltip(false)}
+                  className="mt-2 text-primary dark:text-purple-400 text-xs font-semibold underline hover:no-underline"
+                >
+                  Got it!
+                </button>
+              </div>
+            </div>
+            {/* Arrow pointing up */}
+            <div className="absolute bottom-full left-4 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-primary dark:border-b-purple-400"></div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
