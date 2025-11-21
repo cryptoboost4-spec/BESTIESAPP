@@ -11,6 +11,7 @@ import { DarkModeProvider } from './contexts/DarkModeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import AdminRoute from './components/AdminRoute';
 import ScrollToTop from './components/ScrollToTop';
+import MilestoneCelebration from './components/MilestoneCelebration';
 
 // Services
 import errorTracker from './services/errorTracking';
@@ -43,6 +44,7 @@ const SubscriptionSuccessPage = lazy(() => import('./pages/SubscriptionSuccessPa
 const SubscriptionCancelPage = lazy(() => import('./pages/SubscriptionCancelPage'));
 const AboutBestiesPage = lazy(() => import('./pages/AboutBestiesPage'));
 const AdminBackfillPage = lazy(() => import('./pages/AdminBackfillPage'));
+const CircleHealthPage = lazy(() => import('./pages/CircleHealthPage'));
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
@@ -117,6 +119,7 @@ function App() {
           <Router>
             <RouteTracker />
             <ScrollToTop />
+            <MilestoneCelebration />
             <div className="App">
               <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -206,6 +209,10 @@ function App() {
                   <Route
                     path="/about"
                     element={user ? <AboutBestiesPage /> : <Navigate to="/login" />}
+                  />
+                  <Route
+                    path="/circle-health"
+                    element={user ? <CircleHealthPage /> : <Navigate to="/login" />}
                   />
 
                   {/* Admin-only routes */}

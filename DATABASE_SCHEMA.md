@@ -15,7 +15,10 @@
 7. [Notifications Collection](#notifications-collection)
 8. [Emergency SOS Collection](#emergency-sos-collection)
 9. [Bestie Celebrations Collection](#bestie-celebrations-collection)
-10. [Analytics Collections](#analytics-collections)
+10. [Interactions Collection](#interactions-collection)
+11. [Alert Responses Collection](#alert-responses-collection)
+12. [Circle Milestones Collection](#circle-milestones-collection)
+13. [Analytics Collections](#analytics-collections)
 
 ---
 
@@ -251,6 +254,74 @@
 
 ---
 
+## Interactions Collection
+**Collection Path:** `interactions/{interactionId}`
+
+> **Purpose:** Tracks all meaningful interactions between besties to calculate connection strength and provide insights.
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| `userId` | string | ✅ | UID of user who initiated the interaction |
+| `bestieId` | string | ✅ | UID of the bestie they interacted with |
+| `type` | string | ✅ | Interaction type: `"alert_response"` \| `"circle_check"` \| `"profile_view"` \| `"attention_response"` \| `"check_in_together"` |
+| `checkInId` | string \| null | ❌ | Related check-in ID (if applicable) |
+| `alertId` | string \| null | ❌ | Related alert ID (if applicable) |
+| `metadata` | object | ❌ | Additional context about the interaction |
+| `createdAt` | Timestamp | ✅ | When interaction occurred |
+
+### Metadata Object (varies by type)
+**For `alert_response`:**
+- `responseTime` (number): Seconds from alert to response
+- `action` (string): `"acknowledged"` \| `"called"` \| `"texted"`
+
+**For `check_in_together`:**
+- `isGuardian` (boolean): Whether they were a guardian for this check-in
+
+**For `circle_check`:**
+- `circleHealth` (number): Circle health score at time of check
+
+---
+
+## Alert Responses Collection
+**Collection Path:** `alert_responses/{responseId}`
+
+> **Purpose:** Tracks who responds to alerts and how quickly - critical for connection strength calculations.
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| `alertId` | string | ✅ | Alert or check-in ID that was responded to |
+| `alertType` | string | ✅ | Type: `"checkin"` \| `"sos"` |
+| `userId` | string | ✅ | UID of person in danger |
+| `responderId` | string | ✅ | UID of bestie who responded |
+| `responseType` | string | ✅ | Response: `"acknowledged"` \| `"called"` \| `"on_my_way"` \| `"contacted_them"` |
+| `responseTime` | number | ✅ | Seconds from alert creation to response |
+| `note` | string \| null | ❌ | Optional note from responder |
+| `createdAt` | Timestamp | ✅ | When response was recorded |
+
+---
+
+## Circle Milestones Collection
+**Collection Path:** `circle_milestones/{milestoneId}`
+
+> **Purpose:** Tracks and celebrates important moments in bestie relationships.
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| `userId` | string | ✅ | UID of user who earned the milestone |
+| `bestieId` | string | ✅ | UID of the bestie (for relationship milestones) |
+| `type` | string | ✅ | Milestone type: `"days_in_circle"` \| `"check_ins_together"` \| `"alerts_responded"` \| `"streak"` |
+| `value` | number | ✅ | Milestone value (e.g., 30 days, 100 check-ins) |
+| `celebrated` | boolean | ✅ | Whether user has seen the celebration |
+| `createdAt` | Timestamp | ✅ | When milestone was achieved |
+
+### Milestone Types
+- `days_in_circle`: Bestie has been in featured circle for X days (30, 100, 365)
+- `check_ins_together`: User and bestie have done X check-ins together (10, 50, 100)
+- `alerts_responded`: Bestie has responded to X alerts (5, 20, 50)
+- `streak`: User has checked their circle for X consecutive days (7, 30, 100)
+
+---
+
 ## Analytics Collections
 
 ### analytics_cache
@@ -338,6 +409,11 @@
 
 ### 2025-11-21
 - Added `currentStreak` and `longestStreak` fields to users.stats
+- **Added NEW COLLECTIONS for Living Circle experience:**
+  - `interactions` collection - tracks all meaningful bestie interactions
+  - `alert_responses` collection - tracks who responds to alerts and how quickly
+  - `circle_milestones` collection - celebrates important relationship moments
+- These collections enable real connection strength calculations based on actual behavior
 
 ### 2025-11-19
 - Initial schema documentation created
