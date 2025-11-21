@@ -171,6 +171,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('pending_invite', inviterUID);
 
       // Fetch inviter info early so it's ready for welcome screen
+      // Note: This may fail with permission-denied if inviter's profile is private
+      // That's okay - we'll show a generic invite message instead
       const fetchInviterInfo = async () => {
         try {
           const inviterRef = doc(db, 'users', inviterUID);
@@ -184,7 +186,9 @@ export const AuthProvider = ({ children }) => {
             }));
           }
         } catch (error) {
-          console.error('Failed to fetch inviter info:', error);
+          // Permission denied is expected - user isn't a bestie yet
+          // Just show generic invite message during onboarding
+          console.log('Could not fetch inviter info (this is normal):', error.code);
         }
       };
       fetchInviterInfo();
