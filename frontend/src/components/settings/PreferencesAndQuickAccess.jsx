@@ -68,18 +68,6 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
         <h2 className="text-xl font-display text-text-primary mb-4">Quick Access</h2>
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={() => navigate('/templates')}
-            className="btn btn-secondary text-left px-4 py-3"
-          >
-            <div className="text-sm">📋 Templates</div>
-          </button>
-          <button
-            onClick={() => navigate('/favorites')}
-            className="btn btn-secondary text-left px-4 py-3"
-          >
-            <div className="text-sm">📍 Favorites</div>
-          </button>
-          <button
             onClick={() => navigate('/history')}
             className="btn btn-secondary text-left px-4 py-3"
           >
