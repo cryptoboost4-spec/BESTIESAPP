@@ -257,7 +257,7 @@ const BestiesPage = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentUser, besties]);
+  }, [currentUser, besties, userData]);
 
   // Calculate power rankings - TODO: Implement when metrics are available
   /* const getPowerRankings = () => {
