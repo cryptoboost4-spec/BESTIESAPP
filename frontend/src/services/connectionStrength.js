@@ -7,31 +7,27 @@ import {
   doc,
   getDoc,
   orderBy,
-  limit,
-  Timestamp
+  limit
 } from 'firebase/firestore';
 
 /**
- * Connection Strength Service
+ * Connection Energy Service
  *
- * Calculates real connection strength between besties based on actual behavior:
- * - Alert response times
- * - Check-in selection frequency
+ * Calculates connection energy between besties based on actual behavior:
+ * - Alert response times (how quickly they show up)
+ * - Circle stories engagement (viewing, reactions)
  * - Featured circle inclusion
- * - Relationship duration
  * - Recent interaction recency
  *
  * Returns a score from 0-100 where:
- * - 90-100: Incredible connection (always there when needed)
- * - 70-89: Strong connection (consistently supportive)
- * - 50-69: Good connection (reliable but room for growth)
- * - 30-49: Developing connection (occasional interaction)
- * - 0-29: Weak connection (rarely interact)
+ * - 90-100: Unbreakable 🔥 (ultimate connection)
+ * - 70-89: Powerful ⚡ (incredible bond)
+ * - 50-69: Strong 💪 (solid connection)
+ * - 30-49: Growing 🔆 (building momentum)
+ * - 0-29: Spark 🌱 (just starting)
  */
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
-// const ONE_WEEK = 7 * ONE_DAY;
-// const ONE_MONTH = 30 * ONE_DAY;
 
 /**
  * Calculate comprehensive connection strength between two users
@@ -39,40 +35,35 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
 export const calculateConnectionStrength = async (userId, bestieId) => {
   try {
     const scores = {
-      alertResponse: 0,      // 35 points - most important
-      checkInFrequency: 0,   // 25 points
-      featuredCircle: 0,     // 20 points
-      recency: 0,            // 15 points
-      duration: 0,           // 5 points
+      alertResponse: 0,      // 50 points - most important
+      storyEngagement: 0,    // 25 points - viewing/reacting to stories
+      featuredCircle: 0,     // 15 points
+      recency: 0,            // 10 points
     };
 
     // Run all calculations in parallel for speed
     const [
       alertResponseScore,
-      checkInFrequencyScore,
+      storyEngagementScore,
       featuredCircleScore,
       recencyScore,
-      durationScore,
     ] = await Promise.all([
       calculateAlertResponseScore(userId, bestieId),
-      calculateCheckInFrequencyScore(userId, bestieId),
+      calculateStoryEngagementScore(userId, bestieId),
       calculateFeaturedCircleScore(userId, bestieId),
       calculateRecencyScore(userId, bestieId),
-      calculateDurationScore(userId, bestieId),
     ]);
 
     scores.alertResponse = alertResponseScore;
-    scores.checkInFrequency = checkInFrequencyScore;
+    scores.storyEngagement = storyEngagementScore;
     scores.featuredCircle = featuredCircleScore;
     scores.recency = recencyScore;
-    scores.duration = durationScore;
 
     const totalScore = Math.round(
       scores.alertResponse +
-      scores.checkInFrequency +
+      scores.storyEngagement +
       scores.featuredCircle +
-      scores.recency +
-      scores.duration
+      scores.recency
     );
 
     return {
@@ -81,17 +72,17 @@ export const calculateConnectionStrength = async (userId, bestieId) => {
       level: getConnectionLevel(totalScore),
     };
   } catch (error) {
-    console.error('Error calculating connection strength:', error);
+    console.error('Error calculating connection energy:', error);
     return {
       total: 0,
       breakdown: {},
-      level: 'unknown',
+      level: 'spark',
     };
   }
 };
 
 /**
- * Alert Response Score (0-35 points)
+ * Alert Response Score (0-50 points)
  * The most important metric - do they show up when you need them?
  */
 const calculateAlertResponseScore = async (userId, bestieId) => {
@@ -105,17 +96,7 @@ const calculateAlertResponseScore = async (userId, bestieId) => {
     const responsesSnap = await getDocs(responsesQuery);
 
     if (responsesSnap.empty) {
-      // No alerts yet - check if they've been in check-ins together as a proxy
-      const interactionsQuery = query(
-        collection(db, 'interactions'),
-        where('userId', '==', userId),
-        where('bestieId', '==', bestieId),
-        where('type', '==', 'check_in_together')
-      );
-      const interactionsSnap = await getDocs(interactionsQuery);
-
-      // Give some credit for being selected as guardian
-      return Math.min(15, interactionsSnap.size * 3);
+      return 0; // No history yet - that's okay, we're just starting
     }
 
     const responses = responsesSnap.docs.map(doc => doc.data());
@@ -123,16 +104,16 @@ const calculateAlertResponseScore = async (userId, bestieId) => {
     // Calculate average response time (in minutes)
     const avgResponseTime = responses.reduce((sum, r) => sum + r.responseTime, 0) / responses.length / 60;
 
-    // Score based on response time
+    // Score based on response time (0-35 points)
     let timeScore = 0;
-    if (avgResponseTime < 5) timeScore = 20;        // < 5 min: instant
-    else if (avgResponseTime < 15) timeScore = 17;  // < 15 min: very fast
-    else if (avgResponseTime < 30) timeScore = 14;  // < 30 min: fast
-    else if (avgResponseTime < 60) timeScore = 10;  // < 1 hour: decent
-    else if (avgResponseTime < 180) timeScore = 5;  // < 3 hours: slow
-    else timeScore = 2;                             // > 3 hours: very slow
+    if (avgResponseTime < 5) timeScore = 35;        // < 5 min: instant
+    else if (avgResponseTime < 15) timeScore = 30;  // < 15 min: very fast
+    else if (avgResponseTime < 30) timeScore = 25;  // < 30 min: fast
+    else if (avgResponseTime < 60) timeScore = 18;  // < 1 hour: decent
+    else if (avgResponseTime < 180) timeScore = 10; // < 3 hours: slow
+    else timeScore = 5;                             // > 3 hours: very slow
 
-    // Bonus for response count (reliability)
+    // Bonus for response count (0-15 points for reliability)
     const reliabilityScore = Math.min(15, responses.length * 2);
 
     return timeScore + reliabilityScore;
@@ -143,55 +124,69 @@ const calculateAlertResponseScore = async (userId, bestieId) => {
 };
 
 /**
- * Check-In Frequency Score (0-25 points)
- * How often do they include each other in check-ins?
+ * Story Engagement Score (0-25 points)
+ * Do they view and react to each other's circle stories?
+ *
+ * NOTE: This feature is not yet implemented. Returns 0 for now.
+ * Will be enabled when Circle Stories feature is launched.
  */
-const calculateCheckInFrequencyScore = async (userId, bestieId) => {
+const calculateStoryEngagementScore = async (userId, bestieId) => {
+  // TODO: Implement when Circle Stories feature is ready
+  // For now, return 0 so we don't query non-existent collections
+  return 0;
+
+  /* Future implementation:
   try {
-    // Get check-ins where userId selected bestieId as guardian (last 90 days)
-    const threeMonthsAgo = Timestamp.fromDate(new Date(Date.now() - 90 * ONE_DAY));
+    const oneMonthAgo = Timestamp.fromDate(new Date(Date.now() - 30 * ONE_DAY));
 
-    const checkInsQuery = query(
-      collection(db, 'checkins'),
-      where('userId', '==', userId),
-      where('bestieIds', 'array-contains', bestieId),
-      where('createdAt', '>=', threeMonthsAgo)
+    const viewsQuery = query(
+      collection(db, 'circle_story_views'),
+      where('storyOwnerId', '==', userId),
+      where('viewerId', '==', bestieId),
+      where('viewedAt', '>=', oneMonthAgo)
     );
-    const checkInsSnap = await getDocs(checkInsQuery);
+    const viewsSnap = await getDocs(viewsQuery);
 
-    // Get reverse direction (bestieId selecting userId)
-    const reverseCheckInsQuery = query(
-      collection(db, 'checkins'),
-      where('userId', '==', bestieId),
-      where('bestieIds', 'array-contains', userId),
-      where('createdAt', '>=', threeMonthsAgo)
+    const reverseViewsQuery = query(
+      collection(db, 'circle_story_views'),
+      where('storyOwnerId', '==', bestieId),
+      where('viewerId', '==', userId),
+      where('viewedAt', '>=', oneMonthAgo)
     );
-    const reverseCheckInsSnap = await getDocs(reverseCheckInsQuery);
+    const reverseViewsSnap = await getDocs(reverseViewsQuery);
 
-    const userSelections = checkInsSnap.size;
-    const bestieSelections = reverseCheckInsSnap.size;
+    const reactionsQuery = query(
+      collection(db, 'circle_story_reactions'),
+      where('storyOwnerId', '==', userId),
+      where('reactorId', '==', bestieId),
+      where('createdAt', '>=', oneMonthAgo)
+    );
+    const reactionsSnap = await getDocs(reactionsQuery);
 
-    // Bidirectional is better - give bonus for mutual selection
-    const totalSelections = userSelections + bestieSelections;
-    const mutualBonus = Math.min(userSelections, bestieSelections) > 0 ? 5 : 0;
+    const reverseReactionsQuery = query(
+      collection(db, 'circle_story_reactions'),
+      where('storyOwnerId', '==', bestieId),
+      where('reactorId', '==', userId),
+      where('createdAt', '>=', oneMonthAgo)
+    );
+    const reverseReactionsSnap = await getDocs(reverseReactionsQuery);
 
-    // Score based on frequency
-    let frequencyScore = 0;
-    if (totalSelections >= 20) frequencyScore = 15;
-    else if (totalSelections >= 10) frequencyScore = 12;
-    else if (totalSelections >= 5) frequencyScore = 8;
-    else if (totalSelections >= 2) frequencyScore = 5;
-    else if (totalSelections >= 1) frequencyScore = 2;
+    const totalViews = viewsSnap.size + reverseViewsSnap.size;
+    const totalReactions = reactionsSnap.size + reverseReactionsSnap.size;
 
-    return frequencyScore + mutualBonus + Math.min(5, totalSelections);
+    let viewScore = Math.min(10, totalViews);
+    let reactionScore = Math.min(15, totalReactions * 2);
+
+    return viewScore + reactionScore;
   } catch (error) {
-    console.error('Error calculating check-in frequency score:', error);
+    console.error('Error calculating story engagement score:', error);
     return 0;
   }
+  */
 };
 
 /**
- * Featured Circle Score (0-20 points)
+ * Featured Circle Score (0-15 points)
  * Are they in each other's top 5?
  */
 const calculateFeaturedCircleScore = async (userId, bestieId) => {
@@ -207,10 +202,10 @@ const calculateFeaturedCircleScore = async (userId, bestieId) => {
     const inUserCircle = userCircle.includes(bestieId);
     const inBestieCircle = bestieCircle.includes(userId);
 
-    // Scoring
-    if (inUserCircle && inBestieCircle) return 20; // Mutual top 5
-    if (inUserCircle) return 12; // In your top 5
-    if (inBestieCircle) return 10; // You're in their top 5
+    // Scoring (0-15 points)
+    if (inUserCircle && inBestieCircle) return 15; // Mutual top 5 - best case
+    if (inUserCircle) return 9; // In your top 5
+    if (inBestieCircle) return 8; // You're in their top 5
     return 0;
   } catch (error) {
     console.error('Error calculating featured circle score:', error);
@@ -219,7 +214,7 @@ const calculateFeaturedCircleScore = async (userId, bestieId) => {
 };
 
 /**
- * Recency Score (0-15 points)
+ * Recency Score (0-10 points)
  * How recently have they interacted?
  */
 const calculateRecencyScore = async (userId, bestieId) => {
@@ -258,87 +253,19 @@ const calculateRecencyScore = async (userId, bestieId) => {
       }
     }
 
-    // If no interactions tracked yet, check most recent check-in together
-    if (!lastInteraction) {
-      const checkInQuery = query(
-        collection(db, 'checkins'),
-        where('userId', '==', userId),
-        where('bestieIds', 'array-contains', bestieId),
-        orderBy('createdAt', 'desc'),
-        limit(1)
-      );
-      const checkInSnap = await getDocs(checkInQuery);
-
-      if (!checkInSnap.empty) {
-        lastInteraction = checkInSnap.docs[0].data().createdAt;
-      }
-    }
-
     if (!lastInteraction) return 0;
 
     const daysSince = (Date.now() - lastInteraction.toMillis()) / ONE_DAY;
 
-    // Score based on recency
-    if (daysSince < 1) return 15;      // Today
-    if (daysSince < 3) return 12;      // Last 3 days
-    if (daysSince < 7) return 9;       // This week
-    if (daysSince < 14) return 6;      // Last 2 weeks
-    if (daysSince < 30) return 3;      // This month
-    return 1;                           // Over a month
+    // Score based on recency (0-10 points)
+    if (daysSince < 1) return 10;      // Today - perfect
+    if (daysSince < 3) return 8;       // Last 3 days - great
+    if (daysSince < 7) return 6;       // This week - good
+    if (daysSince < 14) return 4;      // Last 2 weeks - okay
+    if (daysSince < 30) return 2;      // This month - getting stale
+    return 0;                           // Over a month - needs attention
   } catch (error) {
     console.error('Error calculating recency score:', error);
-    return 0;
-  }
-};
-
-/**
- * Duration Score (0-5 points)
- * How long have they been besties?
- */
-const calculateDurationScore = async (userId, bestieId) => {
-  try {
-    // Find the bestie relationship
-    const [requesterQuery, recipientQuery] = await Promise.all([
-      getDocs(
-        query(
-          collection(db, 'besties'),
-          where('requesterId', '==', userId),
-          where('recipientId', '==', bestieId),
-          where('status', '==', 'accepted')
-        )
-      ),
-      getDocs(
-        query(
-          collection(db, 'besties'),
-          where('requesterId', '==', bestieId),
-          where('recipientId', '==', userId),
-          where('status', '==', 'accepted')
-        )
-      ),
-    ]);
-
-    const bestieDoc = !requesterQuery.empty
-      ? requesterQuery.docs[0]
-      : !recipientQuery.empty
-      ? recipientQuery.docs[0]
-      : null;
-
-    if (!bestieDoc) return 0;
-
-    const acceptedAt = bestieDoc.data().acceptedAt;
-    if (!acceptedAt) return 0;
-
-    const daysTogether = (Date.now() - acceptedAt.toMillis()) / ONE_DAY;
-
-    // Score based on duration
-    if (daysTogether >= 365) return 5;  // 1+ year
-    if (daysTogether >= 180) return 4;  // 6+ months
-    if (daysTogether >= 90) return 3;   // 3+ months
-    if (daysTogether >= 30) return 2;   // 1+ month
-    if (daysTogether >= 7) return 1;    // 1+ week
-    return 0;
-  } catch (error) {
-    console.error('Error calculating duration score:', error);
     return 0;
   }
 };
@@ -347,22 +274,22 @@ const calculateDurationScore = async (userId, bestieId) => {
  * Get connection level description
  */
 const getConnectionLevel = (score) => {
-  if (score >= 90) return 'incredible';
-  if (score >= 70) return 'strong';
-  if (score >= 50) return 'good';
-  if (score >= 30) return 'developing';
-  return 'weak';
+  if (score >= 90) return 'unbreakable';
+  if (score >= 70) return 'powerful';
+  if (score >= 50) return 'strong';
+  if (score >= 30) return 'growing';
+  return 'spark';
 };
 
 /**
  * Get connection level color for UI
  */
 export const getConnectionColor = (score) => {
-  if (score >= 90) return '#10b981'; // green
-  if (score >= 70) return '#3b82f6'; // blue
-  if (score >= 50) return '#f59e0b'; // orange
-  if (score >= 30) return '#f97316'; // deep orange
-  return '#94a3b8'; // gray
+  if (score >= 90) return '#10b981'; // green - unbreakable
+  if (score >= 70) return '#3b82f6'; // blue - powerful
+  if (score >= 50) return '#8b5cf6'; // purple - strong
+  if (score >= 30) return '#f59e0b'; // orange - growing
+  return '#ec4899'; // pink - spark (new connections!)
 };
 
 /**
@@ -370,10 +297,10 @@ export const getConnectionColor = (score) => {
  */
 export const getConnectionEmoji = (score) => {
   if (score >= 90) return '🔥';
-  if (score >= 70) return '💪';
-  if (score >= 50) return '👍';
-  if (score >= 30) return '🌱';
-  return '💤';
+  if (score >= 70) return '⚡';
+  if (score >= 50) return '💪';
+  if (score >= 30) return '🔆';
+  return '🌱';
 };
 
 /**
@@ -397,7 +324,10 @@ export const calculateCircleHealth = async (userId) => {
 
     // Calculate connection strength with each circle member
     const connectionPromises = featuredCircle.map(bestieId =>
-      calculateConnectionStrength(userId, bestieId)
+      calculateConnectionStrength(userId, bestieId).then(strength => ({
+        ...strength,
+        id: bestieId, // Include bestie ID so we can match with bestie data later
+      }))
     );
     const connections = await Promise.all(connectionPromises);
 
@@ -434,12 +364,12 @@ export const calculateCircleHealth = async (userId) => {
 const generateCircleInsights = (userId, connections, featuredCircle) => {
   const insights = [];
 
-  // Check for weak connections
-  const weakConnections = connections.filter(c => c.total < 30);
-  if (weakConnections.length > 0) {
+  // Check for growing connections that could use more attention
+  const growingConnections = connections.filter(c => c.total < 30);
+  if (growingConnections.length > 0) {
     insights.push({
-      type: 'warning',
-      message: `${weakConnections.length} connection${weakConnections.length > 1 ? 's' : ''} need attention`,
+      type: 'tip',
+      message: `${growingConnections.length} connection${growingConnections.length > 1 ? 's are' : ' is'} just getting started - keep building!`,
       action: 'reach_out',
     });
   }
@@ -448,26 +378,26 @@ const generateCircleInsights = (userId, connections, featuredCircle) => {
   if (featuredCircle.length < 5) {
     insights.push({
       type: 'info',
-      message: `Add ${5 - featuredCircle.length} more ${featuredCircle.length === 4 ? 'bestie' : 'besties'} to complete your circle`,
+      message: `Add ${5 - featuredCircle.length} more ${featuredCircle.length === 4 ? 'bestie' : 'besties'} to unlock full circle power`,
       action: 'add_besties',
     });
   }
 
   // Check for lack of recent interactions
-  const staleConnections = connections.filter(c => c.breakdown.recency < 6);
+  const staleConnections = connections.filter(c => c.breakdown.recency < 4);
   if (staleConnections.length > 0) {
     insights.push({
       type: 'tip',
-      message: `${staleConnections.length} connection${staleConnections.length > 1 ? 's' : ''} haven't been active recently`,
-      action: 'circle_check',
+      message: `${staleConnections.length} connection${staleConnections.length > 1 ? 's could' : ' could'} use some love - reach out today!`,
+      action: 'post_story',
     });
   }
 
-  // Celebrate strong circle
+  // Celebrate powerful/unbreakable circle
   if (connections.every(c => c.total >= 70) && featuredCircle.length === 5) {
     insights.push({
       type: 'success',
-      message: 'Your circle is thriving! Keep up the great connections 🎉',
+      message: 'Your circle is unstoppable! This is what real connection looks like 🔥',
       action: null,
     });
   }

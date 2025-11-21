@@ -86,7 +86,7 @@ const ScrapbookLayout = ({
       {/* Bio - Handwritten style */}
       {bio && (
         <p
-          className={`${bioSizeClass || 'text-xl'} text-gray-800 dark:text-gray-200 max-w-xs mx-auto mb-4 relative z-10`}
+          className={`${bioSizeClass || 'text-base'} text-gray-800 dark:text-gray-200 max-w-xs mx-auto mb-4 relative z-10`}
           style={bioStyle}
         >
           "{bio}"

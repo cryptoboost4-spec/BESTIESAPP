@@ -106,9 +106,7 @@ const CircleHealthPage = () => {
   const avgAlertResponse = connections.length > 0
     ? connections.reduce((sum, c) => sum + (c.breakdown?.alertResponse || 0), 0) / connections.length
     : 0;
-  const avgCheckInFrequency = connections.length > 0
-    ? connections.reduce((sum, c) => sum + (c.breakdown?.checkInFrequency || 0), 0) / connections.length
-    : 0;
+  // Story engagement removed for now since feature isn't live yet
   const avgRecency = connections.length > 0
     ? connections.reduce((sum, c) => sum + (c.breakdown?.recency || 0), 0) / connections.length
     : 0;
@@ -118,52 +116,55 @@ const CircleHealthPage = () => {
 
   if (circleHealth.circleSize < 5) {
     tips.push({
-      icon: '👥',
-      title: 'Complete Your Circle',
-      description: `Add ${5 - circleHealth.circleSize} more ${circleHealth.circleSize === 4 ? 'bestie' : 'besties'} to reach full strength`,
-      action: 'Add Besties',
+      icon: '✨',
+      title: `Add ${5 - circleHealth.circleSize} More ${circleHealth.circleSize === 4 ? 'Bestie' : 'Besties'}`,
+      description: circleHealth.circleSize === 0
+        ? 'Your circle is waiting for you! Add the 5 people you trust most - the ones who always have your back.'
+        : `You're ${circleHealth.circleSize}/5 of the way there! Complete your circle to unlock full connection power.`,
+      action: 'Find Besties',
       link: '/besties',
       priority: 'high',
     });
   }
 
-  if (avgRecency < 9) {
+  if (avgRecency < 7) {
+    // Find who you haven't talked to recently
+    const needsAttention = connections.filter(c => (c.breakdown?.recency || 0) < 4);
+    const names = needsAttention.map((c, idx) => {
+      const bestie = circleBesties.find(b => b.id === c.id) || circleBesties[idx];
+      return bestie?.name || 'someone';
+    }).slice(0, 2).join(' and ');
+
     tips.push({
-      icon: '📅',
-      title: 'Stay Connected',
-      description: 'Some connections haven\'t been active recently. Regular check-ins strengthen bonds.',
-      action: 'Do Circle Check',
+      icon: '💬',
+      title: needsAttention.length > 0 ? `Reach out to ${names}` : 'Stay Connected',
+      description: needsAttention.length > 0
+        ? `You haven't connected in a while. Send them a quick message - they'll love hearing from you!`
+        : 'Keep those regular check-ins going. Consistency is everything.',
+      action: 'View Circle',
       link: '/profile',
-      priority: 'medium',
+      priority: 'high',
     });
   }
 
-  if (avgCheckInFrequency < 15) {
-    tips.push({
-      icon: '✅',
-      title: 'More Check-Ins Together',
-      description: 'Include your circle members as guardians when creating check-ins.',
-      action: 'Create Check-In',
-      link: '/checkin',
-      priority: 'medium',
-    });
-  }
+  // Story feature coming soon - don't show tip since users can't act on it yet
+  // Removed to avoid confusion
 
-  if (avgAlertResponse < 20) {
+  if (avgAlertResponse < 25) {
     tips.push({
-      icon: '🚨',
-      title: 'Build Response Trust',
-      description: 'Respond quickly when your circle members need help. This builds real connection strength.',
-      action: 'View Tips',
-      priority: 'low',
+      icon: '⚡',
+      title: 'Show Up Faster',
+      description: 'When your besties send an alert, try to respond within 15 minutes. That\'s what makes you irreplaceable.',
+      action: null,
+      priority: 'medium',
     });
   }
 
   if (healthScore >= 90) {
     tips.unshift({
-      icon: '🎉',
-      title: 'Incredible Circle!',
-      description: 'Your circle is thriving with strong connections. Keep up the amazing support!',
+      icon: '🔥',
+      title: 'You Did It!',
+      description: 'Your circle is unbreakable. This is the kind of friendship everyone wishes they had. Keep being amazing.',
       action: null,
       priority: 'success',
     });
@@ -176,8 +177,8 @@ const CircleHealthPage = () => {
       <div className="max-w-4xl mx-auto p-4 pb-20 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-display text-gradient mb-2">Circle Health Dashboard</h1>
-          <p className="text-text-secondary">Understand and strengthen your safety network</p>
+          <h1 className="text-3xl md:text-4xl font-display text-gradient mb-2">Your Circle Stats ✨</h1>
+          <p className="text-text-secondary">See how strong your connections really are</p>
         </div>
 
         {/* Overall Health Score */}
@@ -185,7 +186,7 @@ const CircleHealthPage = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-primary opacity-10 rounded-full blur-3xl"></div>
 
           <div className="relative z-10 text-center">
-            <div className="text-sm font-semibold text-gray-600 mb-2">Overall Circle Health</div>
+            <div className="text-sm font-semibold text-gray-600 mb-2">Your Overall Vibe</div>
             <div className="flex items-center justify-center gap-4 mb-4">
               <span className="text-6xl md:text-7xl font-display text-gradient">{healthScore}</span>
               <span className="text-3xl text-gray-400">/100</span>
@@ -200,18 +201,18 @@ const CircleHealthPage = () => {
             </div>
 
             <div className="text-lg font-semibold text-gray-700">
-              {healthScore >= 90 && '🔥 Incredible - Your circle is thriving!'}
-              {healthScore >= 70 && healthScore < 90 && '💪 Strong - Keep nurturing these connections'}
-              {healthScore >= 50 && healthScore < 70 && '👍 Good - Room to grow stronger'}
-              {healthScore >= 30 && healthScore < 50 && '🌱 Developing - Focus on consistency'}
-              {healthScore < 30 && '💤 Needs Attention - Time to reconnect'}
+              {healthScore >= 90 && '🔥 Unbreakable! Your circle is goals fr'}
+              {healthScore >= 70 && healthScore < 90 && '⚡ Super solid! Keep it up'}
+              {healthScore >= 50 && healthScore < 70 && '💪 Pretty strong! You got this'}
+              {healthScore >= 30 && healthScore < 50 && '🔆 Getting there! Keep building'}
+              {healthScore < 30 && '🌱 Just starting! Lots of potential'}
             </div>
 
             <button
               onClick={() => setShowPerfectCircle(!showPerfectCircle)}
-              className="mt-4 text-primary font-semibold hover:underline flex items-center gap-2 mx-auto"
+              className="mt-4 px-6 py-2 bg-white text-primary font-semibold rounded-full shadow-md hover:shadow-lg transition-all flex items-center gap-2 mx-auto border-2 border-purple-200"
             >
-              {showPerfectCircle ? '← Back to My Circle' : 'See What Perfect Looks Like →'}
+              {showPerfectCircle ? '← Back to my stats' : <>See the dream circle ✨</>}
             </button>
           </div>
         </div>
@@ -221,9 +222,78 @@ const CircleHealthPage = () => {
           <PerfectCircleDemo />
         ) : (
           <>
-            {/* Connection Breakdown */}
+            {/* Progress to Next Level */}
+            {healthScore < 90 && circleBesties.length > 0 && (
+              <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border-2 border-blue-200">
+                <h2 className="text-xl font-display text-gradient mb-4 flex items-center gap-2">
+                  Next Level
+                  <span className="text-2xl">🎯</span>
+                </h2>
+                {healthScore < 30 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-700">Growing 🔆</span>
+                      <span className="text-sm text-gray-600">{30 - healthScore} points to go</span>
+                    </div>
+                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-pink-400 to-orange-400 transition-all duration-500"
+                        style={{ width: `${(healthScore / 30) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">Keep building! Every interaction counts.</p>
+                  </div>
+                )}
+                {healthScore >= 30 && healthScore < 50 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-700">Strong 💪</span>
+                      <span className="text-sm text-gray-600">{50 - healthScore} points to go</span>
+                    </div>
+                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-orange-400 to-purple-400 transition-all duration-500"
+                        style={{ width: `${((healthScore - 30) / 20) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">You're doing great! Keep the momentum going.</p>
+                  </div>
+                )}
+                {healthScore >= 50 && healthScore < 70 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-700">Powerful ⚡</span>
+                      <span className="text-sm text-gray-600">{70 - healthScore} points to go</span>
+                    </div>
+                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-purple-400 to-blue-400 transition-all duration-500"
+                        style={{ width: `${((healthScore - 50) / 20) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">So close to powerful! You're crushing it.</p>
+                  </div>
+                )}
+                {healthScore >= 70 && healthScore < 90 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-700">Unbreakable 🔥</span>
+                      <span className="text-sm text-gray-600">{90 - healthScore} points to go</span>
+                    </div>
+                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-500"
+                        style={{ width: `${((healthScore - 70) / 20) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">Almost there! Unbreakable status is within reach.</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* What Makes Your Circle Special */}
             <div className="card p-6 mb-6">
-              <h2 className="text-xl font-display text-gradient mb-4">Connection Breakdown</h2>
+              <h2 className="text-xl font-display text-gradient mb-4">What Makes You Close</h2>
 
               <div className="space-y-4">
                 {/* Alert Response */}
@@ -231,35 +301,40 @@ const CircleHealthPage = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">🚨</span>
-                      <span className="font-semibold text-text-primary">Alert Response</span>
+                      <span className="font-semibold text-text-primary">Show Up Factor</span>
                     </div>
-                    <span className="font-bold text-gradient">{Math.round(avgAlertResponse)}/35</span>
+                    <span className="font-bold text-gradient">{Math.round(avgAlertResponse)}/50</span>
                   </div>
                   <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-red-400 to-orange-400 transition-all duration-500"
-                      style={{ width: `${(avgAlertResponse / 35) * 100}%` }}
+                      style={{ width: `${(avgAlertResponse / 50) * 100}%` }}
                     ></div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">How quickly you respond when they need help</p>
+                  <p className="text-sm text-gray-600 mt-1">They drop everything when you need them</p>
                 </div>
 
-                {/* Check-In Frequency */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">✅</span>
-                      <span className="font-semibold text-text-primary">Check-In Frequency</span>
+                {/* Story Engagement - Coming Soon */}
+                <div className="relative">
+                  <div className="opacity-40">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">📸</span>
+                        <span className="font-semibold text-text-primary">Story Vibes</span>
+                        <span className="text-xs font-bold bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                          Coming Soon
+                        </span>
+                      </div>
+                      <span className="font-bold text-gray-400">-/25</span>
                     </div>
-                    <span className="font-bold text-gradient">{Math.round(avgCheckInFrequency)}/25</span>
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-gray-300 to-gray-300"
+                        style={{ width: '0%' }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">Share moments with your circle (launching soon!)</p>
                   </div>
-                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 transition-all duration-500"
-                      style={{ width: `${(avgCheckInFrequency / 25) * 100}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">How often you include each other in check-ins</p>
                 </div>
 
                 {/* Featured Circle */}
@@ -267,9 +342,9 @@ const CircleHealthPage = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">⭐</span>
-                      <span className="font-semibold text-text-primary">Featured Circle</span>
+                      <span className="font-semibold text-text-primary">Top 5 Status</span>
                     </div>
-                    <span className="font-bold text-gradient">{circleHealth.circleSize}/5</span>
+                    <span className="font-bold text-gradient">{circleHealth.circleSize}/5 members</span>
                   </div>
                   <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
@@ -277,7 +352,7 @@ const CircleHealthPage = () => {
                       style={{ width: `${(circleHealth.circleSize / 5) * 100}%` }}
                     ></div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">Top 5 most important connections</p>
+                  <p className="text-sm text-gray-600 mt-1">Being in each other's top 5 matters</p>
                 </div>
 
                 {/* Recency */}
@@ -285,17 +360,17 @@ const CircleHealthPage = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">📅</span>
-                      <span className="font-semibold text-text-primary">Recent Activity</span>
+                      <span className="font-semibold text-text-primary">Staying Current</span>
                     </div>
-                    <span className="font-bold text-gradient">{Math.round(avgRecency)}/15</span>
+                    <span className="font-bold text-gradient">{Math.round(avgRecency)}/10</span>
                   </div>
                   <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-green-400 to-emerald-400 transition-all duration-500"
-                      style={{ width: `${(avgRecency / 15) * 100}%` }}
+                      style={{ width: `${(avgRecency / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">How recently you've interacted</p>
+                  <p className="text-sm text-gray-600 mt-1">Keeping the connection alive with regular check-ins</p>
                 </div>
               </div>
             </div>
@@ -352,9 +427,9 @@ const CircleHealthPage = () => {
               </div>
             </div>
 
-            {/* Tips & Recommendations */}
+            {/* Level Up Your Circle */}
             <div className="card p-6">
-              <h2 className="text-xl font-display text-gradient mb-4">How to Improve</h2>
+              <h2 className="text-xl font-display text-gradient mb-4">Level Up Your Circle 🚀</h2>
 
               <div className="space-y-3">
                 {tips.map((tip, idx) => (
@@ -362,12 +437,12 @@ const CircleHealthPage = () => {
                     key={idx}
                     className={`p-4 rounded-xl border-2 ${
                       tip.priority === 'success'
-                        ? 'bg-green-50 border-green-300'
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300'
                         : tip.priority === 'high'
-                        ? 'bg-red-50 border-red-300'
+                        ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300'
                         : tip.priority === 'medium'
-                        ? 'bg-orange-50 border-orange-300'
-                        : 'bg-blue-50 border-blue-300'
+                        ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-300'
+                        : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300'
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -378,7 +453,7 @@ const CircleHealthPage = () => {
                         {tip.action && tip.link && (
                           <button
                             onClick={() => navigate(tip.link)}
-                            className="text-sm font-semibold text-primary hover:underline"
+                            className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
                           >
                             {tip.action} →
                           </button>
@@ -407,18 +482,34 @@ const PerfectCircleDemo = () => {
   ];
 
   return (
-    <div className="card p-8 mb-6 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-4 border-green-300 relative overflow-hidden">
-      {/* Animated particles background */}
+    <div className="card p-8 mb-6 bg-gradient-to-br from-green-50 via-emerald-50 via-teal-50 via-pink-50 to-purple-50 border-4 border-green-300 relative overflow-hidden">
+      {/* INSANE Animated particles background - Pink AND Green mixing */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {/* Green particles */}
+        {Array.from({ length: 30 }).map((_, i) => (
           <div
-            key={i}
-            className="absolute w-2 h-2 bg-green-400 rounded-full opacity-40 animate-float"
+            key={`green-${i}`}
+            className="absolute w-3 h-3 rounded-full opacity-50 animate-float"
             style={{
+              background: `radial-gradient(circle, #10b981, #34d399)`,
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${3 + Math.random() * 4}s`,
+              animationDuration: `${2 + Math.random() * 3}s`,
+            }}
+          />
+        ))}
+        {/* Pink particles */}
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={`pink-${i}`}
+            className="absolute w-3 h-3 rounded-full opacity-50 animate-float"
+            style={{
+              background: `radial-gradient(circle, #ec4899, #f472b6)`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${2 + Math.random() * 3}s`,
             }}
           />
         ))}
@@ -427,9 +518,9 @@ const PerfectCircleDemo = () => {
       <div className="relative z-10">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-display bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-            The Perfect Circle
+            The Dream Circle ✨
           </h2>
-          <p className="text-gray-700 text-sm md:text-base">This is what incredible connection looks like</p>
+          <p className="text-gray-700 text-sm md:text-base font-semibold">This is what an unbreakable circle looks like - pure magic</p>
         </div>
 
         {/* Perfect Circle Visualization */}
@@ -450,13 +541,16 @@ const PerfectCircleDemo = () => {
                 >
                   <defs>
                     <linearGradient id={`perfect-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
-                      <stop offset="50%" stopColor="#34d399" stopOpacity="1" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.8" />
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.9" />
+                      <stop offset="25%" stopColor="#14b8a6" stopOpacity="1" />
+                      <stop offset="50%" stopColor="#ec4899" stopOpacity="1" />
+                      <stop offset="75%" stopColor="#a855f7" stopOpacity="1" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.9" />
                     </linearGradient>
                     <filter id={`perfect-glow-${index}`}>
-                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
                       <feMerge>
+                        <feMergeNode in="coloredBlur"/>
                         <feMergeNode in="coloredBlur"/>
                         <feMergeNode in="coloredBlur"/>
                         <feMergeNode in="SourceGraphic"/>
@@ -469,36 +563,62 @@ const PerfectCircleDemo = () => {
                     x2={`${x}%`}
                     y2={`${y}%`}
                     stroke={`url(#perfect-gradient-${index})`}
-                    strokeWidth="4"
+                    strokeWidth="5"
                     filter={`url(#perfect-glow-${index})`}
                     className="animate-pulse-fast"
                   />
 
-                  {/* Multiple particles flowing */}
+                  {/* INSANE amount of particles - green and pink flowing */}
                   <circle
                     cx="50%"
                     cy="50%"
-                    r="4"
+                    r="5"
                     fill="#10b981"
                     opacity="0.9"
                     className="animate-particle-fast"
                     style={{
                       '--target-x': `${x}%`,
                       '--target-y': `${y}%`,
-                      animationDelay: `${index * 0.3}s`,
+                      animationDelay: `${index * 0.2}s`,
+                    }}
+                  />
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="4"
+                    fill="#ec4899"
+                    opacity="0.85"
+                    className="animate-particle-fast"
+                    style={{
+                      '--target-x': `${x}%`,
+                      '--target-y': `${y}%`,
+                      animationDelay: `${index * 0.2 + 0.5}s`,
                     }}
                   />
                   <circle
                     cx="50%"
                     cy="50%"
                     r="3"
-                    fill="#34d399"
+                    fill="#14b8a6"
                     opacity="0.8"
                     className="animate-particle-fast"
                     style={{
                       '--target-x': `${x}%`,
                       '--target-y': `${y}%`,
-                      animationDelay: `${index * 0.3 + 1}s`,
+                      animationDelay: `${index * 0.2 + 1}s`,
+                    }}
+                  />
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="4"
+                    fill="#f472b6"
+                    opacity="0.8"
+                    className="animate-particle-fast"
+                    style={{
+                      '--target-x': `${x}%`,
+                      '--target-y': `${y}%`,
+                      animationDelay: `${index * 0.2 + 1.5}s`,
                     }}
                   />
                 </svg>
@@ -561,9 +681,9 @@ const PerfectCircleDemo = () => {
             <div className="text-sm text-gray-600">&lt; 5 minutes to every alert</div>
           </div>
           <div className="bg-white p-4 rounded-xl border-2 border-green-300 text-center">
-            <div className="text-3xl mb-2">✅</div>
-            <div className="font-bold text-green-700">Always Together</div>
-            <div className="text-sm text-gray-600">Regular check-ins & support</div>
+            <div className="text-3xl mb-2">📸</div>
+            <div className="font-bold text-green-700">Active Stories</div>
+            <div className="text-sm text-gray-600">View & react to all stories</div>
           </div>
           <div className="bg-white p-4 rounded-xl border-2 border-green-300 text-center">
             <div className="text-3xl mb-2">💚</div>
@@ -573,28 +693,31 @@ const PerfectCircleDemo = () => {
         </div>
 
         {/* How to Get There */}
-        <div className="mt-8 p-6 bg-white rounded-xl border-2 border-green-300">
-          <h3 className="font-display text-xl text-green-700 mb-4">How to Build This</h3>
+        <div className="mt-8 p-6 bg-white rounded-xl border-2 border-green-300 shadow-lg">
+          <h3 className="font-display text-xl text-green-700 mb-2 flex items-center gap-2">
+            How to Get There 🎯
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">It's honestly simpler than you think</p>
           <div className="space-y-3 text-sm text-gray-700">
-            <div className="flex gap-3">
-              <span className="text-green-600 font-bold">1.</span>
-              <span><strong>Respond fast:</strong> When they need help, drop everything and be there within minutes.</span>
+            <div className="flex gap-3 items-start">
+              <span className="text-green-600 font-bold text-lg">1.</span>
+              <span><strong>Drop everything when they need you.</strong> Seriously - respond to their alerts within minutes. That's what besties do.</span>
             </div>
-            <div className="flex gap-3">
-              <span className="text-green-600 font-bold">2.</span>
-              <span><strong>Check in together:</strong> Include them in your check-ins regularly, not just emergencies.</span>
+            <div className="flex gap-3 items-start">
+              <span className="text-green-600 font-bold text-lg">2.</span>
+              <span><strong>Keep each other in the loop.</strong> Share your circle stories so they know what's up. React to theirs. Stay connected.</span>
             </div>
-            <div className="flex gap-3">
-              <span className="text-green-600 font-bold">3.</span>
-              <span><strong>Stay consistent:</strong> Daily circle checks keep connections strong and alive.</span>
+            <div className="flex gap-3 items-start">
+              <span className="text-green-600 font-bold text-lg">3.</span>
+              <span><strong>Make it mutual.</strong> Put them in your top 5 AND make sure you're in theirs. It goes both ways.</span>
             </div>
-            <div className="flex gap-3">
-              <span className="text-green-600 font-bold">4.</span>
-              <span><strong>Be mutual:</strong> Make sure they're in your circle AND you're in theirs.</span>
+            <div className="flex gap-3 items-start">
+              <span className="text-green-600 font-bold text-lg">4.</span>
+              <span><strong>Talk regularly, not just in emergencies.</strong> Little check-ins keep the vibe strong.</span>
             </div>
-            <div className="flex gap-3">
-              <span className="text-green-600 font-bold">5.</span>
-              <span><strong>Show up:</strong> Real connections are built when you're there during tough times.</span>
+            <div className="flex gap-3 items-start">
+              <span className="text-green-600 font-bold text-lg">5.</span>
+              <span><strong>Be there in the hard times.</strong> Anyone can show up when things are good. Real ones show up when it's tough.</span>
             </div>
           </div>
         </div>

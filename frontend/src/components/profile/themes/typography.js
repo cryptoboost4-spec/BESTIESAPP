@@ -20,7 +20,7 @@ export const TYPOGRAPHY_STYLES = [
       googleFont: 'Inter:ital,wght@1,400'
     },
     nameSizeClass: 'text-4xl',
-    bioSizeClass: 'text-xl'
+    bioSizeClass: 'text-base'
   },
   {
     id: 'playful',
@@ -40,7 +40,7 @@ export const TYPOGRAPHY_STYLES = [
       googleFont: 'Quicksand:wght@400'
     },
     nameSizeClass: 'text-4xl',
-    bioSizeClass: 'text-xl'
+    bioSizeClass: 'text-base'
   },
   {
     id: 'editorial',
@@ -61,7 +61,7 @@ export const TYPOGRAPHY_STYLES = [
       googleFont: 'Lora:ital,wght@1,400'
     },
     nameSizeClass: 'text-3xl tracking-wider',
-    bioSizeClass: 'text-lg'
+    bioSizeClass: 'text-base'
   },
   {
     id: 'minimal',
@@ -81,7 +81,7 @@ export const TYPOGRAPHY_STYLES = [
       googleFont: 'Poppins:wght@400'
     },
     nameSizeClass: 'text-4xl',
-    bioSizeClass: 'text-lg'
+    bioSizeClass: 'text-sm'
   },
   {
     id: 'bold',
@@ -101,7 +101,7 @@ export const TYPOGRAPHY_STYLES = [
       googleFont: 'Work+Sans:wght@400'
     },
     nameSizeClass: 'text-4xl',
-    bioSizeClass: 'text-xl'
+    bioSizeClass: 'text-base'
   },
   {
     id: 'romantic',
@@ -121,7 +121,7 @@ export const TYPOGRAPHY_STYLES = [
       googleFont: 'Crimson+Text:wght@400'
     },
     nameSizeClass: 'text-5xl',
-    bioSizeClass: 'text-xl'
+    bioSizeClass: 'text-base'
   }
 ];
 

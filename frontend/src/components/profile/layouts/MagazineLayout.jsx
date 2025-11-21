@@ -29,7 +29,7 @@ const MagazineLayout = ({
     const borders = {
       none: 'shadow-xl',
       classic: 'border-4 border-white shadow-2xl',
-      metallic: 'border-4 border-yellow-400 shadow-2xl ring-4 ring-yellow-300',
+      metallic: 'border-4 border-gradient-to-r from-yellow-400 to-pink-500 shadow-2xl',
       scalloped: 'border-4 border-white shadow-2xl'
     };
     return borders[photoBorder] || 'shadow-xl';
@@ -84,7 +84,7 @@ const MagazineLayout = ({
       {/* Bio */}
       {bio && (
         <p
-          className={`${bioSizeClass || 'text-xl'} text-gray-800 dark:text-gray-200 mb-4 leading-relaxed`}
+          className={`${bioSizeClass || 'text-base'} text-gray-800 dark:text-gray-200 mb-4`}
           style={bioStyle}
         >
           "{bio}"
