@@ -137,20 +137,15 @@ const ProfilePage = () => {
     const tasks = [];
     let completed = 0;
 
-    if (currentUser?.email) {
-      tasks.push({ name: 'Add email', completed: true, path: null, section: null });
+    // 1. Name
+    if (userData?.displayName && userData?.displayName !== 'Anonymous') {
+      tasks.push({ name: 'Add your name', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Add email', completed: false, path: '/settings', section: 'account' });
+      tasks.push({ name: 'Add your name', completed: false, path: '/edit-profile', section: 'name' });
     }
 
-    if (userData?.phoneNumber) {
-      tasks.push({ name: 'Add phone number', completed: true, path: null, section: null });
-      completed++;
-    } else {
-      tasks.push({ name: 'Add phone number', completed: false, path: '/edit-profile', section: 'phone' });
-    }
-
+    // 2. Profile Photo
     if (userData?.photoURL) {
       tasks.push({ name: 'Upload profile photo', completed: true, path: null, section: null });
       completed++;
@@ -158,6 +153,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Upload profile photo', completed: false, path: null, section: 'photo', action: 'scrollToPhoto' });
     }
 
+    // 3. Bio
     if (userData?.profile?.bio) {
       tasks.push({ name: 'Write a bio', completed: true, path: null, section: null });
       completed++;
@@ -165,11 +161,60 @@ const ProfilePage = () => {
       tasks.push({ name: 'Write a bio', completed: false, path: '/edit-profile', section: 'bio' });
     }
 
-    if (bestiesCount >= 5) {
-      tasks.push({ name: 'Add 5 besties', completed: true, path: null, section: null });
+    // 4. Birthday
+    if (userData?.birthday) {
+      tasks.push({ name: 'Add birthday', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: `Add 5 besties (${bestiesCount}/5)`, completed: false, path: null, section: null, action: 'scrollToBestieCircle' });
+      tasks.push({ name: 'Add birthday', completed: false, path: '/edit-profile', section: 'birthday' });
+    }
+
+    // 5. Phone Number
+    if (userData?.phoneNumber) {
+      tasks.push({ name: 'Add phone number', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Add phone number', completed: false, path: '/edit-profile', section: 'phone' });
+    }
+
+    // 6. Email
+    if (currentUser?.email) {
+      tasks.push({ name: 'Add email', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Add email', completed: false, path: '/settings', section: 'account' });
+    }
+
+    // 7. Customize Profile
+    if (userData?.profile?.customTheme || userData?.profile?.customBanner || userData?.featuredBadges?.length > 0) {
+      tasks.push({ name: 'Customize profile', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Customize profile', completed: false, path: '/edit-profile', section: 'customize' });
+    }
+
+    // 8. Check Out Badges
+    if (badges && badges.length > 0) {
+      tasks.push({ name: 'Check out badges', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Check out badges', completed: false, path: null, section: null, action: 'scrollToBadges' });
+    }
+
+    // 9. Set Up Notifications
+    if (userData?.notificationSettings?.pushEnabled !== undefined) {
+      tasks.push({ name: 'Set up notifications', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Set up notifications', completed: false, path: '/settings', section: 'notifications' });
+    }
+
+    // 10. Check Privacy Settings
+    if (userData?.privacySettings?.checkInVisibility) {
+      tasks.push({ name: 'Check privacy settings', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Check privacy settings', completed: false, path: '/settings', section: 'privacy' });
     }
 
     const percentage = (completed / tasks.length) * 100;
@@ -230,6 +275,11 @@ const ProfilePage = () => {
       const bestieCircleElement = document.querySelector('.bestie-circle-section');
       if (bestieCircleElement) {
         bestieCircleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } else if (task.action === 'scrollToBadges') {
+      const badgesElement = document.querySelector('.badges-section');
+      if (badgesElement) {
+        badgesElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } else if (task.path) {
       if (task.section) {
