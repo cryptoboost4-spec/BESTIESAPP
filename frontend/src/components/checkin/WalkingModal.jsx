@@ -44,9 +44,9 @@ const WalkingModal = ({ onClose }) => {
                 key={mins}
                 type="button"
                 onClick={() => setDuration(mins)}
-                className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                className={`py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
                   duration === mins
-                    ? 'bg-primary text-white'
+                    ? 'bg-gradient-primary text-white shadow-lg'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
