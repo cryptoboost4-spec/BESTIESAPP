@@ -346,34 +346,8 @@ const SettingsPage = () => {
     setLoading(true);
 
     try {
-      // Delete user's Firestore document and related data
-      const userId = currentUser.uid;
-
-      // Delete user document
-      await deleteDoc(doc(db, 'users', userId));
-
-      // Delete besties connections
-      const bestiesQuery1 = query(
-        collection(db, 'besties'),
-        where('requesterId', '==', userId)
-      );
-      const bestiesQuery2 = query(
-        collection(db, 'besties'),
-        where('recipientId', '==', userId)
-      );
-
-      const [besties1, besties2] = await Promise.all([
-        getDocs(bestiesQuery1),
-        getDocs(bestiesQuery2)
-      ]);
-
-      const deletePromises = [];
-      besties1.forEach(doc => deletePromises.push(deleteDoc(doc.ref)));
-      besties2.forEach(doc => deletePromises.push(deleteDoc(doc.ref)));
-
-      await Promise.all(deletePromises);
-
       // Delete Firebase Auth account
+      // Note: Firestore cleanup will be handled by Cloud Functions
       await deleteUser(currentUser);
 
       toast.success('Account deleted successfully');
