@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
             acceptedAt: Timestamp.now(),
             recipientId: user.uid,
             recipientName: userData.displayName || user.displayName || 'Unknown',
-            recipientPhone: user.phoneNumber || user.email,
+            recipientPhone: user.phoneNumber || userData.phoneNumber,
             recipientPhotoURL: userData.photoURL || user.photoURL || null,
           });
           found = true;
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
           requesterName: inviterDisplayName,
           requesterPhotoURL: inviterPhotoURL,
           recipientName: userData.displayName || user.displayName || 'Unknown',
-          recipientPhone: user.phoneNumber || user.email,
+          recipientPhone: user.phoneNumber || userData.phoneNumber,
           recipientPhotoURL: userData.photoURL || user.photoURL || null,
         });
         console.log('✅ Bestie connection created');
