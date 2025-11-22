@@ -8,7 +8,7 @@ import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileCompletion from '../components/profile/ProfileCompletion';
 import LoginStreak from '../components/profile/LoginStreak';
-import BestieCircleStatus from '../components/BestieCircleStatus';
+// import BestieCircleStatus from '../components/BestieCircleStatus'; // Removed from Profile Page per user request
 import BadgesSection from '../components/profile/BadgesSection';
 import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
