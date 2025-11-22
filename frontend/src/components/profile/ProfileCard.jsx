@@ -4,7 +4,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
 import toast from 'react-hot-toast';
-import html2canvas from 'html2canvas';
 import { getLayoutById } from './layouts';
 import { getTypographyById, getNameStyle, getBioStyle } from './themes/typography';
 import { BACKGROUNDS } from './themes/backgrounds';
