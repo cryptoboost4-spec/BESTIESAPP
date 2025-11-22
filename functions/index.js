@@ -295,11 +295,11 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
       } catch (whatsappError) {
         console.log('WhatsApp failed, trying SMS...');
         // Fallback to SMS (expensive - use short message)
-        if (bestieData.smsSubscription?.active) {
+        if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
           await sendSMSAlert(bestieData.phoneNumber, shortMessage);
         }
       }
-    } else if (bestieData.smsSubscription?.active && bestieData.phoneNumber) {
+    } else if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
       // SMS only (expensive - use short message)
       await sendSMSAlert(bestieData.phoneNumber, shortMessage);
     }
@@ -312,10 +312,11 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
     // Create in-app notification
     await db.collection('notifications').add({
       userId: bestieId,
-      type: 'safety_alert',
+      type: 'check_in_alert',
+      title: '🚨 Check-in Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
       checkInId,
-      message: fullMessage,
-      sentAt: admin.firestore.Timestamp.now(),
+      createdAt: admin.firestore.Timestamp.now(),
       read: false,
     });
 

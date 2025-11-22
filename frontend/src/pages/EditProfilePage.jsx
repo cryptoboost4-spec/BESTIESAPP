@@ -181,6 +181,45 @@ const EditProfilePage = () => {
         console.error('Token refresh error:', error);
       }
 
+      // Check if SMS is not enabled and prompt user
+      if (!userData?.notificationPreferences?.sms) {
+        toast(
+          (t) => (
+            <div className="flex flex-col gap-2">
+              <div className="font-semibold">📱 Enable SMS Alerts?</div>
+              <div className="text-sm">Would you like to receive emergency alerts via SMS?</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      await updateDoc(doc(db, 'users', currentUser.uid), {
+                        'notificationPreferences.sms': true
+                      });
+                      toast.success('SMS alerts enabled!');
+                      toast.dismiss(t.id);
+                    } catch (error) {
+                      console.error('Error enabling SMS:', error);
+                      toast.error('Failed to enable SMS');
+                    }
+                  }}
+                  className="btn btn-primary btn-sm"
+                >
+                  Enable SMS
+                </button>
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Not Now
+                </button>
+              </div>
+              <div className="text-xs text-gray-500">You can change this later in Settings</div>
+            </div>
+          ),
+          { duration: 10000 }
+        );
+      }
+
       // Now save the profile with the verified phone number
       saveProfileChanges(pendingPhoneNumber);
     } else {
