@@ -58,20 +58,20 @@ exports.checkExpiredCheckIns = functions.pubsub
     return null;
   });
 
-// Check for cascading alert escalation every 30 seconds
+// Check for cascading alert escalation every minute
 exports.checkCascadingAlertEscalation = functions.pubsub
-  .schedule('every 30 seconds')
+  .schedule('every 1 minutes')
   .onRun(async (context) => {
     const now = admin.firestore.Timestamp.now();
-    const thirtySecondsAgo = admin.firestore.Timestamp.fromDate(
-      new Date(Date.now() - 30 * 1000)
+    const oneMinuteAgo = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 60 * 1000)
     );
 
-    // Find alerted check-ins with current notified bestie that haven't been acknowledged in 30s
+    // Find alerted check-ins with current notified bestie that haven't been acknowledged in 1 minute
     const checkInsSnapshot = await db.collection('checkins')
       .where('status', '==', 'alerted')
       .where('currentNotifiedBestie', '!=', null)
-      .where('currentNotificationSentAt', '<=', thirtySecondsAgo)
+      .where('currentNotificationSentAt', '<=', oneMinuteAgo)
       .get();
 
     const escalations = [];
