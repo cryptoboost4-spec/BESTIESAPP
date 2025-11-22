@@ -14,6 +14,12 @@ const FloatingNotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
 
+  // Dragging state
+  const [position, setPosition] = useState({ x: 0, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const bellRef = useRef(null);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -50,6 +56,74 @@ const FloatingNotificationBell = () => {
 
     return () => unsubscribe();
   }, [currentUser?.uid]);
+
+  // Drag handlers
+  const handleDragStart = (e) => {
+    e.preventDefault();
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+    setIsDragging(true);
+    setDragStart({
+      x: clientX - position.x,
+      y: clientY - position.y
+    });
+
+    // Lock body scroll when dragging
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+
+    e.preventDefault();
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+    const newX = clientX - dragStart.x;
+    const newY = clientY - dragStart.y;
+
+    // Keep within screen bounds
+    const maxX = window.innerWidth - 100;
+    const maxY = window.innerHeight - 100;
+
+    setPosition({
+      x: Math.max(-window.innerWidth + 100, Math.min(maxX, newX)),
+      y: Math.max(0, Math.min(maxY, newY))
+    });
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+
+    // Unlock body scroll
+    document.body.style.overflow = '';
+    document.body.style.touchAction = '';
+
+    // Snap to left or right edge
+    const snapToRight = position.x > -window.innerWidth / 2;
+    setPosition(prev => ({
+      ...prev,
+      x: snapToRight ? 0 : -window.innerWidth + 100
+    }));
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+      document.addEventListener('touchmove', handleDragMove, { passive: false });
+      document.addEventListener('touchend', handleDragEnd);
+
+      return () => {
+        document.removeEventListener('mousemove', handleDragMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+        document.removeEventListener('touchmove', handleDragMove);
+        document.removeEventListener('touchend', handleDragEnd);
+      };
+    }
+  }, [isDragging, dragStart, position]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
@@ -127,23 +201,37 @@ const FloatingNotificationBell = () => {
     return date.toLocaleDateString();
   };
 
+  const isOnRightSide = position.x >= -window.innerWidth / 2;
+
   return (
     <div
-      className={`fixed top-4 right-0 z-50 transition-transform duration-300 ease-in-out ${
-        unreadCount > 0 ? 'translate-x-0' : 'translate-x-[calc(100%-2rem)]'
-      }`}
+      className={`fixed z-50 transition-all duration-300 ease-in-out ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+      style={{
+        top: `${position.y}px`,
+        right: isOnRightSide ? `${-position.x}px` : 'auto',
+        left: !isOnRightSide ? `${position.x + window.innerWidth - 100}px` : 'auto',
+      }}
       ref={dropdownRef}
     >
       {/* Floating Bell Button */}
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        ref={bellRef}
+        onMouseDown={handleDragStart}
+        onTouchStart={handleDragStart}
+        onClick={(e) => {
+          if (!isDragging) {
+            setShowDropdown(!showDropdown);
+          }
+        }}
         className={`
           relative flex items-center justify-center
           ${unreadCount > 0 ? 'w-20 h-16 px-4' : 'w-16 h-16'}
           ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'}
-          rounded-l-full shadow-lg
+          ${isOnRightSide ? 'rounded-l-full border-r-0' : 'rounded-r-full border-l-0'}
+          shadow-lg
           transition-all duration-300 ease-in-out
-          border-2 border-r-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}
+          border-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}
+          ${isDragging ? 'scale-110' : ''}
         `}
       >
         {/* Bell Icon SVG */}
@@ -168,7 +256,7 @@ const FloatingNotificationBell = () => {
           />
         </svg>
 
-        {/* Unread Count Badge - appears inside the button when expanded */}
+        {/* Unread Count Badge */}
         {unreadCount > 0 && (
           <span className="ml-2 text-sm font-bold bg-gradient-to-br from-rose-500 to-pink-600 text-white px-2 py-0.5 rounded-full animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -177,8 +265,13 @@ const FloatingNotificationBell = () => {
       </button>
 
       {/* Dropdown Panel */}
-      {showDropdown && (
-        <div className={`absolute top-full right-0 mt-2 w-80 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-2xl border-2 z-50 max-h-96 overflow-hidden flex flex-col transition-colors`}>
+      {showDropdown && !isDragging && (
+        <div
+          className={`absolute top-full mt-2 w-80 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-2xl border-2 z-50 max-h-96 overflow-hidden flex flex-col transition-colors`}
+          style={{
+            [isOnRightSide ? 'right' : 'left']: 0
+          }}
+        >
           {/* Header */}
           <div className={`p-4 border-b-2 ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-100 bg-gradient-to-r from-pink-50 to-purple-50'}`}>
             <h3 className={`font-display text-lg ${isDark ? 'text-gray-100' : 'text-text-primary'} flex items-center justify-between`}>
