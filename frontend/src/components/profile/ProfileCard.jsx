@@ -223,7 +223,7 @@ const ProfileCard = ({ currentUser, userData }) => {
     <>
       <div
         id="profile-card-shareable"
-        className={`card mb-6 relative overflow-hidden shadow-2xl profile-card-aura-${currentAura} profile-card-pattern ${patternClass}`}
+        className={`card mb-6 relative overflow-hidden shadow-2xl profile-card-aura-${currentAura} profile-card-pattern ${patternClass} max-h-80`}
         style={{ background: backgroundStyle }}
       >
         {/* Action Buttons */}
