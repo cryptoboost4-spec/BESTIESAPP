@@ -109,34 +109,8 @@ export const AuthProvider = ({ children }) => {
         console.log('✅ Updated existing bestie connection');
       }
 
-      // Create celebration documents for BOTH users
-      try {
-        console.log('🎉 Creating celebration documents');
-        // Celebration for the invitee (current user)
-        await addDoc(collection(db, 'bestie_celebrations'), {
-          userId: user.uid,
-          bestieId: inviterUID,
-          bestieName: inviterDisplayName,
-          bestiePhotoURL: inviterPhotoURL,
-          seen: false,
-          createdAt: Timestamp.now(),
-        });
-
-        // Celebration for the inviter (they'll see the new user's name)
-        await addDoc(collection(db, 'bestie_celebrations'), {
-          userId: inviterUID,
-          bestieId: user.uid,
-          bestieName: userData.displayName || user.displayName || 'Someone',
-          bestiePhotoURL: userData.photoURL || user.photoURL || null,
-          seen: false,
-          createdAt: Timestamp.now(),
-        });
-        console.log('✅ Celebrations created');
-      } catch (error) {
-        console.error('Failed to create celebration documents:', error);
-      }
-
       // Update both users' featuredCircle and bestieUserIds immediately (don't wait for Cloud Functions)
+      // Do this BEFORE creating celebrations so we have permission to read inviter's real name
       try {
         console.log('🔄 Updating featured circles and bestie lists');
 
@@ -192,27 +166,31 @@ export const AuthProvider = ({ children }) => {
         // Non-critical error, continue anyway
       }
 
-      // Update celebrations with real names now that we have permission
+      // Create celebration documents AFTER updating user docs (so we have real names)
       try {
-        console.log('🔄 Updating celebrations with real names');
-        const celebrationsQuery = query(
-          collection(db, 'bestie_celebrations'),
-          where('userId', '==', user.uid),
-          where('bestieId', '==', inviterUID),
-          where('seen', '==', false)
-        );
-        const celebSnap = await getDocs(celebrationsQuery);
+        console.log('🎉 Creating celebration documents with real names');
+        // Celebration for the invitee (current user) - now with real inviter name!
+        await addDoc(collection(db, 'bestie_celebrations'), {
+          userId: user.uid,
+          bestieId: inviterUID,
+          bestieName: inviterDisplayName,
+          bestiePhotoURL: inviterPhotoURL,
+          seen: false,
+          createdAt: Timestamp.now(),
+        });
 
-        if (!celebSnap.empty && inviterDisplayName !== 'Your Bestie') {
-          const celebDoc = celebSnap.docs[0];
-          await updateDoc(doc(db, 'bestie_celebrations', celebDoc.id), {
-            bestieName: inviterDisplayName,
-            bestiePhotoURL: inviterPhotoURL
-          });
-          console.log('✅ Updated celebration with real name');
-        }
+        // Celebration for the inviter (they'll see the new user's name)
+        await addDoc(collection(db, 'bestie_celebrations'), {
+          userId: inviterUID,
+          bestieId: user.uid,
+          bestieName: userData.displayName || user.displayName || 'Someone',
+          bestiePhotoURL: userData.photoURL || user.photoURL || null,
+          seen: false,
+          createdAt: Timestamp.now(),
+        });
+        console.log('✅ Celebrations created with names:', inviterDisplayName, 'and', userData.displayName || user.displayName);
       } catch (error) {
-        console.error('Failed to update celebration:', error);
+        console.error('Failed to create celebration documents:', error);
       }
 
       // Clean up storage after successful processing
