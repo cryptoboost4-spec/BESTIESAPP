@@ -19,7 +19,7 @@ const OnboardingPage = () => {
 
   // Check for inviter info on mount
   useEffect(() => {
-    const storedInviterInfo = localStorage.getItem('inviter_info');
+    const storedInviterInfo = sessionStorage.getItem('inviter_info') || localStorage.getItem('inviter_info');
     if (storedInviterInfo) {
       try {
         setInviterInfo(JSON.parse(storedInviterInfo));
@@ -370,6 +370,7 @@ const OnboardingPage = () => {
           <button
             onClick={() => {
               // Clean up inviter info and proceed to bestie circle
+              sessionStorage.removeItem('inviter_info');
               localStorage.removeItem('inviter_info');
               setInviterInfo(null);
               setStep('bestie-circle');

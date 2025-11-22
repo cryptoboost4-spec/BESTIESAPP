@@ -135,13 +135,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Save invite to localStorage if present in URL (BEFORE login/signup)
+  // Save invite to sessionStorage if present in URL (BEFORE login/signup)
+  // sessionStorage persists across OAuth redirects, unlike localStorage in incognito
   // Auth listener will process it after auth initializes
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const inviterUID = urlParams.get('invite');
     if (inviterUID) {
-      localStorage.setItem('pending_invite', inviterUID);
+      // Use sessionStorage for better persistence across OAuth redirects
+      sessionStorage.setItem('pending_invite', inviterUID);
+      localStorage.setItem('pending_invite', inviterUID); // Fallback for old code
 
       // Fetch inviter info early so it's ready for welcome screen
       // Note: This may fail with permission-denied if inviter's profile is private
@@ -152,11 +155,13 @@ export const AuthProvider = ({ children }) => {
           const inviterSnap = await getDoc(inviterRef);
           if (inviterSnap.exists()) {
             const inviterData = inviterSnap.data();
-            localStorage.setItem('inviter_info', JSON.stringify({
+            const inviterInfo = JSON.stringify({
               uid: inviterUID,
               displayName: inviterData.displayName,
               photoURL: inviterData.photoURL,
-            }));
+            });
+            sessionStorage.setItem('inviter_info', inviterInfo);
+            localStorage.setItem('inviter_info', inviterInfo); // Fallback
           }
         } catch (error) {
           // Permission denied is expected - user isn't a bestie yet
@@ -231,14 +236,15 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Process pending invite (works for all users - new and returning)
-        const inviterUID = localStorage.getItem('pending_invite');
+        // Check sessionStorage first (better for OAuth redirects), then localStorage
+        const inviterUID = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
         if (inviterUID) {
           await processInvite(user, inviterUID);
 
           // For returning users, show toast and clean up inviter info
           // For new users, keep inviter_info for welcome screen during onboarding
           if (!isNewUser) {
-            const inviterInfo = localStorage.getItem('inviter_info');
+            const inviterInfo = sessionStorage.getItem('inviter_info') || localStorage.getItem('inviter_info');
             if (inviterInfo) {
               try {
                 const { displayName } = JSON.parse(inviterInfo);
@@ -247,6 +253,7 @@ export const AuthProvider = ({ children }) => {
                 console.error('Failed to parse inviter info:', e);
               }
               // Clean up inviter info for returning users
+              sessionStorage.removeItem('inviter_info');
               localStorage.removeItem('inviter_info');
             }
           }

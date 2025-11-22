@@ -42,7 +42,7 @@ const HomePage = () => {
   useEffect(() => {
     if (authLoading) return;
 
-    const pendingInvite = localStorage.getItem('pending_invite');
+    const pendingInvite = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
     if (pendingInvite && !currentUser) {
       navigate('/login');
     }
