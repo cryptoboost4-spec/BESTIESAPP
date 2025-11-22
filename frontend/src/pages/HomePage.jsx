@@ -14,6 +14,7 @@ import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import { logAlertResponse } from '../services/interactionTracking';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -296,12 +297,29 @@ const HomePage = () => {
                       <div><strong>Expected back:</strong> {checkIn.alertTime?.toDate().toLocaleString()}</div>
                       {checkIn.notes && <div><strong>Notes:</strong> {checkIn.notes}</div>}
                     </div>
-                    <button
-                      onClick={() => navigate(`/history/${checkIn.id}`)}
-                      className="mt-3 btn btn-sm bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      View Details →
-                    </button>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => {
+                          haptic.medium();
+                          navigate(`/user/${checkIn.userId}`);
+                          // Log alert response when profile is viewed
+                          logAlertResponse(checkIn.id, checkIn.userId, currentUser.uid);
+                        }}
+                        className="btn btn-sm bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        👤 View Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate(`/history/${checkIn.id}`);
+                          // Log alert response when details are viewed
+                          logAlertResponse(checkIn.id, checkIn.userId, currentUser.uid);
+                        }}
+                        className="btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        View Details →
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
