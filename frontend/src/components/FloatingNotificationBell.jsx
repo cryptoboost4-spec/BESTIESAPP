@@ -60,6 +60,7 @@ const FloatingNotificationBell = () => {
   // Drag handlers
   const handleDragStart = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
     const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
 
@@ -72,12 +73,15 @@ const FloatingNotificationBell = () => {
     // Lock body scroll when dragging
     document.body.style.overflow = 'hidden';
     document.body.style.touchAction = 'none';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
   };
 
   const handleDragMove = useCallback((e) => {
     if (!isDragging) return;
 
     e.preventDefault();
+    e.stopPropagation();
     const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
     const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
 
@@ -100,6 +104,8 @@ const FloatingNotificationBell = () => {
     // Unlock body scroll
     document.body.style.overflow = '';
     document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
 
     // Snap to left or right edge
     const snapToRight = position.x > -window.innerWidth / 2;
@@ -223,6 +229,7 @@ const FloatingNotificationBell = () => {
             setShowDropdown(!showDropdown);
           }
         }}
+        style={{ touchAction: 'none' }}
         className={`
           relative flex items-center justify-center
           ${unreadCount > 0 ? 'w-20 h-16 px-4' : 'w-16 h-16'}
