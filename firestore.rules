@@ -206,6 +206,36 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.userId);
     }
 
+    // Posts collection
+    match /posts/{postId} {
+      // Posts are visible to besties only
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid in get(/databases/$(database)/documents/users/$(resource.data.userId)).data.bestieUserIds ||
+        resource.data.userId == 'BESTIES_BOT'
+      );
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
+
+      // Reactions subcollection
+      match /reactions/{reactionId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+        allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      }
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+        allow delete: if isSignedIn() && (
+          request.auth.uid == resource.data.userId ||
+          request.auth.uid == get(/databases/$(database)/documents/posts/$(postId)).data.userId
+        );
+      }
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

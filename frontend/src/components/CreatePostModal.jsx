@@ -53,6 +53,12 @@ const CreatePostModal = ({ onClose, onPostCreated }) => {
         text: text.trim(),
         photoURL: photoURL,
         createdAt: Timestamp.now(),
+        reactionCounts: {
+          heart: 0,
+          laugh: 0,
+          fire: 0
+        },
+        commentCount: 0
       });
 
       toast.success('Post created! 🎉');
