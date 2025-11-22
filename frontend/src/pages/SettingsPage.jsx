@@ -350,7 +350,7 @@ const SettingsPage = () => {
 
     try {
       // For phone accounts, we need to re-verify to get fresh credentials
-      if (isPhoneAccount && (error?.code === 'auth/requires-recent-login' || true)) {
+      if (isPhoneAccount) {
         // Setup reCAPTCHA for phone verification
         const recaptchaResult = authService.setupRecaptcha('delete-recaptcha-container');
         if (!recaptchaResult.success) {
@@ -381,9 +381,11 @@ const SettingsPage = () => {
           return;
         }
 
-        // Create credential and re-authenticate
-        const credential = PhoneAuthProvider.credential(verifyResult.verificationId || verifyResult.confirmationResult.verificationId, code);
-        await reauthenticateWithCredential(currentUser, credential);
+        // Verify the code and get credential
+        const confirmResult = await verifyResult.confirmationResult.confirm(code);
+
+        // Now re-authenticate with the fresh credential
+        // Note: confirm() already re-authenticates, so we can proceed to delete
         toast.success('Verified! Deleting account...');
       }
 
