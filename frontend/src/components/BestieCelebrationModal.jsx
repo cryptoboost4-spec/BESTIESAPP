@@ -141,7 +141,9 @@ const BestieCelebrationModal = () => {
       });
 
       const imageUrl = canvas.toDataURL('image/png');
-      const shareText = `${currentCelebration.bestieName} and I are now besties on Besties App! 💜`;
+      const shareText = currentCelebration.bestieName && currentCelebration.bestieName !== 'Your Bestie'
+        ? `${currentCelebration.bestieName} and I are now besties on Besties App! 💜`
+        : "I just made a new bestie on Besties App! 💜";
       const shareUrl = 'https://bestiesapp.web.app';
 
       switch (platform) {
@@ -176,7 +178,9 @@ const BestieCelebrationModal = () => {
           <div className="text-center">
             <div className="text-5xl sm:text-6xl md:text-8xl mb-4 sm:mb-6 animate-bounce">🎉</div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-display text-white mb-3 sm:mb-4 px-2">
-              You and {currentCelebration.bestieName || 'your friend'} are besties!
+              {currentCelebration.bestieName && currentCelebration.bestieName !== 'Your Bestie'
+                ? `You and ${currentCelebration.bestieName} are besties!`
+                : "You're connected!"}
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-white/90 mb-2 px-2">
               You can now add each other as emergency contacts
