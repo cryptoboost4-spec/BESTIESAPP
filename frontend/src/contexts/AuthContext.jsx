@@ -36,14 +36,16 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    console.log('🔄 Processing invite for user:', user.uid, 'from inviter:', inviterUID);
+
     try {
       // Get current user's data for name fields
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.exists() ? userSnap.data() : {};
 
-      // Get inviter info from localStorage (set during URL param capture)
-      const cachedInviterInfo = localStorage.getItem('inviter_info');
+      // Get inviter info from sessionStorage/localStorage
+      const cachedInviterInfo = sessionStorage.getItem('inviter_info') || localStorage.getItem('inviter_info');
       let inviterDisplayName = 'Your Bestie';
       let inviterPhotoURL = null;
 
@@ -85,6 +87,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (!found) {
+        console.log('✨ Creating new bestie connection');
         // No existing connection - create a new bestie
         // Using cached inviter info to avoid permission errors
         await addDoc(collection(db, 'besties'), {
@@ -99,12 +102,16 @@ export const AuthProvider = ({ children }) => {
           recipientPhone: user.phoneNumber || user.email,
           recipientPhotoURL: userData.photoURL || user.photoURL || null,
         });
+        console.log('✅ Bestie connection created');
 
         // Note: Notifications are handled by Cloud Functions
+      } else {
+        console.log('✅ Updated existing bestie connection');
       }
 
       // Create celebration documents for BOTH users
       try {
+        console.log('🎉 Creating celebration documents');
         // Celebration for the invitee (current user)
         await addDoc(collection(db, 'bestie_celebrations'), {
           userId: user.uid,
@@ -124,6 +131,7 @@ export const AuthProvider = ({ children }) => {
           seen: false,
           createdAt: Timestamp.now(),
         });
+        console.log('✅ Celebrations created');
       } catch (error) {
         console.error('Failed to create celebration documents:', error);
       }
@@ -243,7 +251,9 @@ export const AuthProvider = ({ children }) => {
         // Check sessionStorage first (better for OAuth redirects), then localStorage
         const inviterUID = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
         if (inviterUID) {
+          console.log('📨 Found pending invite, processing...');
           await processInvite(user, inviterUID);
+          console.log('✅ Invite processing complete');
 
           // For returning users, show toast and clean up inviter info
           // For new users, keep inviter_info for welcome screen during onboarding
