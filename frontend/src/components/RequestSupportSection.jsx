@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
-import ProfileWithBubble from './ProfileWithBubble';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
 
@@ -11,27 +10,6 @@ const RequestSupportSection = () => {
   const { currentUser, userData } = useAuth();
   const [showRequestAttention, setShowRequestAttention] = useState(false);
   const [attentionTag, setAttentionTag] = useState('');
-
-  // Scrolling bubble example messages
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-  const exampleMessages = [
-    '💬 Needs to vent',
-    '🫂 Need a shoulder',
-    '💜 Could use support',
-    '😔 Having a rough day',
-    "🎉 Let's do something",
-    '📱 Want to chat'
-  ];
-
-  // Rotate through example messages every 2 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMessageIndex((prev) => (prev + 1) % exampleMessages.length);
-    }, 2000);
-
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <>
@@ -70,32 +48,42 @@ const RequestSupportSection = () => {
           </div>
         </div>
       ) : (
-        <div className="card p-6 mb-6 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-700">
+        <div className="card p-6 mb-6 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-700 shadow-lg">
           {/* Header with sparkle emoji */}
           <div className="text-center mb-4">
-            <div className="text-3xl mb-2">✨</div>
-            <h3 className="text-xl font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <div className="text-4xl mb-3">💜</div>
+            <h3 className="text-xl md:text-2xl font-display bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-3">
               Need a Little Support?
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
               We all have those days. Let your besties know you could use some extra love right now 💕
             </p>
-          </div>
 
-          {/* Preview card - centered */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border-2 border-purple-200 dark:border-purple-600 shadow-sm">
-            <div className="flex flex-col items-center gap-3">
-              <p className="text-xs font-semibold text-purple-600 dark:text-purple-400">Preview:</p>
-              <ProfileWithBubble
-                photoURL={userData?.photoURL}
-                name={userData?.displayName || currentUser?.email || 'You'}
-                requestAttention={{ active: true, tag: exampleMessages[currentMessageIndex] }}
-                size="lg"
-                showBubble={true}
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center italic">
-                Your besties will see "{exampleMessages[currentMessageIndex]}" on your profile
+            {/* What happens section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border border-purple-200 dark:border-purple-600">
+              <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-3">
+                What happens when you request support:
               </p>
+              <div className="space-y-2 text-left">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">📢</span>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Your besties will see your request on their activity feed
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">🔔</span>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    They'll get an in-app notification so they see it right away
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">💌</span>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    It appears on your profile so anyone can reach out
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -104,7 +92,7 @@ const RequestSupportSection = () => {
               haptic.light();
               setShowRequestAttention(true);
             }}
-            className="btn bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white w-full shadow-lg"
+            className="btn bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white w-full shadow-lg font-semibold text-base py-3"
           >
             💜 Request Support
           </button>
@@ -116,10 +104,10 @@ const RequestSupportSection = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-display text-text-primary mb-4">
-              💜 Request Attention
+              💜 Request Support
             </h2>
             <p className="text-base text-text-secondary mb-6">
-              Let your besties know you could use some support. This is a non-urgent request - they'll see a badge on your profile throughout the app.
+              Let your besties know you could use some support. They'll see this on their activity feed and get a notification to reach out to you.
             </p>
 
             <div className="mb-6">
@@ -214,12 +202,25 @@ const RequestSupportSection = () => {
                   }
 
                   try {
+                    // Update user's requestAttention status
                     await updateDoc(doc(db, 'users', currentUser.uid), {
                       requestAttention: {
                         active: true,
                         tag: attentionTag,
                         timestamp: Timestamp.now(),
                       }
+                    });
+
+                    // Create a post in the activity feed for this support request
+                    await addDoc(collection(db, 'posts'), {
+                      userId: currentUser.uid,
+                      userName: userData?.displayName || 'A Bestie',
+                      userPhoto: userData?.photoURL || null,
+                      text: `${attentionTag}\n\nReach out if you can help! 💜`,
+                      photoURL: null,
+                      createdAt: Timestamp.now(),
+                      isSupportRequest: true,
+                      supportTag: attentionTag,
                     });
 
                     // Notify all besties
@@ -254,7 +255,7 @@ const RequestSupportSection = () => {
                       // Don't fail the whole operation if notifications fail
                     }
 
-                    toast.success('Your besties will see your request 💜');
+                    toast.success('Your besties have been notified 💜');
                     setShowRequestAttention(false);
                     setAttentionTag('');
                   } catch (error) {

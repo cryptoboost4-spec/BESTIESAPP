@@ -145,66 +145,123 @@ const ActivityFeed = ({
 
             {activity.type === 'post' && (
               <div>
-                <div className="flex items-start gap-2 md:gap-3 mb-3">
-                  {activity.postData.userPhoto ? (
-                    <img
-                      src={activity.postData.userPhoto}
-                      alt={activity.userName}
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display flex-shrink-0">
-                      {activity.userName?.[0] || '?'}
+                {/* Support Request - Special styling */}
+                {activity.postData.isSupportRequest ? (
+                  <div className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-xl p-4 border-2 border-pink-300 dark:border-pink-600">
+                    <div className="flex items-start gap-2 md:gap-3 mb-3">
+                      {activity.postData.userPhoto ? (
+                        <img
+                          src={activity.postData.userPhoto}
+                          alt={activity.userName}
+                          className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-pink-300 dark:ring-pink-600"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display flex-shrink-0 ring-2 ring-pink-300 dark:ring-pink-600">
+                          {activity.userName?.[0] || '?'}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-text-primary text-sm md:text-base">
+                            {activity.userName}
+                          </h3>
+                          <span className="text-lg">💜</span>
+                        </div>
+                        <p className="text-xs font-semibold text-pink-600 dark:text-pink-400 uppercase tracking-wide">
+                          Requesting Support
+                        </p>
+                        <p className="text-xs md:text-sm text-text-secondary mt-1">
+                          {getTimeAgo(activity.timestamp)}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-text-primary text-sm md:text-base">
-                      {activity.userName}
-                    </h3>
-                    <p className="text-xs md:text-sm text-text-secondary">
-                      {getTimeAgo(activity.timestamp)}
-                    </p>
+
+                    {/* Support request content */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-3">
+                      <p className="text-base md:text-lg font-semibold text-center text-gray-900 dark:text-gray-100 mb-2">
+                        {activity.postData.supportTag}
+                      </p>
+                      <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+                        Reach out if you can help! 💜
+                      </p>
+                    </div>
+
+                    {/* Quick action buttons */}
+                    <div className="flex gap-2">
+                      <a
+                        href={`sms:${activity.postData.userPhone || ''}`}
+                        className="flex-1 btn btn-sm bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-2 flex items-center justify-center gap-2"
+                      >
+                        <span>💬</span>
+                        <span>Send Message</span>
+                      </a>
+                    </div>
                   </div>
-                  <div className="text-xl flex-shrink-0">✍️</div>
-                </div>
+                ) : (
+                  /* Regular post */
+                  <>
+                    <div className="flex items-start gap-2 md:gap-3 mb-3">
+                      {activity.postData.userPhoto ? (
+                        <img
+                          src={activity.postData.userPhoto}
+                          alt={activity.userName}
+                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display flex-shrink-0">
+                          {activity.userName?.[0] || '?'}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-text-primary text-sm md:text-base">
+                          {activity.userName}
+                        </h3>
+                        <p className="text-xs md:text-sm text-text-secondary">
+                          {getTimeAgo(activity.timestamp)}
+                        </p>
+                      </div>
+                      <div className="text-xl flex-shrink-0">✍️</div>
+                    </div>
 
-                {/* Post Content */}
-                {activity.postData.text && (
-                  <p className="text-sm md:text-base text-text-primary mb-3 whitespace-pre-wrap break-words">
-                    {activity.postData.text}
-                  </p>
+                    {/* Post Content */}
+                    {activity.postData.text && (
+                      <p className="text-sm md:text-base text-text-primary mb-3 whitespace-pre-wrap break-words">
+                        {activity.postData.text}
+                      </p>
+                    )}
+
+                    {/* Post Photo */}
+                    {activity.postData.photoURL && (
+                      <img
+                        src={activity.postData.photoURL}
+                        alt="Post"
+                        className="w-full rounded-xl mb-2 max-h-96 object-cover"
+                      />
+                    )}
+
+                    {/* Post Reactions and Comments - Side by Side */}
+                    <div className="flex items-center justify-between mt-1">
+                      <PostReactions
+                        postId={activity.id}
+                        initialCounts={activity.postData.reactionCounts}
+                      />
+
+                      {/* Comments Button on Right */}
+                      <button
+                        onClick={() => setShowPostComments(activity.id)}
+                        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <span>💬</span>
+                        <span>
+                          {activity.postData.commentCount > 0
+                            ? `${activity.postData.commentCount} ${activity.postData.commentCount === 1 ? 'comment' : 'comments'}`
+                            : 'Add a comment'
+                          }
+                        </span>
+                      </button>
+                    </div>
+                  </>
                 )}
-
-                {/* Post Photo */}
-                {activity.postData.photoURL && (
-                  <img
-                    src={activity.postData.photoURL}
-                    alt="Post"
-                    className="w-full rounded-xl mb-2 max-h-96 object-cover"
-                  />
-                )}
-
-                {/* Post Reactions and Comments - Side by Side */}
-                <div className="flex items-center justify-between mt-1">
-                  <PostReactions
-                    postId={activity.id}
-                    initialCounts={activity.postData.reactionCounts}
-                  />
-
-                  {/* Comments Button on Right */}
-                  <button
-                    onClick={() => setShowPostComments(activity.id)}
-                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
-                  >
-                    <span>💬</span>
-                    <span>
-                      {activity.postData.commentCount > 0
-                        ? `${activity.postData.commentCount} ${activity.postData.commentCount === 1 ? 'comment' : 'comments'}`
-                        : 'Add a comment'
-                      }
-                    </span>
-                  </button>
-                </div>
               </div>
             )}
           </div>
