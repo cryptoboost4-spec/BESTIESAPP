@@ -45,7 +45,7 @@ const Header = () => {
   return (
     <>
       {/* Desktop Header */}
-      <header className={`${isDark ? 'bg-gray-900' : 'bg-white'} shadow-sm sticky top-0 z-40 transition-colors`}>
+      <header className={`hidden md:block ${isDark ? 'bg-gray-900' : 'bg-white'} shadow-sm sticky top-0 z-40 transition-colors`}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}

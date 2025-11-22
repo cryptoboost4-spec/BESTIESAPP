@@ -24,6 +24,9 @@ const HomePage = () => {
   // Invite Friends modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
 
+  // Tooltip state
+  const [showTooltip, setShowTooltip] = useState(null);
+
   // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
 
@@ -181,7 +184,28 @@ const HomePage = () => {
         {activeCheckIns.length === 0 && (
           <div className="card p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
+                  <div className="relative">
+                    <button
+                      onMouseEnter={() => setShowTooltip('stats')}
+                      onMouseLeave={() => setShowTooltip(null)}
+                      onClick={() => setShowTooltip(showTooltip === 'stats' ? null : 'stats')}
+                      className="w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold hover:bg-purple-600 transition-colors cursor-help"
+                    >
+                      ?
+                    </button>
+                    {showTooltip === 'stats' && (
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-purple-500 text-white text-xs p-3 rounded-lg shadow-xl z-50">
+                        <div className="font-semibold mb-1">Your Safety Snapshot 📊</div>
+                        <p className="leading-relaxed">
+                          Quick view of your safety journey! Track your check-ins, besties count, and how consistent you've been. The more you engage, the safer you stay! 💜
+                        </p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-purple-500"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <button
                   onClick={() => navigate('/profile')}
                   className="text-primary font-semibold hover:underline text-sm"
@@ -314,9 +338,30 @@ const HomePage = () => {
             <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-2 border-blue-100 dark:border-blue-700">
               <div className="text-center">
                 <div className="text-4xl mb-3">👯‍♀️</div>
-                <h3 className="font-display text-2xl text-gradient mb-3">
-                  Grow the Squad!
-                </h3>
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <h3 className="font-display text-2xl text-gradient">
+                    Grow the Squad!
+                  </h3>
+                  <div className="relative">
+                    <button
+                      onMouseEnter={() => setShowTooltip('invite')}
+                      onMouseLeave={() => setShowTooltip(null)}
+                      onClick={() => setShowTooltip(showTooltip === 'invite' ? null : 'invite')}
+                      className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold hover:bg-blue-600 transition-colors cursor-help"
+                    >
+                      ?
+                    </button>
+                    {showTooltip === 'invite' && (
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-blue-500 text-white text-xs p-3 rounded-lg shadow-xl z-50">
+                        <div className="font-semibold mb-1">Spread the Safety Love 💙</div>
+                        <p className="leading-relaxed">
+                          The best way to support Besties! When you invite friends, you're building a bigger safety network. More besties = more people looking out for each other! 👯‍♀️
+                        </p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-500"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <p className="text-text-secondary leading-relaxed mb-4">
                   Love Besties? Invite your friends! The more people who join,
                   the stronger our safety network becomes. Plus, it helps us keep
