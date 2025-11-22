@@ -281,12 +281,18 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
 
   const bestieData = bestieDoc.data();
 
+  // Sanitize display name to prevent spam flags (remove repeated characters)
+  const cleanName = (userData.displayName || 'Your friend')
+    .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
+    .trim()
+    .substring(0, 30); // Max 30 chars for name
+
   // Full message for WhatsApp/Email (free/cheap)
-  const fullMessage = `🚨 SAFETY ALERT: ${userData.displayName} hasn't checked in from ${checkIn.location}. They were expected back ${Math.round((Date.now() - checkIn.alertTime.toMillis()) / 60000)} minutes ago. Please check on them!`;
+  const fullMessage = `🚨 SAFETY ALERT: ${cleanName} hasn't checked in from ${checkIn.location}. They were expected back ${Math.round((Date.now() - checkIn.alertTime.toMillis()) / 60000)} minutes ago. Please check on them!`;
 
   // ULTRA SHORT message for SMS (MUST be under 160 chars for single segment)
-  // Format: "🚨 NAME missed check-in! Open app now"
-  const shortMessage = `🚨 ${userData.displayName} missed check-in! Open Besties app now`;
+  // Conversational format to avoid spam filters - NO URLs, NO excessive emojis
+  const shortMessage = `Hey, ${cleanName} hasn't checked in yet. Please check Besties app - they might need help.`;
 
   const notificationsSent = [];
 
@@ -297,7 +303,7 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
         await sendPushNotification(
           bestieData.fcmToken,
           '🚨 Check-in Alert',
-          `${userData.displayName} hasn't checked in yet. They might need help.`,
+          `${cleanName} hasn't checked in yet. They might need help.`,
           {
             type: 'check_in_alert',
             checkInId: checkInId,
@@ -1098,16 +1104,22 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     status: 'active',
     createdAt: admin.firestore.Timestamp.now(),
   });
-  
+
+  // Sanitize display name to prevent spam flags
+  const cleanName = (userData.displayName || 'Your friend')
+    .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
+    .trim()
+    .substring(0, 30); // Max 30 chars for name
+
   // Full message for WhatsApp/Email
   const fullAlertMessage = isReversePIN
-    ? `🚨 SILENT EMERGENCY: ${userData.displayName} triggered reverse PIN. Location: ${location || 'Unknown'}. Covert distress signal.`
-    : `🆘 EMERGENCY: ${userData.displayName} triggered SOS! Location: ${location || 'Unknown'}. Help immediately!`;
+    ? `🚨 SILENT EMERGENCY: ${cleanName} triggered reverse PIN. Location: ${location || 'Unknown'}. Covert distress signal.`
+    : `🆘 EMERGENCY: ${cleanName} triggered SOS! Location: ${location || 'Unknown'}. Help immediately!`;
 
-  // Short message for SMS (expensive)
+  // Short message for SMS (NO URLS - they trigger spam filters)
   const shortAlertMessage = isReversePIN
-    ? `🚨 ${userData.displayName} reverse PIN. View: ${APP_URL}/alert/${sosRef.id}`
-    : `🆘 ${userData.displayName} SOS! View: ${APP_URL}/alert/${sosRef.id}`;
+    ? `URGENT: ${cleanName} sent a silent alert. Check Besties app immediately.`
+    : `EMERGENCY: ${cleanName} needs help NOW! Location: ${location || 'Unknown'}. Check Besties app!`;
 
   const notifications = bestieIds.map(async (bestieId) => {
     const bestieDoc = await db.collection('users').doc(bestieId).get();

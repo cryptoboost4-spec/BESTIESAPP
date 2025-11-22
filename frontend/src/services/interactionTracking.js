@@ -139,10 +139,12 @@ export const incrementEmergencyContactCount = async (bestieId) => {
   }
 };
 
-export default {
+const interactionTracking = {
   logAlertResponse,
   logInteraction,
   logCheckInInteraction,
   logProfileView,
   incrementEmergencyContactCount,
 };
+
+export default interactionTracking;
