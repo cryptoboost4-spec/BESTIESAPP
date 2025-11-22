@@ -434,36 +434,6 @@ const BestiesPage = () => {
     return indicators.slice(0, 3); // Max 3 indicators
   };
 
-  // Load reactions for check-ins
-  useEffect(() => {
-    if (activityFeed.length === 0) return;
-
-    const loadReactions = async () => {
-      const reactionsData = {};
-
-      for (const activity of activityFeed) {
-        if (activity.type === 'checkin') {
-          try {
-            const reactionsSnapshot = await getDocs(
-              collection(db, 'checkins', activity.id, 'reactions')
-            );
-            reactionsData[activity.id] = reactionsSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-          } catch (error) {
-            console.error('Error loading reactions:', error);
-            reactionsData[activity.id] = [];
-          }
-        }
-      }
-
-      setReactions(reactionsData);
-    };
-
-    loadReactions();
-  }, [activityFeed]);
-
   // Load comments for selected check-in
   useEffect(() => {
     if (!selectedCheckIn || !showComments) return;
