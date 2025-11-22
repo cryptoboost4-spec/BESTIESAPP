@@ -312,10 +312,92 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
     // Create in-app notification
     await db.collection('notifications').add({
       userId: bestieId,
-      type: 'safety_alert',
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
       checkInId,
-      message: fullMessage,
-      sentAt: admin.firestore.Timestamp.now(),
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+    });
+    // Create in-app notification
+    await db.collection('notifications').add({
+      userId: bestieId,
+      type: 'check_in_alert',
+      title: 'Safety Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+      checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
       read: false,
     });
 

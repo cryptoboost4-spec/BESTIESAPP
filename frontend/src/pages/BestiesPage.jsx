@@ -24,6 +24,7 @@ import ActivityFeed from '../components/besties/ActivityFeed';
 import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
+import UrgentAlertBanner from '../components/UrgentAlertBanner';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -618,6 +619,9 @@ const BestiesPage = () => {
         <div className="mb-4 text-center">
           <h1 className="text-2xl md:text-3xl font-display text-gradient">💜 Your Besties</h1>
         </div>
+
+        {/* Urgent Alerts Banner */}
+        <UrgentAlertBanner />
 
         {/* Pending Requests */}
         <PendingRequestsList pendingRequests={pendingRequests} />

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../services/firebase';
+import { db, functions } from '../services/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 import haptic from '../utils/hapticFeedback';
@@ -144,18 +145,14 @@ const EmergencySOSButton = () => {
           }
         }
 
-        // Create emergency alert (matches backend collection name)
-        const docRef = await addDoc(collection(db, 'emergency_sos'), {
-          userId: currentUser.uid,
-          userName: userData?.displayName || 'User',
+        // Call cloud function to trigger emergency SOS and send notifications to besties
+        const triggerEmergencySOS = httpsCallable(functions, 'triggerEmergencySOS');
+        const result = await triggerEmergencySOS({
           location,
-          timestamp: Timestamp.now(),
-          status: 'active',
-          type: 'sos',
-          message: '🚨 EMERGENCY - User needs immediate help!'
+          isReversePIN: false
         });
 
-        return docRef;
+        return result;
       },
       rollback: () => {
         // Hide alert screen if backend fails
@@ -210,15 +207,11 @@ const EmergencySOSButton = () => {
         }
       }
 
-      // Create duress alert
-      await addDoc(collection(db, 'emergency_sos'), {
-        userId: currentUser.uid,
-        userName: userData?.displayName || 'User',
+      // Call cloud function with reverse PIN flag to send duress alert
+      const triggerEmergencySOS = httpsCallable(functions, 'triggerEmergencySOS');
+      await triggerEmergencySOS({
         location,
-        timestamp: Timestamp.now(),
-        status: 'active',
-        type: 'duress',
-        message: '🚨 DURESS CODE USED - User is in danger and being forced to cancel!'
+        isReversePIN: true
       });
     } catch (error) {
       console.error('Error sending duress alert:', error);

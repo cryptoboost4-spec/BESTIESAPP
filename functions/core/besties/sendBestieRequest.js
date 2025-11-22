@@ -38,6 +38,32 @@ async function sendBestieRequest(req, res, config) {
       recipientId = userSnapshot.docs[0].id;
     }
 
+    // Check for existing bestie relationship (prevent duplicates)
+    if (recipientId) {
+      const existingBestie1 = await db.collection('besties')
+        .where('requesterId', '==', requesterId)
+        .where('recipientId', '==', recipientId)
+        .where('status', 'in', ['pending', 'accepted'])
+        .limit(1)
+        .get();
+
+      const existingBestie2 = await db.collection('besties')
+        .where('requesterId', '==', recipientId)
+        .where('recipientId', '==', requesterId)
+        .where('status', 'in', ['pending', 'accepted'])
+        .limit(1)
+        .get();
+
+      if (!existingBestie1.empty || !existingBestie2.empty) {
+        const existing = !existingBestie1.empty ? existingBestie1.docs[0].data() : existingBestie2.docs[0].data();
+        if (existing.status === 'accepted') {
+          return res.status(400).json({ error: 'You are already besties with this person' });
+        } else {
+          return res.status(400).json({ error: 'You already have a pending request with this person' });
+        }
+      }
+    }
+
     // Create bestie request
     const bestieDoc = await db.collection('besties').add({
       requesterId,

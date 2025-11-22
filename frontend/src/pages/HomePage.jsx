@@ -14,6 +14,7 @@ import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import UrgentAlertBanner from '../components/UrgentAlertBanner';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -177,6 +178,8 @@ const HomePage = () => {
       <OfflineBanner />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
+        {/* Urgent Alerts Banner */}
+        <UrgentAlertBanner />
         {/* =================================================================
             ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
             Safety Stats Section - Do not modify unless explicitly told by the user
