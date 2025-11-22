@@ -8,9 +8,16 @@ const ProfileCompletion = ({
   const [currentPage, setCurrentPage] = useState(0);
 
   const getProgressColor = (percentage) => {
-    if (percentage === 100) return 'bg-green-500';
-    if (percentage >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
+    // Gradient from red → orange → yellow → green → blue → purple → pink
+    if (percentage === 0) return 'from-red-500 to-red-600';
+    if (percentage < 15) return 'from-red-500 to-orange-500';
+    if (percentage < 30) return 'from-orange-500 to-yellow-500';
+    if (percentage < 45) return 'from-yellow-500 to-green-500';
+    if (percentage < 60) return 'from-green-500 to-blue-500';
+    if (percentage < 75) return 'from-blue-500 to-indigo-500';
+    if (percentage < 90) return 'from-indigo-500 to-purple-500';
+    if (percentage < 100) return 'from-purple-500 to-pink-500';
+    return 'from-pink-500 to-purple-600';
   };
 
   // Split tasks into pages of 5
@@ -22,10 +29,19 @@ const ProfileCompletion = ({
 
   // Check if all tasks on current page are completed
   const currentPageCompleted = currentPageTasks.every(task => task.completed);
-  const canGoNext = currentPageCompleted && currentPage < totalPages - 1;
-  const canGoPrev = currentPage > 0;
 
-  // Auto-advance to first incomplete page when component mounts
+  // Auto-advance to next page when current page is completed
+  useEffect(() => {
+    if (currentPageCompleted && currentPage < totalPages - 1) {
+      // Automatically advance to next page after a short delay
+      const timer = setTimeout(() => {
+        setCurrentPage(currentPage + 1);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPageCompleted, currentPage, totalPages]);
+
+  // Auto-navigate to first incomplete page when component mounts
   useEffect(() => {
     // Find the first page that has incomplete tasks
     for (let page = 0; page < totalPages; page++) {
@@ -55,14 +71,25 @@ const ProfileCompletion = ({
         </span>
       </div>
 
-      {/* Animated Progress Bar with Shimmer Effect */}
+      {/* Animated Progress Bar with Color Gradient and Fizzing Effect */}
       <div className="w-full h-4 bg-white dark:bg-gray-700 rounded-full overflow-hidden mb-4 shadow-inner relative">
         <div
-          className={`h-full ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
+          className={`h-full bg-gradient-to-r ${getProgressColor(profileCompletion.percentage)} transition-all duration-1000 ease-out relative overflow-hidden`}
           style={{ width: `${animatedProgress}%` }}
         >
           {/* Shimmer effect */}
           <div className="absolute inset-0 shimmer-effect"></div>
+
+          {/* Fizzing effect at the end of the bar */}
+          {animatedProgress < 100 && (
+            <div className="absolute right-0 top-0 bottom-0 w-8 fizz-effect">
+              <div className="fizz-particle fizz-1"></div>
+              <div className="fizz-particle fizz-2"></div>
+              <div className="fizz-particle fizz-3"></div>
+              <div className="fizz-particle fizz-4"></div>
+              <div className="fizz-particle fizz-5"></div>
+            </div>
+          )}
         </div>
         {/* Progress percentage text */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -86,7 +113,7 @@ const ProfileCompletion = ({
         </div>
       )}
 
-      {/* Task List with Navigation */}
+      {/* Task List */}
       <div className="space-y-2 mb-4">
         {currentPageTasks.map((task, index) => (
           <div key={startIndex + index} className="flex items-center justify-between gap-2">
@@ -110,42 +137,28 @@ const ProfileCompletion = ({
         ))}
       </div>
 
-      {/* Pagination Controls */}
+      {/* Progress indicator - no navigation buttons, auto-advances */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between gap-2 pt-3 border-t border-purple-200 dark:border-gray-600">
-          <button
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={!canGoPrev}
-            className={`btn btn-sm ${canGoPrev ? 'btn-secondary' : 'opacity-50 cursor-not-allowed'} text-xs px-4 py-2`}
-          >
-            ← Previous
-          </button>
-
-          {currentPageCompleted && currentPage === totalPages - 1 && (
+        <div className="flex items-center justify-center gap-2 pt-3 border-t border-purple-200 dark:border-gray-600">
+          {currentPageCompleted && currentPage === totalPages - 1 ? (
             <span className="text-sm font-semibold text-green-600 dark:text-green-400">
               🎉 All Done!
             </span>
-          )}
-
-          {!currentPageCompleted && (
+          ) : currentPageCompleted ? (
+            <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 animate-pulse">
+              ✨ Moving to next step...
+            </span>
+          ) : (
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {currentPageTasks.filter(t => t.completed).length}/{currentPageTasks.length} complete
             </span>
           )}
-
-          <button
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={!canGoNext}
-            className={`btn btn-sm ${canGoNext ? 'btn-primary' : 'opacity-50 cursor-not-allowed'} text-xs px-4 py-2`}
-          >
-            Next →
-          </button>
         </div>
       )}
 
       {!currentPageCompleted && currentPage < totalPages - 1 && (
         <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-          ✨ Unlock the next step by completing all tasks above
+          ✨ Next step unlocks when you complete all tasks above
         </p>
       )}
 
@@ -166,6 +179,67 @@ const ProfileCompletion = ({
             transparent
           );
           animation: shimmer 2s infinite;
+        }
+
+        /* Fizzing effect */
+        .fizz-effect {
+          position: relative;
+          pointer-events: none;
+        }
+
+        .fizz-particle {
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background: white;
+          border-radius: 50%;
+          opacity: 0;
+          animation: fizz 1.5s infinite;
+          box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+        }
+
+        .fizz-1 {
+          right: 20%;
+          animation-delay: 0s;
+        }
+
+        .fizz-2 {
+          right: 40%;
+          animation-delay: 0.3s;
+        }
+
+        .fizz-3 {
+          right: 60%;
+          animation-delay: 0.6s;
+        }
+
+        .fizz-4 {
+          right: 10%;
+          animation-delay: 0.9s;
+        }
+
+        .fizz-5 {
+          right: 50%;
+          animation-delay: 1.2s;
+        }
+
+        @keyframes fizz {
+          0% {
+            bottom: 0;
+            opacity: 0;
+            transform: translateX(0) scale(0);
+          }
+          10% {
+            opacity: 0.8;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            bottom: 120%;
+            opacity: 0;
+            transform: translateX(10px) scale(2);
+          }
         }
       `}</style>
     </div>

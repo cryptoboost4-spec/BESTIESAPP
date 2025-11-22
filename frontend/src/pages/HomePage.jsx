@@ -6,6 +6,7 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
+import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
 import EmergencySOSButton from '../components/EmergencySOSButton';
@@ -177,6 +178,10 @@ const HomePage = () => {
       <OfflineBanner />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
+        {/* =================================================================
+            ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
+            Safety Stats Section - Do not modify unless explicitly told by the user
+            ================================================================= */}
         {/* Stats Card - Moved above Quick Check-In */}
         {activeCheckIns.length === 0 && (
           <div className="card p-6 mb-6">
@@ -218,10 +223,17 @@ const HomePage = () => {
             </div>
         )}
 
+        {/* =================================================================
+            ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
+            Quick Check-In Section - Do not modify unless explicitly told by the user
+            ================================================================= */}
         {/* Quick Check-In Buttons - Moved to middle */}
         {activeCheckIns.length === 0 && (
           <>
             <QuickCheckInButtons />
+
+            {/* Living Circle - DO NOT REMOVE */}
+            <LivingCircle userId={currentUser?.uid} />
 
             {/* Weekly Summary */}
             <WeeklySummary

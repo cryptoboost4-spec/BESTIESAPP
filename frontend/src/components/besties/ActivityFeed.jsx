@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
+import PostReactions from './PostReactions';
+import PostComments from './PostComments';
 
 const ActivityFeed = ({
   activityFeed,
@@ -8,6 +10,7 @@ const ActivityFeed = ({
   setShowComments,
   getTimeAgo
 }) => {
+  const [showPostComments, setShowPostComments] = useState(null); // Store post ID
   if (activityFeed.length === 0) {
     return (
       <div>
@@ -190,61 +193,38 @@ const ActivityFeed = ({
                   />
                 )}
 
-                {/* Reactions */}
-                <div className="mt-3">
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <button
-                      onClick={() => addReaction(activity.id, '💜')}
-                      className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                      title="Love"
-                    >
-                      💜
-                    </button>
-                    <button
-                      onClick={() => addReaction(activity.id, '😂')}
-                      className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                      title="Funny"
-                    >
-                      😂
-                    </button>
-                    <button
-                      onClick={() => addReaction(activity.id, '🔥')}
-                      className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                      title="Fire"
-                    >
-                      🔥
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedCheckIn(activity);
-                        setShowComments(true);
-                      }}
-                      className="ml-auto text-xs md:text-sm text-primary hover:underline font-semibold"
-                    >
-                      💬 Comment
-                    </button>
-                  </div>
-                  {/* Show reaction counts */}
-                  {reactions[activity.id] && reactions[activity.id].length > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                      {Object.entries(
-                        reactions[activity.id].reduce((acc, r) => {
-                          acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                          return acc;
-                        }, {})
-                      ).map(([emoji, count]) => (
-                        <span key={emoji} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                          {emoji} {count}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Post Reactions */}
+                <PostReactions
+                  postId={activity.id}
+                  initialCounts={activity.postData.reactionCounts}
+                />
+
+                {/* Comments Button */}
+                <button
+                  onClick={() => setShowPostComments(activity.id)}
+                  className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                >
+                  <span>💬</span>
+                  <span>
+                    {activity.postData.commentCount > 0
+                      ? `${activity.postData.commentCount} ${activity.postData.commentCount === 1 ? 'comment' : 'comments'}`
+                      : 'Add a comment'
+                    }
+                  </span>
+                </button>
               </div>
             )}
           </div>
         ))}
       </div>
+
+      {/* Post Comments Modal */}
+      {showPostComments && (
+        <PostComments
+          postId={showPostComments}
+          onClose={() => setShowPostComments(null)}
+        />
+      )}
     </div>
   );
 };

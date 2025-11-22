@@ -14,6 +14,7 @@ import ScrollToTop from './components/ScrollToTop';
 import MilestoneCelebration from './components/MilestoneCelebration';
 import FloatingNotificationBell from './components/FloatingNotificationBell';
 import MobileBottomNav from './components/MobileBottomNav';
+import DesktopNav from './components/DesktopNav';
 
 // Services
 import errorTracker from './services/errorTracking';
@@ -123,6 +124,7 @@ function App() {
             <ScrollToTop />
             <MilestoneCelebration />
             {user && <FloatingNotificationBell />}
+            {user && <DesktopNav />}
             {user && <MobileBottomNav />}
             <div className="App">
               <Suspense fallback={<PageLoader />}>

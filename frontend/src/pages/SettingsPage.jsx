@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
-import { db } from '../services/firebase';
+import { db, authService } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
@@ -42,6 +42,26 @@ const SettingsPage = () => {
       setPushNotificationsEnabled(userData?.notificationsEnabled || false);
     }
   }, [userData]);
+
+  // Auto-scroll to section based on hash (like EditProfilePage)
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // Remove #
+    if (hash) {
+      // Wait for content to render
+      setTimeout(() => {
+        const element = document.getElementById(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Optional: highlight the section briefly
+          element.style.transition = 'background-color 0.3s';
+          element.style.backgroundColor = 'rgba(168, 85, 247, 0.1)';
+          setTimeout(() => {
+            element.style.backgroundColor = '';
+          }, 2000);
+        }
+      }, 100);
+    }
+  }, []);
 
   // Load SMS weekly count
   useEffect(() => {
@@ -299,6 +319,16 @@ const SettingsPage = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    const result = await authService.signOut();
+    if (result.success) {
+      toast.success('Signed out successfully');
+      navigate('/login');
+    } else {
+      toast.error('Sign out failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-pattern">
 
@@ -308,16 +338,19 @@ const SettingsPage = () => {
           <p className="text-text-secondary">Manage your account and preferences</p>
         </div>
         {/* Notification Preferences */}
-        <NotificationSettings
-          userData={userData}
-          toggleNotification={toggleNotification}
-          togglePushNotifications={togglePushNotifications}
-          pushNotificationsSupported={pushNotificationsSupported}
-          pushNotificationsEnabled={pushNotificationsEnabled}
-          loading={loading}
-          smsWeeklyCount={smsWeeklyCount}
-          handleSendTestAlert={handleSendTestAlert}
-        />
+        <div id="notifications">
+          <NotificationSettings
+            userData={userData}
+            toggleNotification={toggleNotification}
+            togglePushNotifications={togglePushNotifications}
+            pushNotificationsSupported={pushNotificationsSupported}
+            pushNotificationsEnabled={pushNotificationsEnabled}
+            loading={loading}
+            smsWeeklyCount={smsWeeklyCount}
+            handleSendTestAlert={handleSendTestAlert}
+          />
+        </div>
+
         {/* SMS Subscription */}
         <PremiumSMSSection
           userData={userData}
@@ -327,22 +360,26 @@ const SettingsPage = () => {
           navigate={navigate}
         />
 
-        
+
         {/* Privacy Settings */}
-        <PrivacySettings userData={userData} currentUser={currentUser} />
+        <div id="privacy">
+          <PrivacySettings userData={userData} currentUser={currentUser} />
+        </div>
 
 
 
         {/* Security - Passcodes */}
-        <SecurityPasscodes
-          userData={userData}
-          showPasscodeInfo={showPasscodeInfo}
-          setShowPasscodeInfo={setShowPasscodeInfo}
-          setPasscodeType={setPasscodeType}
-          setShowPasscodeModal={setShowPasscodeModal}
-          handleRemovePasscode={handleRemovePasscode}
-          loading={loading}
-        />
+        <div id="security">
+          <SecurityPasscodes
+            userData={userData}
+            showPasscodeInfo={showPasscodeInfo}
+            setShowPasscodeInfo={setShowPasscodeInfo}
+            setPasscodeType={setPasscodeType}
+            setShowPasscodeModal={setShowPasscodeModal}
+            handleRemovePasscode={handleRemovePasscode}
+            loading={loading}
+          />
+        </div>
 
         {/* Preferences */}
         <PreferencesAndQuickAccess
@@ -369,6 +406,16 @@ const SettingsPage = () => {
 
         {/* Legal & Policies */}
         <LegalSection navigate={navigate} />
+
+        {/* Log Out Button */}
+        <div className="card p-6 mb-6">
+          <button
+            onClick={handleSignOut}
+            className="w-full btn bg-red-500 hover:bg-red-600 text-white py-3 text-lg font-semibold"
+          >
+            🚪 Log Out
+          </button>
+        </div>
       </div>
 
       {/* Passcode Modal */}

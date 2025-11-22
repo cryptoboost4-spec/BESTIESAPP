@@ -8,7 +8,7 @@ import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileCompletion from '../components/profile/ProfileCompletion';
 import LoginStreak from '../components/profile/LoginStreak';
-import BestieCircleStatus from '../components/BestieCircleStatus';
+// import BestieCircleStatus from '../components/BestieCircleStatus'; // Removed from Profile Page per user request
 import BadgesSection from '../components/profile/BadgesSection';
 import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
@@ -213,7 +213,44 @@ const ProfilePage = () => {
       tasks.push({ name: `Fill your Bestie Circle (${circleCount}/5)`, completed: false, path: null, section: null, action: 'scrollToBestieCircle' });
     }
 
-    // 10. FINAL CHALLENGE: Invite 5 Besties
+    // 10. Review Notification Settings
+    const hasReviewedNotifications = userData?.profileCompletion?.reviewedNotifications || false;
+    if (hasReviewedNotifications) {
+      tasks.push({ name: 'Review notification settings', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Review notification settings', completed: false, path: '/settings', section: 'notifications' });
+    }
+
+    // 11. Review Privacy Settings
+    const hasReviewedPrivacy = userData?.profileCompletion?.reviewedPrivacy || false;
+    if (hasReviewedPrivacy) {
+      tasks.push({ name: 'Review privacy settings', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Review privacy settings', completed: false, path: '/settings', section: 'privacy' });
+    }
+
+    // 12. Review Passcode Settings
+    const hasReviewedPasscode = userData?.profileCompletion?.reviewedPasscode || false;
+    const hasSafetyPasscode = userData?.security?.safetyPasscode;
+    if (hasReviewedPasscode || hasSafetyPasscode) {
+      tasks.push({ name: 'Review passcode settings', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'Review passcode settings', completed: false, path: '/settings', section: 'security' });
+    }
+
+    // 13. View About Us
+    const hasViewedAbout = userData?.profileCompletion?.viewedAbout || false;
+    if (hasViewedAbout) {
+      tasks.push({ name: 'View About Us', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: 'View About Us', completed: false, path: '/about', section: null });
+    }
+
+    // 14. FINAL CHALLENGE: Invite 5 Besties
     // Count total besties (not just in circle)
     if (bestiesCount >= 5) {
       tasks.push({ name: '🎉 Invite 5 besties to the app', completed: true, path: null, section: null });
@@ -291,8 +328,8 @@ const ProfilePage = () => {
         {/* Request Support Section */}
         <RequestSupportSection />
 
-        {/* Bestie Circle Status */}
-        <BestieCircleStatus userId={currentUser?.uid} />
+        {/* Bestie Circle Status - REMOVED from Profile Page per user request */}
+        {/* <BestieCircleStatus userId={currentUser?.uid} /> */}
 
         {/* Login Streak */}
         <LoginStreak loginStreak={loginStreak} />

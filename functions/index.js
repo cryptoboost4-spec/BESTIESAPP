@@ -163,7 +163,17 @@ exports.acknowledgeAlert = functions.https.onCall(async (data, context) => {
       acknowledgedBy: admin.firestore.FieldValue.arrayUnion(context.auth.uid),
     });
 
-    console.log(`User ${context.auth.uid} acknowledged alert for check-in ${checkInId}`);
+    // Track alert response for connection strength
+    const responseTime = Date.now() - checkInData.alertedAt.toMillis();
+    await db.collection('alert_responses').add({
+      userId: checkInData.userId,
+      responderId: context.auth.uid,
+      checkInId: checkInId,
+      responseTime: responseTime, // Time in milliseconds
+      timestamp: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(`User ${context.auth.uid} acknowledged alert for check-in ${checkInId} (response time: ${Math.round(responseTime / 1000)}s)`);
   }
 
   return { success: true };
@@ -2186,5 +2196,307 @@ exports.backfillBestieUserIds = functions.https.onCall(async (data, context) => 
     throw new functions.https.HttpsError('internal', 'Backfill failed: ' + error.message);
   }
 });
+
+// ========================================
+// CONNECTION STRENGTH TRACKING
+// ========================================
+
+// Track interactions for connection strength calculations
+// Triggered when posts/check-ins reactions and comments are created
+exports.trackReaction = functions.firestore
+  .document('posts/{postId}/reactions/{reactionId}')
+  .onCreate(async (snap, context) => {
+    const reaction = snap.data();
+    const postId = context.params.postId;
+
+    // Get post to find owner
+    const postDoc = await db.collection('posts').doc(postId).get();
+    if (!postDoc.exists) return null;
+
+    const postData = postDoc.data();
+    const postOwnerId = postData.userId;
+    const reactorId = reaction.userId;
+
+    // Don't track if reacting to own post
+    if (postOwnerId === reactorId) return null;
+
+    // Track interaction
+    await db.collection('interactions').add({
+      userId: postOwnerId,
+      bestieId: reactorId,
+      type: 'post_reaction',
+      postId: postId,
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(`Tracked reaction interaction: ${reactorId} → ${postOwnerId}`);
+    return null;
+  });
+
+// Track check-in reactions
+exports.trackCheckInReaction = functions.firestore
+  .document('checkins/{checkInId}/reactions/{reactionId}')
+  .onCreate(async (snap, context) => {
+    const reaction = snap.data();
+    const checkInId = context.params.checkInId;
+
+    // Get check-in to find owner
+    const checkInDoc = await db.collection('checkins').doc(checkInId).get();
+    if (!checkInDoc.exists) return null;
+
+    const checkInData = checkInDoc.data();
+    const checkInOwnerId = checkInData.userId;
+    const reactorId = reaction.userId;
+
+    // Don't track if reacting to own check-in
+    if (checkInOwnerId === reactorId) return null;
+
+    // Track interaction
+    await db.collection('interactions').add({
+      userId: checkInOwnerId,
+      bestieId: reactorId,
+      type: 'checkin_reaction',
+      checkInId: checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(`Tracked check-in reaction: ${reactorId} → ${checkInOwnerId}`);
+    return null;
+  });
+
+// Track comments on posts
+exports.trackPostComment = functions.firestore
+  .document('posts/{postId}/comments/{commentId}')
+  .onCreate(async (snap, context) => {
+    const comment = snap.data();
+    const postId = context.params.postId;
+
+    // Get post to find owner
+    const postDoc = await db.collection('posts').doc(postId).get();
+    if (!postDoc.exists) return null;
+
+    const postData = postDoc.data();
+    const postOwnerId = postData.userId;
+    const commenterId = comment.userId;
+
+    // Don't track if commenting on own post
+    if (postOwnerId === commenterId) return null;
+
+    // Track interaction
+    await db.collection('interactions').add({
+      userId: postOwnerId,
+      bestieId: commenterId,
+      type: 'post_comment',
+      postId: postId,
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(`Tracked comment interaction: ${commenterId} → ${postOwnerId}`);
+    return null;
+  });
+
+// Track comments on check-ins
+exports.trackCheckInComment = functions.firestore
+  .document('checkins/{checkInId}/comments/{commentId}')
+  .onCreate(async (snap, context) => {
+    const comment = snap.data();
+    const checkInId = context.params.checkInId;
+
+    // Get check-in to find owner
+    const checkInDoc = await db.collection('checkins').doc(checkInId).get();
+    if (!checkInDoc.exists) return null;
+
+    const checkInData = checkInDoc.data();
+    const checkInOwnerId = checkInData.userId;
+    const commenterId = comment.userId;
+
+    // Don't track if commenting on own check-in
+    if (checkInOwnerId === commenterId) return null;
+
+    // Track interaction
+    await db.collection('interactions').add({
+      userId: checkInOwnerId,
+      bestieId: commenterId,
+      type: 'checkin_comment',
+      checkInId: checkInId,
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(`Tracked check-in comment: ${commenterId} → ${checkInOwnerId}`);
+    return null;
+  });
+
+// ========================================
+// MILESTONE CELEBRATIONS
+// ========================================
+
+// Check for milestones daily at 1 AM
+exports.generateMilestones = functions.pubsub
+  .schedule('0 1 * * *') // Run daily at 1:00 AM
+  .timeZone('America/New_York')
+  .onRun(async (context) => {
+    console.log('🎉 Starting milestone generation...');
+
+    let milestonesCreated = 0;
+
+    try {
+      // Get all accepted bestie relationships
+      const bestiesSnapshot = await db.collection('besties')
+        .where('status', '==', 'accepted')
+        .get();
+
+      console.log(`Checking ${bestiesSnapshot.size} bestie relationships for milestones`);
+
+      for (const bestieDoc of bestiesSnapshot.docs) {
+        const bestieData = bestieDoc.data();
+        const userId1 = bestieData.requesterId;
+        const userId2 = bestieData.recipientId;
+
+        // Check days in circle milestone (7, 30, 100, 365 days)
+        if (bestieData.acceptedAt) {
+          const daysTogether = Math.floor(
+            (Date.now() - bestieData.acceptedAt.toMillis()) / (24 * 60 * 60 * 1000)
+          );
+
+          const milestones = [7, 30, 100, 365];
+          if (milestones.includes(daysTogether)) {
+            // Create milestone for both users
+            const user1Doc = await db.collection('users').doc(userId1).get();
+            const user2Doc = await db.collection('users').doc(userId2).get();
+
+            if (user1Doc.exists && user2Doc.exists) {
+              await db.collection('circle_milestones').add({
+                userId: userId1,
+                bestieId: userId2,
+                bestieName: user2Doc.data().displayName,
+                type: 'days_in_circle',
+                value: daysTogether,
+                createdAt: admin.firestore.Timestamp.now(),
+                celebrated: false,
+              });
+
+              await db.collection('circle_milestones').add({
+                userId: userId2,
+                bestieId: userId1,
+                bestieName: user1Doc.data().displayName,
+                type: 'days_in_circle',
+                value: daysTogether,
+                createdAt: admin.firestore.Timestamp.now(),
+                celebrated: false,
+              });
+
+              milestonesCreated += 2;
+              console.log(`Created ${daysTogether} days milestone for ${userId1} & ${userId2}`);
+            }
+          }
+        }
+
+        // Check shared check-ins milestone (5, 10, 25, 50)
+        const sharedCheckIns1 = await db.collection('checkins')
+          .where('userId', '==', userId1)
+          .where('bestieIds', 'array-contains', userId2)
+          .where('status', '==', 'completed')
+          .count()
+          .get();
+
+        const sharedCheckIns2 = await db.collection('checkins')
+          .where('userId', '==', userId2)
+          .where('bestieIds', 'array-contains', userId1)
+          .where('status', '==', 'completed')
+          .count()
+          .get();
+
+        const totalShared = sharedCheckIns1.data().count + sharedCheckIns2.data().count;
+        const checkInMilestones = [5, 10, 25, 50];
+
+        if (checkInMilestones.includes(totalShared)) {
+          // Check if milestone already exists
+          const existing = await db.collection('circle_milestones')
+            .where('userId', '==', userId1)
+            .where('bestieId', '==', userId2)
+            .where('type', '==', 'check_ins_together')
+            .where('value', '==', totalShared)
+            .get();
+
+          if (existing.empty) {
+            const user1Doc = await db.collection('users').doc(userId1).get();
+            const user2Doc = await db.collection('users').doc(userId2).get();
+
+            if (user1Doc.exists && user2Doc.exists) {
+              await db.collection('circle_milestones').add({
+                userId: userId1,
+                bestieId: userId2,
+                bestieName: user2Doc.data().displayName,
+                type: 'check_ins_together',
+                value: totalShared,
+                createdAt: admin.firestore.Timestamp.now(),
+                celebrated: false,
+              });
+
+              await db.collection('circle_milestones').add({
+                userId: userId2,
+                bestieId: userId1,
+                bestieName: user1Doc.data().displayName,
+                type: 'check_ins_together',
+                value: totalShared,
+                createdAt: admin.firestore.Timestamp.now(),
+                celebrated: false,
+              });
+
+              milestonesCreated += 2;
+              console.log(`Created ${totalShared} check-ins milestone for ${userId1} & ${userId2}`);
+            }
+          }
+        }
+      }
+
+      // Check individual alert response milestones (5, 10, 25, 50 responses)
+      const usersSnapshot = await db.collection('users').get();
+
+      for (const userDoc of usersSnapshot.docs) {
+        const userId = userDoc.id;
+
+        const alertResponses = await db.collection('alert_responses')
+          .where('responderId', '==', userId)
+          .count()
+          .get();
+
+        const responseCount = alertResponses.data().count;
+        const responseMilestones = [5, 10, 25, 50];
+
+        if (responseMilestones.includes(responseCount)) {
+          // Check if milestone already exists
+          const existing = await db.collection('circle_milestones')
+            .where('userId', '==', userId)
+            .where('type', '==', 'alerts_responded')
+            .where('value', '==', responseCount)
+            .get();
+
+          if (existing.empty) {
+            await db.collection('circle_milestones').add({
+              userId: userId,
+              type: 'alerts_responded',
+              value: responseCount,
+              createdAt: admin.firestore.Timestamp.now(),
+              celebrated: false,
+            });
+
+            milestonesCreated++;
+            console.log(`Created ${responseCount} alerts responded milestone for ${userId}`);
+          }
+        }
+      }
+
+      console.log(`🎉 Milestone generation complete: ${milestonesCreated} milestones created`);
+
+      return {
+        success: true,
+        milestonesCreated,
+      };
+    } catch (error) {
+      console.error('Error generating milestones:', error);
+      return { success: false, error: error.message };
+    }
+  });
 
 module.exports = exports;
