@@ -494,45 +494,6 @@ const BestiesPage = () => {
     loadComments();
   }, [selectedCheckIn, showComments]);
 
-  // Add reaction to check-in
-  const addReaction = async (checkInId, emoji) => {
-    try {
-      // Check if user already reacted with this emoji
-      const existingReaction = reactions[checkInId]?.find(
-        r => r.userId === currentUser.uid && r.emoji === emoji
-      );
-
-      if (existingReaction) {
-        toast('You already reacted with this!', { icon: emoji });
-        return;
-      }
-
-      await addDoc(collection(db, 'checkins', checkInId, 'reactions'), {
-        userId: currentUser.uid,
-        userName: userData?.displayName || 'Anonymous',
-        emoji: emoji,
-        timestamp: Timestamp.now(),
-      });
-
-      // Reload reactions for this check-in
-      const reactionsSnapshot = await getDocs(
-        collection(db, 'checkins', checkInId, 'reactions')
-      );
-      setReactions(prev => ({
-        ...prev,
-        [checkInId]: reactionsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      }));
-
-      toast.success('Reaction added!');
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-      toast.error('Failed to add reaction');
-    }
-  };
-
   // Add comment to check-in
   const addComment = async () => {
     if (!newComment.trim() || !selectedCheckIn) return;
