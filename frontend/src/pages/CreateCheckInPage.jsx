@@ -1037,6 +1037,17 @@ const CreateCheckInPage = () => {
 
           errorTracker.trackFunnelStep('checkin', 'complete_checkin');
 
+          // Track emergency contact selections for each bestie
+          try {
+            const { incrementEmergencyContactCount } = await import('../services/interactionTracking');
+            selectedBesties.forEach(bestieId => {
+              incrementEmergencyContactCount(bestieId);
+            });
+          } catch (trackingError) {
+            console.error('Failed to track emergency contact selections:', trackingError);
+            // Don't fail check-in creation if tracking fails
+          }
+
           // Navigate after successful creation
           setTimeout(() => {
             navigate('/');

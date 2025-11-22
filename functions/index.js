@@ -1128,20 +1128,66 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     if (!bestieDoc.exists) return;
 
     const bestieData = bestieDoc.data();
+    const notificationsSent = [];
 
     try {
+      // Try push notification first (ALWAYS try - it's fast and free)
+      if (bestieData.fcmToken && bestieData.notificationsEnabled) {
+        try {
+          const pushTitle = isReversePIN ? '🚨 Silent Emergency Alert' : '🆘 EMERGENCY SOS';
+          const pushBody = isReversePIN
+            ? `${cleanName} triggered reverse PIN. Check app immediately.`
+            : `${cleanName} needs help NOW! Location: ${location || 'Unknown'}`;
+
+          await sendPushNotification(
+            bestieData.fcmToken,
+            pushTitle,
+            pushBody,
+            {
+              type: 'emergency_sos',
+              sosId: sosRef.id,
+              userId: context.auth.uid,
+              isReversePIN: isReversePIN || false,
+            }
+          );
+          notificationsSent.push('Push');
+        } catch (pushError) {
+          console.log('Push notification failed for SOS:', pushError.message);
+        }
+      }
+
+      // Send SMS and WhatsApp if phone number available
       if (bestieData.phoneNumber) {
         // SMS is expensive - use short message
         await sendSMSAlert(bestieData.phoneNumber, shortAlertMessage);
+        notificationsSent.push('SMS');
         // WhatsApp is free - use full message
         await sendWhatsAppAlert(bestieData.phoneNumber, fullAlertMessage);
+        notificationsSent.push('WhatsApp');
       }
+
+      // Send email if enabled
       if (bestieData.email && bestieData.notificationPreferences?.email) {
         await sendEmailAlert(bestieData.email, fullAlertMessage, {
           location: location || 'Unknown',
           alertTime: admin.firestore.Timestamp.now(),
         });
+        notificationsSent.push('Email');
       }
+
+      // Create in-app notification (ALWAYS - regardless of other settings)
+      await db.collection('notifications').add({
+        userId: bestieId,
+        type: 'emergency_sos',
+        title: isReversePIN ? '🚨 Silent Emergency' : '🆘 EMERGENCY SOS',
+        message: fullAlertMessage,
+        sosId: sosRef.id,
+        createdAt: admin.firestore.Timestamp.now(),
+        read: false,
+      });
+      notificationsSent.push('In-app');
+
+      console.log(`SOS sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
     } catch (error) {
       console.error(`Failed SOS to ${bestieId}:`, error);
     }
