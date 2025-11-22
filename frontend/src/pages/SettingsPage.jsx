@@ -349,6 +349,8 @@ const SettingsPage = () => {
     setLoading(true);
 
     try {
+      let userToDelete = currentUser;
+
       // For phone accounts, we need to re-verify to get fresh credentials
       if (isPhoneAccount) {
         // Setup reCAPTCHA for phone verification
@@ -381,16 +383,17 @@ const SettingsPage = () => {
           return;
         }
 
-        // Verify the code and get credential
+        // Verify the code and get fresh credential
         const confirmResult = await verifyResult.confirmationResult.confirm(code);
 
-        // Now re-authenticate with the fresh credential
-        // Note: confirm() already re-authenticates, so we can proceed to delete
+        // Use the freshly authenticated user from confirm result
+        userToDelete = confirmResult.user;
+
         toast.success('Verified! Deleting account...');
       }
 
-      // Delete Firebase Auth account
-      await deleteUser(currentUser);
+      // Delete Firebase Auth account using fresh user reference
+      await deleteUser(userToDelete);
 
       toast.success('Account deleted successfully! You can now link this phone number to your main account.');
       navigate('/login');
