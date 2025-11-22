@@ -12,8 +12,36 @@
 const admin = require('firebase-admin');
 const readline = require('readline');
 
+// SAFETY CHECK: Only allow in development environment
+if (process.env.NODE_ENV === 'production') {
+  console.error('❌ ERROR: This script cannot run in production!');
+  process.exit(1);
+}
+
+// Check if serviceAccountKey exists
+const fs = require('fs');
+const serviceAccountPath = '../serviceAccountKey.json';
+if (!fs.existsSync(require.resolve(serviceAccountPath))) {
+  console.error('❌ ERROR: serviceAccountKey.json not found. This script requires Firebase Admin credentials.');
+  process.exit(1);
+}
+
 // Initialize Firebase Admin
-const serviceAccount = require('../serviceAccountKey.json');
+const serviceAccount = require(serviceAccountPath);
+
+// Additional safety: Check project ID to ensure it's not production
+const ALLOWED_PROJECT_IDS = [
+  'besties-app-dev',
+  'besties-app-test',
+  // Add your dev/test project IDs here
+];
+
+if (!ALLOWED_PROJECT_IDS.includes(serviceAccount.project_id)) {
+  console.error(`❌ ERROR: This script can only run on test projects: ${ALLOWED_PROJECT_IDS.join(', ')}`);
+  console.error(`Current project: ${serviceAccount.project_id}`);
+  console.error('\nIf this is a test project, add it to ALLOWED_PROJECT_IDS in the script.');
+  process.exit(1);
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -116,6 +144,7 @@ async function confirmDeletion() {
 
 async function main() {
   console.log('🗑️  Firestore Cleanup Script\n');
+  console.log(`📦 Project: ${admin.app().options.credential.projectId || 'unknown'}\n`);
   console.log('This script will delete all documents from the following collections:');
   COLLECTIONS.forEach(col => console.log(`  - ${col}`));
 
