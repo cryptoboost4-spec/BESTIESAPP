@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber, updateProfile, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, getDocs, addDoc, serverTimestamp, Timestamp, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
@@ -142,11 +142,27 @@ export const authService = {
     }
   },
 
-  // Verify code and sign in
-  verifyPhoneCode: async (confirmationResult, code) => {
+  // Verify code and sign in or link to existing account
+  verifyPhoneCode: async (confirmationResult, code, shouldLink = false) => {
     try {
-      const result = await confirmationResult.confirm(code);
-      return { success: true, user: result.user };
+      if (shouldLink) {
+        // Link phone to existing account instead of signing in
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          return { success: false, error: 'No user is currently signed in' };
+        }
+
+        // Create phone credential from verification code
+        const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, code);
+
+        // Link credential to current user
+        const result = await linkWithCredential(currentUser, credential);
+        return { success: true, user: result.user };
+      } else {
+        // Sign in with phone (for login flow)
+        const result = await confirmationResult.confirm(code);
+        return { success: true, user: result.user };
+      }
     } catch (error) {
       console.error('Code verification error:', error);
       return { success: false, error: error.message };

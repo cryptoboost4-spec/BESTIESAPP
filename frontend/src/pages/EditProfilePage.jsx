@@ -164,10 +164,11 @@ const EditProfilePage = () => {
 
     setLoading(true);
 
-    const result = await authService.verifyPhoneCode(phoneConfirmationResult, verificationCode);
+    // Pass shouldLink=true to link phone to existing account instead of creating new one
+    const result = await authService.verifyPhoneCode(phoneConfirmationResult, verificationCode, true);
 
     if (result.success) {
-      toast.success('Phone number verified!');
+      toast.success('Phone number verified and linked to your account!');
       setShowPhoneVerification(false);
       setPhoneNumber(pendingPhoneNumber);
 
