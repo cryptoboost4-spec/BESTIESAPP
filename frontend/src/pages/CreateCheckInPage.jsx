@@ -520,7 +520,7 @@ const CreateCheckInPage = () => {
     }
 
     try {
-      console.log('Initializing Google Map...');
+      console.log('🗺️ Initializing Google Map...');
       // Initialize Google Map - locked by default
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: mapCenter,
@@ -534,15 +534,24 @@ const CreateCheckInPage = () => {
         gestureHandling: 'none', // Disable all gestures initially
       });
 
+      // Store event listeners so we can clean them up
+      const listeners = [];
+
       // Handle double-tap to unlock/place pin
-      mapInstanceRef.current.addListener('dblclick', (event) => {
-        if (mapLocked) {
+      const dblclickListener = mapInstanceRef.current.addListener('dblclick', (event) => {
+        console.log('🖱️ Double-click detected, mapLocked:', mapLocked);
+
+        // Use a ref to check current lock state since this callback has stale closure
+        const currentLockState = mapInstanceRef.current.get('draggable') === false;
+
+        if (currentLockState) {
           // Unlock the map
           setMapLocked(false);
           mapInstanceRef.current.setOptions({
             draggable: true,
             gestureHandling: 'greedy'
           });
+          console.log('🔓 Map unlocked!');
           toast.success('🗺️ Map unlocked! Drag to explore', { duration: 2000 });
         } else {
           // Place pin at MAP CENTER (where the fixed pin is displayed)
@@ -552,18 +561,20 @@ const CreateCheckInPage = () => {
           // Save the center coordinates
           setGpsCoords(coords);
 
+          console.log('📍 Placing pin at:', coords);
+
           // Reverse geocode to get address from the center pin location
           const geocoder = new window.google.maps.Geocoder();
           geocoder.geocode({ location: coords }, (results, status) => {
             if (status === 'OK' && results[0]) {
               const address = results[0].formatted_address;
-              setLocationInput(address); // UPDATE: This now updates the input field
-              console.log('Pin placed, location updated to:', address);
+              setLocationInput(address);
+              console.log('✅ Pin placed, location updated to:', address);
             } else {
               // Fallback to coordinates if geocoding fails
               const coordsString = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
               setLocationInput(coordsString);
-              console.log('Pin placed, using coordinates:', coordsString);
+              console.warn('⚠️ Geocoding failed, using coordinates:', coordsString, 'Status:', status);
             }
           });
 
@@ -571,37 +582,57 @@ const CreateCheckInPage = () => {
           toast.success('📍 Pin location saved!', { duration: 1500 });
         }
       });
+      listeners.push(dblclickListener);
 
       // Handle map drag - update location instantly when map is dragged
-      mapInstanceRef.current.addListener('dragend', () => {
-        if (!mapLocked) {
+      const dragendListener = mapInstanceRef.current.addListener('dragend', () => {
+        // Check draggable state directly from map instead of stale closure
+        const isDraggable = mapInstanceRef.current.get('draggable');
+
+        console.log('🚀 DRAGEND EVENT FIRED! Map draggable:', isDraggable);
+
+        if (isDraggable) {
           // Get the center of the map (where the pin is)
           const mapCenter = mapInstanceRef.current.getCenter();
           const coords = { lat: mapCenter.lat(), lng: mapCenter.lng() };
+
+          console.log('📍 Drag ended at coords:', coords);
 
           // Save the center coordinates
           setGpsCoords(coords);
 
           // Reverse geocode to get address and update search bar
           const geocoder = new window.google.maps.Geocoder();
+          console.log('🔍 Starting reverse geocoding...');
+
           geocoder.geocode({ location: coords }, (results, status) => {
+            console.log('🔍 Geocoding response - Status:', status, 'Results:', results);
+
             if (status === 'OK' && results[0]) {
               const address = results[0].formatted_address;
               setLocationInput(address);
-              console.log('Map dragged, location updated to:', address);
+              console.log('✅ Map dragged, location updated to:', address);
+              toast.success('📍 Location updated!', { duration: 1000 });
             } else {
               // Fallback to coordinates if geocoding fails
               const coordsString = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
               setLocationInput(coordsString);
-              console.log('Map dragged, using coordinates:', coordsString);
+              console.warn('⚠️ Geocoding failed during drag, using coordinates:', coordsString, 'Status:', status);
+              toast('📍 Location: ' + coordsString, { duration: 1500 });
             }
           });
+        } else {
+          console.log('⚠️ Dragend fired but map is not draggable (still locked)');
         }
       });
+      listeners.push(dragendListener);
 
       // Show reminder on single click when locked
-      mapInstanceRef.current.addListener('click', () => {
-        if (mapLocked) {
+      const clickListener = mapInstanceRef.current.addListener('click', () => {
+        const isDraggable = mapInstanceRef.current.get('draggable');
+
+        if (!isDraggable) {
+          console.log('🔒 Map is locked, showing unlock hint');
           toast('💡 Double-tap to unlock map!', {
             duration: 2000,
             icon: '🔒',
@@ -613,19 +644,31 @@ const CreateCheckInPage = () => {
           });
         }
       });
+      listeners.push(clickListener);
 
       setMapInitialized(true);
-      console.log('Google Map initialized successfully');
+      console.log('✅ Google Map initialized successfully with event listeners');
+
+      // Cleanup function to remove all event listeners
+      return () => {
+        console.log('🧹 Cleaning up map event listeners');
+        listeners.forEach(listener => {
+          if (listener && listener.remove) {
+            listener.remove();
+          }
+        });
+      };
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('❌ Error initializing map:', error);
       toast.error('Failed to initialize map. Please refresh the page.', {
         duration: 4000,
         id: 'map-init-error'
       });
     }
     // mapCenter is a constant, not state
+    // REMOVED mapLocked from dependencies to prevent re-initialization when lock state changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autocompleteLoaded, mapInitialized, mapLocked]);
+  }, [autocompleteLoaded, mapInitialized]);
 
   // Initialize Autocomplete when API is loaded
   useEffect(() => {
