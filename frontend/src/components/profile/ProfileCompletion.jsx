@@ -189,12 +189,13 @@ const ProfileCompletion = ({
 
         .fizz-particle {
           position: absolute;
-          width: 3px;
-          height: 3px;
+          width: 4px;
+          height: 4px;
           background: white;
           border-radius: 50%;
           opacity: 0;
           animation: fizz 1.5s infinite;
+          box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
         }
 
         .fizz-1 {
@@ -228,13 +229,16 @@ const ProfileCompletion = ({
             opacity: 0;
             transform: translateX(0) scale(0);
           }
-          20% {
+          10% {
+            opacity: 0.8;
+          }
+          50% {
             opacity: 1;
           }
           100% {
-            bottom: 100%;
+            bottom: 120%;
             opacity: 0;
-            transform: translateX(${Math.random() * 20 - 10}px) scale(1.5);
+            transform: translateX(10px) scale(2);
           }
         }
       `}</style>
