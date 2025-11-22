@@ -311,8 +311,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       <div className="relative z-10">
         <div className="text-center mb-6">
-          <h3 className="text-2xl md:text-3xl font-display text-gradient mb-1">Your Inner Circle</h3>
-          <p className="text-sm text-gray-600">The 5 who have your back, always</p>
+          <h3 className="text-2xl md:text-3xl font-display mb-1" style={{ color: '#FF6B9D' }}>💜 Your Bestie Circle</h3>
         </div>
 
         {/* Circle Container - Responsive sizing */}
