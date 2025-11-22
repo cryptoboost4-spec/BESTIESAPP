@@ -291,6 +291,26 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
   const notificationsSent = [];
 
   try {
+    // Send push notification if user has FCM token (ALWAYS try first)
+    if (bestieData.fcmToken && bestieData.notificationsEnabled) {
+      try {
+        await sendPushNotification(
+          bestieData.fcmToken,
+          '🚨 Check-in Alert',
+          `${userData.displayName} hasn't checked in yet. They might need help.`,
+          {
+            type: 'check_in_alert',
+            checkInId: checkInId,
+            userId: userData.uid || checkIn.userId,
+          }
+        );
+        notificationsSent.push('Push');
+      } catch (pushError) {
+        console.log('Push notification failed:', pushError.message);
+        // Continue with other notification methods
+      }
+    }
+
     // Try WhatsApp first (free - use full message)
     if (bestieData.notifications?.whatsapp && bestieData.phoneNumber) {
       try {
@@ -382,8 +402,45 @@ async function sendEmailAlert(email, message, checkIn) {
       </div>
     `,
   };
-  
+
   await sgMail.send(msg);
+}
+
+async function sendPushNotification(fcmToken, title, body, data = {}) {
+  // Construct the push notification payload
+  const message = {
+    token: fcmToken,
+    notification: {
+      title,
+      body,
+    },
+    data: {
+      ...data,
+      click_action: 'FLUTTER_NOTIFICATION_CLICK', // For Flutter apps
+    },
+    webpush: {
+      fcmOptions: {
+        link: APP_URL, // Open the app when notification is clicked
+      },
+      notification: {
+        title,
+        body,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+        requireInteraction: true,
+        tag: 'check-in-alert',
+      },
+    },
+  };
+
+  try {
+    await admin.messaging().send(message);
+    console.log(`Push notification sent to token: ${fcmToken.substring(0, 20)}...`);
+  } catch (error) {
+    // Token might be invalid or expired
+    console.error('Error sending push notification:', error.message);
+    throw error;
+  }
 }
 
 // ========================================

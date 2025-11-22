@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
+import notificationService from '../services/notifications';
 
 const AuthContext = createContext();
 
@@ -328,6 +329,13 @@ export const AuthProvider = ({ children }) => {
           if (doc.exists()) {
             const data = { id: doc.id, ...doc.data() };
             setUserData(data);
+
+            // Initialize push notifications if enabled
+            if (data.notificationsEnabled && data.fcmToken && !notificationService.initialized) {
+              notificationService.setupForegroundListener();
+              notificationService.initialized = true;
+              console.log('✅ Push notification foreground listener initialized');
+            }
           } else {
             console.error('❌ User document does not exist at path:', `users/${user.uid}`);
           }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
@@ -231,7 +231,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Customize your profile', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Customize your profile', completed: false, path: '/edit-profile', section: 'profile-picture' });
+      tasks.push({ name: 'Customize your profile', completed: false, path: '/profile', section: null });
     }
 
     // 8. Earn a Badge

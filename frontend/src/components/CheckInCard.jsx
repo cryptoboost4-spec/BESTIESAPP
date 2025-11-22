@@ -18,7 +18,7 @@ const SafeLoader = () => {
     { text: "Welcome home, beautiful! 💖", subtext: "We're so relieved you're safe" },
     { text: "You made it safely! ✨", subtext: "Your besties can rest easy now" },
     { text: "Safe and sound! 🌸", subtext: "Taking care of yourself like a queen" },
-    { text: "You're home safe! 💕", subtext: "That's all that matters" },
+    { text: "You're safe! 💕", subtext: "That's all that matters" },
   ];
 
   // Pick one random message

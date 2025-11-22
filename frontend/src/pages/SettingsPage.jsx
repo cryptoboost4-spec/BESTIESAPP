@@ -58,10 +58,25 @@ const SettingsPage = () => {
           setTimeout(() => {
             element.style.backgroundColor = '';
           }, 2000);
+
+          // Mark profile completion tasks as reviewed
+          if (currentUser && hash === 'notifications') {
+            updateDoc(doc(db, 'users', currentUser.uid), {
+              'profileCompletion.reviewedNotifications': true,
+            }).catch(err => console.error('Error updating profile completion:', err));
+          } else if (currentUser && hash === 'privacy') {
+            updateDoc(doc(db, 'users', currentUser.uid), {
+              'profileCompletion.reviewedPrivacy': true,
+            }).catch(err => console.error('Error updating profile completion:', err));
+          } else if (currentUser && hash === 'security') {
+            updateDoc(doc(db, 'users', currentUser.uid), {
+              'profileCompletion.reviewedPasscode': true,
+            }).catch(err => console.error('Error updating profile completion:', err));
+          }
         }
       }, 100);
     }
-  }, []);
+  }, [currentUser]);
 
   // Load SMS weekly count
   useEffect(() => {
