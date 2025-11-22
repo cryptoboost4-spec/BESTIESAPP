@@ -672,19 +672,7 @@ exports.onCheckInCountUpdate = functions.firestore
   });
 
 // Track when new bestie requests are created
-exports.onBestieCreated = functions.firestore
-  .document('besties/{bestieId}')
-  .onCreate(async (snap, context) => {
-    const bestie = snap.data();
-
-    // Update analytics cache
-    const cacheRef = db.collection('analytics_cache').doc('realtime');
-    await cacheRef.set({
-      totalBesties: admin.firestore.FieldValue.increment(1),
-      pendingBesties: bestie.status === 'pending' ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0),
-      lastUpdated: admin.firestore.Timestamp.now(),
-    }, { merge: true });
-  });
+// REMOVED: Duplicate function - merged with onBestieCreated below (line ~738)
 
 exports.onBestieCountUpdate = functions.firestore
   .document('besties/{bestieId}')
@@ -734,14 +722,22 @@ exports.onBestieCountUpdate = functions.firestore
     }
   });
 
-// Handle when bestie is created with accepted status (e.g., via invite link)
+// Handle when bestie is created (handles both pending and accepted)
 exports.onBestieCreated = functions.firestore
   .document('besties/{bestieId}')
   .onCreate(async (snap, context) => {
     const bestie = snap.data();
     const cacheRef = db.collection('analytics_cache').doc('realtime');
 
-    // Only process if created directly as accepted (e.g., invite link flow)
+    // Update analytics cache for ALL bestie creations
+    await cacheRef.set({
+      totalBesties: admin.firestore.FieldValue.increment(1),
+      pendingBesties: bestie.status === 'pending' ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0),
+      acceptedBesties: bestie.status === 'accepted' ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0),
+      lastUpdated: admin.firestore.Timestamp.now(),
+    }, { merge: true });
+
+    // Process bestie relationships ONLY if created directly as accepted (e.g., invite link flow)
     if (bestie.status === 'accepted' && bestie.requesterId && bestie.recipientId) {
       // Increment totalBesties for both users
       await db.collection('users').doc(bestie.requesterId).update({
