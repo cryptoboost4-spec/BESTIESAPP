@@ -136,6 +136,55 @@ export const AuthProvider = ({ children }) => {
         console.error('Failed to create celebration documents:', error);
       }
 
+      // Update both users' featuredCircle and bestieUserIds immediately (don't wait for Cloud Functions)
+      try {
+        console.log('🔄 Updating featured circles and bestie lists');
+
+        // Update current user's document
+        const currentUserCircle = userData.featuredCircle || [];
+        const currentUserBesties = userData.bestieUserIds || [];
+        const updates = {};
+
+        if (!currentUserBesties.includes(inviterUID)) {
+          updates.bestieUserIds = [...currentUserBesties, inviterUID];
+        }
+
+        if (!currentUserCircle.includes(inviterUID) && currentUserCircle.length < 5) {
+          updates.featuredCircle = [...currentUserCircle, inviterUID];
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await updateDoc(userRef, updates);
+          console.log('✅ Updated current user document');
+        }
+
+        // Update inviter's document
+        const inviterRef = doc(db, 'users', inviterUID);
+        const inviterSnap = await getDoc(inviterRef);
+        if (inviterSnap.exists()) {
+          const inviterData = inviterSnap.data();
+          const inviterCircle = inviterData.featuredCircle || [];
+          const inviterBesties = inviterData.bestieUserIds || [];
+          const inviterUpdates = {};
+
+          if (!inviterBesties.includes(user.uid)) {
+            inviterUpdates.bestieUserIds = [...inviterBesties, user.uid];
+          }
+
+          if (!inviterCircle.includes(user.uid) && inviterCircle.length < 5) {
+            inviterUpdates.featuredCircle = [...inviterCircle, user.uid];
+          }
+
+          if (Object.keys(inviterUpdates).length > 0) {
+            await updateDoc(inviterRef, inviterUpdates);
+            console.log('✅ Updated inviter document');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to update user documents:', error);
+        // Non-critical error, continue anyway
+      }
+
       // Clean up storage after successful processing
       sessionStorage.removeItem('pending_invite');
       localStorage.removeItem('pending_invite');
