@@ -47,7 +47,6 @@ const BestiesPage = () => {
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
-  const [reactions, setReactions] = useState({}); // { checkInId: [reactions] }
 
   // Load besties
   useEffect(() => {
