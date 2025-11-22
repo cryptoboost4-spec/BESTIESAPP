@@ -20,7 +20,6 @@ import BestieCard from '../components/BestieCard';
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
-import ActivityFilters from '../components/besties/ActivityFilters';
 import ActivityFeed from '../components/besties/ActivityFeed';
 import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import EmptyState from '../components/besties/EmptyState';
@@ -41,9 +40,6 @@ const BestiesPage = () => {
   const [activityLoading, setActivityLoading] = useState(true);
   const [missedCheckIns, setMissedCheckIns] = useState([]);
   const [requestsForAttention, setRequestsForAttention] = useState([]);
-
-  // Filter state
-  const [activeFilter, setActiveFilter] = useState('all');
 
   // Rankings period state (weekly, monthly, yearly)
   const [rankingsPeriod, setRankingsPeriod] = useState('weekly');
@@ -575,41 +571,28 @@ const BestiesPage = () => {
   const getFilteredBesties = () => {
     let filtered = [...besties];
 
-    switch (activeFilter) {
-      case 'circle':
-        filtered = filtered.filter(b => b.isFavorite);
-        break;
-      case 'active':
-        // Filter besties with check-ins in last hour
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-        filtered = filtered.filter(b =>
-          activityFeed.some(a => a.userId === b.userId && a.timestamp > oneHourAgo && a.status === 'active')
-        );
-        break;
-      default:
-        // Sort by most recent activity first, then favorites, then alphabetical
-        filtered.sort((a, b) => {
-          // Check for recent activity
-          const aRecent = activityFeed.find(f => f.userId === a.userId);
-          const bRecent = activityFeed.find(f => f.userId === b.userId);
+    // Sort by most recent activity first, then favorites, then alphabetical
+    filtered.sort((a, b) => {
+      // Check for recent activity
+      const aRecent = activityFeed.find(f => f.userId === a.userId);
+      const bRecent = activityFeed.find(f => f.userId === b.userId);
 
-          // If both have recent activity, sort by timestamp
-          if (aRecent && bRecent) {
-            return bRecent.timestamp - aRecent.timestamp;
-          }
+      // If both have recent activity, sort by timestamp
+      if (aRecent && bRecent) {
+        return bRecent.timestamp - aRecent.timestamp;
+      }
 
-          // If one has recent activity and the other doesn't
-          if (aRecent && !bRecent) return -1;
-          if (!aRecent && bRecent) return 1;
+      // If one has recent activity and the other doesn't
+      if (aRecent && !bRecent) return -1;
+      if (!aRecent && bRecent) return 1;
 
-          // If neither has recent activity, favorites first
-          if (a.isFavorite && !b.isFavorite) return -1;
-          if (!a.isFavorite && b.isFavorite) return 1;
+      // If neither has recent activity, favorites first
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
 
-          // Finally, alphabetical
-          return (a.name || '').localeCompare(b.name || '');
-        });
-    }
+      // Finally, alphabetical
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
     return filtered;
   };
@@ -632,9 +615,8 @@ const BestiesPage = () => {
 
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
         {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-2xl md:text-3xl font-display text-gradient mb-2">💜 Your Besties</h1>
-          <p className="text-sm md:text-base text-text-secondary">Your safety squad activity hub</p>
+        <div className="mb-4 text-center">
+          <h1 className="text-2xl md:text-3xl font-display text-gradient">💜 Your Besties</h1>
         </div>
 
         {/* Pending Requests */}
@@ -647,22 +629,22 @@ const BestiesPage = () => {
           besties={besties}
         />
 
-        {/* Create Post Button */}
-        <div className="mb-6">
-          <button
-            onClick={() => setShowCreatePostModal(true)}
-            className="w-full btn btn-primary py-4 text-lg font-semibold bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg"
-          >
-            ✍️ Make a Post
-          </button>
-        </div>
-
         {/* Mobile-First Layout - Stack on mobile, grid on desktop */}
         <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Filters - Horizontal Scroll on Mobile */}
-            <ActivityFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+            {/* Activity Feed Header with Create Post Button */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg md:text-xl font-display text-text-primary">
+                📰 Activity Feed
+              </h2>
+              <button
+                onClick={() => setShowCreatePostModal(true)}
+                className="btn btn-primary px-4 py-2 text-sm font-semibold"
+              >
+                ✍️ Post
+              </button>
+            </div>
 
             {/* Activity Feed */}
             {activityLoading ? (
@@ -844,19 +826,15 @@ const BestiesPage = () => {
             {/* Besties Grid */}
             <div>
               <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
-                {activeFilter === 'circle' && '💜 Bestie Circle'}
-                {activeFilter === 'all' && 'All Besties'}
-                {activeFilter === 'active' && '🔔 Active Now'}
+                All Besties
               </h2>
 
               {filteredBesties.length === 0 ? (
                 <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
                   <div className="text-5xl md:text-6xl mb-3">💜</div>
-                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties in this filter</p>
+                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties yet</p>
                   <p className="text-sm md:text-base text-text-secondary">
-                    {activeFilter === 'circle' && 'Add besties to your circle by tapping their profile picture'}
-                    {activeFilter === 'all' && 'Start adding besties to see them here'}
-                    {activeFilter === 'active' && 'No one is currently checked in'}
+                    Start adding besties to see them here
                   </p>
                 </div>
               ) : (

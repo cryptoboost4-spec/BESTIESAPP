@@ -54,8 +54,8 @@ service cloud.firestore {
     // Check-ins collection
     match /checkins/{checkInId} {
       allow read: if isSignedIn() && canViewCheckIn(resource.data);
-      
-      allow create: if isSignedIn() && 
+
+      allow create: if isSignedIn() &&
         request.auth.uid == request.resource.data.userId &&
         request.resource.data.keys().hasAll(['userId', 'location', 'duration', 'bestieIds', 'status', 'createdAt']) &&
         request.resource.data.status == 'active' &&
@@ -63,14 +63,28 @@ service cloud.firestore {
         request.resource.data.duration <= 180 &&
         request.resource.data.bestieIds.size() > 0 &&
         request.resource.data.bestieIds.size() <= 5;
-      
+
       allow update: if isSignedIn() && (
         isOwner(resource.data.userId) ||
-        (request.auth.uid in resource.data.bestieIds && 
+        (request.auth.uid in resource.data.bestieIds &&
          request.resource.data.status == 'false_alarm')
       );
-      
+
       allow delete: if isOwner(resource.data.userId) || isAdmin();
+
+      // Reactions subcollection for check-ins
+      match /reactions/{reactionId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+        allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      }
+
+      // Comments subcollection for check-ins
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+        allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      }
     }
     
     // Besties collection
