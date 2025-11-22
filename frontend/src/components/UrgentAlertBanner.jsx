@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const UrgentAlertBanner = () => {
   const navigate = useNavigate();
-  const { currentUser, userData } = useAuth();
+  const { currentUser } = useAuth();
   const [urgentAlerts, setUrgentAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
 

@@ -244,24 +244,6 @@ const ProfileCard = ({ currentUser, userData }) => {
           ✏️
         </button>
 
-        {/* Color Picker Button */}
-        <button
-          onClick={() => setShowColorPicker(!showColorPicker)}
-          className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
-          title="Change background color"
-        >
-          🎨
-        </button>
-
-        {/* Aura Picker Button */}
-        <button
-          onClick={() => setShowAuraPicker(!showAuraPicker)}
-          className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
-          title="Change profile aura"
-        >
-          ✨
-        </button>
-
         {showColorPicker && (
           <>
             <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowColorPicker(false)} />
@@ -373,22 +355,11 @@ const ProfileCard = ({ currentUser, userData }) => {
           className="hidden"
         />
 
-        {/* Dynamic Layout Component */}
-        <LayoutComponent {...layoutProps} />
+        {/* Social Sharing Icons - Moved up */}
+      <div className="mb-4 relative z-10">
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 font-semibold text-center">Share your profile:</p>
 
-      {/* Social Sharing Icons - Cute & Small */}
-      <div className="mt-6 relative z-10">
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Share your profile:</p>
-
-        {/* Download Card Button */}
-        <button
-          onClick={handleShareProfileCard}
-          className="mb-3 px-4 py-2 bg-gradient-primary text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-        >
-          📸 Download Profile Card
-        </button>
-
-        <div className="flex gap-2 justify-center flex-wrap">
+        <div className="flex gap-3 justify-center flex-wrap">
           {/* Facebook */}
           <button
             onClick={() => {
@@ -498,6 +469,9 @@ const ProfileCard = ({ currentUser, userData }) => {
           </button>
         </div>
       </div>
+
+      {/* Dynamic Layout Component */}
+      <LayoutComponent {...layoutProps} />
       </div>
 
       {/* Profile Customizer Modal */}

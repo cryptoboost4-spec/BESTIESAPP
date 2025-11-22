@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db, functions } from '../services/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { functions } from '../services/firebase';
 import { httpsCallable } from 'firebase/functions';
 import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
@@ -54,7 +53,7 @@ const detectUserCountry = (phoneNumber) => {
 };
 
 const EmergencySOSButton = () => {
-  const { currentUser, userData } = useAuth();
+  const { userData } = useAuth();
   const [activating, setActivating] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [alertSent, setAlertSent] = useState(false); // Show orange alert screen after SOS sent

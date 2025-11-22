@@ -633,40 +633,8 @@ const BestiesPage = () => {
           besties={besties}
         />
 
-        {/* Mobile-First Layout - Stack on mobile, grid on desktop */}
-        <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Activity Feed Header with Create Post Button */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-display text-text-primary">
-                📰 Activity Feed
-              </h2>
-              <button
-                onClick={() => setShowCreatePostModal(true)}
-                className="btn btn-primary px-4 py-2 text-sm font-semibold"
-              >
-                ✍️ Post
-              </button>
-            </div>
-
-            {/* Activity Feed */}
-            {activityLoading ? (
-              <ActivityFeedSkeleton />
-            ) : (
-              <ActivityFeed
-                activityFeed={activityFeed}
-                reactions={reactions}
-                addReaction={addReaction}
-                setSelectedCheckIn={setSelectedCheckIn}
-                setShowComments={setShowComments}
-                getTimeAgo={getTimeAgo}
-              />
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
+        {/* Main Content - Full Width */}
+        <div className="space-y-6">
             {/* This Week's Champions - Soft & Girly Version */}
             <div className="relative overflow-hidden">
               {/* Subtle sparkly background */}
@@ -827,13 +795,13 @@ const BestiesPage = () => {
               </div>
             </div>
 
-            {/* Besties Grid */}
-            <div>
-              <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
-                All Besties
-              </h2>
+          {/* Besties Grid */}
+          <div>
+            <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
+              All Besties
+            </h2>
 
-              {filteredBesties.length === 0 ? (
+            {filteredBesties.length === 0 ? (
                 <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
                   <div className="text-5xl md:text-6xl mb-3">💜</div>
                   <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties yet</p>
@@ -919,7 +887,6 @@ const BestiesPage = () => {
                   })}
                 </div>
               )}
-            </div>
           </div>
         </div>
 
@@ -933,7 +900,7 @@ const BestiesPage = () => {
 
       {/* Comments Modal - Mobile Optimized with Bottom Menu Bar Clearance */}
       {showComments && selectedCheckIn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-end md:items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-end md:items-center justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
             {/* Header */}
             <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-600 flex-shrink-0 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30">

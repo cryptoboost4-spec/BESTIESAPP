@@ -66,13 +66,8 @@
     rgba(255, 255, 255, 0.3) 50%,
     transparent 100%
   );
-  animation: shimmer 3s infinite;
 }
 
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
 
 /* Bokeh Lights Pattern */
 .pattern-bokeh::before {
@@ -81,13 +76,8 @@
     radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
     radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
   background-size: 200px 200px, 250px 250px, 180px 180px;
-  animation: bokehFloat 20s infinite alternate;
 }
 
-@keyframes bokehFloat {
-  0% { background-position: 0% 0%, 100% 100%, 50% 50%; }
-  100% { background-position: 100% 100%, 0% 0%, 70% 70%; }
-}
 
 /* Pearl/Iridescent Effect */
 .pattern-pearl::before {
@@ -102,13 +92,8 @@
     radial-gradient(ellipse 60px 80px at 30% 40%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
     radial-gradient(ellipse 50px 70px at 70% 60%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
   background-size: 150px 150px;
-  animation: steamRise 8s infinite;
 }
 
-@keyframes steamRise {
-  0% { background-position: 0% 100%, 100% 100%; }
-  100% { background-position: 0% 0%, 100% 20%; }
-}
 
 /* Coffee Beans Pattern */
 .pattern-beans::before {
@@ -176,13 +161,8 @@
     radial-gradient(circle, currentColor 1px, transparent 1px);
   background-size: 50px 50px;
   opacity: 0.15;
-  animation: twinkle 4s infinite;
 }
 
-@keyframes twinkle {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.25; }
-}
 
 /* Map Lines Pattern */
 .pattern-map::before {
@@ -387,14 +367,9 @@
   background-image:
     linear-gradient(180deg, transparent 70%, currentColor 70%, currentColor 72%, transparent 72%);
   background-size: 2px 20px;
-  animation: rain 1s linear infinite;
   opacity: 0.1;
 }
 
-@keyframes rain {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 20px; }
-}
 
 /* Warm Glow */
 .pattern-warm::before {
@@ -416,13 +391,8 @@
     radial-gradient(ellipse 80px 40px at 30% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
     radial-gradient(ellipse 60px 30px at 70% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
   background-size: 200px 100px;
-  animation: cloudsFloat 30s infinite linear;
 }
 
-@keyframes cloudsFloat {
-  0% { background-position: 0 0; }
-  100% { background-position: 400px 0; }
-}
 
 /* Fairy Lights */
 .pattern-lights::before {
@@ -430,13 +400,8 @@
     radial-gradient(circle, currentColor 2px, transparent 2px);
   background-size: 40px 40px;
   opacity: 0.15;
-  animation: lights 2s infinite alternate;
 }
 
-@keyframes lights {
-  0% { opacity: 0.1; }
-  100% { opacity: 0.2; }
-}
 
 /* Magic Sparkle */
 .pattern-magic::before {
@@ -447,27 +412,17 @@
   background-size: 60px 60px, 20px 20px, 20px 20px;
   background-position: 0 0, 10px 10px, 10px 10px;
   opacity: 0.12;
-  animation: sparkle 3s infinite;
 }
 
-@keyframes sparkle {
-  0%, 100% { opacity: 0.08; }
-  50% { opacity: 0.15; }
-}
 
 /* Bubbles/Champagne */
 .pattern-bubbles::before {
   background-image:
     radial-gradient(circle, currentColor 3px, transparent 3px);
   background-size: 40px 40px;
-  animation: bubbles 8s infinite linear;
   opacity: 0.1;
 }
 
-@keyframes bubbles {
-  0% { background-position: 0 100%; }
-  100% { background-position: 0 0; }
-}
 
 /* Sparkle/Diamond */
 .pattern-sparkle::before {
@@ -476,7 +431,6 @@
     linear-gradient(-45deg, transparent 45%, currentColor 45%, currentColor 55%, transparent 55%);
   background-size: 20px 20px;
   opacity: 0.12;
-  animation: sparkle 2s infinite;
 }
 
 /* Shine Effect */
@@ -487,13 +441,8 @@
     rgba(255, 255, 255, 0.3) 50%,
     transparent 70%
   );
-  animation: shine 3s infinite;
 }
 
-@keyframes shine {
-  0% { transform: translateX(-100%) translateY(-100%); }
-  100% { transform: translateX(100%) translateY(100%); }
-}
 
 /* Wood Grain */
 .pattern-wood::before {

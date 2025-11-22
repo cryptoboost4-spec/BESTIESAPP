@@ -82,20 +82,27 @@ const RequestSupportSection = () => {
             </p>
           </div>
 
-          {/* Preview card - centered */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 border-2 border-purple-200 dark:border-purple-600 shadow-sm">
-            <div className="flex flex-col items-center gap-3">
-              <p className="text-xs font-semibold text-purple-600 dark:text-purple-400">Preview:</p>
-              <ProfileWithBubble
-                photoURL={userData?.photoURL}
-                name={userData?.displayName || currentUser?.email || 'You'}
-                requestAttention={{ active: true, tag: exampleMessages[currentMessageIndex] }}
-                size="lg"
-                showBubble={true}
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center italic">
-                Your besties will see "{exampleMessages[currentMessageIndex]}" on your profile
-              </p>
+          {/* Preview card - centered and improved */}
+          <div className="bg-gradient-to-br from-white to-purple-50 dark:from-gray-800 dark:to-purple-900/20 rounded-2xl p-6 mb-4 border-2 border-purple-300 dark:border-purple-600 shadow-lg">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Preview</span>
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+              </div>
+              <div className="transform scale-110">
+                <ProfileWithBubble
+                  photoURL={userData?.photoURL}
+                  name={userData?.displayName || currentUser?.email || 'You'}
+                  requestAttention={{ active: true, tag: exampleMessages[currentMessageIndex] }}
+                  size="lg"
+                  showBubble={true}
+                />
+              </div>
+              <div className="bg-purple-100 dark:bg-purple-900/40 rounded-lg px-4 py-2 mt-2">
+                <p className="text-sm text-purple-800 dark:text-purple-200 text-center font-medium">
+                  Showing: <span className="font-bold">"{exampleMessages[currentMessageIndex]}"</span>
+                </p>
+              </div>
             </div>
           </div>
 
