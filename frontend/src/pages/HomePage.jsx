@@ -6,6 +6,7 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
+import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
 import EmergencySOSButton from '../components/EmergencySOSButton';
@@ -230,6 +231,9 @@ const HomePage = () => {
         {activeCheckIns.length === 0 && (
           <>
             <QuickCheckInButtons />
+
+            {/* Living Circle - DO NOT REMOVE */}
+            <LivingCircle userId={currentUser?.uid} />
 
             {/* Weekly Summary */}
             <WeeklySummary
