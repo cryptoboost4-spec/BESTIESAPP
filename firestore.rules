@@ -42,11 +42,14 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       // Users can always read their own profile
-      // Besties can read each other's profiles
+      // Besties can read each other's profiles (check both directions)
       // Admins can read all profiles
       allow read: if isSignedIn() && (
         request.auth.uid == userId ||
+        // They have me in their bestieUserIds
         (resource.data.bestieUserIds != null && request.auth.uid in resource.data.bestieUserIds) ||
+        // OR I have them in my bestieUserIds (allows reading right after adding them)
+        (userId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.bestieUserIds) ||
         (resource.data.isAdmin == true && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
       );
       allow create: if isSignedIn() && request.auth.uid == userId;
