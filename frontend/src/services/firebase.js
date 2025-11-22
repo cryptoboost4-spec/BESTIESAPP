@@ -127,10 +127,18 @@ export const authService = {
   },
 
   // Send verification code to phone
-  sendPhoneVerification: async (phoneNumber, recaptchaVerifier) => {
+  sendPhoneVerification: async (phoneNumber, recaptchaVerifier, shouldLink = false) => {
     try {
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-      return { success: true, confirmationResult };
+      if (shouldLink) {
+        // For linking: use PhoneAuthProvider.verifyPhoneNumber to get verificationId
+        const provider = new PhoneAuthProvider(auth);
+        const verificationId = await provider.verifyPhoneNumber(phoneNumber, recaptchaVerifier);
+        return { success: true, verificationId, isLinking: true };
+      } else {
+        // For sign-in: use signInWithPhoneNumber to get confirmationResult
+        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+        return { success: true, confirmationResult, isLinking: false };
+      }
     } catch (error) {
       console.error('Phone verification error:', error);
       // Reset reCAPTCHA on error
@@ -142,25 +150,25 @@ export const authService = {
     }
   },
 
-  // Verify code and sign in or link to existing account
-  verifyPhoneCode: async (confirmationResult, code, shouldLink = false) => {
+  // Verify code and complete phone authentication (sign-in or link)
+  verifyPhoneCode: async (verificationData, code) => {
     try {
-      if (shouldLink) {
-        // Link phone to existing account instead of signing in
+      if (verificationData.isLinking) {
+        // Link phone to existing account
         const currentUser = auth.currentUser;
         if (!currentUser) {
           return { success: false, error: 'No user is currently signed in' };
         }
 
         // Create phone credential from verification code
-        const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, code);
+        const credential = PhoneAuthProvider.credential(verificationData.verificationId, code);
 
         // Link credential to current user
         const result = await linkWithCredential(currentUser, credential);
         return { success: true, user: result.user };
       } else {
         // Sign in with phone (for login flow)
-        const result = await confirmationResult.confirm(code);
+        const result = await verificationData.confirmationResult.confirm(code);
         return { success: true, user: result.user };
       }
     } catch (error) {

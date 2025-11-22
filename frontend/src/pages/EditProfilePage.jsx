@@ -48,7 +48,7 @@ const EditProfilePage = () => {
   // Phone verification states
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
-  const [phoneConfirmationResult, setPhoneConfirmationResult] = useState(null);
+  const [phoneVerificationData, setPhoneVerificationData] = useState(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState('');
 
   // Profile completion celebration
@@ -142,12 +142,12 @@ const EditProfilePage = () => {
       return;
     }
 
-    // Send verification code
-    const result = await authService.sendPhoneVerification(formattedPhone, recaptchaResult.verifier);
+    // Send verification code with shouldLink=true to link to existing account
+    const result = await authService.sendPhoneVerification(formattedPhone, recaptchaResult.verifier, true);
     setLoading(false);
 
     if (result.success) {
-      setPhoneConfirmationResult(result.confirmationResult);
+      setPhoneVerificationData(result);
       setPendingPhoneNumber(formattedPhone);
       setShowPhoneVerification(true);
       toast.success('Verification code sent to your phone!');
@@ -157,15 +157,15 @@ const EditProfilePage = () => {
   };
 
   const handleVerifyPhoneCode = async () => {
-    if (!verificationCode || !phoneConfirmationResult) {
+    if (!verificationCode || !phoneVerificationData) {
       toast.error('Please enter the verification code');
       return;
     }
 
     setLoading(true);
 
-    // Pass shouldLink=true to link phone to existing account instead of creating new one
-    const result = await authService.verifyPhoneCode(phoneConfirmationResult, verificationCode, true);
+    // Verify code - will link phone to existing account because we passed shouldLink=true earlier
+    const result = await authService.verifyPhoneCode(phoneVerificationData, verificationCode);
 
     if (result.success) {
       toast.success('Phone number verified and linked to your account!');
@@ -490,7 +490,7 @@ const EditProfilePage = () => {
                   onClick={() => {
                     setShowPhoneVerification(false);
                     setVerificationCode('');
-                    setPhoneConfirmationResult(null);
+                    setPhoneVerificationData(null);
                   }}
                   className="flex-1 btn btn-secondary"
                   disabled={loading}

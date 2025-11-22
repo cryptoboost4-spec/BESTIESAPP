@@ -166,7 +166,7 @@ const LoginPage = () => {
       setLoadingStep('');
 
       if (result.success) {
-        setConfirmationResult(result.confirmationResult);
+        setConfirmationResult(result); // Store the full result object with isLinking flag
         toast.success('Verification code sent!');
         errorTracker.trackFunnelStep('signup', 'phone_code_sent');
       } else {
