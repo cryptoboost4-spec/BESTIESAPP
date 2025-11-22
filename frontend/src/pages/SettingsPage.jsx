@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
-import { db } from '../services/firebase';
+import { db, authService } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
@@ -299,6 +299,16 @@ const SettingsPage = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    const result = await authService.signOut();
+    if (result.success) {
+      toast.success('Signed out successfully');
+      navigate('/login');
+    } else {
+      toast.error('Sign out failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-pattern">
 
@@ -369,6 +379,16 @@ const SettingsPage = () => {
 
         {/* Legal & Policies */}
         <LegalSection navigate={navigate} />
+
+        {/* Log Out Button */}
+        <div className="card p-6 mb-6">
+          <button
+            onClick={handleSignOut}
+            className="w-full btn bg-red-500 hover:bg-red-600 text-white py-3 text-lg font-semibold"
+          >
+            🚪 Log Out
+          </button>
+        </div>
       </div>
 
       {/* Passcode Modal */}
