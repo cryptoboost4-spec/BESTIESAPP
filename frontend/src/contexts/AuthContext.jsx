@@ -128,10 +128,14 @@ export const AuthProvider = ({ children }) => {
         console.error('Failed to create celebration documents:', error);
       }
 
-      // Clean up localStorage after successful processing
+      // Clean up storage after successful processing
+      sessionStorage.removeItem('pending_invite');
       localStorage.removeItem('pending_invite');
     } catch (error) {
       console.error('Auto-add bestie failed:', error);
+      // Clean up even on error to prevent stuck state
+      sessionStorage.removeItem('pending_invite');
+      localStorage.removeItem('pending_invite');
     }
   };
 

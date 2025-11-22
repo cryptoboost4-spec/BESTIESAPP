@@ -79,6 +79,19 @@ const OnboardingPage = () => {
   const checkForBesties = async () => {
     setCheckingBesties(true);
     try {
+      // If there's a pending invite, wait for it to be processed
+      // AuthContext removes pending_invite after processing
+      const pendingInvite = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
+      if (pendingInvite) {
+        // Wait up to 3 seconds for invite to process
+        for (let i = 0; i < 6; i++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const stillPending = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
+          if (!stillPending) break; // Invite processed!
+        }
+      }
+
+      // Now check for besties in Firestore
       const [requesterQuery, recipientQuery] = await Promise.all([
         getDocs(query(collection(db, 'besties'), where('requesterId', '==', currentUser.uid), where('status', '==', 'accepted'))),
         getDocs(query(collection(db, 'besties'), where('recipientId', '==', currentUser.uid), where('status', '==', 'accepted'))),
