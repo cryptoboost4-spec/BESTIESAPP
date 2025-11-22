@@ -20,8 +20,6 @@ import BestieCard from '../components/BestieCard';
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
-import ActivityFeed from '../components/besties/ActivityFeed';
-import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
 import UrgentAlertBanner from '../components/UrgentAlertBanner';
@@ -38,7 +36,6 @@ const BestiesPage = () => {
 
   // Activity feed state
   const [activityFeed, setActivityFeed] = useState([]);
-  const [activityLoading, setActivityLoading] = useState(true);
   const [missedCheckIns, setMissedCheckIns] = useState([]);
   const [requestsForAttention, setRequestsForAttention] = useState([]);
 
