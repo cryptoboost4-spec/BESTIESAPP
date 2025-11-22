@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, getDoc, updateDoc, doc, increment } from 'firebase/firestore';
 
 /**
  * Interaction Tracking Service
@@ -30,14 +30,12 @@ export const logAlertResponse = async (alertCheckInId, userId, responderId) => {
     }
 
     // Calculate response time from alert creation
-    const checkInDoc = await getDocs(query(
-      collection(db, 'checkins'),
-      where('__name__', '==', alertCheckInId)
-    ));
+    const checkInRef = doc(db, 'checkins', alertCheckInId);
+    const checkInDoc = await getDoc(checkInRef);
 
-    if (checkInDoc.empty) return;
+    if (!checkInDoc.exists()) return;
 
-    const checkInData = checkInDoc.docs[0].data();
+    const checkInData = checkInDoc.data();
     const alertTime = checkInData.alertedAt || checkInData.alertTime;
 
     if (!alertTime) return;
@@ -121,19 +119,12 @@ export const incrementEmergencyContactCount = async (bestieId) => {
   try {
     const userRef = doc(db, 'users', bestieId);
 
-    // Get current count
-    const userDoc = await getDocs(query(collection(db, 'users'), where('__name__', '==', bestieId)));
-    if (userDoc.empty) return;
-
-    const userData = userDoc.docs[0].data();
-    const currentCount = userData.stats?.timesSelectedAsEmergencyContact || 0;
-
-    // Increment
+    // Use Firestore increment to atomically update the counter
     await updateDoc(userRef, {
-      'stats.timesSelectedAsEmergencyContact': currentCount + 1,
+      'stats.timesSelectedAsEmergencyContact': increment(1),
     });
 
-    console.log(`Emergency contact count incremented for ${bestieId}: ${currentCount + 1}`);
+    console.log(`Emergency contact count incremented for ${bestieId}`);
   } catch (error) {
     console.error('Error incrementing emergency contact count:', error);
   }
