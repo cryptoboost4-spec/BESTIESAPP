@@ -282,7 +282,8 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
   const bestieData = bestieDoc.data();
 
   // Sanitize display name to prevent spam flags (remove repeated characters)
-  const cleanName = (userData.displayName || 'Your friend')
+  const cleanName = ((userData && userData.displayName) || 'Your friend')
+    .toString()
     .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
     .trim()
     .substring(0, 30); // Max 30 chars for name
@@ -1106,7 +1107,8 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
   });
 
   // Sanitize display name to prevent spam flags
-  const cleanName = (userData.displayName || 'Your friend')
+  const cleanName = ((userData && userData.displayName) || 'Your friend')
+    .toString()
     .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
     .trim()
     .substring(0, 30); // Max 30 chars for name
