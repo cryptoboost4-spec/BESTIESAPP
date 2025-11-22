@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, authService } from '../services/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, deleteDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import notificationService from '../services/notifications';
@@ -319,6 +320,79 @@ const SettingsPage = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete your account? This will permanently delete:\n\n' +
+      '• Your profile\n' +
+      '• All your besties connections\n' +
+      '• All your check-ins\n' +
+      '• All your data\n\n' +
+      'This action CANNOT be undone!'
+    );
+
+    if (!confirmDelete) return;
+
+    const doubleConfirm = window.prompt(
+      'Type "DELETE" in all caps to confirm account deletion:'
+    );
+
+    if (doubleConfirm !== 'DELETE') {
+      toast.error('Account deletion cancelled');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Delete user's Firestore document and related data
+      const userId = currentUser.uid;
+
+      // Delete user document
+      await deleteDoc(doc(db, 'users', userId));
+
+      // Delete besties connections
+      const bestiesQuery1 = query(
+        collection(db, 'besties'),
+        where('requesterId', '==', userId)
+      );
+      const bestiesQuery2 = query(
+        collection(db, 'besties'),
+        where('recipientId', '==', userId)
+      );
+
+      const [besties1, besties2] = await Promise.all([
+        getDocs(bestiesQuery1),
+        getDocs(bestiesQuery2)
+      ]);
+
+      const deletePromises = [];
+      besties1.forEach(doc => deletePromises.push(deleteDoc(doc.ref)));
+      besties2.forEach(doc => deletePromises.push(deleteDoc(doc.ref)));
+
+      await Promise.all(deletePromises);
+
+      // Delete Firebase Auth account
+      await deleteUser(currentUser);
+
+      toast.success('Account deleted successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Delete account error:', error);
+      setLoading(false);
+
+      if (error.code === 'auth/requires-recent-login') {
+        toast.error(
+          'For security, please sign out and sign in again before deleting your account.',
+          { duration: 8000 }
+        );
+      } else {
+        toast.error('Failed to delete account: ' + error.message);
+      }
+    }
+  };
+
   const handleSignOut = async () => {
     const result = await authService.signOut();
     if (result.success) {
@@ -406,6 +480,21 @@ const SettingsPage = () => {
 
         {/* Legal & Policies */}
         <LegalSection navigate={navigate} />
+
+        {/* Danger Zone - Delete Account */}
+        <div className="card p-6 mb-6 border-2 border-red-500/20">
+          <h2 className="text-xl font-display text-text-primary mb-2">⚠️ Danger Zone</h2>
+          <p className="text-text-secondary mb-4">
+            Once you delete your account, there is no going back. Please be certain.
+          </p>
+          <button
+            onClick={handleDeleteAccount}
+            disabled={loading}
+            className="w-full btn bg-red-600 hover:bg-red-700 text-white py-3 text-lg font-semibold"
+          >
+            {loading ? 'Deleting...' : '🗑️ Delete Account Permanently'}
+          </button>
+        </div>
 
         {/* Log Out Button */}
         <div className="card p-6 mb-6">
