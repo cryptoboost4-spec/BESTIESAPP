@@ -36,14 +36,16 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    console.log('🔄 Processing invite for user:', user.uid, 'from inviter:', inviterUID);
+
     try {
       // Get current user's data for name fields
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.exists() ? userSnap.data() : {};
 
-      // Get inviter info from localStorage (set during URL param capture)
-      const cachedInviterInfo = localStorage.getItem('inviter_info');
+      // Get inviter info from sessionStorage/localStorage
+      const cachedInviterInfo = sessionStorage.getItem('inviter_info') || localStorage.getItem('inviter_info');
       let inviterDisplayName = 'Your Bestie';
       let inviterPhotoURL = null;
 
@@ -74,7 +76,7 @@ export const AuthProvider = ({ children }) => {
             acceptedAt: Timestamp.now(),
             recipientId: user.uid,
             recipientName: userData.displayName || user.displayName || 'Unknown',
-            recipientPhone: user.phoneNumber || user.email,
+            recipientPhone: user.phoneNumber || userData.phoneNumber || user.email,
             recipientPhotoURL: userData.photoURL || user.photoURL || null,
           });
           found = true;
@@ -85,6 +87,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (!found) {
+        console.log('✨ Creating new bestie connection');
         // No existing connection - create a new bestie
         // Using cached inviter info to avoid permission errors
         await addDoc(collection(db, 'besties'), {
@@ -96,16 +99,64 @@ export const AuthProvider = ({ children }) => {
           requesterName: inviterDisplayName,
           requesterPhotoURL: inviterPhotoURL,
           recipientName: userData.displayName || user.displayName || 'Unknown',
-          recipientPhone: user.phoneNumber || user.email,
+          recipientPhone: user.phoneNumber || userData.phoneNumber || user.email,
           recipientPhotoURL: userData.photoURL || user.photoURL || null,
         });
+        console.log('✅ Bestie connection created');
 
         // Note: Notifications are handled by Cloud Functions
+      } else {
+        console.log('✅ Updated existing bestie connection');
       }
 
-      // Create celebration documents for BOTH users
+      // Update both users' featuredCircle and bestieUserIds immediately (don't wait for Cloud Functions)
+      // Do this BEFORE creating celebrations so we have permission to read inviter's real name
       try {
-        // Celebration for the invitee (current user)
+        console.log('🔄 Updating featured circles and bestie lists');
+
+        // Update current user's document (we have permission to update our own)
+        const currentUserCircle = userData.featuredCircle || [];
+        const currentUserBesties = userData.bestieUserIds || [];
+        const updates = {};
+
+        if (!currentUserBesties.includes(inviterUID)) {
+          updates.bestieUserIds = [...currentUserBesties, inviterUID];
+        }
+
+        if (!currentUserCircle.includes(inviterUID) && currentUserCircle.length < 5) {
+          updates.featuredCircle = [...currentUserCircle, inviterUID];
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await updateDoc(userRef, updates);
+          console.log('✅ Updated current user document');
+        }
+
+        // Now read inviter's profile (we have permission now that they're in our bestieUserIds)
+        const inviterRef = doc(db, 'users', inviterUID);
+        const inviterSnap = await getDoc(inviterRef);
+        if (inviterSnap.exists()) {
+          const inviterData = inviterSnap.data();
+
+          // Get real inviter name now that we have permission!
+          if (inviterData.displayName && inviterData.displayName !== inviterDisplayName) {
+            inviterDisplayName = inviterData.displayName;
+            inviterPhotoURL = inviterData.photoURL || inviterPhotoURL;
+            console.log('✅ Got real inviter name:', inviterDisplayName);
+          }
+        }
+
+        // Note: Cloud Functions will update the inviter's bestieUserIds and featuredCircle
+        // We don't have permission to update other users' documents from the client
+      } catch (error) {
+        console.error('Failed to update user documents:', error);
+        // Non-critical error, continue anyway
+      }
+
+      // Create celebration documents AFTER updating user docs (so we have real names)
+      try {
+        console.log('🎉 Creating celebration documents with real names');
+        // Celebration for the invitee (current user) - now with real inviter name!
         await addDoc(collection(db, 'bestie_celebrations'), {
           userId: user.uid,
           bestieId: inviterUID,
@@ -124,24 +175,32 @@ export const AuthProvider = ({ children }) => {
           seen: false,
           createdAt: Timestamp.now(),
         });
+        console.log('✅ Celebrations created with names:', inviterDisplayName, 'and', userData.displayName || user.displayName);
       } catch (error) {
         console.error('Failed to create celebration documents:', error);
       }
 
-      // Clean up localStorage after successful processing
+      // Clean up storage after successful processing
+      sessionStorage.removeItem('pending_invite');
       localStorage.removeItem('pending_invite');
     } catch (error) {
       console.error('Auto-add bestie failed:', error);
+      // Clean up even on error to prevent stuck state
+      sessionStorage.removeItem('pending_invite');
+      localStorage.removeItem('pending_invite');
     }
   };
 
-  // Save invite to localStorage if present in URL (BEFORE login/signup)
+  // Save invite to sessionStorage if present in URL (BEFORE login/signup)
+  // sessionStorage persists across OAuth redirects, unlike localStorage in incognito
   // Auth listener will process it after auth initializes
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const inviterUID = urlParams.get('invite');
     if (inviterUID) {
-      localStorage.setItem('pending_invite', inviterUID);
+      // Use sessionStorage for better persistence across OAuth redirects
+      sessionStorage.setItem('pending_invite', inviterUID);
+      localStorage.setItem('pending_invite', inviterUID); // Fallback for old code
 
       // Fetch inviter info early so it's ready for welcome screen
       // Note: This may fail with permission-denied if inviter's profile is private
@@ -152,11 +211,13 @@ export const AuthProvider = ({ children }) => {
           const inviterSnap = await getDoc(inviterRef);
           if (inviterSnap.exists()) {
             const inviterData = inviterSnap.data();
-            localStorage.setItem('inviter_info', JSON.stringify({
+            const inviterInfo = JSON.stringify({
               uid: inviterUID,
               displayName: inviterData.displayName,
               photoURL: inviterData.photoURL,
-            }));
+            });
+            sessionStorage.setItem('inviter_info', inviterInfo);
+            localStorage.setItem('inviter_info', inviterInfo); // Fallback
           }
         } catch (error) {
           // Permission denied is expected - user isn't a bestie yet
@@ -231,14 +292,17 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Process pending invite (works for all users - new and returning)
-        const inviterUID = localStorage.getItem('pending_invite');
+        // Check sessionStorage first (better for OAuth redirects), then localStorage
+        const inviterUID = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
         if (inviterUID) {
+          console.log('📨 Found pending invite, processing...');
           await processInvite(user, inviterUID);
+          console.log('✅ Invite processing complete');
 
           // For returning users, show toast and clean up inviter info
           // For new users, keep inviter_info for welcome screen during onboarding
           if (!isNewUser) {
-            const inviterInfo = localStorage.getItem('inviter_info');
+            const inviterInfo = sessionStorage.getItem('inviter_info') || localStorage.getItem('inviter_info');
             if (inviterInfo) {
               try {
                 const { displayName } = JSON.parse(inviterInfo);
@@ -247,6 +311,7 @@ export const AuthProvider = ({ children }) => {
                 console.error('Failed to parse inviter info:', e);
               }
               // Clean up inviter info for returning users
+              sessionStorage.removeItem('inviter_info');
               localStorage.removeItem('inviter_info');
             }
           }

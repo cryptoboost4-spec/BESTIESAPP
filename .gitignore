@@ -1,5 +1,6 @@
 # Credentials - NEVER commit these!
 credentials.config
+serviceAccountKey.json
 
 # dependencies
 node_modules/
