@@ -33,7 +33,25 @@ export const AuthProvider = ({ children }) => {
 
   // Process invite by connecting user with inviter
   const processInvite = async (user, inviterUID) => {
-    if (!user || !inviterUID || inviterUID === user.uid) {
+    if (!user || !inviterUID) {
+      console.log('⚠️ Invalid invite parameters - missing user or inviterUID');
+      // Clean up invalid invite
+      sessionStorage.removeItem('pending_invite');
+      localStorage.removeItem('pending_invite');
+      sessionStorage.removeItem('inviter_info');
+      localStorage.removeItem('inviter_info');
+      return;
+    }
+
+    // Prevent self-invitation
+    if (inviterUID === user.uid) {
+      console.log('⚠️ Self-invitation detected! Clearing stored invite.');
+      // Clean up self-invite immediately
+      sessionStorage.removeItem('pending_invite');
+      localStorage.removeItem('pending_invite');
+      sessionStorage.removeItem('inviter_info');
+      localStorage.removeItem('inviter_info');
+      toast.error("You can't add yourself as a bestie! 😅");
       return;
     }
 
@@ -72,6 +90,22 @@ export const AuthProvider = ({ children }) => {
         const result = await getDocs(q);
         if (!result.empty) {
           const docRef = result.docs[0];
+          const existingData = docRef.data();
+
+          // Check if this connection is already fully accepted
+          if (existingData.status === 'accepted' && existingData.recipientId === user.uid) {
+            console.log('✅ Bestie connection already exists and is accepted - skipping duplicate');
+            found = true;
+            // Clean up the invite to prevent reprocessing
+            sessionStorage.removeItem('pending_invite');
+            localStorage.removeItem('pending_invite');
+            sessionStorage.removeItem('inviter_info');
+            localStorage.removeItem('inviter_info');
+            return; // Exit early - connection already complete
+          }
+
+          // Only update if status is pending or recipientId needs updating
+          console.log('🔄 Updating existing bestie connection to accepted');
           await updateDoc(doc(db, 'besties', docRef.id), {
             status: 'accepted',
             acceptedAt: Timestamp.now(),
@@ -296,7 +330,15 @@ export const AuthProvider = ({ children }) => {
         // Check sessionStorage first (better for OAuth redirects), then localStorage
         const inviterUID = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
         if (inviterUID) {
-          console.log('📨 Found pending invite, processing...');
+          console.log('📨 Found pending invite');
+          console.log('📊 Invite Details:', {
+            inviterUID,
+            currentUserUID: user.uid,
+            isSelfInvite: inviterUID === user.uid,
+            sessionStorage: sessionStorage.getItem('pending_invite'),
+            localStorage: localStorage.getItem('pending_invite'),
+            inviterInfo: sessionStorage.getItem('inviter_info') || localStorage.getItem('inviter_info')
+          });
           await processInvite(user, inviterUID);
           console.log('✅ Invite processing complete');
 
