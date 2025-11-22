@@ -219,7 +219,7 @@ const HomePage = () => {
             ================================================================= */}
         {/* Stats Card - Moved above Quick Check-In */}
         {activeCheckIns.length === 0 && (
-          <div className="card p-6 mb-6">
+          <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50">
               <div className="mb-4">
                 <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
               </div>
