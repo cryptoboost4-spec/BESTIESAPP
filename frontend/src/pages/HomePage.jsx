@@ -10,7 +10,6 @@ import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
 import EmergencySOSButton from '../components/EmergencySOSButton';
-import BestieCelebrationModal from '../components/BestieCelebrationModal';
 import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
@@ -354,9 +353,6 @@ const HomePage = () => {
 
       {/* Emergency SOS Button */}
       <EmergencySOSButton />
-
-      {/* Bestie Celebration Modal */}
-      <BestieCelebrationModal />
 
       {/* Add to Home Screen Prompt */}
       <AddToHomeScreenPrompt currentUser={currentUser} userData={userData} />
