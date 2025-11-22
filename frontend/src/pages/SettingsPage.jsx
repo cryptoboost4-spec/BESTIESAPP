@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, authService } from '../services/firebase';
 import { doc, updateDoc, getDoc, deleteDoc, query, collection, where, getDocs } from 'firebase/firestore';
-import { deleteUser } from 'firebase/auth';
+import { deleteUser, reauthenticateWithCredential, PhoneAuthProvider } from 'firebase/auth';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import notificationService from '../services/notifications';
@@ -323,6 +323,9 @@ const SettingsPage = () => {
   const handleDeleteAccount = async () => {
     if (!currentUser) return;
 
+    // Check if this is a phone-only account (no email)
+    const isPhoneAccount = !currentUser.email && currentUser.phoneNumber;
+
     const confirmDelete = window.confirm(
       'Are you sure you want to delete your account? This will permanently delete:\n\n' +
       '• Your profile\n' +
@@ -346,23 +349,63 @@ const SettingsPage = () => {
     setLoading(true);
 
     try {
+      // For phone accounts, we need to re-verify to get fresh credentials
+      if (isPhoneAccount && (error?.code === 'auth/requires-recent-login' || true)) {
+        // Setup reCAPTCHA for phone verification
+        const recaptchaResult = authService.setupRecaptcha('delete-recaptcha-container');
+        if (!recaptchaResult.success) {
+          toast.error('Please refresh and try again.');
+          setLoading(false);
+          return;
+        }
+
+        // Send verification code
+        toast('Sending verification code to verify it\'s you...', { icon: '📱' });
+        const verifyResult = await authService.sendPhoneVerification(
+          currentUser.phoneNumber,
+          recaptchaResult.verifier,
+          false // Not linking, just verifying
+        );
+
+        if (!verifyResult.success) {
+          toast.error('Failed to send verification code: ' + verifyResult.error);
+          setLoading(false);
+          return;
+        }
+
+        // Prompt for code
+        const code = window.prompt('Enter the 6-digit verification code sent to ' + currentUser.phoneNumber + ':');
+        if (!code || code.length !== 6) {
+          toast.error('Account deletion cancelled');
+          setLoading(false);
+          return;
+        }
+
+        // Create credential and re-authenticate
+        const credential = PhoneAuthProvider.credential(verifyResult.verificationId || verifyResult.confirmationResult.verificationId, code);
+        await reauthenticateWithCredential(currentUser, credential);
+        toast.success('Verified! Deleting account...');
+      }
+
       // Delete Firebase Auth account
-      // Note: Firestore cleanup will be handled by Cloud Functions
       await deleteUser(currentUser);
 
-      toast.success('Account deleted successfully');
+      toast.success('Account deleted successfully! You can now link this phone number to your main account.');
       navigate('/login');
     } catch (error) {
       console.error('Delete account error:', error);
+      console.error('Error code:', error.code);
       setLoading(false);
 
       if (error.code === 'auth/requires-recent-login') {
         toast.error(
-          'For security, please sign out and sign in again before deleting your account.',
-          { duration: 8000 }
+          'Session expired. Please sign out, sign in with your phone number again, then delete immediately.',
+          { duration: 10000 }
         );
+      } else if (error.code === 'auth/invalid-verification-code') {
+        toast.error('Invalid verification code. Please try again.');
       } else {
-        toast.error('Failed to delete account: ' + error.message);
+        toast.error('Failed to delete account: ' + (error.message || 'Unknown error'));
       }
     }
   };
@@ -634,6 +677,9 @@ const SettingsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Invisible reCAPTCHA container for account deletion */}
+      <div id="delete-recaptcha-container"></div>
     </div>
   );
 };
