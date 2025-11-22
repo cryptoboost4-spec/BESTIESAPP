@@ -243,34 +243,31 @@ const HomePage = () => {
             </div>
         )}
 
-        {/* Quick Check-In Buttons - Moved to middle */}
+        {/* Quick Check-In Buttons - Only when no active check-ins */}
+        {activeCheckIns.length === 0 && <QuickCheckInButtons />}
+
+        {/* Bestie Circle - Always visible */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Bestie Circle</h2>
+            <button
+              onClick={() => navigate('/besties')}
+              className="text-primary font-semibold hover:underline"
+            >
+              Manage →
+            </button>
+          </div>
+          <LivingCircle userId={currentUser?.uid} onAddClick={() => navigate('/besties')} />
+        </div>
+
+        {/* Weekly Summary - Only when no active check-ins */}
         {activeCheckIns.length === 0 && (
-          <>
-            <QuickCheckInButtons />
-
-            {/* Bestie Circle */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Bestie Circle</h2>
-                <button
-                  onClick={() => navigate('/besties')}
-                  className="text-primary font-semibold hover:underline"
-                >
-                  Manage →
-                </button>
-              </div>
-              <LivingCircle userId={currentUser?.uid} onAddClick={() => navigate('/besties')} />
-            </div>
-
-            {/* Weekly Summary */}
-            <WeeklySummary
-              weeklySummary={weeklySummary}
-              hasWeekOfActivity={hasWeekOfActivity()}
-              userData={userData}
-              bestiesCount={besties.length}
-            />
-
-          </>
+          <WeeklySummary
+            weeklySummary={weeklySummary}
+            hasWeekOfActivity={hasWeekOfActivity()}
+            userData={userData}
+            bestiesCount={besties.length}
+          />
         )}
 
         {/* Active Check-Ins */}
