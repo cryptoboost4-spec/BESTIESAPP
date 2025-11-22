@@ -67,7 +67,7 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.userId &&
         request.resource.data.keys().hasAll(['userId', 'location', 'duration', 'bestieIds', 'status', 'createdAt']) &&
         request.resource.data.status == 'active' &&
-        request.resource.data.duration >= 15 &&
+        request.resource.data.duration >= 10 &&
         request.resource.data.duration <= 180 &&
         request.resource.data.bestieIds.size() > 0 &&
         request.resource.data.bestieIds.size() <= 5;

@@ -155,7 +155,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 w-full h-full md:h-auto md:max-w-6xl md:rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 w-full h-full md:h-auto md:max-w-6xl md:rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden pb-20 md:pb-0">
         {/* LIVE PREVIEW - Desktop Left, Hidden on Mobile */}
         <div className="hidden md:flex md:w-2/5 bg-gray-50 dark:bg-gray-800 p-6 items-center justify-center border-r border-gray-200 dark:border-gray-700">
           <div className="w-full max-w-sm">
