@@ -301,7 +301,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
   return (
     <div
-      className="card p-6 md:p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden"
+      className="card p-6 md:p-8 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden"
       onClick={() => {
         if (showVibeTooltip) setShowVibeTooltip(false);
       }}

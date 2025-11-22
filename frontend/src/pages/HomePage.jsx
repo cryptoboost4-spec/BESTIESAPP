@@ -184,14 +184,8 @@ const HomePage = () => {
         {/* Stats Card - Moved above Quick Check-In */}
         {activeCheckIns.length === 0 && (
           <div className="card p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
-                <button
-                  onClick={() => navigate('/profile')}
-                  className="text-primary font-semibold hover:underline text-sm"
-                >
-                  View Profile →
-                </button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
@@ -352,7 +346,7 @@ const HomePage = () => {
       </div>
 
       {/* Emergency SOS Button */}
-      <EmergencySOSButton />
+      <EmergencySOSButton hasActiveAlert={activeCheckIns.some(checkIn => checkIn.status === 'alerted')} />
 
       {/* Add to Home Screen Prompt */}
       <AddToHomeScreenPrompt currentUser={currentUser} userData={userData} />
