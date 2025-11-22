@@ -189,15 +189,12 @@ const BestiesPage = () => {
   // Load activity feed - only when page is visible
   useEffect(() => {
     if (!currentUser || besties.length === 0) {
-      setActivityLoading(false);
       return;
     }
 
     const loadActivityFeed = async () => {
       // Only load if page is visible
       if (document.hidden) return;
-
-      setActivityLoading(true);
 
       const activities = [];
       const missed = [];
@@ -371,7 +368,6 @@ const BestiesPage = () => {
       setActivityFeed(activities);
       setMissedCheckIns(filteredMissed);
       setRequestsForAttention(filteredAttention);
-      setActivityLoading(false);
     };
 
     // Initial load
