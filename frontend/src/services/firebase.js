@@ -168,10 +168,16 @@ export const authService = {
           const result = await linkWithCredential(currentUser, credential);
           return { success: true, user: result.user };
         } catch (linkError) {
+          console.log('Link error code:', linkError.code);
+          console.log('Link error message:', linkError.message);
+
           // If phone is already linked to another account, we need to handle it
-          if (linkError.code === 'auth/account-exists-with-different-credential') {
+          // Check for both possible error codes
+          if (linkError.code === 'auth/account-exists-with-different-credential' ||
+              linkError.code === 'auth/credential-already-in-use' ||
+              linkError.code === 'auth/provider-already-linked') {
             // Phone number is already used by another account
-            // We'll sign into that account, check if it's a dummy account, and delete it
+            console.log('Detected account exists - returning merge info');
             return {
               success: false,
               error: 'This phone number is already linked to another account. Attempting to merge accounts...',
@@ -179,6 +185,8 @@ export const authService = {
               credential: credential
             };
           }
+          // For other errors, throw them to be caught by outer catch
+          console.error('Unhandled link error:', linkError);
           throw linkError;
         }
       } else {
@@ -220,38 +228,59 @@ export const authService = {
   // Merge phone account with current account by deleting the phone-only account
   mergePhoneAccount: async (phoneCredential, originalUser) => {
     try {
+      console.log('Starting merge process...');
       // Store original user info
       const originalEmail = originalUser.email;
+      const originalUid = originalUser.uid;
 
       // Sign in with phone credential to access that account
+      console.log('Signing in with phone credential...');
       const phoneUserCred = await signInWithCredential(auth, phoneCredential);
       const phoneUser = phoneUserCred.user;
+      console.log('Phone user UID:', phoneUser.uid);
 
       // Check if this is a dummy account (New User with no real data)
       const phoneUserDoc = await getDoc(doc(db, 'users', phoneUser.uid));
       const phoneUserData = phoneUserDoc.exists() ? phoneUserDoc.data() : {};
 
+      console.log('Phone user doc exists:', phoneUserDoc.exists());
+      console.log('Phone user data:', phoneUserData);
+
+      // Check if it's a dummy account or has no Firestore doc (orphaned auth account)
       const isDummyAccount = (
+        !phoneUserDoc.exists() || // No Firestore document
         phoneUserData.displayName === 'New User' ||
-        !phoneUserData.displayName ||
-        !phoneUserDoc.exists()
+        !phoneUserData.displayName
       );
+
+      console.log('Is dummy account:', isDummyAccount);
 
       if (!isDummyAccount) {
         // Not a dummy account - don't delete it
-        return {
-          success: false,
-          error: 'This phone number belongs to an active account. Please use a different number or delete that account manually.'
-        };
+        // Check if user has real data (besties, check-ins, etc.)
+        const hasBesties = (phoneUserData.stats?.totalBesties || 0) > 0;
+        const hasCheckIns = (phoneUserData.stats?.totalCheckIns || 0) > 0;
+
+        if (hasBesties || hasCheckIns) {
+          return {
+            success: false,
+            error: 'This phone number belongs to an active account with data. Please use a different number or contact support.'
+          };
+        }
+        // Fall through - it's basically a dummy account even if it has a name
       }
 
+      console.log('Deleting phone user Firestore document...');
       // Delete the phone user's Firestore document
       if (phoneUserDoc.exists()) {
         await deleteDoc(doc(db, 'users', phoneUser.uid));
+        console.log('Firestore doc deleted');
       }
 
+      console.log('Deleting Firebase Auth account...');
       // Delete the phone-only Firebase Auth account
       await deleteUser(phoneUser);
+      console.log('Auth account deleted successfully');
 
       // Re-authenticate with original email account
       // We need to prompt for password or use Google sign-in
@@ -259,11 +288,14 @@ export const authService = {
       return {
         success: true,
         needsReauth: true,
-        originalEmail
+        originalEmail,
+        originalUid
       };
 
     } catch (error) {
       console.error('Merge account error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       return { success: false, error: error.message };
     }
   }
