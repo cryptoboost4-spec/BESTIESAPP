@@ -184,6 +184,32 @@ const EditProfilePage = () => {
 
       // Now save the profile with the verified phone number
       saveProfileChanges(pendingPhoneNumber);
+    } else if (result.code === 'account-exists') {
+      // Phone number is already used by another account - attempt to merge
+      console.log('Phone account already exists - attempting to merge...');
+
+      const mergeResult = await authService.mergePhoneAccount(result.credential, currentUser);
+
+      if (mergeResult.success) {
+        // Deleted the old phone account - now need to re-authenticate
+        toast.success('Old phone account removed! Please sign in again with Google to complete linking.');
+        setLoading(false);
+
+        // Re-authenticate with Google
+        const reAuthResult = await authService.signInWithGoogle();
+        if (reAuthResult.success) {
+          toast.success('Signed in! Please try adding your phone number again.');
+          setShowPhoneVerification(false);
+          navigate('/edit-profile#phone');
+        } else {
+          toast.error('Please sign in again and try adding your phone number.');
+          setShowPhoneVerification(false);
+        }
+      } else {
+        setLoading(false);
+        toast.error(mergeResult.error || 'Unable to merge accounts. Please use a different phone number.', { duration: 8000 });
+        setShowPhoneVerification(false);
+      }
     } else {
       setLoading(false);
       toast.error(result.error || 'Invalid verification code');

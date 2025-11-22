@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber, updateProfile, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber, updateProfile, PhoneAuthProvider, linkWithCredential, signInWithCredential, deleteUser } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, getDocs, addDoc, serverTimestamp, Timestamp, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
@@ -163,9 +163,24 @@ export const authService = {
         // Create phone credential from verification code
         const credential = PhoneAuthProvider.credential(verificationData.verificationId, code);
 
-        // Link credential to current user
-        const result = await linkWithCredential(currentUser, credential);
-        return { success: true, user: result.user };
+        // Try to link credential to current user
+        try {
+          const result = await linkWithCredential(currentUser, credential);
+          return { success: true, user: result.user };
+        } catch (linkError) {
+          // If phone is already linked to another account, we need to handle it
+          if (linkError.code === 'auth/account-exists-with-different-credential') {
+            // Phone number is already used by another account
+            // We'll sign into that account, check if it's a dummy account, and delete it
+            return {
+              success: false,
+              error: 'This phone number is already linked to another account. Attempting to merge accounts...',
+              code: 'account-exists',
+              credential: credential
+            };
+          }
+          throw linkError;
+        }
       } else {
         // Sign in with phone (for login flow)
         const result = await verificationData.confirmationResult.confirm(code);
@@ -200,6 +215,57 @@ export const authService = {
       return await user.getIdToken();
     }
     return null;
+  },
+
+  // Merge phone account with current account by deleting the phone-only account
+  mergePhoneAccount: async (phoneCredential, originalUser) => {
+    try {
+      // Store original user info
+      const originalEmail = originalUser.email;
+
+      // Sign in with phone credential to access that account
+      const phoneUserCred = await signInWithCredential(auth, phoneCredential);
+      const phoneUser = phoneUserCred.user;
+
+      // Check if this is a dummy account (New User with no real data)
+      const phoneUserDoc = await getDoc(doc(db, 'users', phoneUser.uid));
+      const phoneUserData = phoneUserDoc.exists() ? phoneUserDoc.data() : {};
+
+      const isDummyAccount = (
+        phoneUserData.displayName === 'New User' ||
+        !phoneUserData.displayName ||
+        !phoneUserDoc.exists()
+      );
+
+      if (!isDummyAccount) {
+        // Not a dummy account - don't delete it
+        return {
+          success: false,
+          error: 'This phone number belongs to an active account. Please use a different number or delete that account manually.'
+        };
+      }
+
+      // Delete the phone user's Firestore document
+      if (phoneUserDoc.exists()) {
+        await deleteDoc(doc(db, 'users', phoneUser.uid));
+      }
+
+      // Delete the phone-only Firebase Auth account
+      await deleteUser(phoneUser);
+
+      // Re-authenticate with original email account
+      // We need to prompt for password or use Google sign-in
+      // For now, we'll return success and let the user re-authenticate
+      return {
+        success: true,
+        needsReauth: true,
+        originalEmail
+      };
+
+    } catch (error) {
+      console.error('Merge account error:', error);
+      return { success: false, error: error.message };
+    }
   }
 };
 
