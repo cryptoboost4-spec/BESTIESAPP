@@ -284,32 +284,39 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
   // Full message for WhatsApp/Email (free/cheap)
   const fullMessage = `🚨 SAFETY ALERT: ${userData.displayName} hasn't checked in from ${checkIn.location}. They were expected back ${Math.round((Date.now() - checkIn.alertTime.toMillis()) / 60000)} minutes ago. Please check on them!`;
 
-  // Short message for SMS (expensive - keep under 160 chars)
-  const shortMessage = `🚨 ${userData.displayName} missed check-in. View: ${APP_URL}/alert/${checkInId}`;
+  // ULTRA SHORT message for SMS (MUST be under 160 chars for single segment)
+  // Format: "🚨 NAME missed check-in! Open app now"
+  const shortMessage = `🚨 ${userData.displayName} missed check-in! Open Besties app now`;
+
+  const notificationsSent = [];
 
   try {
     // Try WhatsApp first (free - use full message)
     if (bestieData.notifications?.whatsapp && bestieData.phoneNumber) {
       try {
         await sendWhatsAppAlert(bestieData.phoneNumber, fullMessage);
+        notificationsSent.push('WhatsApp');
       } catch (whatsappError) {
         console.log('WhatsApp failed, trying SMS...');
         // Fallback to SMS (expensive - use short message)
         if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
           await sendSMSAlert(bestieData.phoneNumber, shortMessage);
+          notificationsSent.push('SMS');
         }
       }
     } else if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
       // SMS only (expensive - use short message)
       await sendSMSAlert(bestieData.phoneNumber, shortMessage);
+      notificationsSent.push('SMS');
     }
 
     // Send email if enabled (cheap - use full message)
     if (bestieData.email && bestieData.notificationPreferences?.email) {
       await sendEmailAlert(bestieData.email, fullMessage, checkIn);
+      notificationsSent.push('Email');
     }
 
-    // Create in-app notification
+    // Create in-app notification (ALWAYS - regardless of other settings)
     await db.collection('notifications').add({
       userId: bestieId,
       type: 'check_in_alert',
@@ -319,8 +326,9 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
       createdAt: admin.firestore.Timestamp.now(),
       read: false,
     });
+    notificationsSent.push('In-app');
 
-    console.log(`Cascading alert sent to bestie: ${bestieId}`);
+    console.log(`Alert sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
   } catch (error) {
     console.error(`Failed to notify bestie ${bestieId}:`, error);
   }

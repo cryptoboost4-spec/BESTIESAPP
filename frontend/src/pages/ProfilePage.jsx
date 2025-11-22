@@ -29,10 +29,48 @@ const ProfilePage = () => {
   const [nighttimeCheckIns, setNighttimeCheckIns] = useState(0);
   const [weekendCheckIns, setWeekendCheckIns] = useState(0);
   const [animatedProgress, setAnimatedProgress] = useState(0);
+  const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+
+  // Listen for alerted check-ins where current user is a selected bestie
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const alertedBestieQuery = query(
+      collection(db, 'checkins'),
+      where('bestieIds', 'array-contains', currentUser.uid),
+      where('status', '==', 'alerted')
+    );
+
+    const unsubscribe = onSnapshot(
+      alertedBestieQuery,
+      async (snapshot) => {
+        const alertedCheckIns = [];
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          // Get the user's name who created the check-in
+          const userDoc = await getDoc(doc(db, 'users', data.userId));
+          const userName = userDoc.exists() ? userDoc.data().displayName : 'Bestie';
+
+          alertedCheckIns.push({
+            id: docSnap.id,
+            ...data,
+            userName
+          });
+        }
+        setAlertedBestieCheckIns(alertedCheckIns);
+      },
+      (error) => {
+        console.error('Error loading alerted check-ins:', error);
+        setAlertedBestieCheckIns([]);
+      }
+    );
+
+    return () => unsubscribe();
   }, [currentUser]);
 
   // Animate progress bar when profile completion changes
@@ -315,6 +353,41 @@ const ProfilePage = () => {
       <ProfileAuraStyles />
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
+        {/* Alerted Bestie Check-Ins - URGENT! */}
+        {alertedBestieCheckIns.length > 0 && (
+          <div className="mb-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-display text-text-primary">⚠️ Urgent Alerts</h2>
+              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+                {alertedBestieCheckIns.length}
+              </span>
+            </div>
+            {alertedBestieCheckIns.map((checkIn) => (
+              <div key={checkIn.id} className="card p-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-500">
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">🚨</div>
+                  <div className="flex-1">
+                    <h3 className="font-display text-lg text-red-900 dark:text-red-100 mb-2">
+                      {checkIn.userName} Missed Check-In!
+                    </h3>
+                    <div className="text-sm text-red-800 dark:text-red-200 space-y-1">
+                      <div><strong>Location:</strong> {checkIn.location || 'Unknown'}</div>
+                      <div><strong>Expected back:</strong> {checkIn.alertTime?.toDate().toLocaleString()}</div>
+                      {checkIn.notes && <div><strong>Notes:</strong> {checkIn.notes}</div>}
+                    </div>
+                    <button
+                      onClick={() => navigate(`/history/${checkIn.id}`)}
+                      className="mt-3 btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      View Details →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Profile Card */}
         <ProfileCard currentUser={currentUser} userData={userData} />
 
