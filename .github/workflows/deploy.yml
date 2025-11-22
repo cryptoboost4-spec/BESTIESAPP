@@ -49,6 +49,13 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
+      - name: Delete obsolete cloud functions
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}
+        run: |
+          firebase functions:delete updateDailyStreaks --region us-central1 --force --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN" || true
+
       - name: Deploy to Firebase
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
