@@ -15,7 +15,7 @@ const StatsSection = ({
 
   const StatCard = ({ emoji, value, label, sublabel, gradient, tooltip, id }) => (
     <div
-      className="relative overflow-hidden rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow group cursor-help"
+      className="relative overflow-visible rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow group cursor-help"
       onMouseEnter={() => setShowTooltip(id)}
       onMouseLeave={() => setShowTooltip(null)}
       onClick={() => setShowTooltip(showTooltip === id ? null : id)}
@@ -29,9 +29,9 @@ const StatsSection = ({
         {sublabel && <div className="text-xs text-gray-500 dark:text-gray-400">{sublabel}</div>}
       </div>
 
-      {/* Tooltip */}
+      {/* Tooltip - Mobile Friendly */}
       {showTooltip === id && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-purple-600 text-white text-xs p-3 rounded-lg shadow-xl z-50 pointer-events-none">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 max-w-[calc(100vw-2rem)] bg-purple-600 text-white text-xs p-3 rounded-lg shadow-xl z-[100] pointer-events-none">
           <p className="leading-relaxed">{tooltip}</p>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-purple-600"></div>
         </div>
