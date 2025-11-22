@@ -39,6 +39,7 @@ const BestiesPage = () => {
   // Activity feed state
   const [activityFeed, setActivityFeed] = useState([]);
   const [activityLoading, setActivityLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false); // Track background refresh
   const [missedCheckIns, setMissedCheckIns] = useState([]);
   const [requestsForAttention, setRequestsForAttention] = useState([]);
 
@@ -203,7 +204,13 @@ const BestiesPage = () => {
       // Only load if page is visible
       if (document.hidden) return;
 
-      setActivityLoading(true);
+      // If we already have data, just refresh in background
+      if (activityFeed.length > 0) {
+        setIsRefreshing(true);
+      } else {
+        setActivityLoading(true);
+      }
+
       const activities = [];
       const missed = [];
       const attentionRequests = [];
@@ -377,6 +384,7 @@ const BestiesPage = () => {
       setMissedCheckIns(filteredMissed);
       setRequestsForAttention(filteredAttention);
       setActivityLoading(false);
+      setIsRefreshing(false);
     };
 
     // Initial load

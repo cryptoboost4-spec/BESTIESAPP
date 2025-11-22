@@ -229,6 +229,34 @@ service cloud.firestore {
       }
     }
 
+    // Alert Responses collection - tracks when besties respond to alerts
+    match /alert_responses/{responseId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid == resource.data.responderId
+      );
+      allow create: if false; // Only Cloud Functions
+      allow update, delete: if isAdmin();
+    }
+
+    // Interactions collection - tracks all bestie interactions
+    match /interactions/{interactionId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid == resource.data.bestieId
+      );
+      allow create: if false; // Only Cloud Functions
+      allow update, delete: if isAdmin();
+    }
+
+    // Circle Milestones collection - celebration milestones
+    match /circle_milestones/{milestoneId} {
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if false; // Only Cloud Functions
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId; // Allow marking as celebrated
+      allow delete: if isAdmin();
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
