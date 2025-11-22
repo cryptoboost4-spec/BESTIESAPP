@@ -14,6 +14,7 @@ import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import { logAlertResponse } from '../services/interactionTracking';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -26,6 +27,9 @@ const HomePage = () => {
 
   // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
+
+  // Alerted check-ins from besties (where current user is a selected bestie)
+  const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -50,7 +54,7 @@ const HomePage = () => {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Listen to active check-ins
+    // Listen to active check-ins from current user
     const checkInsQuery = query(
       collection(db, 'checkins'),
       where('userId', '==', currentUser.uid),
@@ -74,8 +78,40 @@ const HomePage = () => {
       }
     );
 
+    // ALSO listen to alerted check-ins where current user is a selected bestie
+    const alertedBestieQuery = query(
+      collection(db, 'checkins'),
+      where('bestieIds', 'array-contains', currentUser.uid),
+      where('status', '==', 'alerted')
+    );
+
+    const unsubscribeAlerted = onSnapshot(
+      alertedBestieQuery,
+      async (snapshot) => {
+        const alertedCheckIns = [];
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          // Get the user's name who created the check-in
+          const userDoc = await getDoc(doc(db, 'users', data.userId));
+          const userName = userDoc.exists() ? userDoc.data().displayName : 'Bestie';
+
+          alertedCheckIns.push({
+            id: docSnap.id,
+            ...data,
+            userName
+          });
+        }
+        setAlertedBestieCheckIns(alertedCheckIns);
+      },
+      (error) => {
+        console.error('Error loading alerted check-ins:', error);
+        setAlertedBestieCheckIns([]);
+      }
+    );
+
     return () => {
       unsubscribeCheckIns();
+      unsubscribeAlerted();
     };
   }, [currentUser]);
 
@@ -183,15 +219,9 @@ const HomePage = () => {
             ================================================================= */}
         {/* Stats Card - Moved above Quick Check-In */}
         {activeCheckIns.length === 0 && (
-          <div className="card p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
+          <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50">
+              <div className="mb-4">
                 <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
-                <button
-                  onClick={() => navigate('/profile')}
-                  className="text-primary font-semibold hover:underline text-sm"
-                >
-                  View Profile →
-                </button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
@@ -243,6 +273,58 @@ const HomePage = () => {
             />
 
           </>
+        )}
+
+        {/* Alerted Bestie Check-Ins - URGENT! */}
+        {alertedBestieCheckIns.length > 0 && (
+          <div className="mb-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-display text-text-primary">⚠️ Urgent Alerts</h2>
+              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+                {alertedBestieCheckIns.length}
+              </span>
+            </div>
+            {alertedBestieCheckIns.map((checkIn) => (
+              <div key={checkIn.id} className="card p-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-500">
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">🚨</div>
+                  <div className="flex-1">
+                    <h3 className="font-display text-lg text-red-900 dark:text-red-100 mb-2">
+                      {checkIn.userName} Missed Check-In!
+                    </h3>
+                    <div className="text-sm text-red-800 dark:text-red-200 space-y-1">
+                      <div><strong>Location:</strong> {checkIn.location || 'Unknown'}</div>
+                      <div><strong>Expected back:</strong> {checkIn.alertTime?.toDate().toLocaleString()}</div>
+                      {checkIn.notes && <div><strong>Notes:</strong> {checkIn.notes}</div>}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => {
+                          haptic.medium();
+                          navigate(`/user/${checkIn.userId}`);
+                          // Log alert response when profile is viewed
+                          logAlertResponse(checkIn.id, checkIn.userId, currentUser.uid);
+                        }}
+                        className="btn btn-sm bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        👤 View Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate(`/history/${checkIn.id}`);
+                          // Log alert response when details are viewed
+                          logAlertResponse(checkIn.id, checkIn.userId, currentUser.uid);
+                        }}
+                        className="btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        View Details →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Active Check-Ins */}
@@ -352,7 +434,7 @@ const HomePage = () => {
       </div>
 
       {/* Emergency SOS Button */}
-      <EmergencySOSButton />
+      <EmergencySOSButton hasActiveAlert={activeCheckIns.some(checkIn => checkIn.status === 'alerted')} />
 
       {/* Add to Home Screen Prompt */}
       <AddToHomeScreenPrompt currentUser={currentUser} userData={userData} />

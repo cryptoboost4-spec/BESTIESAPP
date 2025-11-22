@@ -328,7 +328,7 @@ const CreateCheckInPage = () => {
         // Filter to only show besties in the featured circle
         const circleBesties = allBestiesList.filter(b => featuredIds.includes(b.id));
 
-        // Fetch full user data for each bestie to get displayName, photoURL, and requestAttention
+        // Fetch full user data for each bestie to get displayName, photoURL, requestAttention, and SMS settings
         const bestiesWithUserData = await Promise.all(
           circleBesties.map(async (bestie) => {
             try {
@@ -341,6 +341,7 @@ const CreateCheckInPage = () => {
                   photoURL: userData.photoURL || null,
                   email: userData.email || bestie.email,
                   phone: userData.phoneNumber || bestie.phone,
+                  smsEnabled: userData.notificationPreferences?.sms || false,
                   requestAttention: userData.requestAttention || null,
                 };
               }
@@ -354,18 +355,30 @@ const CreateCheckInPage = () => {
 
         setBesties(bestiesWithUserData);
 
-        // Auto-select only besties who have phone numbers (required for notifications)
+        // Auto-select only besties who have phone numbers AND SMS enabled (required for emergency alerts)
         if (!location.state?.template && bestiesWithUserData.length > 0) {
-          const bestiesWithPhone = bestiesWithUserData.filter(b => b.phone);
-          setSelectedBesties(bestiesWithPhone.map(b => b.id));
+          const bestiesWithPhoneAndSMS = bestiesWithUserData.filter(b => b.phone && b.smsEnabled);
+          setSelectedBesties(bestiesWithPhoneAndSMS.map(b => b.id));
 
-          // Warn if some besties don't have phone numbers
-          const withoutPhone = bestiesWithUserData.filter(b => !b.phone);
-          if (withoutPhone.length > 0) {
-            console.warn('⚠️ Some circle besties missing phone numbers:', withoutPhone);
-            toast('Some besties need to add their phone number before they can be alerted', {
+          // Warn if some besties can't receive alerts
+          const cantReceiveAlerts = bestiesWithUserData.filter(b => !b.phone || !b.smsEnabled);
+          if (cantReceiveAlerts.length > 0) {
+            console.warn('⚠️ Some circle besties missing phone/SMS:', cantReceiveAlerts);
+            const missingPhone = cantReceiveAlerts.filter(b => !b.phone).length;
+            const missingSMS = cantReceiveAlerts.filter(b => b.phone && !b.smsEnabled).length;
+
+            let message = '';
+            if (missingPhone > 0 && missingSMS > 0) {
+              message = `${missingPhone} bestie(s) need to add their phone number and ${missingSMS} need to enable SMS alerts`;
+            } else if (missingPhone > 0) {
+              message = `${missingPhone} bestie(s) need to add their phone number`;
+            } else {
+              message = `${missingSMS} bestie(s) need to enable SMS alerts in Settings`;
+            }
+
+            toast(message, {
               icon: 'ℹ️',
-              duration: 4000
+              duration: 5000
             });
           }
         }
@@ -1024,6 +1037,17 @@ const CreateCheckInPage = () => {
 
           errorTracker.trackFunnelStep('checkin', 'complete_checkin');
 
+          // Track emergency contact selections for each bestie
+          try {
+            const { incrementEmergencyContactCount } = await import('../services/interactionTracking');
+            selectedBesties.forEach(bestieId => {
+              incrementEmergencyContactCount(bestieId);
+            });
+          } catch (trackingError) {
+            console.error('Failed to track emergency contact selections:', trackingError);
+            // Don't fail check-in creation if tracking fails
+          }
+
           // Navigate after successful creation
           setTimeout(() => {
             navigate('/');
@@ -1286,11 +1310,11 @@ const CreateCheckInPage = () => {
                     <div key={bestie.id} className="w-full">
                       <button
                         type="button"
-                        onClick={() => bestie.phone && toggleBestie(bestie.id)}
-                        disabled={!bestie.phone}
+                        onClick={() => (bestie.phone && bestie.smsEnabled) && toggleBestie(bestie.id)}
+                        disabled={!bestie.phone || !bestie.smsEnabled}
                         className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                          !bestie.phone
-                            ? 'border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30'
+                          !bestie.phone || !bestie.smsEnabled
+                            ? 'border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 opacity-60'
                             : isSelected
                             ? 'border-primary bg-primary/5'
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
@@ -1308,7 +1332,11 @@ const CreateCheckInPage = () => {
                             <div className="flex-1">
                               <div className="font-semibold text-text-primary">{bestie.name || bestie.email || 'Unknown'}</div>
                               <div className="text-sm text-text-secondary">
-                                {bestie.phone ? bestie.email || bestie.phone : '⚠️ No phone number'}
+                                {!bestie.phone
+                                  ? '⚠️ No phone number'
+                                  : !bestie.smsEnabled
+                                  ? '⚠️ SMS alerts not enabled'
+                                  : bestie.email || bestie.phone}
                               </div>
                             </div>
                           </div>

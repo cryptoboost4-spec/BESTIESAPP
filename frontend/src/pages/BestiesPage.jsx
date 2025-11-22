@@ -256,7 +256,7 @@ const BestiesPage = () => {
 
       for (const bestieId of bestieIds) {
         try {
-          // Get recent check-ins
+          // Get recent check-ins FROM this bestie
           const checkInsQuery = query(
             collection(db, 'checkins'),
             where('userId', '==', bestieId),
@@ -266,6 +266,18 @@ const BestiesPage = () => {
           );
 
           const checkInsSnapshot = await getDocs(checkInsQuery);
+
+          // ALSO get check-ins where CURRENT USER is a selected bestie FOR this friend
+          const checkInsAsBestieQuery = query(
+            collection(db, 'checkins'),
+            where('userId', '==', bestieId),
+            where('bestieIds', 'array-contains', currentUser.uid),
+            where('createdAt', '>=', twoDaysAgo),
+            orderBy('createdAt', 'desc'),
+            limit(10)
+          );
+
+          const checkInsAsBestieSnapshot = await getDocs(checkInsAsBestieQuery);
 
           // Get recent posts from this bestie
           const postsQuery = query(
@@ -290,30 +302,43 @@ const BestiesPage = () => {
             });
           });
 
-          checkInsSnapshot.forEach((doc) => {
-            const data = doc.data();
-            const bestie = besties.find(b => b.userId === bestieId);
+          // Process check-ins from both queries
+          const allCheckInsSnapshots = [checkInsSnapshot, checkInsAsBestieSnapshot];
 
-            activities.push({
-              id: doc.id,
-              type: 'checkin',
-              checkInData: data,
-              userName: bestie?.name || 'Bestie',
-              userId: bestieId,
-              timestamp: data.createdAt?.toDate() || new Date(),
-              status: data.status,
+          allCheckInsSnapshots.forEach(snapshot => {
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              const bestie = besties.find(b => b.userId === bestieId);
+
+              // Avoid duplicates
+              const alreadyAdded = activities.some(a => a.id === doc.id);
+              if (!alreadyAdded) {
+                activities.push({
+                  id: doc.id,
+                  type: 'checkin',
+                  checkInData: data,
+                  userName: bestie?.name || 'Bestie',
+                  userId: bestieId,
+                  timestamp: data.createdAt?.toDate() || new Date(),
+                  status: data.status,
+                });
+
+                // Check for missed check-ins (alerted status)
+                if (data.status === 'alerted') {
+                  // Avoid duplicates in missed array too
+                  const alreadyInMissed = missed.some(m => m.id === doc.id);
+                  if (!alreadyInMissed) {
+                    missed.push({
+                      id: doc.id,
+                      userName: bestie?.name || 'Bestie',
+                      userId: bestieId,
+                      checkInData: data,
+                      timestamp: data.createdAt?.toDate() || new Date(),
+                    });
+                  }
+                }
+              }
             });
-
-            // Check for missed check-ins
-            if (data.status === 'alerted') {
-              missed.push({
-                id: doc.id,
-                userName: bestie?.name || 'Bestie',
-                userId: bestieId,
-                checkInData: data,
-                timestamp: data.createdAt?.toDate() || new Date(),
-              });
-            }
           });
 
           // Check for request attention

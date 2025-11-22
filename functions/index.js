@@ -58,20 +58,20 @@ exports.checkExpiredCheckIns = functions.pubsub
     return null;
   });
 
-// Check for cascading alert escalation every 30 seconds
+// Check for cascading alert escalation every minute
 exports.checkCascadingAlertEscalation = functions.pubsub
-  .schedule('every 30 seconds')
+  .schedule('every 1 minutes')
   .onRun(async (context) => {
     const now = admin.firestore.Timestamp.now();
-    const thirtySecondsAgo = admin.firestore.Timestamp.fromDate(
-      new Date(Date.now() - 30 * 1000)
+    const oneMinuteAgo = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 60 * 1000)
     );
 
-    // Find alerted check-ins with current notified bestie that haven't been acknowledged in 30s
+    // Find alerted check-ins with current notified bestie that haven't been acknowledged in 1 minute
     const checkInsSnapshot = await db.collection('checkins')
       .where('status', '==', 'alerted')
       .where('currentNotifiedBestie', '!=', null)
-      .where('currentNotificationSentAt', '<=', thirtySecondsAgo)
+      .where('currentNotificationSentAt', '<=', oneMinuteAgo)
       .get();
 
     const escalations = [];
@@ -281,45 +281,81 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
 
   const bestieData = bestieDoc.data();
 
-  // Full message for WhatsApp/Email (free/cheap)
-  const fullMessage = `🚨 SAFETY ALERT: ${userData.displayName} hasn't checked in from ${checkIn.location}. They were expected back ${Math.round((Date.now() - checkIn.alertTime.toMillis()) / 60000)} minutes ago. Please check on them!`;
+  // Sanitize display name to prevent spam flags (remove repeated characters)
+  const cleanName = ((userData && userData.displayName) || 'Your friend')
+    .toString()
+    .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
+    .trim()
+    .substring(0, 30); // Max 30 chars for name
 
-  // Short message for SMS (expensive - keep under 160 chars)
-  const shortMessage = `🚨 ${userData.displayName} missed check-in. View: ${APP_URL}/alert/${checkInId}`;
+  // Full message for WhatsApp/Email (free/cheap)
+  const fullMessage = `🚨 SAFETY ALERT: ${cleanName} hasn't checked in from ${checkIn.location}. They were expected back ${Math.round((Date.now() - checkIn.alertTime.toMillis()) / 60000)} minutes ago. Please check on them!`;
+
+  // ULTRA SHORT message for SMS (MUST be under 160 chars for single segment)
+  // Conversational format to avoid spam filters - NO URLs, NO excessive emojis
+  const shortMessage = `Hey, ${cleanName} hasn't checked in yet. Please check Besties app - they might need help.`;
+
+  const notificationsSent = [];
 
   try {
+    // Send push notification if user has FCM token (ALWAYS try first)
+    if (bestieData.fcmToken && bestieData.notificationsEnabled) {
+      try {
+        await sendPushNotification(
+          bestieData.fcmToken,
+          '🚨 Check-in Alert',
+          `${cleanName} hasn't checked in yet. They might need help.`,
+          {
+            type: 'check_in_alert',
+            checkInId: checkInId,
+            userId: userData.uid || checkIn.userId,
+          }
+        );
+        notificationsSent.push('Push');
+      } catch (pushError) {
+        console.log('Push notification failed:', pushError.message);
+        // Continue with other notification methods
+      }
+    }
+
     // Try WhatsApp first (free - use full message)
     if (bestieData.notifications?.whatsapp && bestieData.phoneNumber) {
       try {
         await sendWhatsAppAlert(bestieData.phoneNumber, fullMessage);
+        notificationsSent.push('WhatsApp');
       } catch (whatsappError) {
         console.log('WhatsApp failed, trying SMS...');
         // Fallback to SMS (expensive - use short message)
-        if (bestieData.smsSubscription?.active) {
+        if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
           await sendSMSAlert(bestieData.phoneNumber, shortMessage);
+          notificationsSent.push('SMS');
         }
       }
-    } else if (bestieData.smsSubscription?.active && bestieData.phoneNumber) {
+    } else if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
       // SMS only (expensive - use short message)
       await sendSMSAlert(bestieData.phoneNumber, shortMessage);
+      notificationsSent.push('SMS');
     }
 
     // Send email if enabled (cheap - use full message)
     if (bestieData.email && bestieData.notificationPreferences?.email) {
       await sendEmailAlert(bestieData.email, fullMessage, checkIn);
+      notificationsSent.push('Email');
     }
 
-    // Create in-app notification
+    // Create in-app notification (ALWAYS - regardless of other settings)
     await db.collection('notifications').add({
       userId: bestieId,
-      type: 'safety_alert',
+      type: 'check_in_alert',
+      title: '🚨 Check-in Alert',
+      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
       checkInId,
-      message: fullMessage,
-      sentAt: admin.firestore.Timestamp.now(),
+      createdAt: admin.firestore.Timestamp.now(),
       read: false,
     });
+    notificationsSent.push('In-app');
 
-    console.log(`Cascading alert sent to bestie: ${bestieId}`);
+    console.log(`Alert sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
   } catch (error) {
     console.error(`Failed to notify bestie ${bestieId}:`, error);
   }
@@ -373,8 +409,45 @@ async function sendEmailAlert(email, message, checkIn) {
       </div>
     `,
   };
-  
+
   await sgMail.send(msg);
+}
+
+async function sendPushNotification(fcmToken, title, body, data = {}) {
+  // Construct the push notification payload
+  const message = {
+    token: fcmToken,
+    notification: {
+      title,
+      body,
+    },
+    data: {
+      ...data,
+      click_action: 'FLUTTER_NOTIFICATION_CLICK', // For Flutter apps
+    },
+    webpush: {
+      fcmOptions: {
+        link: APP_URL, // Open the app when notification is clicked
+      },
+      notification: {
+        title,
+        body,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+        requireInteraction: true,
+        tag: 'check-in-alert',
+      },
+    },
+  };
+
+  try {
+    await admin.messaging().send(message);
+    console.log(`Push notification sent to token: ${fcmToken.substring(0, 20)}...`);
+  } catch (error) {
+    // Token might be invalid or expired
+    console.error('Error sending push notification:', error.message);
+    throw error;
+  }
 }
 
 // ========================================
@@ -599,19 +672,7 @@ exports.onCheckInCountUpdate = functions.firestore
   });
 
 // Track when new bestie requests are created
-exports.onBestieCreated = functions.firestore
-  .document('besties/{bestieId}')
-  .onCreate(async (snap, context) => {
-    const bestie = snap.data();
-
-    // Update analytics cache
-    const cacheRef = db.collection('analytics_cache').doc('realtime');
-    await cacheRef.set({
-      totalBesties: admin.firestore.FieldValue.increment(1),
-      pendingBesties: bestie.status === 'pending' ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0),
-      lastUpdated: admin.firestore.Timestamp.now(),
-    }, { merge: true });
-  });
+// REMOVED: Duplicate function - merged with onBestieCreated below (line ~738)
 
 exports.onBestieCountUpdate = functions.firestore
   .document('besties/{bestieId}')
@@ -629,12 +690,14 @@ exports.onBestieCountUpdate = functions.firestore
         'stats.totalBesties': admin.firestore.FieldValue.increment(1)
       });
 
-      // Add to bestieUserIds array for privacy enforcement
+      // Add to bestieUserIds AND featuredCircle arrays for both users
       await db.collection('users').doc(newData.requesterId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.recipientId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.recipientId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(newData.recipientId)
       });
       await db.collection('users').doc(newData.recipientId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.requesterId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.requesterId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(newData.requesterId)
       });
 
       // Update analytics cache: pending → accepted
@@ -659,14 +722,22 @@ exports.onBestieCountUpdate = functions.firestore
     }
   });
 
-// Handle when bestie is created with accepted status (e.g., via invite link)
+// Handle when bestie is created (handles both pending and accepted)
 exports.onBestieCreated = functions.firestore
   .document('besties/{bestieId}')
   .onCreate(async (snap, context) => {
     const bestie = snap.data();
     const cacheRef = db.collection('analytics_cache').doc('realtime');
 
-    // Only process if created directly as accepted (e.g., invite link flow)
+    // Update analytics cache for ALL bestie creations
+    await cacheRef.set({
+      totalBesties: admin.firestore.FieldValue.increment(1),
+      pendingBesties: bestie.status === 'pending' ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0),
+      acceptedBesties: bestie.status === 'accepted' ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0),
+      lastUpdated: admin.firestore.Timestamp.now(),
+    }, { merge: true });
+
+    // Process bestie relationships ONLY if created directly as accepted (e.g., invite link flow)
     if (bestie.status === 'accepted' && bestie.requesterId && bestie.recipientId) {
       // Increment totalBesties for both users
       await db.collection('users').doc(bestie.requesterId).update({
@@ -676,13 +747,15 @@ exports.onBestieCreated = functions.firestore
         'stats.totalBesties': admin.firestore.FieldValue.increment(1)
       });
 
-      // Add to bestieUserIds array for privacy enforcement
+      // Add to bestieUserIds AND featuredCircle arrays for both users
       // This is CRITICAL - without this, besties can't view each other's profiles
       await db.collection('users').doc(bestie.requesterId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.recipientId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.recipientId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(bestie.recipientId)
       });
       await db.collection('users').doc(bestie.recipientId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.requesterId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.requesterId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(bestie.requesterId)
       });
 
       // Update analytics cache: new accepted bestie
@@ -1032,36 +1105,89 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     status: 'active',
     createdAt: admin.firestore.Timestamp.now(),
   });
-  
+
+  // Sanitize display name to prevent spam flags
+  const cleanName = ((userData && userData.displayName) || 'Your friend')
+    .toString()
+    .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
+    .trim()
+    .substring(0, 30); // Max 30 chars for name
+
   // Full message for WhatsApp/Email
   const fullAlertMessage = isReversePIN
-    ? `🚨 SILENT EMERGENCY: ${userData.displayName} triggered reverse PIN. Location: ${location || 'Unknown'}. Covert distress signal.`
-    : `🆘 EMERGENCY: ${userData.displayName} triggered SOS! Location: ${location || 'Unknown'}. Help immediately!`;
+    ? `🚨 SILENT EMERGENCY: ${cleanName} triggered reverse PIN. Location: ${location || 'Unknown'}. Covert distress signal.`
+    : `🆘 EMERGENCY: ${cleanName} triggered SOS! Location: ${location || 'Unknown'}. Help immediately!`;
 
-  // Short message for SMS (expensive)
+  // Short message for SMS (NO URLS - they trigger spam filters)
   const shortAlertMessage = isReversePIN
-    ? `🚨 ${userData.displayName} reverse PIN. View: ${APP_URL}/alert/${sosRef.id}`
-    : `🆘 ${userData.displayName} SOS! View: ${APP_URL}/alert/${sosRef.id}`;
+    ? `URGENT: ${cleanName} sent a silent alert. Check Besties app immediately.`
+    : `EMERGENCY: ${cleanName} needs help NOW! Location: ${location || 'Unknown'}. Check Besties app!`;
 
   const notifications = bestieIds.map(async (bestieId) => {
     const bestieDoc = await db.collection('users').doc(bestieId).get();
     if (!bestieDoc.exists) return;
 
     const bestieData = bestieDoc.data();
+    const notificationsSent = [];
 
     try {
+      // Try push notification first (ALWAYS try - it's fast and free)
+      if (bestieData.fcmToken && bestieData.notificationsEnabled) {
+        try {
+          const pushTitle = isReversePIN ? '🚨 Silent Emergency Alert' : '🆘 EMERGENCY SOS';
+          const pushBody = isReversePIN
+            ? `${cleanName} triggered reverse PIN. Check app immediately.`
+            : `${cleanName} needs help NOW! Location: ${location || 'Unknown'}`;
+
+          await sendPushNotification(
+            bestieData.fcmToken,
+            pushTitle,
+            pushBody,
+            {
+              type: 'emergency_sos',
+              sosId: sosRef.id,
+              userId: context.auth.uid,
+              isReversePIN: isReversePIN || false,
+            }
+          );
+          notificationsSent.push('Push');
+        } catch (pushError) {
+          console.log('Push notification failed for SOS:', pushError.message);
+        }
+      }
+
+      // Send SMS and WhatsApp if phone number available
       if (bestieData.phoneNumber) {
         // SMS is expensive - use short message
         await sendSMSAlert(bestieData.phoneNumber, shortAlertMessage);
+        notificationsSent.push('SMS');
         // WhatsApp is free - use full message
         await sendWhatsAppAlert(bestieData.phoneNumber, fullAlertMessage);
+        notificationsSent.push('WhatsApp');
       }
+
+      // Send email if enabled
       if (bestieData.email && bestieData.notificationPreferences?.email) {
         await sendEmailAlert(bestieData.email, fullAlertMessage, {
           location: location || 'Unknown',
           alertTime: admin.firestore.Timestamp.now(),
         });
+        notificationsSent.push('Email');
       }
+
+      // Create in-app notification (ALWAYS - regardless of other settings)
+      await db.collection('notifications').add({
+        userId: bestieId,
+        type: 'emergency_sos',
+        title: isReversePIN ? '🚨 Silent Emergency' : '🆘 EMERGENCY SOS',
+        message: fullAlertMessage,
+        sosId: sosRef.id,
+        createdAt: admin.firestore.Timestamp.now(),
+        read: false,
+      });
+      notificationsSent.push('In-app');
+
+      console.log(`SOS sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
     } catch (error) {
       console.error(`Failed SOS to ${bestieId}:`, error);
     }
@@ -1126,6 +1252,88 @@ exports.dailyAnalyticsAggregation = functions.pubsub
 
     await db.collection('daily_stats').add(stats);
 
+    return null;
+  });
+
+// Update user streaks daily
+exports.updateDailyStreaks = functions.pubsub
+  .schedule('0 1 * * *') // Run daily at 1 AM
+  .timeZone('America/New_York')
+  .onRun(async (context) => {
+    console.log('📊 Starting daily streak update...');
+
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const yesterdayEnd = new Date(yesterday);
+    yesterdayEnd.setHours(23, 59, 59, 999);
+
+    // Get all users
+    const usersSnapshot = await db.collection('users').get();
+    const updatePromises = [];
+
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+      const lastActive = userData.lastActive?.toDate();
+
+      if (!lastActive) {
+        // User has never been active, skip
+        continue;
+      }
+
+      const currentStreak = userData.stats?.currentStreak || 0;
+      const longestStreak = userData.stats?.longestStreak || 0;
+      const daysActive = userData.stats?.daysActive || 0;
+
+      // Check if user was active yesterday
+      const wasActiveYesterday = lastActive >= yesterday && lastActive <= yesterdayEnd;
+
+      let newStreak = currentStreak;
+      let newLongestStreak = longestStreak;
+      let newDaysActive = daysActive;
+
+      if (wasActiveYesterday) {
+        // User was active yesterday - increment streak
+        newStreak = currentStreak + 1;
+        newDaysActive = daysActive + 1;
+
+        // Update longest streak if current exceeds it
+        if (newStreak > longestStreak) {
+          newLongestStreak = newStreak;
+        }
+      } else {
+        // User was not active yesterday - check if streak should break
+        const daysSinceActive = Math.floor((now - lastActive) / (1000 * 60 * 60 * 24));
+
+        if (daysSinceActive > 1) {
+          // Missed more than 1 day - reset streak
+          newStreak = 0;
+        }
+        // If daysSinceActive === 1, we're still within grace period (today), keep streak
+      }
+
+      // Only update if values changed
+      if (
+        newStreak !== currentStreak ||
+        newLongestStreak !== longestStreak ||
+        newDaysActive !== daysActive
+      ) {
+        updatePromises.push(
+          userDoc.ref.update({
+            'stats.currentStreak': newStreak,
+            'stats.longestStreak': newLongestStreak,
+            'stats.daysActive': newDaysActive,
+          })
+        );
+      }
+    }
+
+    await Promise.all(updatePromises);
+
+    console.log(`✅ Updated streaks for ${updatePromises.length} users`);
     return null;
   });
 
@@ -1983,47 +2191,100 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
     }
 
     const userData = userDoc.data();
+    const channelsTested = {
+      push: false,
+      email: false,
+      whatsapp: false,
+      sms: false,
+    };
 
-    // Send Push Notification ONLY (free to test)
-    // Email/SMS/WhatsApp all use the same backend system, so if push works, they work too
-    if (!userData.fcmToken || !userData.notificationsEnabled) {
+    // Try to send Push Notification first
+    if (userData.fcmToken && userData.notificationsEnabled) {
+      try {
+        const pushMessage = {
+          notification: {
+            title: '✅ Test Alert Success!',
+            body: 'Your push notifications are working correctly!',
+          },
+          data: {
+            type: 'test_alert',
+            message: 'Push notifications working! 💜'
+          },
+          webpush: {
+            fcmOptions: {
+              link: APP_URL,
+            },
+            notification: {
+              title: '✅ Test Alert Success!',
+              body: 'Your push notifications are working correctly!',
+              icon: '/logo192.png',
+              badge: '/logo192.png',
+              requireInteraction: true,
+              tag: 'test-alert',
+            },
+          },
+          token: userData.fcmToken,
+        };
+
+        await admin.messaging().send(pushMessage);
+        channelsTested.push = true;
+        console.log('Test push notification sent successfully');
+      } catch (pushError) {
+        console.error('Push notification failed:', pushError.message);
+        // Continue to try email
+      }
+    }
+
+    // Also send Email if enabled (cheap to test)
+    if (userData.email && userData.notificationPreferences?.email) {
+      try {
+        const emailMessage = {
+          to: userData.email,
+          from: 'alerts@bestiesapp.com',
+          subject: '✅ Test Alert - Your Notifications Are Working!',
+          text: 'Your email notifications are set up correctly! You\'ll receive alerts via email when your besties need help.',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #FF6B9D;">✅ Test Alert Success!</h2>
+              <p>Your email notifications are working perfectly! 💜</p>
+              <p>You'll receive alerts via email when your besties need help or when you miss a check-in.</p>
+              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <strong>What this means:</strong><br>
+                ✉️ Email alerts are active<br>
+                📱 You'll be notified for check-in alerts<br>
+                🚨 Safety alerts will reach you instantly
+              </div>
+            </div>
+          `,
+        };
+        await sgMail.send(emailMessage);
+        channelsTested.email = true;
+        console.log('Test email sent successfully');
+      } catch (emailError) {
+        console.error('Email notification failed:', emailError.message);
+      }
+    }
+
+    // Check if at least one channel was tested
+    if (!channelsTested.push && !channelsTested.email) {
       throw new functions.https.HttpsError(
         'failed-precondition',
-        'Push notifications not enabled. Enable push notifications to test the alert system.'
+        'No notification channels enabled. Please enable push notifications or email notifications in settings.'
       );
     }
 
-    const pushMessage = {
-      notification: {
-        title: '✅ Test Alert Success!',
-        body: 'Your notifications are working correctly! Email, SMS, and WhatsApp use the same system.',
-      },
-      data: {
-        type: 'test_alert',
-        message: 'All notification channels (Email, SMS, WhatsApp, Push) use the same backend delivery system. If you received this, your alerts will work! 💜'
-      },
-      token: userData.fcmToken,
-    };
-
-    await admin.messaging().send(pushMessage);
-
     return {
       success: true,
-      message: 'Test push notification sent successfully',
-      channels: {
-        push: true,
-        email: false, // Not tested to save costs
-        whatsapp: false, // Not tested to save costs
-        sms: false, // Not tested to save costs
-      },
-      note: 'All channels (Email, SMS, WhatsApp) use the same backend system. If push works, they will work too during real alerts!'
+      message: 'Test alert sent successfully',
+      channels: channelsTested,
+      note: 'SMS and WhatsApp are not tested to save costs, but use the same backend system. If email works, they will work too!'
     };
   } catch (error) {
     console.error('Error sending test alert:', error);
     if (error.code === 'failed-precondition') {
       throw error;
     }
-    throw new functions.https.HttpsError('internal', 'Failed to send test alert');
+    throw new functions.https.HttpsError('internal', 'Failed to send test alert: ' + error.message);
   }
 });
 

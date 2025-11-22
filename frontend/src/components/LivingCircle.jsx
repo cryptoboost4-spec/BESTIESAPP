@@ -301,7 +301,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
   return (
     <div
-      className="card p-6 md:p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden"
+      className="card p-6 md:p-8 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-100 relative overflow-hidden"
       onClick={() => {
         if (showVibeTooltip) setShowVibeTooltip(false);
       }}
@@ -311,7 +311,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       <div className="relative z-10">
         <div className="text-center mb-6">
-          <h3 className="text-2xl md:text-3xl font-display mb-1" style={{ color: '#FF6B9D' }}>💜 Your Bestie Circle</h3>
+          <h3 className="text-2xl md:text-3xl font-display mb-1 text-black dark:text-white">💜 Your Bestie Circle</h3>
         </div>
 
         {/* Circle Container - Responsive sizing */}

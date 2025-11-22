@@ -128,7 +128,7 @@ function App() {
             {user && <FloatingNotificationBell />}
             {user && <DesktopNav />}
             {user && <MobileBottomNav />}
-            <div className="App">
+            <div className="App pb-20 md:pb-0">
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   {/* Public routes */}
