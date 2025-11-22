@@ -136,12 +136,14 @@ const ProfilePage = () => {
     const tasks = [];
     let completed = 0;
 
+    // PAGE 1: EASY TASKS - Basic Profile Setup (5 tasks)
+
     // 1. Name
     if (userData?.displayName && userData?.displayName !== 'Anonymous') {
       tasks.push({ name: 'Add your name', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Add your name', completed: false, path: '/edit-profile', section: 'name' });
+      tasks.push({ name: 'Add your name', completed: false, path: '/edit-profile', section: 'display-name' });
     }
 
     // 2. Profile Photo
@@ -176,6 +178,8 @@ const ProfilePage = () => {
       tasks.push({ name: 'Add phone number', completed: false, path: '/edit-profile', section: 'phone' });
     }
 
+    // PAGE 2: HARDER TASKS - Advanced Features (5 tasks)
+
     // 6. Email
     if (currentUser?.email) {
       tasks.push({ name: 'Add email', completed: true, path: null, section: null });
@@ -186,34 +190,36 @@ const ProfilePage = () => {
 
     // 7. Customize Profile
     if (userData?.profile?.customTheme || userData?.profile?.customBanner || userData?.featuredBadges?.length > 0) {
-      tasks.push({ name: 'Customize profile', completed: true, path: null, section: null });
+      tasks.push({ name: 'Customize your profile', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Customize profile', completed: false, path: '/edit-profile', section: 'customize' });
+      tasks.push({ name: 'Customize your profile', completed: false, path: '/edit-profile', section: 'profile-picture' });
     }
 
-    // 8. Check Out Badges
+    // 8. Earn a Badge
     if (badges && badges.length > 0) {
-      tasks.push({ name: 'Check out badges', completed: true, path: null, section: null });
+      tasks.push({ name: 'Earn your first badge', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Check out badges', completed: false, path: null, section: null, action: 'scrollToBadges' });
+      tasks.push({ name: 'Earn your first badge', completed: false, path: null, section: null, action: 'scrollToBadges' });
     }
 
-    // 9. Set Up Notifications
-    if (userData?.notificationSettings?.pushEnabled !== undefined) {
-      tasks.push({ name: 'Set up notifications', completed: true, path: null, section: null });
+    // 9. Fill Bestie Circle (5 besties)
+    const circleCount = userData?.featuredCircle?.length || 0;
+    if (circleCount >= 5) {
+      tasks.push({ name: 'Fill your Bestie Circle (5 besties)', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Set up notifications', completed: false, path: '/settings', section: 'notifications' });
+      tasks.push({ name: `Fill your Bestie Circle (${circleCount}/5)`, completed: false, path: null, section: null, action: 'scrollToBestieCircle' });
     }
 
-    // 10. Check Privacy Settings
-    if (userData?.privacySettings?.checkInVisibility) {
-      tasks.push({ name: 'Check privacy settings', completed: true, path: null, section: null });
+    // 10. FINAL CHALLENGE: Invite 5 Besties
+    // Count total besties (not just in circle)
+    if (bestiesCount >= 5) {
+      tasks.push({ name: '🎉 Invite 5 besties to the app', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Check privacy settings', completed: false, path: '/settings', section: 'privacy' });
+      tasks.push({ name: `🎉 Invite 5 besties (${bestiesCount}/5)`, completed: false, path: '/home', section: null });
     }
 
     const percentage = (completed / tasks.length) * 100;

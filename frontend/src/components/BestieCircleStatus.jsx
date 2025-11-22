@@ -7,6 +7,7 @@ const BestieCircleStatus = ({ userId }) => {
   const navigate = useNavigate();
   const [circleBesties, setCircleBesties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     loadCircleBesties();
@@ -140,9 +141,30 @@ const BestieCircleStatus = ({ userId }) => {
   };
 
   return (
-    <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-orange-900/30 border-2 border-purple-100 dark:border-purple-700">
+    <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-orange-900/30 border-2 border-purple-100 dark:border-purple-700 bestie-circle-section">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display text-xl text-gradient">Your Bestie Circle</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-display text-xl text-gradient">Your Bestie Circle</h3>
+          <div className="relative">
+            <button
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onClick={() => setShowTooltip(!showTooltip)}
+              className="w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold hover:bg-purple-600 transition-colors cursor-help"
+            >
+              ?
+            </button>
+            {showTooltip && (
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-purple-500 text-white text-xs p-3 rounded-lg shadow-xl z-50">
+                <div className="font-semibold mb-1">Your Squad Status 💜</div>
+                <p className="leading-relaxed">
+                  See your top 5 besties at a glance! The colored rings show if they're safe (green), on an active check-in (yellow), or need support (purple). Tap their pic to see their profile!
+                </p>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-purple-500"></div>
+              </div>
+            )}
+          </div>
+        </div>
         <button
           onClick={() => navigate('/besties')}
           className="text-primary font-semibold hover:underline text-sm"

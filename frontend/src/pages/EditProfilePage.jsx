@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage, authService } from '../services/firebase';
@@ -20,6 +20,26 @@ const EditProfilePage = () => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(userData?.photoURL || null);
   const [loading, setLoading] = useState(false);
+
+  // Auto-scroll to section based on hash
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // Remove #
+    if (hash) {
+      // Wait for content to render
+      setTimeout(() => {
+        const element = document.getElementById(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Optional: highlight the section briefly
+          element.style.transition = 'background-color 0.3s';
+          element.style.backgroundColor = 'rgba(168, 85, 247, 0.1)';
+          setTimeout(() => {
+            element.style.backgroundColor = '';
+          }, 2000);
+        }
+      }, 100);
+    }
+  }, []);
 
   // Phone verification states
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
@@ -255,7 +275,7 @@ const EditProfilePage = () => {
   return (
     <div className="min-h-screen bg-pattern">
 
-      <div className="max-w-2xl mx-auto p-4 pb-20">
+      <div className="max-w-2xl mx-auto p-4 pb-32 md:pb-20">
         <div className="mb-6">
           <h1 className="text-3xl font-display text-text-primary mb-2">Edit Profile</h1>
           <p className="text-text-secondary">Update your personal information</p>
@@ -263,7 +283,7 @@ const EditProfilePage = () => {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Profile Picture */}
-          <div className="card p-6">
+          <div id="profile-picture" className="card p-6">
             <label className="block text-lg font-display text-text-primary mb-4">
               Profile Picture
             </label>
@@ -299,11 +319,11 @@ const EditProfilePage = () => {
           </div>
 
           {/* Basic Info */}
-          <div className="card p-6">
+          <div id="basic-info" className="card p-6">
             <h3 className="text-lg font-display text-text-primary mb-4">Basic Information</h3>
-            
+
             <div className="space-y-4">
-              <div>
+              <div id="display-name">
                 <label className="block text-sm font-semibold text-text-primary mb-2">
                   Display Name
                 </label>
@@ -317,7 +337,7 @@ const EditProfilePage = () => {
                 />
               </div>
 
-              <div>
+              <div id="bio">
                 <label className="block text-sm font-semibold text-text-primary mb-2">
                   Bio
                 </label>
@@ -333,7 +353,7 @@ const EditProfilePage = () => {
                 </div>
               </div>
 
-              <div>
+              <div id="birthday">
                 <label className="block text-sm font-semibold text-text-primary mb-2">
                   Birthday 🎂
                 </label>
@@ -349,7 +369,7 @@ const EditProfilePage = () => {
                 </div>
               </div>
 
-              <div>
+              <div id="phone">
                 <label className="block text-sm font-semibold text-text-primary mb-2">
                   Phone Number
                 </label>
