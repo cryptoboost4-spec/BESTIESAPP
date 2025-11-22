@@ -23,6 +23,8 @@ import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
 import UrgentAlertBanner from '../components/UrgentAlertBanner';
+import ActivityFeed from '../components/besties/ActivityFeed';
+import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -36,8 +38,10 @@ const BestiesPage = () => {
 
   // Activity feed state
   const [activityFeed, setActivityFeed] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
   const [missedCheckIns, setMissedCheckIns] = useState([]);
   const [requestsForAttention, setRequestsForAttention] = useState([]);
+  const [reactions, setReactions] = useState({}); // { checkInId: [reactions] }
 
   // Rankings period state (weekly, monthly, yearly)
   const [rankingsPeriod, setRankingsPeriod] = useState('weekly');
@@ -195,6 +199,8 @@ const BestiesPage = () => {
       // Only load if page is visible
       if (document.hidden) return;
 
+      setActivityLoading(true);
+
       const activities = [];
       const missed = [];
       const attentionRequests = [];
@@ -316,11 +322,23 @@ const BestiesPage = () => {
             const userData = userDoc.data();
             if (userData.requestAttention && userData.requestAttention.active) {
               const bestie = besties.find(b => b.userId === bestieId);
-              attentionRequests.push({
+              const requestData = {
                 userId: bestieId,
                 userName: bestie?.name || 'Bestie',
                 tag: userData.requestAttention.tag,
                 note: userData.requestAttention.note,
+                timestamp: userData.requestAttention.timestamp?.toDate() || new Date(),
+              };
+
+              attentionRequests.push(requestData);
+
+              // Also add to activity feed
+              activities.push({
+                id: `request-attention-${bestieId}`,
+                type: 'request_attention',
+                requestAttentionData: requestData,
+                userName: bestie?.name || 'Bestie',
+                userId: bestieId,
                 timestamp: userData.requestAttention.timestamp?.toDate() || new Date(),
               });
             }
@@ -367,6 +385,7 @@ const BestiesPage = () => {
       setActivityFeed(activities);
       setMissedCheckIns(filteredMissed);
       setRequestsForAttention(filteredAttention);
+      setActivityLoading(false);
     };
 
     // Initial load
@@ -432,6 +451,75 @@ const BestiesPage = () => {
     }
 
     return indicators.slice(0, 3); // Max 3 indicators
+  };
+
+  // Load reactions for check-ins
+  useEffect(() => {
+    if (activityFeed.length === 0) return;
+
+    const loadReactions = async () => {
+      const reactionsData = {};
+
+      for (const activity of activityFeed) {
+        if (activity.type === 'checkin') {
+          try {
+            const reactionsSnapshot = await getDocs(
+              collection(db, 'checkins', activity.id, 'reactions')
+            );
+            reactionsData[activity.id] = reactionsSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+          } catch (error) {
+            console.error('Error loading reactions:', error);
+            reactionsData[activity.id] = [];
+          }
+        }
+      }
+
+      setReactions(reactionsData);
+    };
+
+    loadReactions();
+  }, [activityFeed]);
+
+  // Add reaction to check-in
+  const addReaction = async (checkInId, emoji) => {
+    try {
+      // Check if user already reacted with this emoji
+      const existingReaction = reactions[checkInId]?.find(
+        r => r.userId === currentUser.uid && r.emoji === emoji
+      );
+
+      if (existingReaction) {
+        toast.error('You already reacted with this emoji!');
+        return;
+      }
+
+      await addDoc(collection(db, 'checkins', checkInId, 'reactions'), {
+        userId: currentUser.uid,
+        userName: userData?.displayName || 'Anonymous',
+        emoji,
+        timestamp: Timestamp.now(),
+      });
+
+      // Reload reactions for this check-in
+      const reactionsSnapshot = await getDocs(
+        collection(db, 'checkins', checkInId, 'reactions')
+      );
+      setReactions({
+        ...reactions,
+        [checkInId]: reactionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+      });
+
+      toast.success('Reaction added!');
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      toast.error('Failed to add reaction');
+    }
   };
 
   // Load comments for selected check-in
@@ -718,6 +806,34 @@ const BestiesPage = () => {
               </div>
             </div>
 
+          {/* Activity Feed */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg md:text-xl font-display text-text-primary">
+                📰 Activity Feed
+              </h2>
+              <button
+                onClick={() => setShowCreatePostModal(true)}
+                className="btn btn-primary px-4 py-2 text-sm font-semibold"
+              >
+                ✍️ Post
+              </button>
+            </div>
+
+            {activityLoading ? (
+              <ActivityFeedSkeleton />
+            ) : (
+              <ActivityFeed
+                activityFeed={activityFeed}
+                reactions={reactions}
+                addReaction={addReaction}
+                setSelectedCheckIn={setSelectedCheckIn}
+                setShowComments={setShowComments}
+                getTimeAgo={getTimeAgo}
+              />
+            )}
+          </div>
+
           {/* Besties Grid */}
           <div>
             <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
@@ -823,7 +939,7 @@ const BestiesPage = () => {
 
       {/* Comments Modal - Mobile Optimized with Bottom Menu Bar Clearance */}
       {showComments && selectedCheckIn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-end md:items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-end md:items-center justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
             {/* Header */}
             <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-600 flex-shrink-0 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30">
