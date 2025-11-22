@@ -189,29 +189,31 @@ const ActivityFeed = ({
                   <img
                     src={activity.postData.photoURL}
                     alt="Post"
-                    className="w-full rounded-xl mb-3 max-h-96 object-cover"
+                    className="w-full rounded-xl mb-2 max-h-96 object-cover"
                   />
                 )}
 
-                {/* Post Reactions */}
-                <PostReactions
-                  postId={activity.id}
-                  initialCounts={activity.postData.reactionCounts}
-                />
+                {/* Post Reactions and Comments - Side by Side */}
+                <div className="flex items-center justify-between mt-1">
+                  <PostReactions
+                    postId={activity.id}
+                    initialCounts={activity.postData.reactionCounts}
+                  />
 
-                {/* Comments Button */}
-                <button
-                  onClick={() => setShowPostComments(activity.id)}
-                  className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
-                >
-                  <span>💬</span>
-                  <span>
-                    {activity.postData.commentCount > 0
-                      ? `${activity.postData.commentCount} ${activity.postData.commentCount === 1 ? 'comment' : 'comments'}`
-                      : 'Add a comment'
-                    }
-                  </span>
-                </button>
+                  {/* Comments Button on Right */}
+                  <button
+                    onClick={() => setShowPostComments(activity.id)}
+                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                  >
+                    <span>💬</span>
+                    <span>
+                      {activity.postData.commentCount > 0
+                        ? `${activity.postData.commentCount} ${activity.postData.commentCount === 1 ? 'comment' : 'comments'}`
+                        : 'Add a comment'
+                      }
+                    </span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
