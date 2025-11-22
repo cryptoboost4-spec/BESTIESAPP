@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { collection, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
@@ -74,7 +74,7 @@ const FloatingNotificationBell = () => {
     document.body.style.touchAction = 'none';
   };
 
-  const handleDragMove = (e) => {
+  const handleDragMove = useCallback((e) => {
     if (!isDragging) return;
 
     e.preventDefault();
@@ -92,9 +92,9 @@ const FloatingNotificationBell = () => {
       x: Math.max(-window.innerWidth + 100, Math.min(maxX, newX)),
       y: Math.max(0, Math.min(maxY, newY))
     });
-  };
+  }, [isDragging, dragStart.x, dragStart.y]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setIsDragging(false);
 
     // Unlock body scroll
@@ -107,7 +107,7 @@ const FloatingNotificationBell = () => {
       ...prev,
       x: snapToRight ? 0 : -window.innerWidth + 100
     }));
-  };
+  }, [position.x]);
 
   useEffect(() => {
     if (isDragging) {
@@ -123,7 +123,7 @@ const FloatingNotificationBell = () => {
         document.removeEventListener('touchend', handleDragEnd);
       };
     }
-  }, [isDragging, dragStart, position]);
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
