@@ -22,6 +22,7 @@ import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import ActivityFilters from '../components/besties/ActivityFilters';
 import ActivityFeed from '../components/besties/ActivityFeed';
+import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
 import toast from 'react-hot-toast';
@@ -37,6 +38,7 @@ const BestiesPage = () => {
 
   // Activity feed state
   const [activityFeed, setActivityFeed] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
   const [missedCheckIns, setMissedCheckIns] = useState([]);
   const [requestsForAttention, setRequestsForAttention] = useState([]);
 
@@ -192,12 +194,16 @@ const BestiesPage = () => {
 
   // Load activity feed - only when page is visible
   useEffect(() => {
-    if (!currentUser || besties.length === 0) return;
+    if (!currentUser || besties.length === 0) {
+      setActivityLoading(false);
+      return;
+    }
 
     const loadActivityFeed = async () => {
       // Only load if page is visible
       if (document.hidden) return;
 
+      setActivityLoading(true);
       const activities = [];
       const missed = [];
       const attentionRequests = [];
@@ -370,6 +376,7 @@ const BestiesPage = () => {
       setActivityFeed(activities);
       setMissedCheckIns(filteredMissed);
       setRequestsForAttention(filteredAttention);
+      setActivityLoading(false);
     };
 
     // Initial load
@@ -657,14 +664,18 @@ const BestiesPage = () => {
             <ActivityFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
 
             {/* Activity Feed */}
-            <ActivityFeed
-              activityFeed={activityFeed}
-              reactions={reactions}
-              addReaction={addReaction}
-              setSelectedCheckIn={setSelectedCheckIn}
-              setShowComments={setShowComments}
-              getTimeAgo={getTimeAgo}
-            />
+            {activityLoading ? (
+              <ActivityFeedSkeleton />
+            ) : (
+              <ActivityFeed
+                activityFeed={activityFeed}
+                reactions={reactions}
+                addReaction={addReaction}
+                setSelectedCheckIn={setSelectedCheckIn}
+                setShowComments={setShowComments}
+                getTimeAgo={getTimeAgo}
+              />
+            )}
           </div>
 
           {/* Sidebar */}
