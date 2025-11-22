@@ -623,23 +623,10 @@ const BestiesPage = () => {
     <div className="min-h-screen bg-pattern">
 
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
-        {/* Mobile Header - Simplified (hidden on desktop) */}
-        <div className="mb-4 md:hidden">
-          <h1 className="text-2xl font-display text-gradient mb-2">💜 Your Besties</h1>
-          <p className="text-sm text-text-secondary">Your safety squad activity hub</p>
-        </div>
-
-        {/* Desktop Header - Full (hidden on mobile) */}
-        <div className="hidden md:block mb-8">
-          <div className="card p-6 bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-purple-900/20 border-2 border-purple-200 dark:border-purple-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-display text-gradient mb-2">💜 Your Besties</h1>
-                <p className="text-lg text-text-secondary">Your safety squad activity hub</p>
-              </div>
-              <div className="text-6xl">👥</div>
-            </div>
-          </div>
+        {/* Header */}
+        <div className="mb-4">
+          <h1 className="text-2xl md:text-3xl font-display text-gradient mb-2">💜 Your Besties</h1>
+          <p className="text-sm md:text-base text-text-secondary">Your safety squad activity hub</p>
         </div>
 
         {/* Pending Requests */}
