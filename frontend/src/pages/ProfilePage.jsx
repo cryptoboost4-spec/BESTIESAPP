@@ -201,7 +201,7 @@ const ProfilePage = () => {
     }
 
     // 4. Birthday
-    if (userData?.profile?.birthdate) {
+    if (userData?.profile?.birthdate && userData.profile.birthdate.trim() !== '') {
       tasks.push({ name: 'Add birthday', completed: true, path: null, section: null });
       completed++;
     } else {

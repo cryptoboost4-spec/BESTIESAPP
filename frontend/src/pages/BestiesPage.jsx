@@ -654,40 +654,38 @@ const BestiesPage = () => {
           besties={besties}
         />
 
-        {/* Mobile-First Layout - Stack on mobile, grid on desktop */}
-        <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Activity Feed Header with Create Post Button */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-display text-text-primary">
-                📰 Activity Feed
-              </h2>
-              <button
-                onClick={() => setShowCreatePostModal(true)}
-                className="btn btn-primary px-4 py-2 text-sm font-semibold"
-              >
-                ✍️ Post
-              </button>
-            </div>
-
-            {/* Activity Feed */}
-            {activityLoading ? (
-              <ActivityFeedSkeleton />
-            ) : (
-              <ActivityFeed
-                activityFeed={activityFeed}
-                reactions={reactions}
-                addReaction={addReaction}
-                setSelectedCheckIn={setSelectedCheckIn}
-                setShowComments={setShowComments}
-                getTimeAgo={getTimeAgo}
-              />
-            )}
+        {/* Activity Feed - Moved to top */}
+        <div className="mb-6">
+          {/* Activity Feed Header with Create Post Button */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg md:text-xl font-display text-text-primary">
+              📰 Activity Feed
+            </h2>
+            <button
+              onClick={() => setShowCreatePostModal(true)}
+              className="btn btn-primary px-4 py-2 text-sm font-semibold"
+            >
+              ✍️ Post
+            </button>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Activity Feed */}
+          {activityLoading ? (
+            <ActivityFeedSkeleton />
+          ) : (
+            <ActivityFeed
+              activityFeed={activityFeed}
+              reactions={reactions}
+              addReaction={addReaction}
+              setSelectedCheckIn={setSelectedCheckIn}
+              setShowComments={setShowComments}
+              getTimeAgo={getTimeAgo}
+            />
+          )}
+        </div>
+
+        {/* Leaderboard and Besties Section */}
+        <div className="space-y-6">
             {/* This Week's Champions - Soft & Girly Version */}
             <div className="relative overflow-hidden">
               {/* Subtle sparkly background */}
@@ -941,7 +939,6 @@ const BestiesPage = () => {
                 </div>
               )}
             </div>
-          </div>
         </div>
 
         {/* Empty State */}

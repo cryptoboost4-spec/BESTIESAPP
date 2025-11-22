@@ -13,27 +13,18 @@ const ActivityFeed = ({
   const [showPostComments, setShowPostComments] = useState(null); // Store post ID
   if (activityFeed.length === 0) {
     return (
-      <div>
-        <h2 className="text-lg md:text-xl font-display text-text-primary mb-3">
-          📰 Activity Feed
-        </h2>
-        <div className="card p-6 md:p-8 text-center">
-          <div className="text-3xl md:text-4xl mb-2">🌟</div>
-          <p className="text-sm md:text-base text-text-secondary">No recent activity</p>
-          <p className="text-xs md:text-sm text-text-secondary mt-1">
-            Check-ins from your besties will appear here
-          </p>
-        </div>
+      <div className="card p-6 md:p-8 text-center">
+        <div className="text-3xl md:text-4xl mb-2">🌟</div>
+        <p className="text-sm md:text-base text-text-secondary">No recent activity</p>
+        <p className="text-xs md:text-sm text-text-secondary mt-1">
+          Check-ins from your besties will appear here
+        </p>
       </div>
     );
   }
 
   return (
-    <div>
-      <h2 className="text-lg md:text-xl font-display text-text-primary mb-3">
-        📰 Activity Feed
-      </h2>
-
+    <>
       <div className="space-y-3">
         {activityFeed.slice(0, 15).map((activity) => (
           <div key={activity.id} className="card p-3 md:p-4">
@@ -227,7 +218,7 @@ const ActivityFeed = ({
           onClose={() => setShowPostComments(null)}
         />
       )}
-    </div>
+    </>
   );
 };
 
