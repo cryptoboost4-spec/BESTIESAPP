@@ -702,12 +702,14 @@ exports.onBestieCountUpdate = functions.firestore
         'stats.totalBesties': admin.firestore.FieldValue.increment(1)
       });
 
-      // Add to bestieUserIds array for privacy enforcement
+      // Add to bestieUserIds AND featuredCircle arrays for both users
       await db.collection('users').doc(newData.requesterId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.recipientId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.recipientId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(newData.recipientId)
       });
       await db.collection('users').doc(newData.recipientId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.requesterId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(newData.requesterId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(newData.requesterId)
       });
 
       // Update analytics cache: pending → accepted
@@ -749,13 +751,15 @@ exports.onBestieCreated = functions.firestore
         'stats.totalBesties': admin.firestore.FieldValue.increment(1)
       });
 
-      // Add to bestieUserIds array for privacy enforcement
+      // Add to bestieUserIds AND featuredCircle arrays for both users
       // This is CRITICAL - without this, besties can't view each other's profiles
       await db.collection('users').doc(bestie.requesterId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.recipientId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.recipientId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(bestie.recipientId)
       });
       await db.collection('users').doc(bestie.recipientId).update({
-        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.requesterId)
+        bestieUserIds: admin.firestore.FieldValue.arrayUnion(bestie.requesterId),
+        featuredCircle: admin.firestore.FieldValue.arrayUnion(bestie.requesterId)
       });
 
       // Update analytics cache: new accepted bestie
