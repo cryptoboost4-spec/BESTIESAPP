@@ -170,6 +170,17 @@ const EditProfilePage = () => {
       toast.success('Phone number verified!');
       setShowPhoneVerification(false);
       setPhoneNumber(pendingPhoneNumber);
+
+      // CRITICAL: Force auth token refresh after phone verification
+      // This ensures Firestore security rules have the updated auth info
+      try {
+        await currentUser.getIdToken(true); // Force refresh
+        // Small delay to ensure token propagates to Firestore
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.error('Token refresh error:', error);
+      }
+
       // Now save the profile with the verified phone number
       saveProfileChanges(pendingPhoneNumber);
     } else {

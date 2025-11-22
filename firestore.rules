@@ -41,14 +41,19 @@ service cloud.firestore {
     
     // Users collection
     match /users/{userId} {
-      // Only owner, besties, and admins can read profiles
-      allow read: if isOwner(userId) ||
-                     isAdmin() ||
-                     (isSignedIn() && request.auth.uid in resource.data.bestieUserIds);
+      // Users can always read their own profile
+      // Besties can read each other's profiles
+      // Admins can read all profiles
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId ||
+        (resource.data.bestieUserIds != null && request.auth.uid in resource.data.bestieUserIds) ||
+        (resource.data.isAdmin == true && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+      );
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId) &&
-        (!request.resource.data.keys().hasAny(['role', 'banned']));
-      allow delete: if isAdmin();
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+        (!request.resource.data.keys().hasAny(['role', 'banned', 'isAdmin']));
+      allow delete: if isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     // Check-ins collection
