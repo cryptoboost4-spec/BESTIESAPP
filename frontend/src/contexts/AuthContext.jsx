@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }) => {
       try {
         console.log('🔄 Updating featured circles and bestie lists');
 
-        // Update current user's document
+        // Update current user's document (we have permission to update our own)
         const currentUserCircle = userData.featuredCircle || [];
         const currentUserBesties = userData.bestieUserIds || [];
         const updates = {};
@@ -132,35 +132,22 @@ export const AuthProvider = ({ children }) => {
           console.log('✅ Updated current user document');
         }
 
-        // Update inviter's document AND fetch real name now that we're besties
+        // Now read inviter's profile (we have permission now that they're in our bestieUserIds)
         const inviterRef = doc(db, 'users', inviterUID);
         const inviterSnap = await getDoc(inviterRef);
         if (inviterSnap.exists()) {
           const inviterData = inviterSnap.data();
-          const inviterCircle = inviterData.featuredCircle || [];
-          const inviterBesties = inviterData.bestieUserIds || [];
-          const inviterUpdates = {};
 
-          // Now we have permission to read inviter's real name!
+          // Get real inviter name now that we have permission!
           if (inviterData.displayName && inviterData.displayName !== inviterDisplayName) {
             inviterDisplayName = inviterData.displayName;
             inviterPhotoURL = inviterData.photoURL || inviterPhotoURL;
             console.log('✅ Got real inviter name:', inviterDisplayName);
           }
-
-          if (!inviterBesties.includes(user.uid)) {
-            inviterUpdates.bestieUserIds = [...inviterBesties, user.uid];
-          }
-
-          if (!inviterCircle.includes(user.uid) && inviterCircle.length < 5) {
-            inviterUpdates.featuredCircle = [...inviterCircle, user.uid];
-          }
-
-          if (Object.keys(inviterUpdates).length > 0) {
-            await updateDoc(inviterRef, inviterUpdates);
-            console.log('✅ Updated inviter document');
-          }
         }
+
+        // Note: Cloud Functions will update the inviter's bestieUserIds and featuredCircle
+        // We don't have permission to update other users' documents from the client
       } catch (error) {
         console.error('Failed to update user documents:', error);
         // Non-critical error, continue anyway
