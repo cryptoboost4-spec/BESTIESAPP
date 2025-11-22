@@ -1153,7 +1153,7 @@ const CreateCheckInPage = () => {
             </div>
 
             <p className="text-xs text-text-secondary p-3 px-6">
-              💡 <strong className="text-primary">Double-tap to unlock the map,</strong> then drag to move it and double-tap again to save
+              💡 <strong className="text-primary">Double-tap to unlock the map,</strong> then drag to move it
             </p>
           </div>
 
