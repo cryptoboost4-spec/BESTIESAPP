@@ -158,7 +158,7 @@ export const AuthProvider = ({ children }) => {
           console.log('✅ Updated current user document');
         }
 
-        // Update inviter's document
+        // Update inviter's document AND fetch real name now that we're besties
         const inviterRef = doc(db, 'users', inviterUID);
         const inviterSnap = await getDoc(inviterRef);
         if (inviterSnap.exists()) {
@@ -166,6 +166,13 @@ export const AuthProvider = ({ children }) => {
           const inviterCircle = inviterData.featuredCircle || [];
           const inviterBesties = inviterData.bestieUserIds || [];
           const inviterUpdates = {};
+
+          // Now we have permission to read inviter's real name!
+          if (inviterData.displayName && inviterData.displayName !== inviterDisplayName) {
+            inviterDisplayName = inviterData.displayName;
+            inviterPhotoURL = inviterData.photoURL || inviterPhotoURL;
+            console.log('✅ Got real inviter name:', inviterDisplayName);
+          }
 
           if (!inviterBesties.includes(user.uid)) {
             inviterUpdates.bestieUserIds = [...inviterBesties, user.uid];
@@ -183,6 +190,29 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error('Failed to update user documents:', error);
         // Non-critical error, continue anyway
+      }
+
+      // Update celebrations with real names now that we have permission
+      try {
+        console.log('🔄 Updating celebrations with real names');
+        const celebrationsQuery = query(
+          collection(db, 'bestie_celebrations'),
+          where('userId', '==', user.uid),
+          where('bestieId', '==', inviterUID),
+          where('seen', '==', false)
+        );
+        const celebSnap = await getDocs(celebrationsQuery);
+
+        if (!celebSnap.empty && inviterDisplayName !== 'Your Bestie') {
+          const celebDoc = celebSnap.docs[0];
+          await updateDoc(doc(db, 'bestie_celebrations', celebDoc.id), {
+            bestieName: inviterDisplayName,
+            bestiePhotoURL: inviterPhotoURL
+          });
+          console.log('✅ Updated celebration with real name');
+        }
+      } catch (error) {
+        console.error('Failed to update celebration:', error);
       }
 
       // Clean up storage after successful processing
