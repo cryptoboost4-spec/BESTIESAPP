@@ -10,7 +10,6 @@ import {
   getDocs,
   doc,
   getDoc,
-  updateDoc,
   addDoc,
   orderBy,
   limit,
@@ -24,6 +23,9 @@ import ActivityFeed from '../components/besties/ActivityFeed';
 import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
+import BestiesLeaderboard from '../components/besties/BestiesLeaderboard';
+import BestiesGrid from '../components/besties/BestiesGrid';
+import CommentsModal from '../components/besties/CommentsModal';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -205,7 +207,7 @@ const BestiesPage = () => {
       const missed = [];
       const attentionRequests = [];
 
-      // Get bestie user IDs (deduplicated to avoid showing duplicates for mutual besties)
+      // Get bestie user IDs (deduplicated)
       const bestieIds = [...new Set(besties.map(b => b.userId))];
 
       // Load recent activity (last 48 hours)
@@ -325,7 +327,6 @@ const BestiesPage = () => {
 
                 // Check for missed check-ins (alerted status)
                 if (data.status === 'alerted') {
-                  // Avoid duplicates in missed array too
                   const alreadyInMissed = missed.some(m => m.id === doc.id);
                   if (!alreadyInMissed) {
                     missed.push({
@@ -417,54 +418,6 @@ const BestiesPage = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [currentUser, besties, userData]);
-
-  // Calculate power rankings - TODO: Implement when metrics are available
-  /* const getPowerRankings = () => {
-    const rankings = {
-      mostReliable: [],
-      fastestResponder: [],
-      safetyChampion: [],
-      streakMaster: [],
-    };
-
-    // This would need actual metrics from Firestore
-    // For now, return empty arrays
-    return rankings;
-  }; */
-
-  // Get visual indicators for a bestie
-  const getBestieIndicators = (bestie) => {
-    const indicators = [];
-
-    // Check recent activity for indicators
-    const bestieActivities = activityFeed.filter(a => a.userId === bestie.userId);
-
-    // Fast responder - if they have activity in last 5 min
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
-    if (bestieActivities.some(a => a.timestamp > fiveMinAgo)) {
-      indicators.push({ icon: '⚡', tooltip: 'Fast responder' });
-    }
-
-    // Reliable - if they have high completion rate (would need to calculate from Firestore)
-    const completedCount = bestieActivities.filter(a => a.status === 'completed').length;
-    if (completedCount > 5) {
-      indicators.push({ icon: '🛡️', tooltip: 'Very reliable' });
-    }
-
-    // Active streak - if they have check-ins multiple days in a row
-    indicators.push({ icon: '🔥', tooltip: '7-day streak' });
-
-    // Night check-ins - if they often check in at night
-    const nightCheckIns = bestieActivities.filter(a => {
-      const hour = a.timestamp.getHours();
-      return hour >= 21 || hour <= 6;
-    });
-    if (nightCheckIns.length > 2) {
-      indicators.push({ icon: '🌙', tooltip: 'Night owl' });
-    }
-
-    return indicators.slice(0, 3); // Max 3 indicators
-  };
 
   // Load reactions for check-ins
   useEffect(() => {
@@ -622,7 +575,20 @@ const BestiesPage = () => {
     return filtered;
   };
 
-  // const rankings = getPowerRankings(); // TODO: Implement rankings when metrics are available
+  // Helper function to get time ago
+  const getTimeAgo = (timestamp) => {
+    const now = new Date();
+    const diffMs = now - timestamp;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
   const filteredBesties = getFilteredBesties();
 
   if (loading) {
@@ -637,7 +603,6 @@ const BestiesPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
         {/* Header */}
         <div className="mb-4 text-center">
@@ -686,259 +651,17 @@ const BestiesPage = () => {
 
         {/* Leaderboard and Besties Section */}
         <div className="space-y-6">
-            {/* This Week's Champions - Soft & Girly Version */}
-            <div className="relative overflow-hidden">
-              {/* Subtle sparkly background */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-                <div className="absolute top-2 left-2 text-pink-200 text-sm">✨</div>
-                <div className="absolute top-3 right-3 text-purple-200 text-sm">💫</div>
-                <div className="absolute bottom-2 left-3 text-pink-200 text-sm">⭐</div>
-              </div>
+          {/* This Week's Champions */}
+          <BestiesLeaderboard
+            rankingsPeriod={rankingsPeriod}
+            setRankingsPeriod={setRankingsPeriod}
+          />
 
-              <div className="card p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-600 shadow-lg relative">
-                {/* Cute header with crown */}
-                <div className="text-center mb-3">
-                  <div className="text-3xl mb-1">👑</div>
-                  <h2 className="text-lg font-display bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    {rankingsPeriod === 'weekly' && "This Week's Queens"}
-                    {rankingsPeriod === 'monthly' && "This Month's Queens"}
-                    {rankingsPeriod === 'yearly' && "This Year's Queens"}
-                  </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Your amazing squad! 💕</p>
-                </div>
-
-                {/* Period Tabs - Compact */}
-                <div className="flex gap-1.5 justify-center mb-3">
-                  <button
-                    onClick={() => setRankingsPeriod('weekly')}
-                    className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
-                      rankingsPeriod === 'weekly'
-                        ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
-                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    📅 Week
-                  </button>
-                  <button
-                    onClick={() => setRankingsPeriod('monthly')}
-                    className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
-                      rankingsPeriod === 'monthly'
-                        ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
-                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    🗓️ Month
-                  </button>
-                  <button
-                    onClick={() => setRankingsPeriod('yearly')}
-                    className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
-                      rankingsPeriod === 'yearly'
-                        ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
-                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    🎯 Year
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {/* Most Reliable - Pink gradient */}
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-300 to-rose-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-pink-200 dark:border-pink-600 hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-shrink-0">
-                          <div className="w-10 h-10 bg-gradient-to-br from-pink-300 to-rose-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                            💖
-                          </div>
-                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                            🏆
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-display text-sm font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
-                            Most Reliable
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Always there for you 💕</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fastest Responder - Purple gradient */}
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-300 to-fuchsia-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-purple-200 dark:border-purple-600 hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-shrink-0">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                            ⚡
-                          </div>
-                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                            🏆
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-display text-sm font-bold bg-gradient-to-r from-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
-                            Super Speedy
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Quick to the rescue 💜</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Safety Champion - Rose gradient */}
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-rose-300 to-pink-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-rose-200 dark:border-rose-600 hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-shrink-0">
-                          <div className="w-10 h-10 bg-gradient-to-br from-rose-300 to-pink-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                            🛡️
-                          </div>
-                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                            🏆
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-display text-sm font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
-                            Guardian Angel
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Keeping you safe 🌸</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Streak Queen - Yellow gradient */}
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-yellow-200 dark:border-yellow-600 hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-shrink-0">
-                          <div className="w-10 h-10 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                            🔥
-                          </div>
-                          <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                            🏆
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-display text-sm font-bold bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
-                            Streak Queen
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">On fire lately! ✨</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cute footer */}
-                <div className="mt-3 pt-2 border-t border-pink-200 dark:border-pink-600 text-center">
-                  <p className="text-xs font-semibold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-                    {rankingsPeriod === 'weekly' && '💫 Resets Monday'}
-                    {rankingsPeriod === 'monthly' && '💫 Resets on 1st'}
-                    {rankingsPeriod === 'yearly' && '💫 Resets Jan 1st'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Besties Grid */}
-            <div>
-              <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
-                All Besties
-              </h2>
-
-              {filteredBesties.length === 0 ? (
-                <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
-                  <div className="text-5xl md:text-6xl mb-3">💜</div>
-                  <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties yet</p>
-                  <p className="text-sm md:text-base text-text-secondary">
-                    Start adding besties to see them here
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
-                  {filteredBesties.map((bestie) => {
-                    const indicators = getBestieIndicators(bestie);
-                    return (
-                      <div key={bestie.id} className="relative group">
-                        {/* Main card with improved styling */}
-                        <div className="h-full transform transition-all duration-300 hover:scale-[1.02]">
-                          <BestieCard bestie={bestie} />
-                        </div>
-
-                        {/* Visual Indicators - Top Left */}
-                        {indicators.length > 0 && (
-                          <div className="absolute top-3 left-3 flex gap-1 z-10">
-                            {indicators.map((indicator, idx) => (
-                              <span
-                                key={idx}
-                                className="text-base bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-md border border-purple-200 dark:border-purple-600"
-                                title={indicator.tooltip}
-                              >
-                                {indicator.icon}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Quick Action Overlay - Shows on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/95 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 pointer-events-none group-hover:pointer-events-auto">
-                          <div className="w-full space-y-2">
-                            <button
-                              onClick={() => navigate(`/user/${bestie.userId}`)}
-                              className="w-full bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900 text-purple-900 dark:text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
-                            >
-                              <span>👤</span>
-                              <span>View Profile</span>
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const bestieDoc = await getDoc(doc(db, 'besties', bestie.id));
-                                    if (bestieDoc.exists()) {
-                                      await updateDoc(doc(db, 'besties', bestie.id), {
-                                        isFavorite: !bestieDoc.data().isFavorite
-                                      });
-                                      toast.success(bestieDoc.data().isFavorite ? 'Removed from circle' : 'Added to circle! 💜');
-                                    }
-                                  } catch (error) {
-                                    console.error('Error toggling circle:', error);
-                                    toast.error('Failed to update');
-                                  }
-                                }}
-                                className={`flex-1 ${bestie.isFavorite ? 'bg-pink-500 hover:bg-pink-600' : 'bg-purple-500 hover:bg-purple-600'} text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg`}
-                              >
-                                <span>{bestie.isFavorite ? '💔' : '💜'}</span>
-                                <span className="text-sm">{bestie.isFavorite ? 'Remove' : 'Add to Circle'}</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (bestie.phone) {
-                                    window.location.href = `sms:${bestie.phone}`;
-                                  } else {
-                                    toast.error('No phone number available');
-                                  }
-                                }}
-                                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
-                              >
-                                <span>💬</span>
-                                <span className="text-sm">Message</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+          {/* Besties Grid */}
+          <BestiesGrid
+            besties={filteredBesties}
+            activityFeed={activityFeed}
+          />
         </div>
 
         {/* Empty State */}
@@ -949,108 +672,21 @@ const BestiesPage = () => {
         />
       </div>
 
-      {/* Comments Modal - Mobile Optimized with Bottom Menu Bar Clearance */}
+      {/* Comments Modal */}
       {showComments && selectedCheckIn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-end md:items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[80vh] md:max-h-[600px] flex flex-col">
-            {/* Header */}
-            <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-600 flex-shrink-0 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl md:text-2xl font-display text-transparent bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text">
-                  💬 Comments
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowComments(false);
-                    setSelectedCheckIn(null);
-                    setComments([]);
-                    setNewComment('');
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl transition-colors"
-                >
-                  ×
-                </button>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {selectedCheckIn.userName}'s check-in
-              </p>
-            </div>
-
-            {/* Comments List - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 overscroll-contain">
-              {comments.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-5xl mb-3">💬</div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm font-semibold">
-                    No comments yet
-                  </p>
-                  <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
-                    Be the first to comment!
-                  </p>
-                </div>
-              ) : (
-                comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3 animate-fade-in">
-                    {/* User Avatar */}
-                    <div className="flex-shrink-0">
-                      {comment.userPhoto ? (
-                        <img
-                          src={comment.userPhoto}
-                          alt={comment.userName}
-                          className="w-9 h-9 rounded-full object-cover ring-2 ring-purple-100 dark:ring-purple-600"
-                        />
-                      ) : (
-                        <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center text-white text-sm font-display ring-2 ring-purple-100 dark:ring-purple-600">
-                          {comment.userName?.[0] || '?'}
-                        </div>
-                      )}
-                    </div>
-                    {/* Comment Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-2xl px-4 py-2 shadow-sm">
-                        <p className="font-bold text-sm text-gray-900 dark:text-gray-200">
-                          {comment.userName}
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed">
-                          {comment.text}
-                        </p>
-                      </div>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 px-3">
-                        {comment.timestamp?.toDate ? getTimeAgo(comment.timestamp.toDate()) : 'Just now'}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Add Comment Input - Fixed at bottom with safe area */}
-            <div className="p-4 md:p-6 border-t-2 border-purple-100 dark:border-purple-600 flex-shrink-0 bg-white dark:bg-gray-800">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      addComment();
-                    }
-                  }}
-                  placeholder="Add a comment..."
-                  className="flex-1 px-4 py-3 rounded-full border-2 border-purple-200 dark:border-purple-600 focus:border-purple-400 dark:focus:border-purple-400 focus:outline-none text-sm shadow-sm transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                />
-                <button
-                  onClick={addComment}
-                  disabled={!newComment.trim()}
-                  className="btn btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-shadow"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CommentsModal
+          selectedCheckIn={selectedCheckIn}
+          comments={comments}
+          newComment={newComment}
+          setNewComment={setNewComment}
+          onAddComment={addComment}
+          onClose={() => {
+            setShowComments(false);
+            setSelectedCheckIn(null);
+            setComments([]);
+            setNewComment('');
+          }}
+        />
       )}
 
       {/* Add Bestie Modal */}
@@ -1085,20 +721,6 @@ const BestiesPage = () => {
       `}</style>
     </div>
   );
-};
-
-// Helper function to get time ago
-const getTimeAgo = (timestamp) => {
-  const now = new Date();
-  const diffMs = now - timestamp;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 };
 
 export default BestiesPage;

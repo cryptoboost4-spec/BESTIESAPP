@@ -4,12 +4,15 @@ import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import BestieCircleShareModal from './BestieCircleShareModal';
-import ProfileWithBubble from './ProfileWithBubble';
+import CircleVisualization from './circle/CircleVisualization';
+import CircleCenterScore from './circle/CircleCenterScore';
+import BestieSlot from './circle/BestieSlot';
+import EmptySlot from './circle/EmptySlot';
+import CircleStats from './circle/CircleStats';
+import ReplaceModal from './circle/ReplaceModal';
+import CircleAnimations from './circle/CircleAnimations';
 import {
   calculateConnectionStrength,
-  getConnectionColor,
-  getConnectionEmoji,
-  formatTimeAgo,
   getLastInteraction,
 } from '../services/connectionStrength';
 
@@ -282,15 +285,6 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
   const slots = Array.from({ length: 5 }, (_, i) => circleBesties[i] || null);
 
-  // Different colors for each bestie slot
-  const slotColors = [
-    'bg-pink-500',      // Slot 0 - Pink
-    'bg-purple-500',    // Slot 1 - Purple
-    'bg-blue-500',      // Slot 2 - Blue
-    'bg-green-500',     // Slot 3 - Green
-    'bg-orange-500',    // Slot 4 - Orange
-  ];
-
   if (loading) {
     return (
       <div className="card p-8 flex items-center justify-center">
@@ -317,515 +311,68 @@ const LivingCircle = ({ userId, onAddClick }) => {
         {/* Circle Container - Responsive sizing */}
         <div className="relative w-full max-w-md mx-auto aspect-square mb-6">
           <div className="absolute inset-0">
-            {/* Connection Lines with Dynamic Strength */}
-            {slots.map((bestie, index) => {
-              if (!bestie) return null;
-              const angle = (index * 72 - 90) * (Math.PI / 180);
-              const radius = 45; // Percentage-based radius
-              const x = 50 + radius * Math.cos(angle);
-              const y = 50 + radius * Math.sin(angle);
+            <CircleVisualization
+              slots={slots}
+              connectionStrengths={connectionStrengths}
+              loadingConnections={loadingConnections}
+            />
 
-              const connectionStrength = connectionStrengths[bestie.id];
-              const strengthScore = connectionStrength?.total || 0;
-              const connectionColor = getConnectionColor(strengthScore);
-
-              // Line opacity and animation based on strength
-              const opacity = 0.2 + (strengthScore / 100) * 0.6;
-              const strokeWidth = 1 + (strengthScore / 100) * 2;
-
-              return (
-                <svg
-                  key={`line-${index}`}
-                  className="absolute inset-0 w-full h-full pointer-events-none"
-                  style={{ zIndex: 0 }}
-                >
-                  <defs>
-                    <linearGradient id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor={connectionColor} stopOpacity={opacity} />
-                      <stop offset="50%" stopColor={connectionColor} stopOpacity={opacity * 1.5} />
-                      <stop offset="100%" stopColor={connectionColor} stopOpacity={opacity} />
-                    </linearGradient>
-                    <filter id={`glow-${index}`}>
-                      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                      <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <line
-                    x1="50%"
-                    y1="50%"
-                    x2={`${x}%`}
-                    y2={`${y}%`}
-                    stroke={`url(#gradient-${index})`}
-                    strokeWidth={strokeWidth}
-                    strokeDasharray="4 2"
-                    filter={`url(#glow-${index})`}
-                    className="animate-pulse-connection"
-                  />
-
-                  {/* Flowing particles - always visible, more for stronger connections */}
-                  {bestie && (
-                    <>
-                      {/* Primary particle - always flows */}
-                      <circle
-                        cx="50%"
-                        cy="50%"
-                        r={strengthScore >= 50 ? "4" : "3"}
-                        fill="#10b981"
-                        opacity={0.4 + (strengthScore / 100) * 0.6}
-                        className="animate-particle"
-                        style={{
-                          '--target-x': `${x}%`,
-                          '--target-y': `${y}%`,
-                          animationDelay: `${index * 0.5}s`,
-                          animationDuration: strengthScore >= 70 ? '2s' : '3s',
-                        }}
-                      />
-                      {/* Secondary particle for strong connections */}
-                      {strengthScore >= 50 && (
-                        <circle
-                          cx="50%"
-                          cy="50%"
-                          r="3"
-                          fill="#34d399"
-                          opacity={0.5}
-                          className="animate-particle"
-                          style={{
-                            '--target-x': `${x}%`,
-                            '--target-y': `${y}%`,
-                            animationDelay: `${index * 0.5 + 1}s`,
-                            animationDuration: '2.5s',
-                          }}
-                        />
-                      )}
-                      {/* Third particle for unbreakable connections */}
-                      {strengthScore >= 90 && (
-                        <circle
-                          cx="50%"
-                          cy="50%"
-                          r="4"
-                          fill="#10b981"
-                          opacity={0.7}
-                          className="animate-particle"
-                          style={{
-                            '--target-x': `${x}%`,
-                            '--target-y': `${y}%`,
-                            animationDelay: `${index * 0.5 + 0.5}s`,
-                            animationDuration: '1.8s',
-                          }}
-                        />
-                      )}
-                    </>
-                  )}
-                </svg>
-              );
-            })}
-
-            {/* Center Circle - Circle Health Score */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-              <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-primary rounded-full flex flex-col items-center justify-center text-white shadow-2xl border-4 border-white ring-4 ring-purple-200 animate-breathe relative group">
-                {loadingConnections ? (
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : circleBesties.length === 0 ? (
-                  <div className="text-center px-2">
-                    <div className="text-2xl mb-0.5">💜</div>
-                    <div className="text-[10px] font-semibold leading-tight">Begin<br/>Here</div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-2xl md:text-3xl font-bold leading-none">{overallHealth}</div>
-                    <div className="text-xs font-semibold opacity-90">Your Vibe</div>
-
-                    {/* Info Tooltip for Context - Mobile & Desktop Friendly */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowVibeTooltip(!showVibeTooltip);
-                      }}
-                      className="absolute -top-2 -right-2 w-6 h-6 md:w-5 md:h-5 bg-white rounded-full flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform active:scale-95 z-40"
-                    >
-                      <span className="text-sm md:text-xs">ℹ️</span>
-                    </button>
-                    {showVibeTooltip && (
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 z-50 animate-fade-in">
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl max-w-xs">
-                          <div className="font-bold mb-1">Your Circle Strength</div>
-                          <div className="text-white/90 text-xs whitespace-normal w-48">
-                            {overallHealth >= 90 && "🔥 Unbreakable - You and your circle are inseparable!"}
-                            {overallHealth >= 70 && overallHealth < 90 && "⚡ Powerful - Strong bonds, keep nurturing them!"}
-                            {overallHealth >= 50 && overallHealth < 70 && "💪 Strong - Solid friendships, growing stronger!"}
-                            {overallHealth >= 30 && overallHealth < 50 && "🔆 Growing - Building momentum together!"}
-                            {overallHealth < 30 && "🌱 Spark - Just getting started, lots of potential!"}
-                          </div>
-                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-pink-600"></div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
+            <CircleCenterScore
+              loadingConnections={loadingConnections}
+              circleBestiesLength={circleBesties.length}
+              overallHealth={overallHealth}
+              showVibeTooltip={showVibeTooltip}
+              setShowVibeTooltip={setShowVibeTooltip}
+            />
 
             {/* Bestie Slots - all equidistant from center */}
             {slots.map((bestie, index) => {
-              const angle = (index * 72 - 90) * (Math.PI / 180);
-              const radius = 45; // Percentage-based for better responsiveness
-              const x = 50 + radius * Math.cos(angle);
-              const y = 50 + radius * Math.sin(angle);
-
-              const status = bestie ? getStatusInfo(bestie) : null;
               const connectionStrength = bestie ? connectionStrengths[bestie.id] : null;
               const lastSeenTime = bestie ? lastSeen[bestie.id] : null;
 
-              return (
-                <div
+              return bestie ? (
+                <BestieSlot
                   key={index}
-                  className="absolute"
-                  style={{
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  {bestie ? (
-                    <div className="relative group">
-                      {/* Bestie Circle - clickable with status ring */}
-                      <button
-                        onClick={() => setSelectedSlot(selectedSlot === index ? null : index)}
-                        className="relative hover:scale-110 transition-all duration-300"
-                      >
-                        <div
-                          className={`w-14 h-14 md:w-16 md:h-16 rounded-full shadow-xl border-4 border-white hover:shadow-2xl ${
-                            connectionStrength?.total >= 90
-                              ? 'ring-6 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
-                              : `${status.ringColor} ring-4`
-                          } hover:ring-6 overflow-hidden flex items-center justify-center relative ${
-                            connectionStrength?.total >= 90 ? 'animate-breathe-glow' : 'animate-breathe-subtle'
-                          }`}
-                          style={{ animationDelay: `${index * 0.3}s` }}
-                        >
-                          <ProfileWithBubble
-                            photoURL={bestie.photoURL}
-                            name={bestie.name || 'Bestie'}
-                            requestAttention={bestie.requestAttention}
-                            size="xl"
-                            showBubble={true}
-                            className="w-full h-full"
-                          />
-
-                          {/* Status Badge */}
-                          <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${status.color} rounded-full border-2 border-white flex items-center justify-center text-xs shadow-lg animate-pulse-gentle`}>
-                            {status.emoji}
-                          </div>
-
-                          {/* Connection Strength Badge - Always Visible with Special Styling for Unbreakable */}
-                          {connectionStrength && !loadingConnections && (
-                            <div
-                              className={`absolute -top-1 -left-1 w-8 h-8 rounded-full border-2 flex items-center justify-center shadow-lg ${
-                                connectionStrength.total >= 90
-                                  ? 'bg-gradient-to-br from-amber-400 to-orange-500 border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.8)] animate-pulse-glow'
-                                  : 'bg-gradient-to-br from-white to-gray-100 border-purple-300'
-                              }`}
-                            >
-                              <span className="text-base">{getConnectionEmoji(connectionStrength.total)}</span>
-                            </div>
-                          )}
-
-                          {/* Mutual Circle Badge - Top Right */}
-                          {bestie.isMutual && (
-                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-pulse-gentle">
-                              <span className="text-xs">💕</span>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-
-                      {/* Enhanced Tooltip with Connection Strength */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 transform group-hover:-translate-y-1">
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl min-w-max">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="font-bold text-sm">{bestie.name || 'Unknown'}</div>
-                            {bestie.isMutual && (
-                              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                💕 Mutual
-                              </span>
-                            )}
-                          </div>
-                          {connectionStrength && !loadingConnections && (
-                            <>
-                              <div className="flex items-center gap-2 text-white/90 mb-1">
-                                <span className="text-lg">{getConnectionEmoji(connectionStrength.total)}</span>
-                                <span>{connectionStrength.total}/100</span>
-                                <span className="capitalize px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                                  {connectionStrength.level}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                          {lastSeenTime && (
-                            <div className="text-white/90 text-xs mt-2 flex items-center gap-1">
-                              <span>💬</span>
-                              <span>Last connected: {formatTimeAgo(lastSeenTime)}</span>
-                            </div>
-                          )}
-                          {bestie.isMutual && (
-                            <div className="text-white/80 text-xs mt-2 italic">
-                              You're both in each other's top 5 ✨
-                            </div>
-                          )}
-                          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-600"></div>
-                        </div>
-                      </div>
-
-                      {/* Action Menu */}
-                      {selectedSlot === index && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-2 z-[200] w-40">
-                          <button
-                            onClick={() => handleViewProfile(bestie.id)}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
-                          >
-                            👤 View Profile
-                          </button>
-                          <button
-                            onClick={() => setShowReplaceModal(true)}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
-                          >
-                            🔄 Replace
-                          </button>
-                          <button
-                            onClick={() => handleRemoveFromCircle(index)}
-                            className="w-full text-left px-3 py-2 hover:bg-red-50 rounded text-sm font-semibold text-red-600"
-                          >
-                            ❌ Remove
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowShareModal(true)}
-                      className={`w-14 h-14 md:w-16 md:h-16 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex flex-col items-center justify-center ${slotColors[index].replace('bg-', 'text-')} font-bold hover:scale-110 hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl animate-pulse-slow relative group`}
-                      title="Add someone who has your back"
-                    >
-                      <span className="text-2xl">+</span>
-                      <span className="text-[8px] opacity-70 mt-0.5">Add</span>
-                      {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20">
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap shadow-xl">
-                          {circleBesties.length === 0 ? "Your first bestie ✨" : "Add another one 💜"}
-                          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-pink-600"></div>
-                        </div>
-                      </div>
-                    </button>
-                  )}
-                </div>
+                  bestie={bestie}
+                  index={index}
+                  selectedSlot={selectedSlot}
+                  setSelectedSlot={setSelectedSlot}
+                  connectionStrength={connectionStrength}
+                  loadingConnections={loadingConnections}
+                  lastSeenTime={lastSeenTime}
+                  getStatusInfo={getStatusInfo}
+                  handleViewProfile={handleViewProfile}
+                  setShowReplaceModal={setShowReplaceModal}
+                  handleRemoveFromCircle={handleRemoveFromCircle}
+                />
+              ) : (
+                <EmptySlot
+                  key={index}
+                  index={index}
+                  circleBestiesLength={circleBesties.length}
+                  setShowShareModal={setShowShareModal}
+                />
               );
             })}
           </div>
         </div>
 
-        {/* Info - Enhanced with Progress */}
-        <div className="text-center mt-6 space-y-3">
-          <div className="inline-flex items-center gap-2 bg-white px-4 py-3 rounded-full shadow-md border-2 border-purple-200">
-            <span className="text-2xl">⭐</span>
-            <div className="text-left">
-              <div className="font-display text-base md:text-lg text-gradient font-bold leading-tight">
-                {circleBesties.length}/5 In Your Circle
-              </div>
-              {circleBesties.length > 0 && !loadingConnections && (
-                <div className="text-xs text-gray-600">
-                  {overallHealth >= 90 && "Unbreakable vibes 🔥"}
-                  {overallHealth >= 70 && overallHealth < 90 && "Super strong energy ⚡"}
-                  {overallHealth >= 50 && overallHealth < 70 && "Solid connections 💪"}
-                  {overallHealth >= 30 && overallHealth < 50 && "Building momentum 🔆"}
-                  {overallHealth < 30 && "Just getting started 🌱"}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="text-xs md:text-sm text-gray-600">
-            {circleBesties.length === 5
-              ? "Your circle is complete! Keep nurturing these connections 💜"
-              : circleBesties.length === 0
-              ? "Your 5 closest people - the ones you can call at 3am. Start building your circle ✨"
-              : circleBesties.length === 1
-              ? "Amazing start! Add 4 more to complete your inner circle 🌟"
-              : `${5 - circleBesties.length} more to go! You're building something special 💫`}
-          </div>
-
-          {circleBesties.length > 0 && !loadingConnections && (
-            <button
-              onClick={() => navigate('/circle-health')}
-              className="mt-2 px-6 py-2 bg-gradient-primary text-white rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2 mx-auto"
-            >
-              <span>See Your Stats</span>
-              <span className="text-base">✨</span>
-            </button>
-          )}
-        </div>
+        <CircleStats
+          circleBestiesLength={circleBesties.length}
+          overallHealth={overallHealth}
+          loadingConnections={loadingConnections}
+        />
       </div>
 
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translate(-50%, -10px);
-          }
-          to {
-            opacity: 1;
-            transform: translate(-50%, 0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out forwards;
-        }
-        @keyframes breathe {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-        }
-        .animate-breathe {
-          animation: breathe 4s ease-in-out infinite;
-        }
-        .animate-breathe-subtle {
-          animation: breathe 5s ease-in-out infinite;
-        }
-        @keyframes breathe-glow {
-          0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 10px 40px rgba(251, 191, 36, 0.4), 0 0 20px rgba(251, 191, 36, 0.6);
-          }
-          50% {
-            transform: scale(1.05);
-            box-shadow: 0 15px 60px rgba(251, 191, 36, 0.6), 0 0 30px rgba(251, 191, 36, 0.8);
-          }
-        }
-        .animate-breathe-glow {
-          animation: breathe-glow 3s ease-in-out infinite;
-        }
-        @keyframes pulse-glow {
-          0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.8;
-            transform: scale(1.05);
-          }
-        }
-        .animate-pulse-glow {
-          animation: pulse-glow 2s ease-in-out infinite;
-        }
-        @keyframes pulse-gentle {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.9;
-          }
-        }
-        .animate-pulse-gentle {
-          animation: pulse-gentle 2s ease-in-out infinite;
-        }
-        @keyframes pulse-slow {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.6;
-          }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 2s ease-in-out infinite;
-        }
-        @keyframes pulse-connection {
-          0%, 100% {
-            opacity: 0.8;
-          }
-          50% {
-            opacity: 1;
-          }
-        }
-        .animate-pulse-connection {
-          animation: pulse-connection 3s ease-in-out infinite;
-        }
-        @keyframes particle {
-          0% {
-            cx: 50%;
-            cy: 50%;
-            opacity: 1;
-          }
-          100% {
-            cx: var(--target-x);
-            cy: var(--target-y);
-            opacity: 0;
-          }
-        }
-        .animate-particle {
-          animation: particle 3s linear infinite;
-        }
-        @keyframes gradient-shift {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-        .animate-gradient-shift {
-          background: linear-gradient(120deg, #fdf2f8, #fce7f3, #fff7ed, #fef3c7);
-          background-size: 200% 200%;
-          animation: gradient-shift 8s ease infinite;
-        }
-      `}</style>
+      <CircleAnimations />
 
-      {/* Replace Modal */}
-      {showReplaceModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowReplaceModal(false)}>
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full max-h-96 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-display mb-4">Replace with:</h3>
-            <div className="space-y-2">
-              {allBesties
-                .filter(b => !circleBesties.find(cb => cb.id === b.id))
-                .map(bestie => (
-                  <button
-                    key={bestie.id}
-                    onClick={() => handleReplaceBestie(bestie)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ProfileWithBubble
-                      photoURL={bestie.photoURL}
-                      name={bestie.name || 'Unknown'}
-                      requestAttention={bestie.requestAttention}
-                      size="md"
-                      showBubble={true}
-                    />
-                    <div className="text-left">
-                      <div className="font-semibold">{bestie.name || 'Unknown'}</div>
-                    </div>
-                  </button>
-                ))}
-              {allBesties.filter(b => !circleBesties.find(cb => cb.id === b.id)).length === 0 && (
-                <p className="text-center text-gray-500 py-4">All besties are in your circle!</p>
-              )}
-            </div>
-            <button
-              onClick={() => setShowReplaceModal(false)}
-              className="mt-4 w-full btn btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <ReplaceModal
+        show={showReplaceModal}
+        onClose={() => setShowReplaceModal(false)}
+        allBesties={allBesties}
+        circleBesties={circleBesties}
+        onReplace={handleReplaceBestie}
+      />
 
       {/* Bestie Circle Share Modal */}
       {showShareModal && (
