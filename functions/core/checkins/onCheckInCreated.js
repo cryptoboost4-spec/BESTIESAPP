@@ -1,59 +1,24 @@
+const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const { sendBulkNotifications } = require('../../utils/messaging');
 
-/**
- * Trigger: When a new check-in is created
- * Notifies selected besties and schedules alert
- */
-async function onCheckInCreated(snap, context, config) {
-  try {
-    const checkinId = context.params.checkinId;
-    const checkinData = snap.data();
-    const userId = checkinData.userId;
+const db = admin.firestore();
 
-    // Get user data
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
-    const userData = userDoc.data();
+// Track when check-ins are created
+exports.onCheckInCreated = functions.firestore
+  .document('checkins/{checkInId}')
+  .onCreate(async (snap, context) => {
+    const checkIn = snap.data();
 
-    if (!userData) {
-      console.error('User not found:', userId);
-      return;
-    }
-
-    // Notify besties that check-in started
-    const message = `💜 ${userData.displayName} started a check-in. You'll be notified if they don't check in by ${new Date(checkinData.alertTime.toDate()).toLocaleTimeString()}.`;
-    
-    await sendBulkNotifications(
-      checkinData.bestieIds,
-      message,
-      config,
-      { type: 'checkin_started', checkinId }
-    );
-
-    // Update user stats
-    await admin.firestore().collection('users').doc(userId).update({
-      'stats.totalCheckIns': admin.firestore.FieldValue.increment(1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    // Increment total check-in count in user stats
+    await db.collection('users').doc(checkIn.userId).update({
+      'stats.totalCheckIns': admin.firestore.FieldValue.increment(1)
     });
 
-    // Log analytics
-    await admin.firestore().collection('analytics').add({
-      event: 'checkin_created',
-      userId,
-      checkinId,
-      bestieCount: checkinData.bestieIds.length,
-      duration: checkinData.duration,
-      timestamp: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log('Check-in created:', checkinId);
-    
-    return { success: true };
-    
-  } catch (error) {
-    console.error('Error on check-in created:', error);
-    throw error;
-  }
-}
-
-module.exports = onCheckInCreated;
+    // Update analytics cache (real-time global stats)
+    const cacheRef = db.collection('analytics_cache').doc('realtime');
+    await cacheRef.set({
+      totalCheckIns: admin.firestore.FieldValue.increment(1),
+      activeCheckIns: admin.firestore.FieldValue.increment(1),
+      lastUpdated: admin.firestore.Timestamp.now(),
+    }, { merge: true });
+  });
