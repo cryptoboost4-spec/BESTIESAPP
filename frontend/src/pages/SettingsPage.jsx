@@ -11,6 +11,7 @@ import NotificationSettings from '../components/settings/NotificationSettings';
 import MessengerLinkDisplay from '../components/settings/MessengerLinkDisplay';
 import TestAlertModal from '../components/settings/TestAlertModal';
 import PremiumSMSSection from '../components/settings/PremiumSMSSection';
+import SubscriptionTiers from '../components/settings/SubscriptionTiers';
 import PrivacySettings from '../components/settings/PrivacySettings';
 import SecurityPasscodes from '../components/settings/SecurityPasscodes';
 import PreferencesAndQuickAccess from '../components/settings/PreferencesAndQuickAccess';
@@ -384,15 +385,22 @@ const SettingsPage = () => {
           </div>
         )}
 
-        {/* SMS Subscription */}
+        {/* SMS Subscription - Only show when SMS is enabled */}
         <PremiumSMSSection
           userData={userData}
           handleSMSSubscription={handleSMSSubscription}
           loading={loading}
           setLoading={setLoading}
           navigate={navigate}
+          smsEnabled={userData?.notificationPreferences?.sms || false}
         />
 
+        {/* Subscription Tiers */}
+        <SubscriptionTiers
+          userData={userData}
+          handleSMSSubscription={handleSMSSubscription}
+          loading={loading}
+        />
 
         {/* Privacy Settings */}
         <div id="privacy">

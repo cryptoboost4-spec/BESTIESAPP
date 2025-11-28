@@ -2,14 +2,19 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import apiService from '../../services/api';
 
-const PremiumSMSSection = ({ userData, handleSMSSubscription, loading, setLoading, navigate }) => {
+const PremiumSMSSection = ({ userData, handleSMSSubscription, loading, setLoading, navigate, smsEnabled }) => {
+  // Only show if SMS is enabled
+  if (!smsEnabled) {
+    return null;
+  }
+
   return (
     <>
       {!userData?.smsSubscription?.active ? (
         <div className="card p-6 mb-6 bg-gradient-secondary dark:from-purple-900/30 dark:to-pink-900/30">
           <h2 className="text-xl font-display text-text-primary mb-2">Premium SMS Alerts</h2>
           <p className="text-text-secondary mb-4">
-            Get up to 20 SMS alerts per month for just $1/month
+            Get up to 20 SMS alerts per month for just $1.99/month
           </p>
           <ul className="text-sm text-text-secondary mb-4 space-y-1">
             <li>✓ 20 SMS alerts per month</li>
@@ -22,7 +27,7 @@ const PremiumSMSSection = ({ userData, handleSMSSubscription, loading, setLoadin
               disabled={loading}
               className="btn btn-primary flex-1"
             >
-              Subscribe for $1/month
+              Subscribe for $1.99/month
             </button>
             <button
               onClick={() => navigate('/about')}
