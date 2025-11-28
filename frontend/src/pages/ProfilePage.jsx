@@ -14,6 +14,7 @@ import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
 import ProfileAuraStyles from '../components/profile/ProfileAuraStyles';
 import RequestSupportSection from '../components/RequestSupportSection';
+import ProfileCustomizer from '../components/profile/ProfileCustomizer';
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
@@ -30,6 +31,7 @@ const ProfilePage = () => {
   const [weekendCheckIns, setWeekendCheckIns] = useState(0);
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
+  const [showCustomizer, setShowCustomizer] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -227,11 +229,11 @@ const ProfilePage = () => {
     }
 
     // 7. Customize Profile
-    if (userData?.profile?.customTheme || userData?.profile?.customBanner || userData?.featuredBadges?.length > 0) {
+    if (userData?.profile?.customization?.background || userData?.profile?.customization?.nameFont || userData?.featuredBadges?.length > 0) {
       tasks.push({ name: 'Customize your profile', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Customize your profile', completed: false, path: '/profile', section: null });
+      tasks.push({ name: 'Customize your profile', completed: false, path: null, section: null, action: 'openCustomizer' });
     }
 
     // 8. Earn a Badge
@@ -317,6 +319,8 @@ const ProfilePage = () => {
       if (badgesElement) {
         badgesElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+    } else if (task.action === 'openCustomizer') {
+      setShowCustomizer(true);
     } else if (task.path) {
       if (task.section) {
         navigate(`${task.path}#${task.section}`);
@@ -445,6 +449,15 @@ const ProfilePage = () => {
       {/* Share Modal */}
       {showShareModal && (
         <SocialShareCardsModal onClose={() => setShowShareModal(false)} />
+      )}
+
+      {/* Profile Customizer Modal */}
+      {showCustomizer && (
+        <ProfileCustomizer
+          currentUser={currentUser}
+          userData={userData}
+          onClose={() => setShowCustomizer(false)}
+        />
       )}
     </div>
   );

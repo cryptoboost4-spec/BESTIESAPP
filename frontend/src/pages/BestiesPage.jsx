@@ -24,6 +24,7 @@ import CreatePostModal from '../components/CreatePostModal';
 import BestiesLeaderboard from '../components/besties/BestiesLeaderboard';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
+import SubtleNotificationBell from '../components/SubtleNotificationBell';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -600,6 +601,7 @@ const BestiesPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
+      <SubtleNotificationBell />
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
         {/* Header */}
         <div className="mb-4 text-center">

@@ -13,7 +13,6 @@ import AdminRoute from './components/AdminRoute';
 import ScrollToTop from './components/ScrollToTop';
 import MilestoneCelebration from './components/MilestoneCelebration';
 import BestieCelebrationModal from './components/BestieCelebrationModal';
-import FloatingNotificationBell from './components/FloatingNotificationBell';
 import MobileBottomNav from './components/MobileBottomNav';
 import DesktopNav from './components/DesktopNav';
 
@@ -125,7 +124,6 @@ function App() {
             <ScrollToTop />
             <MilestoneCelebration />
             <BestieCelebrationModal />
-            {user && <FloatingNotificationBell />}
             {user && <DesktopNav />}
             {user && <MobileBottomNav />}
             <div className="App pb-20 md:pb-0">
