@@ -1,403 +1,246 @@
 # Telegram Integration Setup Guide
 
-This guide will walk you through setting up Telegram integration for Besties Safety app to enable free, unlimited emergency alerts via Telegram.
+Quick setup guide for adding Telegram bot integration to Besties Safety app.
 
-## Overview
+## What You Need
 
-The Telegram integration allows users to:
-- Share a personal Telegram bot link with emergency contacts
-- Contacts connect by clicking the link and pressing START in the bot
-- Contacts stay connected for 20 hours (auto-expiry for privacy)
-- Send unlimited safety alerts via Telegram (completely free)
-- No phone number sharing required
+1. **Telegram Bot Token** - Get this from @BotFather
+2. **Firebase Project** - Your existing Firebase project
+3. **Bot Username**: `@bestiesappbot`
 
 ---
 
-## Prerequisites
+## Step 1: Create/Configure Your Telegram Bot
 
-- Firebase project with Cloud Functions deployed
-- Telegram account
-- Access to Firebase Console
-- Node.js and Firebase CLI installed
-
----
-
-## Step 1: Create a Telegram Bot
-
-1. **Open Telegram** and search for `@BotFather`
-
-2. **Start a chat** with BotFather and send the command:
-   ```
-   /newbot
-   ```
-
-3. **Choose a name** for your bot (e.g., "Besties Safety")
-
-4. **Choose a username** for your bot (must end in 'bot', e.g., "BestiesSafetyBot")
-   - This username will be used in your deep links
-   - Save this username - you'll need it later
-
-5. **Save the Bot Token** that BotFather provides
-   - It looks like: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`
-   - Keep this token secure - you'll need it for the next step
-
-6. **(Optional) Set a profile picture and description**:
-   ```
-   /setuserpic
-   /setdescription
-   ```
+1. Open Telegram and search for `@BotFather`
+2. If you haven't created the bot yet:
+   - Send `/newbot`
+   - Name: "Besties App"
+   - Username: "bestiesappbot"
+   - Save the bot token that BotFather gives you
+3. If the bot already exists:
+   - Send `/mybots` to @BotFather
+   - Select your bot
+   - Go to "API Token" to view/regenerate the token
 
 ---
 
-## Step 2: Configure Firebase Functions
+## Step 2: Add Bot Token to Firebase
 
-1. **Set the Telegram bot token** in Firebase Functions config:
-   ```bash
-   firebase functions:config:set telegram.bot_token="YOUR_BOT_TOKEN_HERE"
-   ```
-   Replace `YOUR_BOT_TOKEN_HERE` with the token from BotFather.
+Add your Telegram bot token to Firebase Functions configuration:
 
-2. **Verify the configuration** was saved:
-   ```bash
-   firebase functions:config:get
-   ```
-   You should see:
-   ```json
-   {
-     "telegram": {
-       "bot_token": "YOUR_BOT_TOKEN_HERE"
-     }
-   }
-   ```
+```bash
+firebase functions:config:set telegram.bot_token="YOUR_BOT_TOKEN_HERE"
+```
+
+Replace `YOUR_BOT_TOKEN_HERE` with the actual token from BotFather (looks like `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`).
+
+**Verify it was saved:**
+```bash
+firebase functions:config:get
+```
 
 ---
 
-## Step 3: Update Frontend Configuration
+## Step 3: Set the Telegram Webhook
 
-1. **Open** `frontend/src/config/telegram.js`
+**What is a webhook?**
+Adding the bot token to Firebase just stores it - it doesn't tell Telegram where to send messages. The webhook is the URL where Telegram will send updates when someone interacts with your bot.
 
-2. **Update the bot username** to match your bot:
-   ```javascript
-   export const TELEGRAM_CONFIG = {
-     botUsername: 'BestiesSafetyBot', // <- Change this to your bot's username
-     getLinkForUser: (userId) => `https://t.me/BestiesSafetyBot?start=${userId}`, // <- Update here too
-     contactExpiryHours: 20,
-     contactExpiryMs: 20 * 60 * 60 * 1000
-   };
-   ```
+**After GitHub deploys your functions**, you need to tell Telegram the webhook URL:
 
----
+```bash
+curl -X POST "https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook?url=https://us-central1-YOUR-PROJECT-ID.cloudfunctions.net/telegramWebhook"
+```
 
-## Step 4: Deploy Cloud Functions
+Replace:
+- `YOUR_BOT_TOKEN` - Your bot token from Step 1
+- `YOUR-PROJECT-ID` - Your Firebase project ID (e.g., `besties-prod` or `besties-dev`)
 
-1. **Deploy your functions** to Firebase:
-   ```bash
-   cd functions
-   npm install  # If you haven't already
-   cd ..
-   firebase deploy --only functions
-   ```
+**Example:**
+```bash
+curl -X POST "https://api.telegram.org/bot123456789:ABCdefGHI/setWebhook?url=https://us-central1-besties-prod.cloudfunctions.net/telegramWebhook"
+```
 
-2. **Wait for deployment** to complete and note the webhook URL:
-   - It will be something like:
-     `https://us-central1-YOUR-PROJECT.cloudfunctions.net/telegramWebhook`
+**Verify webhook is set:**
+```bash
+curl "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"
+```
 
-3. **If deployment fails**, check:
-   - Firebase Functions config is set correctly
-   - You're logged into the correct Firebase project
-   - Your billing is enabled (required for external API calls)
-
----
-
-## Step 5: Set the Telegram Webhook
-
-1. **Set your webhook URL** so Telegram sends updates to your function:
-   ```bash
-   curl -X POST "https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook?url=https://us-central1-YOUR-PROJECT.cloudfunctions.net/telegramWebhook"
-   ```
-
-   Replace:
-   - `YOUR_BOT_TOKEN` with your actual bot token
-   - `YOUR-PROJECT` with your Firebase project ID
-
-2. **Verify the webhook** is set correctly:
-   ```bash
-   curl "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"
-   ```
-
-   You should see:
-   ```json
-   {
-     "ok": true,
-     "result": {
-       "url": "https://us-central1-YOUR-PROJECT.cloudfunctions.net/telegramWebhook",
-       "has_custom_certificate": false,
-       "pending_update_count": 0
-     }
-   }
-   ```
+You should see:
+```json
+{
+  "ok": true,
+  "result": {
+    "url": "https://us-central1-YOUR-PROJECT-ID.cloudfunctions.net/telegramWebhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 0
+  }
+}
+```
 
 ---
 
-## Step 6: Deploy Firestore Security Rules
+## Step 4: Push to GitHub
 
-1. **Deploy the updated security rules**:
-   ```bash
-   firebase deploy --only firestore:rules
-   ```
+Since you're using GitHub for deployment:
 
-2. **Verify in Firebase Console**:
-   - Go to Firestore Database → Rules
-   - Confirm you see the `telegramContacts` collection rules
+```bash
+git add -A
+git commit -m "Add Telegram integration"
+git push
+```
 
----
+GitHub will automatically:
+- Deploy Cloud Functions (including `telegramWebhook`)
+- Deploy Firestore rules (for `telegramContacts` collection)
+- Build and deploy frontend
 
-## Step 7: Deploy Frontend
-
-1. **Build and deploy your frontend**:
-   ```bash
-   cd frontend
-   npm run build
-   firebase deploy --only hosting
-   ```
-
-2. **Verify the deployment**:
-   - Visit your app URL
-   - Go to Settings → should see "Telegram Alerts" section
-   - Your personal Telegram link should be displayed
+**Wait for deployment to complete** before setting the webhook (Step 3).
 
 ---
 
-## Step 8: Test the Integration
+## Step 5: Test It
 
-### Test 1: Connect a Contact
-
-1. **Log into your app** and go to Settings
-2. **Copy your personal Telegram link** (should look like `https://t.me/BestiesSafetyBot?start=USER_ID_HERE`)
-3. **Open the link** in Telegram (or send it to a test user)
-4. **Press START** in the bot chat
-5. **Verify**:
-   - Bot sends a greeting message
+1. **Log into your app** → Go to Settings
+2. **Find "Telegram Alerts"** section
+3. **Copy your personal link** (should be `https://t.me/bestiesappbot?start=YOUR_USER_ID`)
+4. **Open the link** in Telegram
+5. **Press START**
+6. **Verify:**
+   - Bot sends greeting: "Hi [Name]! [Your Name] said you'd reach out."
    - Bot asks for confirmation with Yes/No buttons
-   - Contact appears in "Connected Telegram Contacts" in Settings
-   - Contact shows time remaining (should be ~20 hours)
+   - Contact appears in app under "Connected Telegram Contacts"
+   - Shows "Connected [date]"
 
-### Test 2: Create a Check-in
+7. **Create a test check-in:**
+   - Set duration to 1 minute
+   - Select your Telegram contact
+   - Submit
+   - Wait 1 minute
+   - **Verify alert is sent** to Telegram
 
-1. **Create a new check-in** from the app
-2. **Verify**:
-   - "Telegram Contacts (Optional)" section appears
-   - Your connected contact is listed
-   - You can select the contact
+---
 
-### Test 3: Send an Alert
+## How It Works
 
-1. **Create a check-in** with a Telegram contact selected and duration of 1 minute
-2. **Wait for the check-in to expire** (1 minute)
-3. **Verify**:
-   - Check Firebase Functions logs: `firebase functions:log`
-   - Look for "✅ Sent telegram alert to..." message
-   - Contact receives alert message in Telegram
-   - Alert includes user's name, location, and time
+### User Flow
+1. User shares link: `https://t.me/bestiesappbot?start=USER_ID`
+2. Contact clicks → Opens bot in Telegram
+3. Contact presses START
+4. Telegram sends update to your webhook
+5. Your function processes it:
+   - Extracts USER_ID from the start parameter
+   - Gets contact's info (name, username, chat_id)
+   - Saves to `telegramContacts` collection
+   - Sends greeting + confirmation messages
+6. Contact is now connected **permanently**
+7. User creates check-in, selects Telegram contacts
+8. When check-in expires → Alert sent via Telegram
+
+### Database Schema
+
+**Collection: `telegramContacts`**
+```javascript
+{
+  userId: string,           // Owner's Firebase UID
+  telegramUserId: string,   // Telegram user ID (unique)
+  chatId: string,          // Where to send messages
+  firstName: string,       // Contact's first name
+  username: string,        // @username (optional)
+  connectedAt: Timestamp   // When they connected
+}
+```
+
+**Check-ins get:**
+```javascript
+{
+  // ... existing fields
+  telegramContactIds: array[string]  // IDs of selected contacts
+}
+```
 
 ---
 
 ## Troubleshooting
 
-### Bot doesn't respond to /start
+### Bot doesn't respond when I press START
 
-**Check:**
-- Webhook is set correctly: `curl "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"`
-- Cloud Function is deployed: Check Firebase Console → Functions
-- Bot token is configured: `firebase functions:config:get`
-- Check function logs: `firebase functions:log --only telegramWebhook`
+**Check webhook:**
+```bash
+curl "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"
+```
+
+If URL is empty or wrong → Set it again (Step 3)
+
+**Check function is deployed:**
+- Go to Firebase Console → Functions
+- Look for `telegramWebhook`
+- Check it's deployed and not erroring
+
+**Check logs:**
+```bash
+firebase functions:log --only telegramWebhook
+```
 
 ### Contact doesn't appear in app
 
-**Check:**
-- Firestore security rules are deployed
-- Check Firestore collection `telegramContacts` for the document
-- Check browser console for errors
-- Verify user is logged in
+**Check Firestore:**
+- Firebase Console → Firestore Database
+- Look for `telegramContacts` collection
+- Should have a document with your contact's info
+
+**Check browser console:**
+- Open DevTools → Console
+- Look for errors
 
 ### Alerts not being sent
 
-**Check:**
-- Check-in has `telegramContactIds` array in Firestore
-- Contact hasn't expired (check `expiresAt` timestamp)
-- Function logs show the alert attempt: `firebase functions:log --only checkExpiredCheckIns`
-- Telegram bot token is valid
+**Check function logs:**
+```bash
+firebase functions:log --only checkExpiredCheckIns
+```
 
-### "Failed to set webhook" error
+Look for: "✅ Sent telegram alert to..."
 
-**Possible causes:**
-- Cloud Function URL is incorrect
-- Cloud Function hasn't finished deploying
-- Webhook URL must be HTTPS (http:// won't work)
-
-**Fix:**
-1. Verify function is deployed: Check Firebase Console
-2. Test function directly: Visit the URL in a browser (should return nothing, but not 404)
-3. Try setting webhook again
+**Check check-in document:**
+- Should have `telegramContactIds` array with contact IDs
 
 ---
 
-## Feature Configuration
-
-### Enable/Disable Telegram Alerts
-
-**In `frontend/src/config/features.js`:**
-```javascript
-export const FEATURES = {
-  // ...
-  telegramAlerts: true,  // Set to false to disable
-};
-```
-
-### Change Contact Expiry Time
-
-**In `frontend/src/config/telegram.js`:**
-```javascript
-export const TELEGRAM_CONFIG = {
-  contactExpiryHours: 20,  // Change to desired hours
-  contactExpiryMs: 20 * 60 * 60 * 1000  // Update this to match
-};
-```
-
-**Also update in `functions/index.js` line ~327:**
-```javascript
-const expiresAt = admin.firestore.Timestamp.fromMillis(
-  Date.now() + (20 * 60 * 60 * 1000) // Update this value
-);
-```
-
----
-
-## Architecture Overview
-
-### How It Works
-
-1. **User shares link**: `https://t.me/BotUsername?start=USER_ID`
-2. **Contact clicks link**: Opens Telegram with the bot
-3. **Contact presses START**: Telegram sends update to webhook
-4. **Webhook processes**:
-   - Extracts `USER_ID` from the `/start` command
-   - Gets contact's Telegram info (name, username, chat_id)
-   - Creates document in `telegramContacts` collection
-   - Sends greeting and confirmation messages
-5. **User creates check-in**: Selects Telegram contacts alongside SMS besties
-6. **Alert triggers**:
-   - `checkExpiredCheckIns` function runs every minute
-   - Finds expired check-ins
-   - Fetches Telegram contacts that haven't expired
-   - Sends alert via Telegram API
-7. **Contact receives alert**: Gets formatted message with location and time
-
-### Key Files
+## Key Files
 
 **Backend:**
-- `functions/index.js` (lines 254-425) - Telegram webhook and helpers
-- `functions/core/checkins/checkExpiredCheckIns.js` (lines 82-113) - Alert sending
-- `firestore.rules` (lines 287-291) - Security rules
+- `functions/index.js` (lines 254-425) - Webhook handler
+- `functions/core/checkins/checkExpiredCheckIns.js` - Alert sending
+- `firestore.rules` - Security for `telegramContacts`
 
 **Frontend:**
 - `frontend/src/config/telegram.js` - Bot configuration
-- `frontend/src/components/settings/TelegramLinkDisplay.jsx` - Share link UI
-- `frontend/src/components/settings/TelegramContactsList.jsx` - List connected contacts
-- `frontend/src/components/checkin/TelegramContactSelector.jsx` - Select contacts for check-in
-- `frontend/src/pages/CreateCheckInPage.jsx` - Check-in creation with Telegram
-- `frontend/src/pages/SettingsPage.jsx` - Settings UI
-- `frontend/src/config/features.js` - Feature flag
-
-**Database:**
-- `telegramContacts/{contactId}`:
-  ```javascript
-  {
-    userId: string,           // Owner's user ID
-    telegramUserId: string,   // Telegram user ID
-    chatId: string,          // Telegram chat ID (for sending messages)
-    firstName: string,       // Contact's first name
-    username: string,        // @username (nullable)
-    connectedAt: Timestamp,  // When they connected
-    expiresAt: Timestamp     // When connection expires (20 hours)
-  }
-  ```
-
-- `checkins/{checkInId}`:
-  ```javascript
-  {
-    // ... existing fields
-    telegramContactIds: array[string]  // Array of telegramContacts document IDs
-  }
-  ```
+- `frontend/src/components/settings/TelegramLinkDisplay.jsx`
+- `frontend/src/components/settings/TelegramContactsList.jsx`
+- `frontend/src/components/checkin/TelegramContactSelector.jsx`
+- `frontend/src/pages/CreateCheckInPage.jsx`
+- `frontend/src/pages/SettingsPage.jsx`
 
 ---
 
-## Cost Considerations
+## Important Notes
 
-- **Telegram API**: Completely free, no limits
-- **Firebase Functions**: Pay per invocation (see Firebase pricing)
-  - Webhook invocations: ~1 per contact connection
-  - Alert sending: ~1 per alert per contact
-- **Firestore**: Pay per read/write (see Firebase pricing)
-  - Document writes: 1 per contact connection, 1 per check-in
-  - Document reads: 1 per check-in creation, N per alert (N = number of contacts)
-
-**Compared to SMS**: Telegram is 100% free with no per-message costs!
+✅ **Contacts are permanent** - They don't expire
+✅ **Completely free** - Telegram API has no costs
+✅ **Unlimited contacts** - No limits
+✅ **GitHub auto-deploys** - Just push to deploy
+⚠️ **Must set webhook** - Required after each deployment that changes webhook URL
+⚠️ **Bot token is secret** - Don't commit it to code (use Firebase config)
 
 ---
 
-## Security & Privacy
+## Questions?
 
-- **Bot token**: Stored securely in Firebase Functions config (never exposed to client)
-- **Webhook**: Only accepts POST requests from Telegram servers
-- **User data**: Telegram contacts can only be read by their owner (Firestore rules)
-- **Auto-expiry**: Contacts expire after 20 hours for privacy
-- **No phone numbers**: Telegram doesn't require sharing phone numbers
+- **Webhook not working?** Make sure function is deployed first
+- **Bot token where?** `firebase functions:config:get`
+- **Webhook URL format?** `https://REGION-PROJECT_ID.cloudfunctions.net/telegramWebhook`
+- **Test webhook?** `curl "https://api.telegram.org/botTOKEN/getWebhookInfo"`
 
----
-
-## Next Steps
-
-1. **Test thoroughly** with multiple users
-2. **Monitor Firebase logs** for any errors
-3. **Set up alerts** for failed function invocations
-4. **Consider**: Adding privacy policy link in bot messages
-5. **Consider**: Adding rate limiting to prevent abuse
-
----
-
-## Support
-
-If you encounter issues:
-
-1. **Check Firebase Functions logs**: `firebase functions:log`
-2. **Check Telegram webhook info**: `curl "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"`
-3. **Check Firestore data**: Look at `telegramContacts` collection in Firebase Console
-4. **Test bot directly**: Send `/start` command to your bot in Telegram
-
----
-
-## Maintenance
-
-**Weekly:**
-- Review Firebase Functions logs for errors
-- Check Firestore usage (reads/writes)
-
-**Monthly:**
-- Review connected contacts count
-- Monitor alert success rate
-- Check for expired contacts that should be cleaned up
-
-**As Needed:**
-- Update bot description/picture for branding
-- Adjust contact expiry time based on user feedback
-- Add additional bot commands (e.g., `/help`, `/status`)
-
----
-
-## Congratulations!
-
-Your Telegram integration is now set up and ready to provide free, unlimited safety alerts to your users! 🎉
-
-For questions or improvements, please refer to the Telegram Bot API documentation: https://core.telegram.org/bots/api
+For Telegram Bot API docs: https://core.telegram.org/bots/api

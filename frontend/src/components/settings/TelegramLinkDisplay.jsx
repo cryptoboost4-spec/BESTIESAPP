@@ -38,7 +38,7 @@ const TelegramLinkDisplay = ({ userId }) => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-display text-text-primary flex items-center gap-2">
           Telegram Alerts
-          <InfoButton message="Share your personal Telegram link with emergency contacts. When they click it and start the bot, they'll be connected as safety contacts for 20 hours. They'll receive alerts if you don't check in safely. Unlimited contacts, completely free!" />
+          <InfoButton message="Share your personal Telegram link with emergency contacts. When they click it and start the bot, they'll be connected permanently as safety contacts. They'll receive alerts if you don't check in safely. Unlimited contacts, completely free!" />
         </h2>
       </div>
 
@@ -51,7 +51,7 @@ const TelegramLinkDisplay = ({ userId }) => {
         <ol className="text-sm text-text-secondary space-y-2 list-decimal list-inside">
           <li>Share your personal link below with emergency contacts</li>
           <li>They click the link and <strong>press START</strong> in the Telegram bot</li>
-          <li>They're instantly connected as safety contacts for <strong>20 hours</strong></li>
+          <li>They're instantly connected as safety contacts <strong>permanently</strong></li>
           <li>Select them when creating check-ins (alongside your SMS besties)</li>
           <li>They get emergency alerts if you don't check in safely</li>
         </ol>
@@ -124,7 +124,7 @@ const TelegramLinkDisplay = ({ userId }) => {
               <li><strong>Unlimited contacts</strong> - No 5-person limit like SMS</li>
               <li><strong>Completely free</strong> - Unlike SMS which will become premium</li>
               <li><strong>Easy connection</strong> - Just click link and press START</li>
-              <li><strong>Auto-expiry</strong> - Contacts expire after 20 hours for privacy</li>
+              <li><strong>Permanent connections</strong> - Contacts stay connected until removed</li>
               <li><strong>Instant alerts</strong> - Real-time notifications through Telegram</li>
               <li><strong>Privacy-focused</strong> - No phone number sharing required</li>
             </ul>

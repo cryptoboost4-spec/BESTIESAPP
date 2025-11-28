@@ -89,21 +89,15 @@ async function checkExpiredCheckIns(config) {
 
             for (const contactDoc of telegramContactsSnapshot.docs) {
               const contact = contactDoc.data();
-              const now = Date.now();
-              const expiresAt = contact.expiresAt.toMillis();
 
-              if (now < expiresAt) {
-                // Import sendTelegramAlert from index
-                const { sendTelegramAlert } = require('../../index');
-                await sendTelegramAlert(contact.chatId, {
-                  userName: userData.displayName,
-                  location: checkinData.location?.address || checkinData.location || 'Unknown',
-                  startTime: checkinData.createdAt.toDate().toLocaleString()
-                });
-                console.log(`✅ Sent telegram alert to ${contact.firstName} (${contact.chatId})`);
-              } else {
-                console.log(`⏰ Telegram contact ${contact.firstName} expired, skipping`);
-              }
+              // Import sendTelegramAlert from index
+              const { sendTelegramAlert } = require('../../index');
+              await sendTelegramAlert(contact.chatId, {
+                userName: userData.displayName,
+                location: checkinData.location?.address || checkinData.location || 'Unknown',
+                startTime: checkinData.createdAt.toDate().toLocaleString()
+              });
+              console.log(`✅ Sent telegram alert to ${contact.firstName} (${contact.chatId})`);
             }
           } catch (telegramError) {
             console.error('Error sending telegram alerts:', telegramError);

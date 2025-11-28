@@ -323,9 +323,6 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
               .get();
 
             const now = admin.firestore.Timestamp.now();
-            const expiresAt = admin.firestore.Timestamp.fromMillis(
-              Date.now() + (20 * 60 * 60 * 1000) // 20 hours
-            );
 
             const contactData = {
               userId: userId,
@@ -333,8 +330,7 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
               chatId: chatId.toString(),
               firstName: firstName,
               username: username,
-              connectedAt: now,
-              expiresAt: expiresAt
+              connectedAt: now
             };
 
             if (existingQuery.empty) {
@@ -344,8 +340,7 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
                 chatId: chatId.toString(),
                 firstName: firstName,
                 username: username,
-                connectedAt: now,
-                expiresAt: expiresAt
+                connectedAt: now
               });
             }
 

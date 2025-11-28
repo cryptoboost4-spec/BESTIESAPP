@@ -290,13 +290,7 @@ const CreateCheckInPage = () => {
         ...doc.data()
       }));
 
-      // Filter out expired contacts
-      const now = Date.now();
-      const activeContacts = contactsData.filter(
-        contact => contact.expiresAt?.toMillis() > now
-      );
-
-      setTelegramContacts(activeContacts);
+      setTelegramContacts(contactsData);
     }, (error) => {
       console.error('Error loading telegram contacts:', error);
     });

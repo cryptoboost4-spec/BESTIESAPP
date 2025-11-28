@@ -16,28 +16,6 @@ const TelegramContactSelector = ({
     }
   };
 
-  const getTimeRemaining = (expiresAt) => {
-    const now = Date.now();
-    const expiryTime = expiresAt?.toMillis();
-    const remaining = expiryTime - now;
-
-    if (remaining <= 0) return null; // Expired
-
-    const hours = Math.floor(remaining / (1000 * 60 * 60));
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m left`;
-    }
-    return `${minutes}m left`;
-  };
-
-  // Filter out expired contacts
-  const now = Date.now();
-  const activeContacts = telegramContacts.filter(
-    contact => contact.expiresAt?.toMillis() > now
-  );
-
   const copyTelegramLink = () => {
     const link = TELEGRAM_CONFIG.getLinkForUser(userId);
     navigator.clipboard.writeText(link);
@@ -55,14 +33,14 @@ const TelegramContactSelector = ({
         </span>
       </div>
 
-      {activeContacts.length === 0 ? (
+      {telegramContacts.length === 0 ? (
         <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
           <div className="text-center">
             <div className="text-4xl mb-2">✈️</div>
             <p className="font-semibold text-text-primary mb-2">No Telegram contacts connected</p>
             <p className="text-text-secondary text-sm mb-4">
               Share your Telegram link with emergency contacts. When they click it and press START,
-              they'll be connected for 20 hours. No 5-person limit!
+              they'll be connected permanently. No 5-person limit!
             </p>
             <button
               type="button"
@@ -82,11 +60,8 @@ const TelegramContactSelector = ({
       ) : (
         <>
           <div className="space-y-2 mb-4">
-            {activeContacts.map((contact) => {
+            {telegramContacts.map((contact) => {
               const isSelected = selectedContacts.includes(contact.id);
-              const timeRemaining = getTimeRemaining(contact.expiresAt);
-
-              if (!timeRemaining) return null; // Skip expired contacts
 
               return (
                 <button
@@ -129,7 +104,7 @@ const TelegramContactSelector = ({
                         <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.823 8.598c-.136.613-.494.764-.999.474l-2.761-2.034-1.33 1.279c-.146.147-.271.271-.552.271l.197-2.798 5.092-4.603c.221-.197-.048-.307-.343-.11l-6.291 3.962-2.71-.848c-.59-.185-.602-.59.124-.873l10.598-4.086c.49-.176.918.11.757.874z"/>
                         </svg>
-                        <span>{timeRemaining}</span>
+                        <span>Connected</span>
                       </div>
                     </div>
 

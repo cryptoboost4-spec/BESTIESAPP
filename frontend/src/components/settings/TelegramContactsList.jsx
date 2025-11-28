@@ -5,7 +5,6 @@ import { db } from '../../services/firebase';
 const TelegramContactsList = ({ userId }) => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   // Real-time listener for contacts
   useEffect(() => {
@@ -20,46 +19,21 @@ const TelegramContactsList = ({ userId }) => {
         ...doc.data()
       }));
 
-      // Filter out expired contacts and sort by connection time
-      const now = Date.now();
-      const activeContacts = contactsData
-        .filter(contact => contact.expiresAt?.toMillis() > now)
+      // Sort by connection time (most recent first)
+      const sortedContacts = contactsData
         .sort((a, b) => b.connectedAt?.toMillis() - a.connectedAt?.toMillis());
 
-      setContacts(activeContacts);
+      setContacts(sortedContacts);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [userId]);
 
-  // Update countdown timers every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshKey(prev => prev + 1);
-    }, 60000); // Refresh every minute
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleManualRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const getTimeRemaining = (expiresAt) => {
-    const now = Date.now();
-    const expiryTime = expiresAt?.toMillis();
-    const remaining = expiryTime - now;
-
-    if (remaining <= 0) return 'Expired';
-
-    const hours = Math.floor(remaining / (1000 * 60 * 60));
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m remaining`;
-    }
-    return `${minutes}m remaining`;
+  const getConnectionDate = (connectedAt) => {
+    if (!connectedAt) return 'Recently connected';
+    const date = connectedAt.toDate();
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   if (loading) {
@@ -91,25 +65,11 @@ const TelegramContactsList = ({ userId }) => {
         <h3 className="text-sm font-semibold text-text-primary">
           Connected Contacts ({contacts.length})
         </h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-text-secondary">
-            Auto-updates
-          </span>
-          <button
-            onClick={handleManualRefresh}
-            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-            title="Refresh countdown timers"
-          >
-            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        </div>
       </div>
 
       {contacts.map((contact) => (
         <div
-          key={`${contact.id}-${refreshKey}`}
+          key={contact.id}
           className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
         >
           {/* Profile Photo or Initial */}
@@ -138,7 +98,7 @@ const TelegramContactsList = ({ userId }) => {
               )}
             </div>
             <div className="text-xs text-text-secondary">
-              {getTimeRemaining(contact.expiresAt)}
+              Connected {getConnectionDate(contact.connectedAt)}
             </div>
           </div>
 
@@ -154,7 +114,7 @@ const TelegramContactsList = ({ userId }) => {
       ))}
 
       <div className="text-xs text-text-secondary mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        💡 <strong>Tip:</strong> Contacts can reconnect anytime by clicking your Telegram link and pressing START again.
+        💡 <strong>Tip:</strong> Contacts stay connected permanently. They can reconnect anytime if they need to update their connection.
       </div>
     </div>
   );
