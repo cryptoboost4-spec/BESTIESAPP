@@ -11,8 +11,7 @@ import CheckInLoader from '../components/checkin/CheckInLoader';
 import CheckInMap from '../components/checkin/CheckInMap';
 import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
 import DurationSelector from '../components/checkin/DurationSelector';
-import BestieSelector from '../components/checkin/BestieSelector';
-import MessengerContactSelector from '../components/checkin/MessengerContactSelector';
+import UnifiedContactSelector from '../components/checkin/UnifiedContactSelector';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
 import { FEATURES } from '../config/features';
 
@@ -610,22 +609,16 @@ const CreateCheckInPage = () => {
             />
           </div>
 
-          {/* Select Besties */}
-          <BestieSelector
+          {/* Select Emergency Contacts (Unified) */}
+          <UnifiedContactSelector
             besties={besties}
             selectedBesties={selectedBesties}
             setSelectedBesties={setSelectedBesties}
+            messengerContacts={messengerContacts}
+            selectedMessengerContacts={selectedMessengerContacts}
+            setSelectedMessengerContacts={setSelectedMessengerContacts}
+            userId={currentUser?.uid}
           />
-
-          {/* Messenger Contacts (Optional) */}
-          {FEATURES.messengerAlerts && (
-            <MessengerContactSelector
-              messengerContacts={messengerContacts}
-              selectedContacts={selectedMessengerContacts}
-              setSelectedContacts={setSelectedMessengerContacts}
-              userId={currentUser?.uid}
-            />
-          )}
 
           {/* Notes and Photos */}
           <NotesPhotosSection
