@@ -284,6 +284,11 @@ service cloud.firestore {
       allow write: if false; // Only backend can write
     }
 
+    // Telegram Contacts collection
+    match /telegramContacts/{contactId} {
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow write: if false; // Only backend can write
+    }
 
     // Default deny
     match /{document=**} {

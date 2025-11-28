@@ -13,6 +13,7 @@ import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
 import DurationSelector from '../components/checkin/DurationSelector';
 import BestieSelector from '../components/checkin/BestieSelector';
 import MessengerContactSelector from '../components/checkin/MessengerContactSelector';
+import TelegramContactSelector from '../components/checkin/TelegramContactSelector';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
 import { FEATURES } from '../config/features';
 
@@ -32,6 +33,8 @@ const CreateCheckInPage = () => {
   const [besties, setBesties] = useState([]);
   const [messengerContacts, setMessengerContacts] = useState([]);
   const [selectedMessengerContacts, setSelectedMessengerContacts] = useState([]);
+  const [telegramContacts, setTelegramContacts] = useState([]);
+  const [selectedTelegramContacts, setSelectedTelegramContacts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showingLoader, setShowingLoader] = useState(false);
   const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
@@ -274,6 +277,33 @@ const CreateCheckInPage = () => {
     return () => unsubscribe();
   }, [currentUser, authLoading]);
 
+  // Load Telegram contacts when currentUser is available
+  useEffect(() => {
+    if (!currentUser || authLoading || !FEATURES.telegramAlerts) return;
+
+    const telegramContactsRef = collection(db, 'telegramContacts');
+    const q = query(telegramContactsRef, where('userId', '==', currentUser.uid));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const contactsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Filter out expired contacts
+      const now = Date.now();
+      const activeContacts = contactsData.filter(
+        contact => contact.expiresAt?.toMillis() > now
+      );
+
+      setTelegramContacts(activeContacts);
+    }, (error) => {
+      console.error('Error loading telegram contacts:', error);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, authLoading]);
+
   // Auto-submit quick check-ins after besties are loaded
   useEffect(() => {
     if (shouldAutoSubmit && selectedBesties.length > 0 && !loading) {
@@ -497,6 +527,11 @@ const CreateCheckInPage = () => {
             checkInData.messengerContactIds = selectedMessengerContacts;
           }
 
+          // Add Telegram contact IDs if any are selected
+          if (selectedTelegramContacts.length > 0) {
+            checkInData.telegramContactIds = selectedTelegramContacts;
+          }
+
           // Only add photoURLs field if there are valid photos
           if (validPhotoURLs.length > 0) {
             checkInData.photoURLs = validPhotoURLs;
@@ -623,6 +658,16 @@ const CreateCheckInPage = () => {
               messengerContacts={messengerContacts}
               selectedContacts={selectedMessengerContacts}
               setSelectedContacts={setSelectedMessengerContacts}
+              userId={currentUser?.uid}
+            />
+          )}
+
+          {/* Telegram Contacts (Optional) */}
+          {FEATURES.telegramAlerts && (
+            <TelegramContactSelector
+              telegramContacts={telegramContacts}
+              selectedContacts={selectedTelegramContacts}
+              setSelectedContacts={setSelectedTelegramContacts}
               userId={currentUser?.uid}
             />
           )}

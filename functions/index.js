@@ -252,6 +252,179 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 exports.sendMessengerAlert = sendMessengerAlert;
 
 // ========================================
+// TELEGRAM INTEGRATION
+// ========================================
+
+// Helper: Get Telegram Bot Token
+function getTelegramBotToken() {
+  return functions.config().telegram.bot_token;
+}
+
+// Helper: Send Telegram Message
+async function sendTelegramMessage(chatId, text, options = {}) {
+  const url = `https://api.telegram.org/bot${getTelegramBotToken()}/sendMessage`;
+  await axios.post(url, {
+    chat_id: chatId,
+    text: text,
+    parse_mode: options.parse_mode || 'HTML',
+    ...options
+  });
+}
+
+// Helper: Send Telegram Message with Inline Keyboard
+async function sendTelegramMessageWithButtons(chatId, text, buttons) {
+  await sendTelegramMessage(chatId, text, {
+    reply_markup: {
+      inline_keyboard: buttons
+    }
+  });
+}
+
+// Send Telegram Alert
+async function sendTelegramAlert(chatId, alertData) {
+  const message = `🚨 <b>SAFETY ALERT</b> 🚨\n\n<b>${alertData.userName}</b> needs help!\n\n📍 <b>Location:</b> ${alertData.location}\n⏰ <b>Started:</b> ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
+  await sendTelegramMessage(chatId, message);
+}
+
+// Telegram Webhook
+exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
+  try {
+    const body = req.body;
+
+    // Handle incoming message
+    if (body.message) {
+      const message = body.message;
+      const chatId = message.chat.id;
+      const text = message.text || '';
+
+      // Handle /start command with referral parameter
+      if (text.startsWith('/start')) {
+        const parts = text.split(' ');
+        const refParam = parts[1]; // userId from the deep link
+
+        if (refParam) {
+          try {
+            const userId = refParam;
+
+            // Get user's data
+            const userDoc = await admin.firestore().collection('users').doc(userId).get();
+            const userName = userDoc.exists ? (userDoc.data().displayName || 'Your friend') : 'Your friend';
+
+            // Get sender's info from Telegram
+            const firstName = message.from.first_name || 'Friend';
+            const username = message.from.username || null;
+            const telegramUserId = message.from.id.toString();
+
+            // Create/update telegram contact
+            const contactsRef = admin.firestore().collection('telegramContacts');
+            const existingQuery = await contactsRef
+              .where('userId', '==', userId)
+              .where('telegramUserId', '==', telegramUserId)
+              .get();
+
+            const now = admin.firestore.Timestamp.now();
+            const expiresAt = admin.firestore.Timestamp.fromMillis(
+              Date.now() + (20 * 60 * 60 * 1000) // 20 hours
+            );
+
+            const contactData = {
+              userId: userId,
+              telegramUserId: telegramUserId,
+              chatId: chatId.toString(),
+              firstName: firstName,
+              username: username,
+              connectedAt: now,
+              expiresAt: expiresAt
+            };
+
+            if (existingQuery.empty) {
+              await contactsRef.add(contactData);
+            } else {
+              await contactsRef.doc(existingQuery.docs[0].id).update({
+                chatId: chatId.toString(),
+                firstName: firstName,
+                username: username,
+                connectedAt: now,
+                expiresAt: expiresAt
+              });
+            }
+
+            // Send greeting message
+            await sendTelegramMessage(
+              chatId,
+              `Hi ${firstName}! ${userName} said you'd reach out.`
+            );
+
+            // Wait for natural flow
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Send confirmation with buttons
+            await sendTelegramMessageWithButtons(
+              chatId,
+              `We'll keep an eye out for them while they're out. If something doesn't look right, we'll get in touch with you straight away. Sound good?`,
+              [
+                [
+                  { text: '👍 Yes', callback_data: 'CONFIRM_YES' },
+                  { text: '👎 No', callback_data: 'CONFIRM_NO' }
+                ]
+              ]
+            );
+          } catch (error) {
+            console.error('Error processing telegram start command:', error);
+            await sendTelegramMessage(
+              chatId,
+              'Sorry, there was an error setting up your connection. Please try again.'
+            );
+          }
+        } else {
+          // No referral parameter - general start
+          await sendTelegramMessage(
+            chatId,
+            'Welcome to Besties Safety! To get started, have your friend share their personal link with you.'
+          );
+        }
+      }
+    }
+
+    // Handle callback queries (button presses)
+    if (body.callback_query) {
+      const callbackQuery = body.callback_query;
+      const chatId = callbackQuery.message.chat.id;
+      const data = callbackQuery.data;
+
+      try {
+        if (data === 'CONFIRM_YES') {
+          await sendTelegramMessage(
+            chatId,
+            `Awesome! You're all set up to get notifications for the next 20 hours. If you have any questions, feel free to ask. 💜`
+          );
+        } else if (data === 'CONFIRM_NO') {
+          await sendTelegramMessage(
+            chatId,
+            `No worries! If you change your mind, just send us a message anytime. 👍`
+          );
+        }
+
+        // Answer the callback query to remove loading state
+        await axios.post(
+          `https://api.telegram.org/bot${getTelegramBotToken()}/answerCallbackQuery`,
+          { callback_query_id: callbackQuery.id }
+        );
+      } catch (error) {
+        console.error('Error handling callback query:', error);
+      }
+    }
+
+    return res.status(200).send('OK');
+  } catch (error) {
+    console.error('Error in telegram webhook:', error);
+    return res.status(500).send('ERROR');
+  }
+});
+
+exports.sendTelegramAlert = sendTelegramAlert;
+
+// ========================================
 // EXPORTS - Scheduled functions need wrappers
 // ========================================
 

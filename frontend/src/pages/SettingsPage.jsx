@@ -10,6 +10,8 @@ import notificationService from '../services/notifications';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import MessengerLinkDisplay from '../components/settings/MessengerLinkDisplay';
 import MessengerContactsList from '../components/settings/MessengerContactsList';
+import TelegramLinkDisplay from '../components/settings/TelegramLinkDisplay';
+import TelegramContactsList from '../components/settings/TelegramContactsList';
 import PremiumSMSSection from '../components/settings/PremiumSMSSection';
 import PrivacySettings from '../components/settings/PrivacySettings';
 import SecurityPasscodes from '../components/settings/SecurityPasscodes';
@@ -376,6 +378,17 @@ const SettingsPage = () => {
             <div className="card p-6 mb-6">
               <h2 className="text-xl font-display text-text-primary mb-4">Connected Messenger Contacts</h2>
               <MessengerContactsList userId={currentUser?.uid} />
+            </div>
+          </div>
+        )}
+
+        {/* Telegram Integration */}
+        {FEATURES.telegramAlerts && (
+          <div id="telegram">
+            <TelegramLinkDisplay userId={currentUser?.uid} />
+            <div className="card p-6 mb-6">
+              <h2 className="text-xl font-display text-text-primary mb-4">Connected Telegram Contacts</h2>
+              <TelegramContactsList userId={currentUser?.uid} />
             </div>
           </div>
         )}
