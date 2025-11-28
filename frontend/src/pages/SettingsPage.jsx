@@ -9,7 +9,6 @@ import apiService from '../services/api';
 import notificationService from '../services/notifications';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import MessengerLinkDisplay from '../components/settings/MessengerLinkDisplay';
-import MessengerContactsList from '../components/settings/MessengerContactsList';
 import TelegramConnect from '../components/settings/TelegramConnect';
 import TestAlertModal from '../components/settings/TestAlertModal';
 import PremiumSMSSection from '../components/settings/PremiumSMSSection';
@@ -382,10 +381,6 @@ const SettingsPage = () => {
         {FEATURES.messengerAlerts && (
           <div id="messenger">
             <MessengerLinkDisplay userId={currentUser?.uid} />
-            <div className="card p-6 mb-6">
-              <h2 className="text-xl font-display text-text-primary mb-4">Connected Messenger Contacts</h2>
-              <MessengerContactsList userId={currentUser?.uid} />
-            </div>
           </div>
         )}
 
