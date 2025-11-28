@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const getTimeAgo = (timestamp) => {
   const now = new Date();

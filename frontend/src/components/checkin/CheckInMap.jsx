@@ -22,9 +22,6 @@ const CheckInMap = ({
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
-  // Map default center (San Francisco)
-  const mapCenter = { lat: 37.7749, lng: -122.4194 };
-
   // Initialize Map when API is loaded
   useEffect(() => {
     if (!autocompleteLoaded || !mapRef.current || mapInitialized) return;
@@ -39,7 +36,7 @@ const CheckInMap = ({
       console.log('Initializing Google Map...');
       // Initialize Google Map - locked by default
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-        center: mapCenter,
+        center: { lat: 37.7749, lng: -122.4194 }, // San Francisco
         zoom: 12,
         disableDefaultUI: true,
         zoomControl: true,

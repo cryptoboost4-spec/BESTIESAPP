@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import {
@@ -15,7 +14,6 @@ import {
   limit,
   Timestamp
 } from 'firebase/firestore';
-import BestieCard from '../components/BestieCard';
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
@@ -30,7 +28,6 @@ import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
   const { currentUser, userData } = useAuth();
-  const navigate = useNavigate();
   const [besties, setBesties] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);

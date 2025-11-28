@@ -1,5 +1,5 @@
 import React from 'react';
-import { getConnectionColor, getConnectionEmoji } from '../../services/connectionStrength';
+import { getConnectionColor } from '../../services/connectionStrength';
 
 const CircleVisualization = ({ slots, connectionStrengths, loadingConnections }) => {
   return (
