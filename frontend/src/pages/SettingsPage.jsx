@@ -9,7 +9,6 @@ import apiService from '../services/api';
 import notificationService from '../services/notifications';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import MessengerLinkDisplay from '../components/settings/MessengerLinkDisplay';
-import TelegramConnect from '../components/settings/TelegramConnect';
 import TestAlertModal from '../components/settings/TestAlertModal';
 import PremiumSMSSection from '../components/settings/PremiumSMSSection';
 import PrivacySettings from '../components/settings/PrivacySettings';
@@ -367,6 +366,7 @@ const SettingsPage = () => {
         <div id="notifications">
           <NotificationSettings
             userData={userData}
+            currentUserId={currentUser.uid}
             toggleNotification={toggleNotification}
             togglePushNotifications={togglePushNotifications}
             pushNotificationsSupported={pushNotificationsSupported}
@@ -381,13 +381,6 @@ const SettingsPage = () => {
         {FEATURES.messengerAlerts && (
           <div id="messenger">
             <MessengerLinkDisplay userId={currentUser?.uid} />
-          </div>
-        )}
-
-        {/* Telegram Integration */}
-        {FEATURES.telegramAlerts && (
-          <div id="telegram">
-            <TelegramConnect userData={userData} />
           </div>
         )}
 
