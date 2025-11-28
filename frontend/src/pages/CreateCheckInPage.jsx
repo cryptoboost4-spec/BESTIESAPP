@@ -394,9 +394,9 @@ const CreateCheckInPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedBesties.length === 0) {
-      errorTracker.trackFunnelStep('checkin', 'error_no_besties');
-      toast.error('Please select at least one bestie from your circle to notify', { duration: 4000 });
+    if (selectedBesties.length === 0 && selectedMessengerContacts.length === 0) {
+      errorTracker.trackFunnelStep('checkin', 'error_no_contacts');
+      toast.error('Please select at least one contact (bestie or Messenger) to notify', { duration: 4000 });
       return;
     }
 
@@ -645,7 +645,7 @@ const CreateCheckInPage = () => {
           <button
             type="submit"
             id="create-checkin-submit-btn"
-            disabled={loading || selectedBesties.length === 0}
+            disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
             className="w-full btn btn-primary text-lg py-4"
           >
             {loading ? 'Creating...' : '🛡️ Start Check-In'}
