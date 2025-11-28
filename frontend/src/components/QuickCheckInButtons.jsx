@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../utils/hapticFeedback';
+import InfoButton from './InfoButton';
 import RideshareModal from './checkin/RideshareModal';
 import WalkingModal from './checkin/WalkingModal';
 import QuickMeetModal from './checkin/QuickMeetModal';
@@ -14,7 +15,10 @@ const QuickCheckInButtons = () => {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-xl font-display text-text-primary mb-4">Quick Check-In</h2>
+        <div className="flex items-center mb-4">
+          <h2 className="text-xl font-display text-text-primary">Quick Check-In</h2>
+          <InfoButton message="Start a quick safety check-in! Choose a preset (rideshare, walking, or meeting someone) or create a custom check-in. Your selected besties will be notified if you don't check back in. ✨" />
+        </div>
 
         {/* Top row - 3 small buttons */}
         <div className="grid grid-cols-3 gap-3 mb-3">

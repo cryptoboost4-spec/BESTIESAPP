@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import InfoButton from './InfoButton';
 import BestieCircleShareModal from './BestieCircleShareModal';
 import CircleVisualization from './circle/CircleVisualization';
 import CircleCenterScore from './circle/CircleCenterScore';
@@ -305,7 +306,10 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       <div className="relative z-10">
         <div className="text-center mb-6">
-          <h3 className="text-2xl md:text-3xl font-display mb-1 text-black dark:text-white">💜 Your Bestie Circle</h3>
+          <div className="flex items-center justify-center">
+            <h3 className="text-2xl md:text-3xl font-display mb-1 text-black dark:text-white">💜 Your Bestie Circle</h3>
+            <InfoButton message="Your inner circle of 5 closest people - the ones you can call at 3am! Connection strength grows based on your interactions. Click besties to view profiles or manage your circle. 💜" />
+          </div>
         </div>
 
         {/* Circle Container - Responsive sizing */}

@@ -6,23 +6,25 @@ const CircleStats = ({ circleBestiesLength, overallHealth, loadingConnections })
 
   return (
     <div className="text-center mt-6 space-y-3">
-      <div className="inline-flex items-center gap-2 bg-white px-4 py-3 rounded-full shadow-md border-2 border-purple-200">
-        <span className="text-2xl">⭐</span>
-        <div className="text-left">
-          <div className="font-display text-base md:text-lg text-gradient font-bold leading-tight">
-            {circleBestiesLength}/5 In Your Circle
-          </div>
-          {circleBestiesLength > 0 && !loadingConnections && (
-            <div className="text-xs text-gray-600">
-              {overallHealth >= 90 && "Unbreakable vibes 🔥"}
-              {overallHealth >= 70 && overallHealth < 90 && "Super strong energy ⚡"}
-              {overallHealth >= 50 && overallHealth < 70 && "Solid connections 💪"}
-              {overallHealth >= 30 && overallHealth < 50 && "Building momentum 🔆"}
-              {overallHealth < 30 && "Just getting started 🌱"}
+      {circleBestiesLength < 5 && (
+        <div className="inline-flex items-center gap-2 bg-white px-4 py-3 rounded-full shadow-md border-2 border-purple-200">
+          <span className="text-2xl">⭐</span>
+          <div className="text-left">
+            <div className="font-display text-base md:text-lg text-gradient font-bold leading-tight">
+              {circleBestiesLength}/5 In Your Circle
             </div>
-          )}
+            {circleBestiesLength > 0 && !loadingConnections && (
+              <div className="text-xs text-gray-600">
+                {overallHealth >= 90 && "Unbreakable vibes 🔥"}
+                {overallHealth >= 70 && overallHealth < 90 && "Super strong energy ⚡"}
+                {overallHealth >= 50 && overallHealth < 70 && "Solid connections 💪"}
+                {overallHealth >= 30 && overallHealth < 50 && "Building momentum 🔆"}
+                {overallHealth < 30 && "Just getting started 🌱"}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <div className="text-xs md:text-sm text-gray-600">
         {circleBestiesLength === 5
           ? "Your circle is complete! Keep nurturing these connections 💜"

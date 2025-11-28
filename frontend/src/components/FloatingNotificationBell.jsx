@@ -14,14 +14,6 @@ const FloatingNotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
 
-  // Draggable state
-  const [position, setPosition] = useState(() => {
-    const saved = localStorage.getItem('notificationBellPosition');
-    return saved ? JSON.parse(saved) : { x: window.innerWidth - 80, y: 16 };
-  });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -58,78 +50,6 @@ const FloatingNotificationBell = () => {
 
     return () => unsubscribe();
   }, [currentUser?.uid]);
-
-  // Drag handlers
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    setDragOffset({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-    setShowDropdown(false); // Close dropdown when starting to drag
-  };
-
-  const handleTouchStart = (e) => {
-    const touch = e.touches[0];
-    setIsDragging(true);
-    setDragOffset({
-      x: touch.clientX - position.x,
-      y: touch.clientY - position.y,
-    });
-    setShowDropdown(false);
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isDragging) return;
-
-      const newX = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - dragOffset.x));
-      const newY = Math.max(0, Math.min(window.innerHeight - 80, e.clientY - dragOffset.y));
-
-      setPosition({ x: newX, y: newY });
-    };
-
-    const handleTouchMove = (e) => {
-      if (!isDragging) return;
-
-      const touch = e.touches[0];
-      const newX = Math.max(0, Math.min(window.innerWidth - 80, touch.clientX - dragOffset.x));
-      const newY = Math.max(0, Math.min(window.innerHeight - 80, touch.clientY - dragOffset.y));
-
-      setPosition({ x: newX, y: newY });
-    };
-
-    const handleMouseUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        // Save position to localStorage
-        localStorage.setItem('notificationBellPosition', JSON.stringify(position));
-      }
-    };
-
-    const handleTouchEnd = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        localStorage.setItem('notificationBellPosition', JSON.stringify(position));
-      }
-    };
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchmove', handleTouchMove);
-      document.addEventListener('touchend', handleTouchEnd);
-      document.body.style.cursor = 'grabbing';
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.body.style.cursor = '';
-    };
-  }, [isDragging, dragOffset, position]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
@@ -209,22 +129,12 @@ const FloatingNotificationBell = () => {
 
   return (
     <div
-      className={`fixed z-50 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} transition-opacity`}
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-      }}
+      className="fixed top-4 right-0 z-50"
       ref={dropdownRef}
     >
       {/* Floating Bell Button */}
       <button
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onClick={(e) => {
-          if (!isDragging) {
-            setShowDropdown(!showDropdown);
-          }
-        }}
+        onClick={() => setShowDropdown(!showDropdown)}
         className={`
           relative flex items-center justify-center
           ${unreadCount > 0 ? 'w-20 h-16 px-4' : 'w-16 h-16'}

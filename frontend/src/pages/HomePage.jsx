@@ -14,6 +14,7 @@ import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import InfoButton from '../components/InfoButton';
 import { logAlertResponse } from '../services/interactionTracking';
 
 const HomePage = () => {
@@ -220,8 +221,9 @@ const HomePage = () => {
         {/* Stats Card - Moved above Quick Check-In */}
         {activeCheckIns.length === 0 && (
           <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50">
-              <div className="mb-4">
+              <div className="mb-4 flex items-center">
                 <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
+                <InfoButton message="Track your safety journey! These stats show your completed check-ins, bestie connections, and streaks. Keep building those safety habits! 💜" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">

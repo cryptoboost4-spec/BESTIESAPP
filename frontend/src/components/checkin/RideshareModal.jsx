@@ -45,6 +45,12 @@ const RideshareModal = ({ onClose }) => {
             type="text"
             value={rego}
             onChange={(e) => setRego(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.blur(); // Close keyboard without submitting
+              }
+            }}
             placeholder="ABC123"
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-primary focus:outline-none text-lg font-semibold text-center"
             autoFocus
