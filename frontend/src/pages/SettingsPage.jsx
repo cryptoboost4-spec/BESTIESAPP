@@ -8,11 +8,14 @@ import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import notificationService from '../services/notifications';
 import NotificationSettings from '../components/settings/NotificationSettings';
+import MessengerLinkDisplay from '../components/settings/MessengerLinkDisplay';
+import MessengerContactsList from '../components/settings/MessengerContactsList';
 import PremiumSMSSection from '../components/settings/PremiumSMSSection';
 import PrivacySettings from '../components/settings/PrivacySettings';
 import SecurityPasscodes from '../components/settings/SecurityPasscodes';
 import PreferencesAndQuickAccess from '../components/settings/PreferencesAndQuickAccess';
 import LegalSection from '../components/settings/LegalSection';
+import { FEATURES } from '../config/features';
 
 const SettingsPage = () => {
   const { currentUser, userData } = useAuth();
@@ -365,6 +368,17 @@ const SettingsPage = () => {
             handleSendTestAlert={handleSendTestAlert}
           />
         </div>
+
+        {/* Messenger Integration */}
+        {FEATURES.messengerAlerts && userData?.notificationPreferences?.facebook && (
+          <div id="messenger">
+            <MessengerLinkDisplay userId={currentUser?.uid} />
+            <div className="card p-6 mb-6">
+              <h2 className="text-xl font-display text-text-primary mb-4">Connected Messenger Contacts</h2>
+              <MessengerContactsList userId={currentUser?.uid} />
+            </div>
+          </div>
+        )}
 
         {/* SMS Subscription */}
         <PremiumSMSSection

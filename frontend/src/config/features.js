@@ -26,7 +26,10 @@ export const FEATURES = {
   // Payments (enabled)
   donations: true,
   smsSubscription: true,
-  
+
+  // Messaging (enabled)
+  messengerAlerts: true,
+
   // Future features (disabled for now)
   emergency: false,
   reversePin: false,

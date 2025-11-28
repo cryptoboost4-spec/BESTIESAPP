@@ -12,7 +12,9 @@ import CheckInMap from '../components/checkin/CheckInMap';
 import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
 import DurationSelector from '../components/checkin/DurationSelector';
 import BestieSelector from '../components/checkin/BestieSelector';
+import MessengerContactSelector from '../components/checkin/MessengerContactSelector';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
+import { FEATURES } from '../config/features';
 
 const CreateCheckInPage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -28,6 +30,8 @@ const CreateCheckInPage = () => {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [besties, setBesties] = useState([]);
+  const [messengerContacts, setMessengerContacts] = useState([]);
+  const [selectedMessengerContacts, setSelectedMessengerContacts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showingLoader, setShowingLoader] = useState(false);
   const [autocompleteLoaded, setAutocompleteLoaded] = useState(false);
@@ -241,6 +245,33 @@ const CreateCheckInPage = () => {
       unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, authLoading]);
+
+  // Load Messenger contacts when currentUser is available
+  useEffect(() => {
+    if (!currentUser || authLoading || !FEATURES.messengerAlerts) return;
+
+    const messengerContactsRef = collection(db, 'messengerContacts');
+    const q = query(messengerContactsRef, where('userId', '==', currentUser.uid));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const contactsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Filter out expired contacts
+      const now = Date.now();
+      const activeContacts = contactsData.filter(
+        contact => contact.expiresAt?.toMillis() > now
+      );
+
+      setMessengerContacts(activeContacts);
+    }, (error) => {
+      console.error('Error loading messenger contacts:', error);
+    });
+
+    return () => unsubscribe();
   }, [currentUser, authLoading]);
 
   // Auto-submit quick check-ins after besties are loaded
@@ -461,6 +492,11 @@ const CreateCheckInPage = () => {
             lastUpdate: Timestamp.now(),
           };
 
+          // Add Messenger contact IDs if any are selected
+          if (selectedMessengerContacts.length > 0) {
+            checkInData.messengerContactIds = selectedMessengerContacts;
+          }
+
           // Only add photoURLs field if there are valid photos
           if (validPhotoURLs.length > 0) {
             checkInData.photoURLs = validPhotoURLs;
@@ -580,6 +616,16 @@ const CreateCheckInPage = () => {
             selectedBesties={selectedBesties}
             setSelectedBesties={setSelectedBesties}
           />
+
+          {/* Messenger Contacts (Optional) */}
+          {FEATURES.messengerAlerts && (
+            <MessengerContactSelector
+              messengerContacts={messengerContacts}
+              selectedContacts={selectedMessengerContacts}
+              setSelectedContacts={setSelectedMessengerContacts}
+              userId={currentUser?.uid}
+            />
+          )}
 
           {/* Notes and Photos */}
           <NotesPhotosSection
