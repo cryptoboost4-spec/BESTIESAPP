@@ -9,7 +9,7 @@ const NotificationSettings = ({
   pushNotificationsEnabled,
   loading,
   smsWeeklyCount,
-  handleSendTestAlert
+  onOpenTestModal
 }) => {
   return (
     <div className="card p-6 mb-6">
@@ -31,37 +31,6 @@ const NotificationSettings = ({
             disabled
           >
             <div className="w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform translate-x-1" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
-              Facebook Messenger
-              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Free & Unlimited</span>
-              <InfoButton message="Facebook Messenger alerts are sent to your emergency contacts when you don't check in safely. Share your personal Messenger link to connect contacts for 20 hours. No limits! Find your link in Settings below." />
-            </div>
-            <div className="text-sm text-text-secondary">
-              {userData?.notificationPreferences?.facebook
-                ? 'Messenger alerts enabled'
-                : 'Enable to use Messenger contacts in check-ins'}
-            </div>
-          </div>
-          <button
-            onClick={() => toggleNotification('facebook')}
-            className={`w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${
-              userData?.notificationPreferences?.facebook
-                ? 'bg-primary'
-                : 'bg-gray-300 dark:bg-gray-600'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
-                userData?.notificationPreferences?.facebook
-                  ? 'translate-x-6'
-                  : 'translate-x-1'
-              }`}
-            />
           </button>
         </div>
 
@@ -209,14 +178,14 @@ const NotificationSettings = ({
       {/* Test Alert Button */}
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
         <button
-          onClick={handleSendTestAlert}
+          onClick={onOpenTestModal}
           disabled={loading}
           className="w-full btn btn-primary"
         >
-          {loading ? 'Sending Test Alert...' : '🧪 Send Test Alert'}
+          🧪 Test Notification Channels
         </button>
         <p className="text-xs text-text-secondary mt-2 text-center">
-          Test your notification setup - sends to all enabled channels
+          Choose which channels to test - verify your setup is working
         </p>
       </div>
     </div>

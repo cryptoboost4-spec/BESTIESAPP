@@ -7,7 +7,8 @@ sgMail.setApiKey(functions.config().sendgrid.api_key);
 const db = admin.firestore();
 const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
 
-// Send test alert to verify notification setup (PUSH ONLY to save costs)
+// Send test alert to verify notification setup
+// Accepts: { channels: { email: bool, push: bool, sms: bool, whatsapp: bool, telegram: bool } }
 exports.sendTestAlert = functions.https.onCall(async (data, context) => {
   // Verify user is authenticated
   if (!context.auth) {
@@ -15,6 +16,7 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
   }
 
   const userId = context.auth.uid;
+  const requestedChannels = data?.channels || { email: true, push: true };
 
   try {
     // Get user data
@@ -29,10 +31,11 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       email: false,
       whatsapp: false,
       sms: false,
+      telegram: false,
     };
 
-    // Try to send Push Notification first
-    if (userData.fcmToken && userData.notificationsEnabled) {
+    // Send Push Notification if requested
+    if (requestedChannels.push && userData.fcmToken && userData.notificationsEnabled) {
       try {
         const pushMessage = {
           notification: {
@@ -64,12 +67,11 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
         console.log('Test push notification sent successfully');
       } catch (pushError) {
         console.error('Push notification failed:', pushError.message);
-        // Continue to try email
       }
     }
 
-    // Also send Email if enabled (cheap to test)
-    if (userData.email && userData.notificationPreferences?.email) {
+    // Send Email if requested
+    if (requestedChannels.email && userData.email && userData.notificationPreferences?.email) {
       try {
         const emailMessage = {
           to: userData.email,
@@ -98,19 +100,89 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       }
     }
 
+    // Send SMS if requested
+    if (requestedChannels.sms && userData.phoneNumber && userData.notificationPreferences?.sms) {
+      try {
+        const twilio = require('twilio');
+        const twilioClient = twilio(
+          functions.config().twilio.account_sid,
+          functions.config().twilio.auth_token
+        );
+
+        await twilioClient.messages.create({
+          from: functions.config().twilio.phone_number,
+          to: userData.phoneNumber,
+          body: '✅ Test Alert - Your SMS notifications are working! You\'ll receive safety alerts via text message. - Besties App 💜'
+        });
+
+        channelsTested.sms = true;
+        console.log('Test SMS sent successfully');
+      } catch (smsError) {
+        console.error('SMS notification failed:', smsError.message);
+      }
+    }
+
+    // Send WhatsApp if requested
+    if (requestedChannels.whatsapp && userData.phoneNumber && userData.notificationPreferences?.whatsapp) {
+      try {
+        const twilio = require('twilio');
+        const twilioClient = twilio(
+          functions.config().twilio.account_sid,
+          functions.config().twilio.auth_token
+        );
+
+        await twilioClient.messages.create({
+          from: `whatsapp:${functions.config().twilio.phone_number}`,
+          to: `whatsapp:${userData.phoneNumber}`,
+          body: '✅ Test Alert - Your WhatsApp notifications are working perfectly! You\'ll receive safety alerts here. - Besties App 💜'
+        });
+
+        channelsTested.whatsapp = true;
+        console.log('Test WhatsApp sent successfully');
+      } catch (whatsappError) {
+        console.error('WhatsApp notification failed:', whatsappError.message);
+      }
+    }
+
+    // Send Telegram if requested
+    if (requestedChannels.telegram && userData.telegramChatId && userData.notificationPreferences?.telegram) {
+      try {
+        const axios = require('axios');
+        const botToken = functions.config().telegram.bot_token;
+
+        await axios.post(
+          `https://api.telegram.org/bot${botToken}/sendMessage`,
+          {
+            chat_id: userData.telegramChatId,
+            text: '✅ <b>Test Alert Success!</b>\n\nYour Telegram notifications are working perfectly! You\'ll receive safety alerts here when your besties need help. 💜',
+            parse_mode: 'HTML'
+          }
+        );
+
+        channelsTested.telegram = true;
+        console.log('Test Telegram sent successfully');
+      } catch (telegramError) {
+        console.error('Telegram notification failed:', telegramError.message);
+      }
+    }
+
     // Check if at least one channel was tested
-    if (!channelsTested.push && !channelsTested.email) {
+    const anyTested = Object.values(channelsTested).some(val => val === true);
+    if (!anyTested) {
       throw new functions.https.HttpsError(
         'failed-precondition',
         'No notification channels enabled. Please enable push notifications or email notifications in settings.'
       );
     }
 
+    const testedChannelNames = Object.keys(channelsTested).filter(key => channelsTested[key]);
+
     return {
       success: true,
       message: 'Test alert sent successfully',
       channels: channelsTested,
-      note: 'SMS and WhatsApp are not tested to save costs, but use the same backend system. If email works, they will work too!'
+      testedChannels: testedChannelNames,
+      note: testedChannelNames.length > 0 ? `Successfully tested: ${testedChannelNames.join(', ')}` : 'No channels tested'
     };
   } catch (error) {
     console.error('Error sending test alert:', error);

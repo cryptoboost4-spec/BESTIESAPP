@@ -11,6 +11,7 @@ import NotificationSettings from '../components/settings/NotificationSettings';
 import MessengerLinkDisplay from '../components/settings/MessengerLinkDisplay';
 import MessengerContactsList from '../components/settings/MessengerContactsList';
 import TelegramConnect from '../components/settings/TelegramConnect';
+import TestAlertModal from '../components/settings/TestAlertModal';
 import PremiumSMSSection from '../components/settings/PremiumSMSSection';
 import PrivacySettings from '../components/settings/PrivacySettings';
 import SecurityPasscodes from '../components/settings/SecurityPasscodes';
@@ -29,6 +30,9 @@ const SettingsPage = () => {
   // SMS popup state
   const [showSMSPopup, setShowSMSPopup] = useState(false);
   const [smsWeeklyCount, setSmsWeeklyCount] = useState(0);
+
+  // Test alert modal state
+  const [showTestAlertModal, setShowTestAlertModal] = useState(false);
 
   // Passcode states
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -311,28 +315,32 @@ const SettingsPage = () => {
     }
   };
 
-  const handleSendTestAlert = async () => {
+  const handleSendTestAlert = async (selectedChannels) => {
     setLoading(true);
     try {
-      const result = await apiService.sendTestAlert();
+      const result = await apiService.sendTestAlert(selectedChannels);
 
       if (result.data && result.data.success) {
         const channels = result.data.channels;
         const testedChannels = [];
         if (channels.email) testedChannels.push('Email');
         if (channels.push) testedChannels.push('Push');
+        if (channels.sms) testedChannels.push('SMS');
+        if (channels.whatsapp) testedChannels.push('WhatsApp');
+        if (channels.telegram) testedChannels.push('Telegram');
 
         if (testedChannels.length > 0) {
-          toast.success(`Test alert sent to: ${testedChannels.join(', ')}. WhatsApp/SMS/Facebook not tested to save costs, but use same system.`, { duration: 6000 });
+          toast.success(`✅ Test alerts sent successfully to: ${testedChannels.join(', ')}!`, { duration: 6000 });
+          setShowTestAlertModal(false);
         } else {
-          toast.error('No notification channels enabled. Enable email to test alerts.', { duration: 5000 });
+          toast.error('No channels were tested. Make sure channels are enabled and configured.', { duration: 5000 });
         }
       } else {
         toast.error('Failed to send test alert');
       }
     } catch (error) {
       console.error('Test alert error:', error);
-      toast.error('Failed to send test alert');
+      toast.error(error.message || 'Failed to send test alert');
     } finally {
       setLoading(false);
     }
@@ -366,12 +374,12 @@ const SettingsPage = () => {
             pushNotificationsEnabled={pushNotificationsEnabled}
             loading={loading}
             smsWeeklyCount={smsWeeklyCount}
-            handleSendTestAlert={handleSendTestAlert}
+            onOpenTestModal={() => setShowTestAlertModal(true)}
           />
         </div>
 
         {/* Messenger Integration */}
-        {FEATURES.messengerAlerts && userData?.notificationPreferences?.facebook && (
+        {FEATURES.messengerAlerts && (
           <div id="messenger">
             <MessengerLinkDisplay userId={currentUser?.uid} />
             <div className="card p-6 mb-6">
@@ -608,6 +616,15 @@ const SettingsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Test Alert Modal */}
+      <TestAlertModal
+        isOpen={showTestAlertModal}
+        onClose={() => setShowTestAlertModal(false)}
+        userData={userData}
+        onSendTest={handleSendTestAlert}
+        loading={loading}
+      />
     </div>
   );
 };
