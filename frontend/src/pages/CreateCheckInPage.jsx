@@ -274,11 +274,14 @@ const CreateCheckInPage = () => {
     return () => unsubscribe();
   }, [currentUser, authLoading]);
 
-  // Auto-submit quick check-ins after besties are loaded
+  // Auto-submit quick check-ins after besties or messenger contacts are loaded
   useEffect(() => {
-    if (shouldAutoSubmit && selectedBesties.length > 0 && !loading) {
-      // Besties are loaded and auto-selected, now trigger submit IMMEDIATELY
-      console.log('Auto-submitting quick check-in with besties:', selectedBesties);
+    if (shouldAutoSubmit && (selectedBesties.length > 0 || selectedMessengerContacts.length > 0) && !loading) {
+      // Besties/contacts are loaded and auto-selected, now trigger submit IMMEDIATELY
+      console.log('Auto-submitting quick check-in with:', {
+        besties: selectedBesties,
+        messengerContacts: selectedMessengerContacts
+      });
 
       // Trigger submit immediately without delay
       const submitBtn = document.querySelector('#create-checkin-submit-btn');
@@ -290,7 +293,26 @@ const CreateCheckInPage = () => {
         console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
       }
     }
-  }, [shouldAutoSubmit, selectedBesties, loading]);
+  }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading]);
+
+  // Handle case where auto-submit is enabled but user has no contacts
+  useEffect(() => {
+    if (shouldAutoSubmit && !loading) {
+      // Wait 3 seconds for contacts to load
+      const timeout = setTimeout(() => {
+        if (selectedBesties.length === 0 && selectedMessengerContacts.length === 0) {
+          console.warn('Auto-submit failed: No besties or messenger contacts available');
+          toast.error('You need at least one bestie or messenger contact to start a check-in. Please add a contact first.', {
+            duration: 6000
+          });
+          setShouldAutoSubmit(false); // Disable auto-submit so page becomes visible
+          navigate('/'); // Navigate back to home
+        }
+      }, 3000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading, navigate]);
 
   // Load Google Places API
   useEffect(() => {
