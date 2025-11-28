@@ -5,7 +5,9 @@ import { db } from '../../services/firebase';
 const MessengerContactsList = ({ userId }) => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
+  // Real-time listener for contacts
   useEffect(() => {
     if (!userId) return;
 
@@ -30,6 +32,19 @@ const MessengerContactsList = ({ userId }) => {
 
     return () => unsubscribe();
   }, [userId]);
+
+  // Update countdown timers every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshKey(prev => prev + 1);
+    }, 60000); // Refresh every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   const getTimeRemaining = (expiresAt) => {
     const now = Date.now();
@@ -76,14 +91,25 @@ const MessengerContactsList = ({ userId }) => {
         <h3 className="text-sm font-semibold text-text-primary">
           Connected Contacts ({contacts.length})
         </h3>
-        <span className="text-xs text-text-secondary">
-          20-hour expiry
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-secondary">
+            Auto-updates
+          </span>
+          <button
+            onClick={handleManualRefresh}
+            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+            title="Refresh countdown timers"
+          >
+            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {contacts.map((contact) => (
         <div
-          key={contact.id}
+          key={`${contact.id}-${refreshKey}`}
           className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
         >
           {/* Profile Photo */}
