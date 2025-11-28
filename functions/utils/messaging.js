@@ -70,6 +70,23 @@ async function sendNotification(userId, message, config, options = {}) {
       console.log('Facebook Messenger not yet implemented');
     }
 
+    // Telegram (Free - Priority 4)
+    if (userData.notificationPreferences?.telegram && userData.telegramChatId) {
+      try {
+        const { sendTelegramAlert } = require('../index');
+        await sendTelegramAlert(userData.telegramChatId, {
+          userName: options.userName || 'Your bestie',
+          location: options.location || 'Unknown',
+          startTime: options.startTime || new Date().toLocaleString()
+        });
+        results.push({ method: 'telegram', success: true, chatId: userData.telegramChatId });
+        console.log('Telegram sent to chat:', userData.telegramChatId);
+      } catch (error) {
+        console.error('Telegram failed:', error.message);
+        results.push({ method: 'telegram', success: false, error: error.message });
+      }
+    }
+
     // Log notification
     await admin.firestore().collection('notifications').add({
       userId,

@@ -29,6 +29,7 @@ export const FEATURES = {
 
   // Messaging (enabled)
   messengerAlerts: true,
+  telegramAlerts: true,
 
   // Future features (disabled for now)
   emergency: false,

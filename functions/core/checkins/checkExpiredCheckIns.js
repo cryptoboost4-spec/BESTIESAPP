@@ -79,6 +79,29 @@ async function checkExpiredCheckIns(config) {
         }
         // ===== END FACEBOOK MESSENGER ALERTS =====
 
+        // ===== TELEGRAM ALERTS =====
+        // Send Telegram alerts to besties who have Telegram connected
+        try {
+          for (const bestieId of checkinData.bestieIds) {
+            const bestieDoc = await db.collection('users').doc(bestieId).get();
+            const bestieData = bestieDoc.data();
+
+            if (bestieData && bestieData.notificationPreferences?.telegram && bestieData.telegramChatId) {
+              const { sendTelegramAlert } = require('../../index');
+              await sendTelegramAlert(bestieData.telegramChatId, {
+                userName: userData.displayName,
+                location: checkinData.location?.address || checkinData.location || 'Unknown',
+                startTime: checkinData.createdAt.toDate().toLocaleString()
+              });
+              console.log(`✅ Sent Telegram alert to ${bestieData.displayName} (${bestieData.telegramChatId})`);
+            }
+          }
+        } catch (telegramError) {
+          console.error('Error sending Telegram alerts:', telegramError);
+          // Don't fail the whole function if Telegram fails
+        }
+        // ===== END TELEGRAM ALERTS =====
+
         // Send alerts to all besties
         await sendBulkNotifications(
           checkinData.bestieIds,
@@ -90,7 +113,9 @@ async function checkExpiredCheckIns(config) {
             userId,
             location: checkinData.location,
             notes: checkinData.notes,
-            lastUpdate: checkinData.lastUpdate
+            lastUpdate: checkinData.lastUpdate,
+            userName: userData.displayName,
+            startTime: checkinData.createdAt.toDate().toLocaleString()
           }
         );
 

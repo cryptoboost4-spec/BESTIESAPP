@@ -252,6 +252,137 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 exports.sendMessengerAlert = sendMessengerAlert;
 
 // ========================================
+// TELEGRAM INTEGRATION
+// ========================================
+
+// Helper: Send Telegram Message
+async function sendTelegramMessage(chatId, text, options = {}) {
+  const botToken = functions.config().telegram.bot_token;
+  await axios.post(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    {
+      chat_id: chatId,
+      text: text,
+      parse_mode: options.parse_mode || 'HTML',
+      ...options
+    }
+  );
+}
+
+// Send Telegram Alert
+async function sendTelegramAlert(chatId, alertData) {
+  const message = `🚨 <b>SAFETY ALERT</b> 🚨\n\n<b>${alertData.userName}</b> needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
+  await sendTelegramMessage(chatId, message);
+}
+
+// Telegram Webhook
+exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
+  try {
+    if (req.method !== 'POST') {
+      return res.sendStatus(405);
+    }
+
+    const update = req.body;
+
+    // Handle /start command
+    if (update.message && update.message.text && update.message.text.startsWith('/start')) {
+      const chatId = update.message.chat.id;
+      const userId = update.message.text.split(' ')[1]; // /start userId
+      const username = update.message.from.username || null;
+      const firstName = update.message.from.first_name || 'there';
+
+      if (!userId) {
+        await sendTelegramMessage(
+          chatId,
+          '❌ Invalid link. Please use the link from your Besties app settings.'
+        );
+        return res.sendStatus(200);
+      }
+
+      try {
+        // Get user's data
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+
+        if (!userDoc.exists) {
+          await sendTelegramMessage(
+            chatId,
+            '❌ User not found. Please make sure you\'re using the correct link from the app.'
+          );
+          return res.sendStatus(200);
+        }
+
+        const userData = userDoc.data();
+
+        // Store Telegram chat ID on user document
+        await admin.firestore().collection('users').doc(userId).update({
+          telegramChatId: chatId.toString(),
+          telegramUsername: username,
+          telegramConnectedAt: admin.firestore.FieldValue.serverTimestamp(),
+          'notificationPreferences.telegram': true
+        });
+
+        // Send confirmation message
+        await sendTelegramMessage(
+          chatId,
+          `✅ <b>Connected!</b>\n\nHi ${firstName}! Your Telegram is now connected to Besties.\n\nYou'll receive safety alerts here when your besties need help. Stay safe! 💜`
+        );
+
+        console.log(`✅ Telegram connected for user ${userId} (chat: ${chatId})`);
+      } catch (error) {
+        console.error('Error connecting Telegram:', error);
+        await sendTelegramMessage(
+          chatId,
+          '❌ Something went wrong. Please try again or contact support.'
+        );
+      }
+    }
+    // Handle /disconnect command
+    else if (update.message && update.message.text === '/disconnect') {
+      const chatId = update.message.chat.id;
+
+      try {
+        // Find user with this chat ID
+        const usersSnapshot = await admin.firestore().collection('users')
+          .where('telegramChatId', '==', chatId.toString())
+          .get();
+
+        if (usersSnapshot.empty) {
+          await sendTelegramMessage(
+            chatId,
+            '❌ No connected account found.'
+          );
+          return res.sendStatus(200);
+        }
+
+        // Disconnect Telegram
+        await admin.firestore().collection('users').doc(usersSnapshot.docs[0].id).update({
+          telegramChatId: admin.firestore.FieldValue.delete(),
+          telegramUsername: admin.firestore.FieldValue.delete(),
+          telegramConnectedAt: admin.firestore.FieldValue.delete(),
+          'notificationPreferences.telegram': false
+        });
+
+        await sendTelegramMessage(
+          chatId,
+          '✅ <b>Disconnected</b>\n\nYour Telegram has been disconnected from Besties. You won\'t receive alerts here anymore.'
+        );
+
+        console.log(`✅ Telegram disconnected for chat ${chatId}`);
+      } catch (error) {
+        console.error('Error disconnecting Telegram:', error);
+      }
+    }
+
+    return res.sendStatus(200);
+  } catch (error) {
+    console.error('Telegram webhook error:', error);
+    return res.sendStatus(500);
+  }
+});
+
+exports.sendTelegramAlert = sendTelegramAlert;
+
+// ========================================
 // EXPORTS - Scheduled functions need wrappers
 // ========================================
 

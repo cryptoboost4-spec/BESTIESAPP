@@ -66,6 +66,40 @@ const NotificationSettings = ({
         </div>
 
         <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
+              Telegram
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Free & Unlimited</span>
+              <InfoButton message="Connect YOUR Telegram account to receive safety alerts when your besties need help. This is YOUR personal notification channel (like email). Connect your account in Settings below to get started!" />
+            </div>
+            <div className="text-sm text-text-secondary">
+              {userData?.telegramChatId
+                ? `Connected${userData?.telegramUsername ? ' as @' + userData?.telegramUsername : ''}`
+                : 'Not connected - connect in Settings below'}
+            </div>
+          </div>
+          <button
+            onClick={() => toggleNotification('telegram')}
+            disabled={!userData?.telegramChatId}
+            className={`w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${
+              !userData?.telegramChatId
+                ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
+                : userData?.notificationPreferences?.telegram
+                ? 'bg-primary'
+                : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
+                userData?.notificationPreferences?.telegram
+                  ? 'translate-x-6'
+                  : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
           <div>
             <div className="font-semibold text-text-primary flex items-center">
               Email
