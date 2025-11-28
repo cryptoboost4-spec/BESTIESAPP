@@ -609,19 +609,7 @@ const BestiesPage = () => {
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
         {/* Header */}
         <div className="mb-4 text-center">
-          <div className="flex items-center justify-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-display text-gradient">💜 Your Besties</h1>
-            {besties.length > 0 && (
-              <button
-                onClick={() => {
-                  document.getElementById('all-besties-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="text-sm font-semibold text-primary hover:text-primary-dark underline transition-colors"
-              >
-                See all besties
-              </button>
-            )}
-          </div>
+          <h1 className="text-2xl md:text-3xl font-display text-gradient">💜 Your Besties</h1>
         </div>
 
         {/* Pending Requests */}
