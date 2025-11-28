@@ -128,9 +128,7 @@ const UnifiedContactSelector = ({
       <div className="space-y-2">
         {/* SMS Besties */}
         {besties.map((bestie) => {
-          const selectionIndex = selectedBesties.indexOf(bestie.id);
-          const isSelected = selectionIndex !== -1;
-          const selectionNumber = isSelected ? selectionIndex + 1 : null;
+          const isSelected = selectedBesties.includes(bestie.id);
           const isShareExpanded = expandedBestieShare === bestie.id;
           const channelIcons = getChannelIcons(bestie);
 
