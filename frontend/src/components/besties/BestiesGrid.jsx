@@ -90,28 +90,26 @@ const BestiesGrid = ({ besties, activityFeed }) => {
                       <span>👤</span>
                       <span>View Profile</span>
                     </button>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          if (bestie.phone) {
-                            window.location.href = `sms:${bestie.phone}`;
-                          } else {
-                            toast.error('No phone number available');
-                          }
-                        }}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-lg"
-                      >
-                        <span>💬</span>
-                        <span className="text-sm">Message</span>
-                      </button>
-                      <button
-                        onClick={() => navigate(`/user/${bestie.userId}?action=delete`)}
-                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-lg"
-                      >
-                        <span>🗑️</span>
-                        <span className="text-sm">Delete</span>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => {
+                        if (bestie.phone) {
+                          window.location.href = `sms:${bestie.phone}`;
+                        } else {
+                          toast.error('No phone number available');
+                        }
+                      }}
+                      className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <span>💬</span>
+                      <span>Message</span>
+                    </button>
+                    <button
+                      onClick={() => navigate(`/user/${bestie.userId}?action=delete`)}
+                      className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <span>🗑️</span>
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </div>
               </div>

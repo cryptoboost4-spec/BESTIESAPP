@@ -214,12 +214,9 @@ const HomePage = () => {
     <div className="min-h-screen bg-pattern">
       <OfflineBanner />
 
-      {/* Header with Notification Bell */}
-      <div className="sticky top-0 z-40 bg-pattern/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-display text-gradient">Home</h1>
-          <FloatingNotificationBell inline={true} />
-        </div>
+      {/* Notification Bell - No Header */}
+      <div className="fixed top-4 right-4 z-50">
+        <FloatingNotificationBell />
       </div>
 
       <div className="max-w-4xl mx-auto p-4 pb-20">

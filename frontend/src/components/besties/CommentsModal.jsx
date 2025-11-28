@@ -24,8 +24,8 @@ const CommentsModal = ({
   if (!selectedCheckIn) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-end md:items-center justify-center pb-16 md:pb-0">
-      <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[70vh] md:max-h-[600px] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-end md:items-center justify-center pb-20 md:pb-0">
+      <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl max-w-md w-full max-h-[65vh] md:max-h-[600px] flex flex-col mb-2 md:mb-0">
         {/* Header */}
         <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-600 flex-shrink-0 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30">
           <div className="flex items-center justify-between">
