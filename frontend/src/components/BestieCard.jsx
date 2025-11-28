@@ -212,13 +212,6 @@ const BestieCard = ({ bestie, onRemove }) => {
               </div>
             )}
           </div>
-
-          {/* Hover hint */}
-          <div className="mt-4 pt-3 border-t border-pink-200 dark:border-pink-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
-              💡 Tap profile for options
-            </p>
-          </div>
         </div>
       </div>
 

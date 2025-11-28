@@ -43,7 +43,7 @@ const BestiesGrid = ({ besties, activityFeed }) => {
   };
 
   return (
-    <div>
+    <div id="all-besties-section">
       <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
         All Besties
       </h2>
@@ -94,26 +94,6 @@ const BestiesGrid = ({ besties, activityFeed }) => {
                     </button>
                     <div className="flex gap-2">
                       <button
-                        onClick={async () => {
-                          try {
-                            const bestieDoc = await getDoc(doc(db, 'besties', bestie.id));
-                            if (bestieDoc.exists()) {
-                              await updateDoc(doc(db, 'besties', bestie.id), {
-                                isFavorite: !bestieDoc.data().isFavorite
-                              });
-                              toast.success(bestieDoc.data().isFavorite ? 'Removed from circle' : 'Added to circle! 💜');
-                            }
-                          } catch (error) {
-                            console.error('Error toggling circle:', error);
-                            toast.error('Failed to update');
-                          }
-                        }}
-                        className={`flex-1 ${bestie.isFavorite ? 'bg-pink-500 hover:bg-pink-600' : 'bg-purple-500 hover:bg-purple-600'} text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg`}
-                      >
-                        <span>{bestie.isFavorite ? '💔' : '💜'}</span>
-                        <span className="text-sm">{bestie.isFavorite ? 'Remove' : 'Add to Circle'}</span>
-                      </button>
-                      <button
                         onClick={() => {
                           if (bestie.phone) {
                             window.location.href = `sms:${bestie.phone}`;
@@ -121,10 +101,17 @@ const BestiesGrid = ({ besties, activityFeed }) => {
                             toast.error('No phone number available');
                           }
                         }}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-lg"
                       >
                         <span>💬</span>
                         <span className="text-sm">Message</span>
+                      </button>
+                      <button
+                        onClick={() => navigate(`/user/${bestie.userId}?action=delete`)}
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-lg"
+                      >
+                        <span>🗑️</span>
+                        <span className="text-sm">Delete</span>
                       </button>
                     </div>
                   </div>

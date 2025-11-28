@@ -51,5 +51,15 @@ service firebase.storage {
         && isUnder10MB();
       allow delete: if isAuthenticated() && isOwner(userId);
     }
+
+    // Post photos (for social feed)
+    match /posts/{userId}/{fileName} {
+      allow read: if isAuthenticated(); // Only authenticated users
+      allow write: if isAuthenticated()
+        && isOwner(userId)
+        && isImage()
+        && isUnder10MB();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
   }
 }
