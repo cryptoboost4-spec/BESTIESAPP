@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const { notifyBestiesAboutCheckIn } = require('../../utils/checkInNotifications');
+const { notifyBestiesAboutCheckIn, sendMessengerContactNotifications, formatCheckInNotification } = require('../../utils/checkInNotifications');
 
 const db = admin.firestore();
 
@@ -34,6 +34,25 @@ exports.onCheckInCreated = functions.firestore
         );
       } catch (error) {
         console.error('Error notifying besties about check-in creation:', error);
+        // Don't fail the whole function if notifications fail
+      }
+    }
+
+    // Notify messenger contacts about new check-in
+    if (checkIn.messengerContactIds && checkIn.messengerContactIds.length > 0) {
+      try {
+        // Get user data for message formatting
+        const userDoc = await db.collection('users').doc(checkIn.userId).get();
+        const userName = userDoc.exists ? (userDoc.data().displayName || 'Your friend') : 'Your friend';
+
+        // Format the notification message
+        const message = formatCheckInNotification('checkInCreated', userName, checkIn);
+
+        // Send to all messenger contacts
+        await sendMessengerContactNotifications(checkIn.userId, message);
+        console.log(`✅ Messenger notifications sent for check-in creation to ${checkIn.messengerContactIds.length} contacts`);
+      } catch (error) {
+        console.error('Error notifying messenger contacts about check-in creation:', error);
         // Don't fail the whole function if notifications fail
       }
     }

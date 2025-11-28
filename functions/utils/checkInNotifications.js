@@ -257,5 +257,7 @@ async function sendMessengerMessage(psid, text) {
 
 module.exports = {
   notifyBestiesAboutCheckIn,
+  sendMessengerContactNotifications,
+  formatCheckInNotification,
   NOTIFICATION_CONFIG
 };
