@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import ProfileWithBubble from './ProfileWithBubble';
 import { useDarkMode } from '../contexts/DarkModeContext';
 
-const BestieCard = ({ bestie, onRemove }) => {
+const BestieCard = ({ bestie, onRemove, disableInternalClicks = false }) => {
   const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [userPhoto, setUserPhoto] = useState(null);
@@ -119,13 +119,13 @@ const BestieCard = ({ bestie, onRemove }) => {
               <div className="w-20 h-20 bg-gradient-to-br from-pink-200 to-purple-200 animate-pulse rounded-full mx-auto mb-3"></div>
             ) : (
               <div className="relative inline-block" ref={menuRef}>
-                {/* Click on profile picture to show menu */}
+                {/* Click on profile picture to show menu (disabled when used in BestiesGrid) */}
                 <div
-                  onClick={(e) => {
+                  onClick={!disableInternalClicks ? (e) => {
                     e.stopPropagation();
                     setShowProfileMenu(!showProfileMenu);
-                  }}
-                  className="cursor-pointer"
+                  } : undefined}
+                  className={!disableInternalClicks ? "cursor-pointer" : ""}
                 >
                   <ProfileWithBubble
                     photoURL={userPhoto}
@@ -136,8 +136,8 @@ const BestieCard = ({ bestie, onRemove }) => {
                   />
                 </div>
 
-                {/* Dropdown Menu - appears below profile picture */}
-                {showProfileMenu && (
+                {/* Dropdown Menu - appears below profile picture (hidden when used in BestiesGrid) */}
+                {showProfileMenu && !disableInternalClicks && (
                   <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-2xl border-2 z-50 min-w-[180px]`}>
                     <button
                       onClick={(e) => {
@@ -185,10 +185,10 @@ const BestieCard = ({ bestie, onRemove }) => {
               </div>
             )}
 
-            {/* Name */}
+            {/* Name (clickable only when not in BestiesGrid) */}
             <div
-              className="cursor-pointer mt-3"
-              onClick={() => bestie.userId && navigate(`/user/${bestie.userId}`)}
+              className={!disableInternalClicks ? "cursor-pointer mt-3" : "mt-3"}
+              onClick={!disableInternalClicks ? () => bestie.userId && navigate(`/user/${bestie.userId}`) : undefined}
             >
               <h3 className="font-display text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent truncate">
                 {bestie.name || 'Unknown'}

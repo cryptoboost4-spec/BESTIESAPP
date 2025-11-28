@@ -69,8 +69,11 @@ service cloud.firestore {
         request.resource.data.status == 'active' &&
         request.resource.data.duration >= 10 &&
         request.resource.data.duration <= 180 &&
-        request.resource.data.bestieIds.size() > 0 &&
-        request.resource.data.bestieIds.size() <= 5;
+        request.resource.data.bestieIds.size() <= 5 &&
+        (
+          request.resource.data.bestieIds.size() > 0 ||
+          ('messengerContactIds' in request.resource.data && request.resource.data.messengerContactIds.size() > 0)
+        );
 
       allow update: if isSignedIn() && (
         isOwner(resource.data.userId) ||

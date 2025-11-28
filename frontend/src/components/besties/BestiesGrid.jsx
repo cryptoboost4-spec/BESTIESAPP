@@ -98,7 +98,7 @@ const BestiesGrid = ({ besties, activityFeed }) => {
                   className="h-full transform transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                   onClick={() => setSelectedBestie(isMenuOpen ? null : bestie.id)}
                 >
-                  <BestieCard bestie={bestie} />
+                  <BestieCard bestie={bestie} disableInternalClicks={true} />
                 </div>
 
                 {/* Visual Indicators - Top Left */}

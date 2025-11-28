@@ -394,9 +394,10 @@ const CreateCheckInPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedBesties.length === 0) {
-      errorTracker.trackFunnelStep('checkin', 'error_no_besties');
-      toast.error('Please select at least one bestie from your circle to notify', { duration: 4000 });
+    // Check if user has at least one contact to notify (bestie or messenger contact)
+    if (selectedBesties.length === 0 && selectedMessengerContacts.length === 0) {
+      errorTracker.trackFunnelStep('checkin', 'error_no_contacts');
+      toast.error('Please select at least one bestie or messenger contact to notify', { duration: 4000 });
       return;
     }
 
@@ -518,15 +519,30 @@ const CreateCheckInPage = () => {
             throw new Error('Check-in data verification failed. Please try again.');
           }
 
-          // Verify besties were saved correctly
-          if (!savedData.bestieIds || savedData.bestieIds.length !== selectedBesties.length) {
-            throw new Error('Bestie list was not saved correctly. Please try again.');
+          // Verify besties were saved correctly (if any were selected)
+          if (selectedBesties.length > 0) {
+            if (!savedData.bestieIds || savedData.bestieIds.length !== selectedBesties.length) {
+              throw new Error('Bestie list was not saved correctly. Please try again.');
+            }
+
+            // Verify all bestie IDs match exactly
+            const bestiesMatch = selectedBesties.every(id => savedData.bestieIds.includes(id));
+            if (!bestiesMatch) {
+              throw new Error('Bestie list verification failed. Please try again.');
+            }
           }
 
-          // Verify all bestie IDs match exactly
-          const bestiesMatch = selectedBesties.every(id => savedData.bestieIds.includes(id));
-          if (!bestiesMatch) {
-            throw new Error('Bestie list verification failed. Please try again.');
+          // Verify messenger contacts were saved correctly (if any were selected)
+          if (selectedMessengerContacts.length > 0) {
+            if (!savedData.messengerContactIds || savedData.messengerContactIds.length !== selectedMessengerContacts.length) {
+              throw new Error('Messenger contacts were not saved correctly. Please try again.');
+            }
+
+            // Verify all messenger contact IDs match exactly
+            const messengerContactsMatch = selectedMessengerContacts.every(id => savedData.messengerContactIds.includes(id));
+            if (!messengerContactsMatch) {
+              throw new Error('Messenger contacts verification failed. Please try again.');
+            }
           }
 
           errorTracker.trackFunnelStep('checkin', 'complete_checkin');
