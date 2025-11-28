@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { notifyBestiesAboutCheckIn } = require('../../utils/checkInNotifications');
 
 const db = admin.firestore();
 
@@ -27,14 +28,34 @@ exports.extendCheckIn = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('permission-denied', 'Invalid check-in');
   }
 
-  const currentAlertTime = checkIn.data().alertTime.toDate();
+  const checkInData = checkIn.data();
+  const currentAlertTime = checkInData.alertTime.toDate();
   const newAlertTime = new Date(currentAlertTime.getTime() + additionalMinutes * 60000);
 
   await checkInRef.update({
     alertTime: admin.firestore.Timestamp.fromDate(newAlertTime),
-    duration: checkIn.data().duration + additionalMinutes,
+    duration: checkInData.duration + additionalMinutes,
     lastUpdate: admin.firestore.Timestamp.now(),
   });
+
+  // Notify besties about extension (via free channels only)
+  if (checkInData.bestieIds && checkInData.bestieIds.length > 0) {
+    try {
+      await notifyBestiesAboutCheckIn(
+        checkInData.userId,
+        checkInData.bestieIds,
+        'checkInExtended',
+        {
+          ...checkInData,
+          extension: additionalMinutes,
+          alertTime: admin.firestore.Timestamp.fromDate(newAlertTime)
+        }
+      );
+    } catch (error) {
+      console.error('Error notifying besties about check-in extension:', error);
+      // Don't fail the whole function if notifications fail
+    }
+  }
 
   return { success: true, newAlertTime: newAlertTime.toISOString() };
 });

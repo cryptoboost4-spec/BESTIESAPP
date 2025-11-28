@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { notifyBestiesAboutCheckIn } = require('../../utils/checkInNotifications');
 
 const db = admin.firestore();
 
@@ -25,6 +26,26 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
 
   // Stats are updated by onCheckInCountUpdate trigger - no need to update here
   // (Removed duplicate increment to fix double-counting bug)
+
+  // Notify besties about check-in completion
+  const checkInData = checkIn.data();
+  if (checkInData.bestieIds && checkInData.bestieIds.length > 0) {
+    try {
+      await notifyBestiesAboutCheckIn(
+        checkInData.userId,
+        checkInData.bestieIds,
+        'checkInCompleted',
+        {
+          ...checkInData,
+          status: 'completed',
+          completedAt: admin.firestore.Timestamp.now(),
+        }
+      );
+    } catch (error) {
+      console.error('Error notifying besties about check-in completion:', error);
+      // Don't throw - notification failure shouldn't prevent completion
+    }
+  }
 
   return { success: true };
 });
