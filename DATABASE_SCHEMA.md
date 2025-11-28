@@ -49,7 +49,15 @@
 | `whatsapp` | boolean | `false` | WhatsApp notifications enabled |
 | `sms` | boolean | `false` | SMS notifications enabled |
 | `facebook` | boolean | `false` | Facebook Messenger notifications enabled |
+| `telegram` | boolean | `false` | Telegram notifications enabled |
 | `email` | boolean | `true` | Email notifications enabled |
+
+### Telegram Integration
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| `telegramChatId` | string \| null | ❌ | User's Telegram chat ID for direct notifications |
+| `telegramUsername` | string \| null | ❌ | User's Telegram username (for display purposes) |
+| `telegramConnectedAt` | Timestamp \| null | ❌ | When user connected their Telegram account |
 
 ### Nested: settings
 | Field Name | Type | Default | Description |
@@ -410,6 +418,16 @@
 ---
 
 ## 📝 Changelog
+
+### 2025-11-28
+- **Added Telegram Integration as Notification Preference:**
+  - Added `telegram` to `notificationPreferences` (boolean)
+  - Added `telegramChatId` field to users collection (user's personal Telegram chat ID)
+  - Added `telegramUsername` field to users collection (for display purposes)
+  - Added `telegramConnectedAt` field to users collection (connection timestamp)
+  - Telegram works as a personal notification channel (like email/SMS), NOT as emergency contact sharing
+  - When a bestie has Telegram connected, they receive alerts directly on Telegram
+  - No `telegramContacts` collection needed - alerts go to besties' own accounts
 
 ### 2025-11-21
 - Added `currentStreak` and `longestStreak` fields to users.stats
