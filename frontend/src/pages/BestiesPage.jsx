@@ -223,14 +223,18 @@ const BestiesPage = () => {
       const userPostsSnapshot = await getDocs(userPostsQuery);
       userPostsSnapshot.forEach((doc) => {
         const data = doc.data();
-        activities.push({
-          id: doc.id,
-          type: 'post',
-          postData: data,
-          userName: userData?.displayName || 'You',
-          userId: currentUser.uid,
-          timestamp: data.createdAt?.toDate() || new Date(),
-        });
+        // Avoid duplicates - check if post already exists
+        const alreadyAdded = activities.some(a => a.id === doc.id);
+        if (!alreadyAdded) {
+          activities.push({
+            id: doc.id,
+            type: 'post',
+            postData: data,
+            userName: userData?.displayName || 'You',
+            userId: currentUser.uid,
+            timestamp: data.createdAt?.toDate() || new Date(),
+          });
+        }
       });
 
       // Load welcome posts from Besties Bot
@@ -243,14 +247,18 @@ const BestiesPage = () => {
         const data = doc.data();
         // Only show welcome posts addressed to current user
         if (data.recipientId === currentUser.uid) {
-          activities.push({
-            id: doc.id,
-            type: 'post',
-            postData: data,
-            userName: 'Besties Team',
-            userId: 'BESTIES_BOT',
-            timestamp: data.createdAt?.toDate() || new Date(),
-          });
+          // Avoid duplicates - check if post already exists
+          const alreadyAdded = activities.some(a => a.id === doc.id);
+          if (!alreadyAdded) {
+            activities.push({
+              id: doc.id,
+              type: 'post',
+              postData: data,
+              userName: 'Besties Team',
+              userId: 'BESTIES_BOT',
+              timestamp: data.createdAt?.toDate() || new Date(),
+            });
+          }
         }
       });
 
@@ -292,14 +300,18 @@ const BestiesPage = () => {
 
           postsSnapshot.forEach((doc) => {
             const data = doc.data();
-            activities.push({
-              id: doc.id,
-              type: 'post',
-              postData: data,
-              userName: bestie?.name || 'Bestie',
-              userId: bestieId,
-              timestamp: data.createdAt?.toDate() || new Date(),
-            });
+            // Avoid duplicates - check if post already exists
+            const alreadyAdded = activities.some(a => a.id === doc.id);
+            if (!alreadyAdded) {
+              activities.push({
+                id: doc.id,
+                type: 'post',
+                postData: data,
+                userName: bestie?.name || 'Bestie',
+                userId: bestieId,
+                timestamp: data.createdAt?.toDate() || new Date(),
+              });
+            }
           });
 
           // Process check-ins from both queries
@@ -367,14 +379,19 @@ const BestiesPage = () => {
 
             recentBadges.forEach(badge => {
               const bestie = besties.find(b => b.userId === bestieId);
-              activities.push({
-                id: `badge-${bestieId}-${badge.id}`,
-                type: 'badge',
-                userName: bestie?.name || 'Bestie',
-                userId: bestieId,
-                badge: badge,
-                timestamp: badge.earnedAt?.toDate() || new Date(),
-              });
+              const badgeId = `badge-${bestieId}-${badge.id}`;
+              // Avoid duplicates - check if badge already exists
+              const alreadyAdded = activities.some(a => a.id === badgeId);
+              if (!alreadyAdded) {
+                activities.push({
+                  id: badgeId,
+                  type: 'badge',
+                  userName: bestie?.name || 'Bestie',
+                  userId: bestieId,
+                  badge: badge,
+                  timestamp: badge.earnedAt?.toDate() || new Date(),
+                });
+              }
             });
           }
         } catch (error) {
