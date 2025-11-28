@@ -118,6 +118,32 @@ async function sendMessengerMessageWithQuickReplies(psid, text, quickReplies) {
   );
 }
 
+// Helper: Send Messenger Message with Buttons
+async function sendMessengerMessageWithButtons(psid, text, buttons) {
+  await axios.post(
+    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook.page_token}`,
+    {
+      recipient: { id: psid },
+      message: {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'button',
+            text: text,
+            buttons: buttons
+          }
+        }
+      }
+    }
+  );
+}
+
+// Helper: Extract first name from full name
+function getFirstName(fullName) {
+  if (!fullName) return 'there';
+  return fullName.split(' ')[0];
+}
+
 // Send Messenger Alert
 async function sendMessengerAlert(psid, alertData) {
   const message = `🚨 SAFETY ALERT 🚨\n\n${alertData.userName} needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
@@ -156,18 +182,161 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 
           try {
             if (payload === 'CONFIRM_YES') {
+              // Send confirmation message
               await sendMessengerMessage(
                 senderPSID,
-                `Awesome! You're all set up to get notifications for the next 20 hours. If you have any questions, feel free to ask. 💜`
+                `Awesome! You're all set up to get notifications for the next 20 hours. 💜`
+              );
+
+              // Wait 1 second then send follow page prompt with button
+              await new Promise(resolve => setTimeout(resolve, 1000));
+
+              await sendMessengerMessageWithButtons(
+                senderPSID,
+                `Make sure you like our page to get notifications!`,
+                [
+                  {
+                    type: 'web_url',
+                    url: 'https://www.facebook.com/besties.safety',
+                    title: '👍 Like Our Page'
+                  }
+                ]
+              );
+
+              // Wait 2 seconds then send FAQ options
+              await new Promise(resolve => setTimeout(resolve, 2000));
+
+              await sendMessengerMessageWithQuickReplies(
+                senderPSID,
+                `Have any questions?`,
+                [
+                  {
+                    content_type: 'text',
+                    title: '❓ How does this work?',
+                    payload: 'FAQ_HOW'
+                  },
+                  {
+                    content_type: 'text',
+                    title: '⏰ What happens after 20h?',
+                    payload: 'FAQ_EXPIRY'
+                  },
+                  {
+                    content_type: 'text',
+                    title: '🔔 Change notifications',
+                    payload: 'FAQ_NOTIFICATIONS'
+                  },
+                  {
+                    content_type: 'text',
+                    title: '📧 Other question',
+                    payload: 'FAQ_OTHER'
+                  }
+                ]
               );
             } else if (payload === 'CONFIRM_NO') {
               await sendMessengerMessage(
                 senderPSID,
                 `No worries! If you change your mind, just send us a message anytime. 👍`
               );
+            } else if (payload === 'FAQ_HOW') {
+              await sendMessengerMessage(
+                senderPSID,
+                `You're connected as a safety contact! When your friend creates a check-in, they can select you to be notified. If they don't check in safely within their time window, you'll get an emergency alert with their location. 🚨`
+              );
+            } else if (payload === 'FAQ_EXPIRY') {
+              await sendMessengerMessage(
+                senderPSID,
+                `After 20 hours, your connection expires for privacy. To reconnect, just click the link again or send any message! You'll get a fresh 20-hour window. ⏰`
+              );
+            } else if (payload === 'FAQ_NOTIFICATIONS') {
+              await sendMessengerMessage(
+                senderPSID,
+                `To only receive emergency alerts (not regular check-in updates), reply with the text: ONLY EMERGENCY\n\nYou'll only get urgent safety alerts when your friend needs help. 🔔`
+              );
+            } else if (payload === 'FAQ_OTHER') {
+              await sendMessengerMessage(
+                senderPSID,
+                `For other questions, please email us at:\n📧 bestiesapp.xyz@gmail.com\n\nWe'll get back to you as soon as possible!`
+              );
             }
           } catch (error) {
             console.error('Error handling quick reply:', error);
+          }
+        }
+        // Handle text messages (including ONLY EMERGENCY preference)
+        else if (webhookEvent.message?.text) {
+          const messageText = webhookEvent.message.text.trim().toUpperCase();
+
+          try {
+            // Handle "ONLY EMERGENCY" preference
+            if (messageText === 'ONLY EMERGENCY') {
+              // Update contact preference in Firestore
+              const contactsRef = admin.firestore().collection('messengerContacts');
+              const contactQuery = await contactsRef
+                .where('messengerPSID', '==', senderPSID)
+                .get();
+
+              if (!contactQuery.empty) {
+                const contactDoc = contactQuery.docs[0];
+                await contactsRef.doc(contactDoc.id).update({
+                  notificationPreference: 'emergency_only'
+                });
+
+                await sendMessengerMessage(
+                  senderPSID,
+                  `✅ Notification preference updated!\n\nYou'll now only receive emergency alerts when your friend needs help. You won't get regular check-in notifications.\n\nTo receive all updates again, reply: ALL NOTIFICATIONS`
+                );
+              } else {
+                await sendMessengerMessage(
+                  senderPSID,
+                  `It looks like you're not connected as a safety contact yet. Please click the link your friend sent you first!`
+                );
+              }
+            }
+            // Handle "ALL NOTIFICATIONS" to switch back
+            else if (messageText === 'ALL NOTIFICATIONS') {
+              const contactsRef = admin.firestore().collection('messengerContacts');
+              const contactQuery = await contactsRef
+                .where('messengerPSID', '==', senderPSID)
+                .get();
+
+              if (!contactQuery.empty) {
+                const contactDoc = contactQuery.docs[0];
+                await contactsRef.doc(contactDoc.id).update({
+                  notificationPreference: 'all'
+                });
+
+                await sendMessengerMessage(
+                  senderPSID,
+                  `✅ Notification preference updated!\n\nYou'll now receive all check-in updates and emergency alerts. To switch back to emergency-only, reply: ONLY EMERGENCY`
+                );
+              }
+            }
+            // Auto-reply for other messages
+            else if (!refParam) {
+              await sendMessengerMessageWithQuickReplies(
+                senderPSID,
+                `Thanks for reaching out! This is an automated safety bot. 💜\n\nHow can I help you?`,
+                [
+                  {
+                    content_type: 'text',
+                    title: '❓ How does this work?',
+                    payload: 'FAQ_HOW'
+                  },
+                  {
+                    content_type: 'text',
+                    title: '🔔 Change notifications',
+                    payload: 'FAQ_NOTIFICATIONS'
+                  },
+                  {
+                    content_type: 'text',
+                    title: '📧 Contact support',
+                    payload: 'FAQ_OTHER'
+                  }
+                ]
+              );
+            }
+          } catch (error) {
+            console.error('Error handling text message:', error);
           }
         }
         // Handle new contact registration via m.me link
@@ -200,7 +369,8 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
               name: profile.name,
               photoURL: profile.profile_pic,
               connectedAt: now,
-              expiresAt: expiresAt
+              expiresAt: expiresAt,
+              notificationPreference: 'all' // Default to all notifications
             };
 
             if (existingQuery.empty) {
@@ -208,23 +378,27 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
             } else {
               await contactsRef.doc(existingQuery.docs[0].id).update({
                 connectedAt: now,
-                expiresAt: expiresAt
+                expiresAt: expiresAt,
+                notificationPreference: 'all' // Reset to all when reconnecting
               });
             }
 
-            // Send first message: greeting
+            // Get first name only
+            const firstName = getFirstName(profile.name);
+
+            // Send first message: greeting with first name only
             await sendMessengerMessage(
               senderPSID,
-              `Hi ${profile.name}! ${userName} said you'd reach out.`
+              `Hi ${firstName}! ${userName} told us we should be expecting a message from you.`
             );
 
-            // Wait a moment for natural conversation flow
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Wait 5 seconds for natural conversation flow
+            await new Promise(resolve => setTimeout(resolve, 5000));
 
             // Send second message: confirmation with Yes/No options
             await sendMessengerMessageWithQuickReplies(
               senderPSID,
-              `We'll keep an eye out for them while they're out. If something doesn't look right, we'll get in touch with you straight away. Sound good?`,
+              `We'll keep an eye out for them while they're out. If something doesn't look right, we'll get in touch with you straight away.\n\n💡 Tip: Reply "ONLY EMERGENCY" anytime to only get urgent alerts.\n\nSound good?`,
               [
                 {
                   content_type: 'text',
