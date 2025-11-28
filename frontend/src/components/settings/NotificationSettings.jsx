@@ -34,21 +34,34 @@ const NotificationSettings = ({
           </button>
         </div>
 
-        <div className="flex items-center justify-between opacity-50">
+        <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
               Facebook Messenger
-              <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full whitespace-nowrap">Coming Soon</span>
-              <InfoButton message="Facebook Messenger notifications will keep you updated on your besties' safety. Perfect if you use Messenger regularly!" />
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Free & Unlimited</span>
+              <InfoButton message="Facebook Messenger alerts are sent to your emergency contacts when you don't check in safely. Share your personal Messenger link to connect contacts for 20 hours. No limits! Find your link in Settings below." />
             </div>
-            <div className="text-sm text-text-secondary">Integration in development</div>
+            <div className="text-sm text-text-secondary">
+              {userData?.notificationPreferences?.facebook
+                ? 'Messenger alerts enabled'
+                : 'Enable to use Messenger contacts in check-ins'}
+            </div>
           </div>
           <button
             onClick={() => toggleNotification('facebook')}
-            className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed flex-shrink-0 ml-3"
-            disabled
+            className={`w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${
+              userData?.notificationPreferences?.facebook
+                ? 'bg-primary'
+                : 'bg-gray-300 dark:bg-gray-600'
+            }`}
           >
-            <div className="w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform translate-x-1" />
+            <div
+              className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
+                userData?.notificationPreferences?.facebook
+                  ? 'translate-x-6'
+                  : 'translate-x-1'
+              }`}
+            />
           </button>
         </div>
 
@@ -113,7 +126,7 @@ const NotificationSettings = ({
 
         {pushNotificationsSupported && !pushNotificationsEnabled && (
           <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg">
-            💡 Tip: Email, WhatsApp, and Facebook are more reliable for critical safety alerts
+            💡 Tip: Email and Facebook Messenger are more reliable for critical safety alerts
           </div>
         )}
 

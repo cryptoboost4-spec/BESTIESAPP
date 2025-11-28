@@ -104,6 +104,20 @@ async function sendMessengerMessage(psid, text) {
   );
 }
 
+// Helper: Send Messenger Message with Quick Replies
+async function sendMessengerMessageWithQuickReplies(psid, text, quickReplies) {
+  await axios.post(
+    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook.page_token}`,
+    {
+      recipient: { id: psid },
+      message: {
+        text: text,
+        quick_replies: quickReplies
+      }
+    }
+  );
+}
+
 // Send Messenger Alert
 async function sendMessengerAlert(psid, alertData) {
   const message = `🚨 SAFETY ALERT 🚨\n\n${alertData.userName} needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
@@ -127,36 +141,59 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
   // Handle incoming messages
   if (req.method === 'POST') {
     const body = req.body;
-    
+
     if (body.object === 'page') {
       for (const entry of body.entry) {
         const webhookEvent = entry.messaging[0];
         const senderPSID = webhookEvent.sender.id;
+
+        // Handle messages with referral (new user clicking m.me link)
         const refParam = webhookEvent.referral?.ref || webhookEvent.postback?.referral?.ref;
-        
-        if (refParam) {
+
+        // Handle quick reply responses
+        if (webhookEvent.message?.quick_reply) {
+          const payload = webhookEvent.message.quick_reply.payload;
+
+          try {
+            if (payload === 'CONFIRM_YES') {
+              await sendMessengerMessage(
+                senderPSID,
+                `Awesome! You're all set up to get notifications for the next 20 hours. If you have any questions, feel free to ask. 💜`
+              );
+            } else if (payload === 'CONFIRM_NO') {
+              await sendMessengerMessage(
+                senderPSID,
+                `No worries! If you change your mind, just send us a message anytime. 👍`
+              );
+            }
+          } catch (error) {
+            console.error('Error handling quick reply:', error);
+          }
+        }
+        // Handle new contact registration via m.me link
+        else if (refParam) {
           const userId = refParam;
-          
+
           try {
             // Get sender's FB profile
             const profile = await getFacebookProfile(senderPSID);
-            
+
             // Get user's data
             const userDoc = await admin.firestore().collection('users').doc(userId).get();
             const userName = userDoc.exists ? (userDoc.data().displayName || 'Your friend') : 'Your friend';
-            
+
             // Create/update messenger contact
             const contactsRef = admin.firestore().collection('messengerContacts');
             const existingQuery = await contactsRef
               .where('userId', '==', userId)
               .where('messengerPSID', '==', senderPSID)
               .get();
-            
+
             const now = admin.firestore.Timestamp.now();
             const expiresAt = admin.firestore.Timestamp.fromMillis(
               Date.now() + (20 * 60 * 60 * 1000)
             );
-            
+
             const contactData = {
               userId: userId,
               messengerPSID: senderPSID,
@@ -165,7 +202,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
               connectedAt: now,
               expiresAt: expiresAt
             };
-            
+
             if (existingQuery.empty) {
               await contactsRef.add(contactData);
             } else {
@@ -174,11 +211,32 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
                 expiresAt: expiresAt
               });
             }
-            
-            // Send personalized confirmation
+
+            // Send first message: greeting
             await sendMessengerMessage(
-              senderPSID, 
-              `Hey ${profile.name}! ${userName} told us you'd reach out. You're now connected as their safety contact for the next 20 hours. 💜\n\nYou'll get alerts if they need help!`
+              senderPSID,
+              `Hi ${profile.name}! ${userName} said you'd reach out.`
+            );
+
+            // Wait a moment for natural conversation flow
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Send second message: confirmation with Yes/No options
+            await sendMessengerMessageWithQuickReplies(
+              senderPSID,
+              `We'll keep an eye out for them while they're out. If something doesn't look right, we'll get in touch with you straight away. Sound good?`,
+              [
+                {
+                  content_type: 'text',
+                  title: '👍 Yes',
+                  payload: 'CONFIRM_YES'
+                },
+                {
+                  content_type: 'text',
+                  title: '👎 No',
+                  payload: 'CONFIRM_NO'
+                }
+              ]
             );
           } catch (error) {
             console.error('Error processing messenger message:', error);
