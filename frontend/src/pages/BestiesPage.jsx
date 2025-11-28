@@ -24,7 +24,6 @@ import CreatePostModal from '../components/CreatePostModal';
 import BestiesLeaderboard from '../components/besties/BestiesLeaderboard';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
-import FloatingNotificationBell from '../components/FloatingNotificationBell';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -601,11 +600,6 @@ const BestiesPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      {/* Notification Bell - No Header */}
-      <div className="fixed top-4 right-4 z-50">
-        <FloatingNotificationBell />
-      </div>
-
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
         {/* Header */}
         <div className="mb-4 text-center">

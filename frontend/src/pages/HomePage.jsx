@@ -15,7 +15,6 @@ import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
-import FloatingNotificationBell from '../components/FloatingNotificationBell';
 import { logAlertResponse } from '../services/interactionTracking';
 
 const HomePage = () => {
@@ -213,11 +212,6 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-pattern">
       <OfflineBanner />
-
-      {/* Notification Bell - No Header */}
-      <div className="fixed top-4 right-4 z-50">
-        <FloatingNotificationBell />
-      </div>
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
         {/* =================================================================

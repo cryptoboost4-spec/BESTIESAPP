@@ -41,7 +41,7 @@ const CircleVisualization = ({ slots, connectionStrengths, loadingConnections })
       {/* Connection Lines with Dynamic Strength */}
       {slots.map((bestie, index) => {
         if (!bestie) return null;
-        const angle = (index * 72 - 90) * (Math.PI / 180);
+        const angle = ((index * 72) - 90) * (Math.PI / 180);
         const radius = 45; // Viewbox units
         const x = 50 + radius * Math.cos(angle);
         const y = 50 + radius * Math.sin(angle);
