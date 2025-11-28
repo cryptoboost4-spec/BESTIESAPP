@@ -2,6 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../services/firebase';
 // eslint-disable-next-line no-unused-vars
 import { collection, getDocs, getDoc, doc, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import TimeRangeFilter from '../components/analytics/TimeRangeFilter';
+import UserStats from '../components/analytics/UserStats';
+import CheckInStats from '../components/analytics/CheckInStats';
+import BestiesStats from '../components/analytics/BestiesStats';
+import RevenueStats from '../components/analytics/RevenueStats';
+import EngagementStats from '../components/analytics/EngagementStats';
+import CostTracking from '../components/analytics/CostTracking';
+import GrowthMetrics from '../components/analytics/GrowthMetrics';
+import FunnelAnalytics from '../components/analytics/FunnelAnalytics';
+import UserBehavior from '../components/analytics/UserBehavior';
+import TopLocations from '../components/analytics/TopLocations';
+import RecentAlerts from '../components/analytics/RecentAlerts';
 
 const DevAnalyticsPage = () => {
   const [analytics, setAnalytics] = useState({
@@ -475,302 +487,22 @@ const DevAnalyticsPage = () => {
           <p className="text-text-secondary">Real-time app metrics and insights</p>
         </div>
 
-        {/* Time Range Filter */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setTimeRange('7d')}
-            className={`px-4 py-2 rounded-full font-semibold ${
-              timeRange === '7d' ? 'bg-primary text-white' : 'bg-white text-text-primary'
-            }`}
-          >
-            Last 7 Days
-          </button>
-          <button
-            onClick={() => setTimeRange('30d')}
-            className={`px-4 py-2 rounded-full font-semibold ${
-              timeRange === '30d' ? 'bg-primary text-white' : 'bg-white text-text-primary'
-            }`}
-          >
-            Last 30 Days
-          </button>
-          <button
-            onClick={() => setTimeRange('all')}
-            className={`px-4 py-2 rounded-full font-semibold ${
-              timeRange === 'all' ? 'bg-primary text-white' : 'bg-white text-text-primary'
-            }`}
-          >
-            All Time
-          </button>
-        </div>
+        <TimeRangeFilter timeRange={timeRange} setTimeRange={setTimeRange} />
 
-        {/* Users Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">👥 Users</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-primary">{analytics.users.total}</div>
-              <div className="text-sm text-text-secondary">Total Users</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-success">{analytics.users.new7days}</div>
-              <div className="text-sm text-text-secondary">New (7d)</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-success">{analytics.users.new30days}</div>
-              <div className="text-sm text-text-secondary">New (30d)</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-secondary">{analytics.users.active7days}</div>
-              <div className="text-sm text-text-secondary">Active (7d)</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-secondary">{analytics.users.active30days}</div>
-              <div className="text-sm text-text-secondary">Active (30d)</div>
-            </div>
-          </div>
-        </div>
+        <UserStats analytics={analytics} />
+        <CheckInStats analytics={analytics} />
+        <BestiesStats analytics={analytics} />
+        <RevenueStats analytics={analytics} />
+        <EngagementStats analytics={analytics} />
+        <CostTracking analytics={analytics} />
+        <GrowthMetrics analytics={analytics} />
+        <FunnelAnalytics analytics={analytics} />
+        <UserBehavior analytics={analytics} />
 
-        {/* Check-ins Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">✅ Check-ins</h2>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-primary">{analytics.checkIns.total}</div>
-              <div className="text-sm text-text-secondary">Total</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-warning">{analytics.checkIns.active}</div>
-              <div className="text-sm text-text-secondary">Active Now</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-success">{analytics.checkIns.completed}</div>
-              <div className="text-sm text-text-secondary">Completed</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-danger">{analytics.checkIns.alerted}</div>
-              <div className="text-sm text-text-secondary">Alerted</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-accent">{analytics.checkIns.avgDuration}</div>
-              <div className="text-sm text-text-secondary">Avg Minutes</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-success">{analytics.checkIns.completionRate}%</div>
-              <div className="text-sm text-text-secondary">Completion</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Besties Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">💜 Besties Network</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-primary">{analytics.besties.totalConnections}</div>
-              <div className="text-sm text-text-secondary">Total Connections</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-success">{analytics.besties.accepted}</div>
-              <div className="text-sm text-text-secondary">Accepted</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-warning">{analytics.besties.pending}</div>
-              <div className="text-sm text-text-secondary">Pending</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-secondary">{analytics.besties.avgPerUser}</div>
-              <div className="text-sm text-text-secondary">Avg Per User</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Revenue Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">💰 Revenue</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card p-4 text-center bg-gradient-primary text-white">
-              <div className="text-3xl font-display">${analytics.revenue.mrr}</div>
-              <div className="text-sm opacity-90">MRR</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-primary">{analytics.revenue.smsSubscribers}</div>
-              <div className="text-sm text-text-secondary">SMS Subscribers</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-secondary">{analytics.revenue.donorsActive}</div>
-              <div className="text-sm text-text-secondary">Active Donors</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-success">${analytics.revenue.totalDonations}</div>
-              <div className="text-sm text-text-secondary">Total Donated</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Engagement Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">📈 Engagement</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-primary">{analytics.engagement.avgCheckInsPerUser}</div>
-              <div className="text-sm text-text-secondary">Check-ins/User</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-secondary">{analytics.engagement.avgBestiesPerUser}</div>
-              <div className="text-sm text-text-secondary">Besties/User</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-accent">{analytics.engagement.templatesCreated}</div>
-              <div className="text-sm text-text-secondary">Templates</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-warning">{analytics.engagement.badgesEarned}</div>
-              <div className="text-sm text-text-secondary">Badges Earned</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Cost Tracking */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">💸 Cost Tracking (Estimates)</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card p-4 text-center bg-danger/10">
-              <div className="text-3xl font-display text-danger">${analytics.costs.estimatedSMS}</div>
-              <div className="text-sm text-text-secondary">SMS Costs</div>
-            </div>
-            <div className="card p-4 text-center bg-success/10">
-              <div className="text-3xl font-display text-success">${analytics.costs.estimatedWhatsApp}</div>
-              <div className="text-sm text-text-secondary">WhatsApp Costs</div>
-            </div>
-            <div className="card p-4 text-center bg-primary/10">
-              <div className="text-3xl font-display text-primary">${analytics.costs.estimatedEmail}</div>
-              <div className="text-sm text-text-secondary">Email Costs</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-accent">{analytics.costs.totalAlertsSent}</div>
-              <div className="text-sm text-text-secondary">Total Alerts</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Growth Metrics */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">📊 Growth Metrics</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="card p-4 text-center">
-              <div className={`text-3xl font-display ${parseFloat(analytics.growth.userGrowthRate) >= 0 ? 'text-success' : 'text-danger'}`}>
-                {analytics.growth.userGrowthRate > 0 ? '+' : ''}{analytics.growth.userGrowthRate}%
-              </div>
-              <div className="text-sm text-text-secondary">User Growth (WoW)</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className={`text-3xl font-display ${parseFloat(analytics.growth.checkInGrowthRate) >= 0 ? 'text-success' : 'text-danger'}`}>
-                {analytics.growth.checkInGrowthRate > 0 ? '+' : ''}{analytics.growth.checkInGrowthRate}%
-              </div>
-              <div className="text-sm text-text-secondary">Check-in Growth (WoW)</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-primary">{analytics.growth.retentionRate}%</div>
-              <div className="text-sm text-text-secondary">Retention Rate</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Funnel Analytics */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">🎯 User Funnel</h2>
-          <div className="card p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-text-primary">1. Sign Ups</div>
-                  <div className="text-sm text-text-secondary">{analytics.funnel.signups} users</div>
-                </div>
-                <div className="text-2xl font-display text-primary">100%</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-text-primary">2. Completed Onboarding</div>
-                  <div className="text-sm text-text-secondary">{analytics.funnel.completedOnboarding} users</div>
-                </div>
-                <div className="text-2xl font-display text-success">{analytics.funnel.onboardingRate}%</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-text-primary">3. Added First Bestie</div>
-                  <div className="text-sm text-text-secondary">{analytics.funnel.addedBestie} users</div>
-                </div>
-                <div className="text-2xl font-display text-warning">{analytics.funnel.bestieRate}%</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-text-primary">4. Created First Check-in</div>
-                  <div className="text-sm text-text-secondary">{analytics.funnel.firstCheckIn} users</div>
-                </div>
-                <div className="text-2xl font-display text-accent">{analytics.funnel.checkInRate}%</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* User Behavior */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-display text-text-primary mb-4">🕐 User Behavior</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-primary">{analytics.behavior.peakHour}:00</div>
-              <div className="text-sm text-text-secondary">Peak Hour (24h)</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-secondary">{analytics.behavior.peakDay}</div>
-              <div className="text-sm text-text-secondary">Peak Day</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-3xl font-display text-accent">{analytics.behavior.mostCommonDuration}m</div>
-              <div className="text-sm text-text-secondary">Common Duration</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Locations */}
+        {/* Top Locations and Recent Alerts */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div className="card p-6">
-            <h3 className="font-display text-xl text-text-primary mb-4">📍 Top Check-in Locations</h3>
-            {analytics.topLocations.length > 0 ? (
-              <div className="space-y-2">
-                {analytics.topLocations.map((loc, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="font-semibold text-text-primary">{loc.location}</span>
-                    <span className="badge badge-primary">{loc.count}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-text-secondary text-center py-8">No data yet</p>
-            )}
-          </div>
-
-          {/* Recent Alerts */}
-          <div className="card p-6">
-            <h3 className="font-display text-xl text-text-primary mb-4">🚨 Recent Alerts</h3>
-            {analytics.recentAlerts.length > 0 ? (
-              <div className="space-y-2">
-                {analytics.recentAlerts.map((alert) => (
-                  <div key={alert.id} className="p-3 bg-danger/10 border border-danger/20 rounded-lg">
-                    <div className="font-semibold text-danger">{alert.userName}</div>
-                    <div className="text-sm text-text-secondary">{alert.location}</div>
-                    {alert.alertedAt && (
-                      <div className="text-xs text-text-secondary mt-1">
-                        {new Date(alert.alertedAt.toDate()).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-text-secondary text-center py-8">No alerts 🎉</p>
-            )}
-          </div>
+          <TopLocations topLocations={analytics.topLocations} />
+          <RecentAlerts recentAlerts={analytics.recentAlerts} />
         </div>
 
         {/* Refresh Button */}
