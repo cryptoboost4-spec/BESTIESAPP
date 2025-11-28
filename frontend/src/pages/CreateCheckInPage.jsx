@@ -267,6 +267,12 @@ const CreateCheckInPage = () => {
       );
 
       setMessengerContacts(activeContacts);
+
+      // Auto-select all active messenger contacts (similar to bestie auto-selection)
+      if (!location.state?.template && activeContacts.length > 0) {
+        setSelectedMessengerContacts(activeContacts.map(c => c.id));
+        console.log('Auto-selected messenger contacts:', activeContacts.length);
+      }
     }, (error) => {
       console.error('Error loading messenger contacts:', error);
     });
@@ -683,7 +689,7 @@ const CreateCheckInPage = () => {
           <button
             type="submit"
             id="create-checkin-submit-btn"
-            disabled={loading || selectedBesties.length === 0}
+            disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
             className="w-full btn btn-primary text-lg py-4"
           >
             {loading ? 'Creating...' : '🛡️ Start Check-In'}
