@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../services/firebase';
 
 const MessengerContactsList = ({ userId }) => {
   const [contacts, setContacts] = useState([]);
