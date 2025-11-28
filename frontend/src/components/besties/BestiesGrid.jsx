@@ -1,7 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../../services/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import BestieCard from '../BestieCard';
 import toast from 'react-hot-toast';
 

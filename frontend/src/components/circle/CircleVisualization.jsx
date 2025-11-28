@@ -5,7 +5,9 @@ const CircleVisualization = ({ slots, connectionStrengths, loadingConnections })
   return (
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ zIndex: 0 }}
+      style={{ zIndex: 0, overflow: 'visible' }}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="xMidYMid meet"
     >
       <defs>
         {/* Define gradients and filters for all lines */}

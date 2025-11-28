@@ -24,6 +24,7 @@ import CreatePostModal from '../components/CreatePostModal';
 import BestiesLeaderboard from '../components/besties/BestiesLeaderboard';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
+import FloatingNotificationBell from '../components/FloatingNotificationBell';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -600,23 +601,28 @@ const BestiesPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
-        {/* Header */}
-        <div className="mb-4 text-center">
-          <div className="flex items-center justify-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-display text-gradient">💜 Your Besties</h1>
-            {besties.length > 0 && (
-              <button
-                onClick={() => {
-                  document.getElementById('all-besties-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="text-sm font-semibold text-primary hover:text-primary-dark underline transition-colors"
-              >
-                See all besties
-              </button>
-            )}
-          </div>
+      {/* Header with Notification Bell */}
+      <div className="sticky top-0 z-40 bg-pattern/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <h1 className="text-xl font-display text-gradient">💜 Besties</h1>
+          <FloatingNotificationBell inline={true} />
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
+        {/* See All Besties Link */}
+        {besties.length > 0 && (
+          <div className="mb-4 text-center">
+            <button
+              onClick={() => {
+                document.getElementById('all-besties-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="text-sm font-semibold text-primary hover:text-primary-dark underline transition-colors"
+            >
+              See all besties
+            </button>
+          </div>
+        )}
 
         {/* Pending Requests */}
         <PendingRequestsList pendingRequests={pendingRequests} />
