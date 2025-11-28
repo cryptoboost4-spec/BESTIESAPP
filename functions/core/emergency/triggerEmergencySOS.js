@@ -1,8 +1,24 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { sendSMSAlert, sendWhatsAppAlert, sendEmailAlert, sendPushNotification } = require('../../utils/notifications');
+const axios = require('axios');
 
 const db = admin.firestore();
+
+// Helper: Send Messenger message
+async function sendMessengerMessage(psid, text, config) {
+  try {
+    await axios.post(
+      `https://graph.facebook.com/v18.0/me/messages?access_token=${config.facebook.page_token}`,
+      {
+        recipient: { id: psid },
+        message: { text: text }
+      }
+    );
+  } catch (error) {
+    console.error('Error sending Messenger SOS:', error);
+  }
+}
 
 exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -154,6 +170,50 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
   });
 
   await Promise.all(notifications);
+
+  // Send SOS to connected Messenger contacts
+  try {
+    const config = functions.config();
+    const messengerContactsSnapshot = await db.collection('messengerContacts')
+      .where('userId', '==', context.auth.uid)
+      .get();
+
+    const now = Date.now();
+    const messengerPromises = [];
+
+    for (const contactDoc of messengerContactsSnapshot.docs) {
+      const contact = contactDoc.data();
+
+      // Check if contact is still valid (not expired)
+      if (contact.expiresAt?.toMillis() > now) {
+        const messengerMessage = isReversePIN
+          ? `🚨 SILENT EMERGENCY ALERT 🚨\n\n${cleanName} triggered a reverse PIN (covert distress signal).\n\n📍 Location: ${location || 'Unknown'}\n\n⚠️ This is a silent emergency - they may be in danger but cannot safely call for help. Please respond discreetly!`
+          : `🆘 EMERGENCY SOS 🆘\n\n${cleanName} needs help NOW!\n\n📍 Location: ${location || 'Unknown'}`;
+
+        // Add phone number if available
+        if (userData?.phoneNumber) {
+          messengerPromises.push(
+            sendMessengerMessage(
+              contact.messengerPSID,
+              `${messengerMessage}\n📞 Call them: ${userData.phoneNumber}`,
+              config
+            )
+          );
+        } else {
+          messengerPromises.push(
+            sendMessengerMessage(contact.messengerPSID, messengerMessage, config)
+          );
+        }
+
+        console.log(`✅ Sending SOS to Messenger contact: ${contact.name}`);
+      }
+    }
+
+    await Promise.all(messengerPromises);
+  } catch (messengerError) {
+    console.error('Error sending Messenger SOS alerts:', messengerError);
+    // Don't fail the whole function if messenger fails
+  }
 
   return { success: true, sosId: sosRef.id };
 });

@@ -64,6 +64,7 @@ async function checkExpiredCheckIns(config) {
                 const { sendMessengerAlert } = require('../../index');
                 await sendMessengerAlert(contact.messengerPSID, {
                   userName: userData.displayName,
+                  userPhone: userData.phoneNumber || null,
                   location: checkinData.location?.address || checkinData.location || 'Unknown',
                   startTime: checkinData.createdAt.toDate().toLocaleString()
                 });

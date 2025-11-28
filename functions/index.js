@@ -146,7 +146,15 @@ function getFirstName(fullName) {
 
 // Send Messenger Alert
 async function sendMessengerAlert(psid, alertData) {
-  const message = `🚨 SAFETY ALERT 🚨\n\n${alertData.userName} needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
+  let message = `🚨 SAFETY ALERT 🚨\n\n${alertData.userName} needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}`;
+
+  // Add phone number if available
+  if (alertData.userPhone) {
+    message += `\n📞 Call them: ${alertData.userPhone}`;
+  }
+
+  message += `\n\nThey haven't checked in safely. Please reach out!`;
+
   await sendMessengerMessage(psid, message);
 }
 
