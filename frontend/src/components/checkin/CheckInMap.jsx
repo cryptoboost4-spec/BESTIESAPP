@@ -306,8 +306,7 @@ const CheckInMap = ({
             onFocus={() => setShowLocationDropdown(true)}
             onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
             className="input w-full shadow-lg"
-            placeholder="Search for a place..."
-            required
+            placeholder="Where are you? (optional)"
             autoComplete="off"
           />
           {/* Location dropdown */}

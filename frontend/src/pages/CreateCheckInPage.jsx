@@ -278,7 +278,7 @@ const CreateCheckInPage = () => {
     });
 
     return () => unsubscribe();
-  }, [currentUser, authLoading]);
+  }, [currentUser, authLoading, location.state?.template]);
 
   // Auto-submit quick check-ins after besties or messenger contacts are loaded
   useEffect(() => {
@@ -445,11 +445,8 @@ const CreateCheckInPage = () => {
       return;
     }
 
-    if (!locationInput.trim()) {
-      errorTracker.trackFunnelStep('checkin', 'error_no_location');
-      toast.error('Please enter a location');
-      return;
-    }
+    // Location is now optional - if not provided, use default
+    const finalLocation = locationInput.trim() || 'Location not specified';
 
     if (duration < 10 || duration > 180) {
       toast.error('Duration must be between 10 and 180 minutes');
@@ -506,7 +503,7 @@ const CreateCheckInPage = () => {
 
           const checkInData = {
             userId: currentUser.uid,
-            location: locationInput,
+            location: finalLocation,
             gpsCoords: gpsCoords || null,
             duration: duration,
             alertTime: Timestamp.fromDate(alertTime),
