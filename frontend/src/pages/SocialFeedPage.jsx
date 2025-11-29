@@ -70,7 +70,6 @@ const SocialFeedPage = () => {
       // OPTIMIZED: Get check-ins from all besties at once using 'in' operator
       // Firestore 'in' operator supports up to 10 values, so batch if needed
       const feedItems = [];
-      const BATCH_SIZE = 10; // Firestore 'in' operator limit
       
       // Create all queries in parallel batches
       const queryPromises = [];
