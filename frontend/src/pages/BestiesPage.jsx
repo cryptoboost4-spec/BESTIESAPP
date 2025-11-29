@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import {
@@ -28,6 +29,7 @@ import FloatingNotificationBell from '../components/FloatingNotificationBell';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
+  const location = useLocation();
   const { currentUser, userData } = useAuth();
   const [besties, setBesties] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -47,9 +49,19 @@ const BestiesPage = () => {
   // Modal state
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
   const [showComments, setShowComments] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [reactions, setReactions] = useState({}); // { checkInId: [reactions] }
+
+  // Handle opening post from notification
+  useEffect(() => {
+    if (location.state?.openPostId) {
+      setSelectedPostId(location.state.openPostId);
+      // Clear the state so it doesn't reopen on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Load besties
   useEffect(() => {
@@ -348,7 +360,8 @@ const BestiesPage = () => {
               const bestie = besties.find(b => b.userId === bestieId);
               attentionRequests.push({
                 userId: bestieId,
-                userName: bestie?.name || 'Bestie',
+                userName: userData.displayName || bestie?.name || 'Bestie',
+                photoURL: userData.photoURL || bestie?.photoURL || null,
                 tag: userData.requestAttention.tag,
                 note: userData.requestAttention.note,
                 timestamp: userData.requestAttention.timestamp?.toDate() || new Date(),
@@ -504,6 +517,13 @@ const BestiesPage = () => {
         }))
       }));
 
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('checkin_reaction_added', {
+        emoji: emoji,
+        checkin_id: checkInId
+      });
+
       toast.success('Reaction added!');
     } catch (error) {
       console.error('Error adding reaction:', error);
@@ -534,6 +554,13 @@ const BestiesPage = () => {
         id: doc.id,
         ...doc.data()
       })));
+
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('checkin_comment_added', {
+        checkin_id: selectedCheckIn.id,
+        comment_length: newComment.trim().length
+      });
 
       setNewComment('');
       toast.success('Comment added!');
@@ -642,12 +669,22 @@ const BestiesPage = () => {
             <ActivityFeedSkeleton />
           ) : (
             <ActivityFeed
-              activityFeed={activityFeed}
+              activityFeed={activityFeed.filter(activity => {
+                // Filter out activities that are already shown in Needs Attention section
+                const isInMissedCheckIns = missedCheckIns.some(m => 
+                  m.userId === activity.userId && activity.status === 'alerted'
+                );
+                const isInAttentionRequests = requestsForAttention.some(r => 
+                  r.userId === activity.userId && activity.type === 'checkin'
+                );
+                return !isInMissedCheckIns && !isInAttentionRequests;
+              })}
               reactions={reactions}
               addReaction={addReaction}
               setSelectedCheckIn={setSelectedCheckIn}
               setShowComments={setShowComments}
               getTimeAgo={getTimeAgo}
+              initialPostId={selectedPostId}
             />
           )}
         </div>

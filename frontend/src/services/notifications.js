@@ -57,6 +57,29 @@ class NotificationService {
     try {
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       console.log('Service Worker registered:', registration);
+      
+      // Wait for service worker to be ready
+      await navigator.serviceWorker.ready;
+      
+      // Send Firebase config and VAPID key to service worker
+      if (registration.active) {
+        const firebaseConfig = {
+          apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+          authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+          storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.REACT_APP_FIREBASE_APP_ID
+        };
+        
+        registration.active.postMessage({
+          type: 'INIT_FIREBASE',
+          config: firebaseConfig,
+          vapidKey: VAPID_KEY
+        });
+        console.log('Sent Firebase config to service worker');
+      }
+      
       return registration;
     } catch (error) {
       console.error('Service Worker registration failed:', error);
@@ -80,9 +103,13 @@ class NotificationService {
         return null;
       }
 
-      // Wait a bit for service worker to be ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for service worker to be ready and receive config
+      await navigator.serviceWorker.ready;
+      
+      // Give service worker time to initialize Firebase
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
+      // Get FCM token with VAPID key
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: registration

@@ -1,36 +1,56 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { sendSMSAlert } = require('../../utils/notifications');
+const { requireAuth, validatePhoneNumber } = require('../../utils/validation');
+const { RATE_LIMITS, checkUserRateLimit } = require('../../utils/rateLimiting');
 
 const db = admin.firestore();
 const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
 
 exports.sendBestieInvite = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-  }
-
+  const userId = requireAuth(context);
   const { recipientPhone, message } = data;
 
-  // Rate limiting
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Validate recipientPhone
+  validatePhoneNumber(recipientPhone);
 
-  const invitesCount = await db.collection('besties')
-    .where('requesterId', '==', context.auth.uid)
-    .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(today))
-    .count()
-    .get();
-
-  if (invitesCount.data().count >= 20) {
-    throw new functions.https.HttpsError('resource-exhausted', 'Daily invite limit reached');
+  // Validate message if provided
+  if (message !== undefined) {
+    if (typeof message !== 'string' || message.length > 500) {
+      throw new functions.https.HttpsError('invalid-argument', 'Message must be a string under 500 characters');
+    }
   }
 
-  const userDoc = await db.collection('users').doc(context.auth.uid).get();
+  // Rate limiting: 20 invites per day
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const rateLimit = await checkUserRateLimit(
+    userId,
+    'sendBestieInvite',
+    RATE_LIMITS.BESTIE_INVITES_PER_DAY,
+    'besties',
+    'requesterId',
+    'createdAt'
+  );
+
+  if (!rateLimit.allowed) {
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      `Daily invite limit reached. Limit: ${rateLimit.limit} per day. Try again tomorrow.`,
+      {
+        limit: rateLimit.limit,
+        count: rateLimit.count,
+        resetAt: rateLimit.resetAt.toISOString(),
+      }
+    );
+  }
+
+  const userDoc = await db.collection('users').doc(userId).get();
   const userData = userDoc.data();
 
   const inviteMessage = message ||
-    `${userData.displayName} wants you to be their Safety Bestie on Besties! Join now: ${APP_URL}?invite=${context.auth.uid}`;
+    `${userData.displayName} wants you to be their Safety Bestie on Besties! Join now: ${APP_URL}?invite=${userId}`;
 
   await sendSMSAlert(recipientPhone, inviteMessage);
   return { success: true };

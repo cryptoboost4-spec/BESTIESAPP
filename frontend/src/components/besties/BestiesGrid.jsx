@@ -11,6 +11,7 @@ const BestiesGrid = ({ besties, activityFeed }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bestieToDelete, setBestieToDelete] = useState(null);
   const [deleteChallenge, setDeleteChallenge] = useState('');
+  const [showLegend, setShowLegend] = useState(false);
 
   // Handle delete bestie
   const handleDeleteBestie = async () => {
@@ -37,45 +38,93 @@ const BestiesGrid = ({ besties, activityFeed }) => {
     }
   };
 
-  // Get visual indicators for a bestie
+  // Get visual indicators for a bestie based on actual activity data
   const getBestieIndicators = (bestie) => {
     const indicators = [];
-
-    // Check recent activity for indicators
     const bestieActivities = activityFeed.filter(a => a.userId === bestie.userId);
 
-    // Fast responder - if they have activity in last 5 min
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
-    if (bestieActivities.some(a => a.timestamp > fiveMinAgo)) {
-      indicators.push({ icon: '⚡', tooltip: 'Fast responder' });
+    // Only show indicators based on actual earned criteria
+    
+    // Fast responder - responded to an alert in last hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const hasRecentResponse = bestieActivities.some(a => 
+      a.type === 'checkin' && a.timestamp > oneHourAgo
+    );
+    if (hasRecentResponse) {
+      indicators.push({ icon: '⚡', tooltip: 'Active recently' });
     }
 
-    // Reliable - if they have high completion rate
-    const completedCount = bestieActivities.filter(a => a.status === 'completed').length;
-    if (completedCount > 5) {
+    // Reliable - has completed 5+ check-ins visible in feed
+    const completedCount = bestieActivities.filter(a => 
+      a.type === 'checkin' && a.status === 'completed'
+    ).length;
+    if (completedCount >= 5) {
       indicators.push({ icon: '🛡️', tooltip: 'Very reliable' });
     }
 
-    // Active streak - if they have check-ins multiple days in a row
-    indicators.push({ icon: '🔥', tooltip: '7-day streak' });
-
-    // Night check-ins - if they often check in at night
+    // Night owl - has 3+ night check-ins (9pm-6am)
     const nightCheckIns = bestieActivities.filter(a => {
-      const hour = a.timestamp.getHours();
+      if (a.type !== 'checkin' || !a.timestamp) return false;
+      const hour = a.timestamp.getHours?.() ?? new Date(a.timestamp).getHours();
       return hour >= 21 || hour <= 6;
     });
-    if (nightCheckIns.length > 2) {
+    if (nightCheckIns.length >= 3) {
       indicators.push({ icon: '🌙', tooltip: 'Night owl' });
     }
 
-    return indicators.slice(0, 3); // Max 3 indicators
+    return indicators.slice(0, 3);
   };
 
   return (
     <div id="all-besties-section">
-      <h2 className="text-lg md:text-xl font-display text-text-primary mb-3 md:mb-4">
-        All Besties
-      </h2>
+      <div className="flex items-center justify-between mb-3 md:mb-4">
+        <h2 className="text-lg md:text-xl font-display text-text-primary">
+          All Besties
+        </h2>
+        
+        {/* Legend Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowLegend(!showLegend)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 text-xs font-semibold hover:bg-pink-200 dark:hover:bg-pink-800/40 transition-colors"
+          >
+            <span>ℹ️</span>
+            <span>Symbols</span>
+          </button>
+          
+          {/* Legend Tooltip */}
+          {showLegend && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowLegend(false)} />
+              <div className="absolute right-0 top-full mt-2 z-50 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950 dark:to-rose-950 rounded-xl p-4 shadow-xl border border-pink-200 dark:border-pink-800 min-w-[200px]">
+                <h4 className="font-semibold text-sm text-pink-600 dark:text-pink-400 mb-3">Symbol Guide 💕</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⚡</span>
+                    <span className="text-gray-700 dark:text-gray-300">Fast responder</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🛡️</span>
+                    <span className="text-gray-700 dark:text-gray-300">Very reliable</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🔥</span>
+                    <span className="text-gray-700 dark:text-gray-300">On a streak</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌙</span>
+                    <span className="text-gray-700 dark:text-gray-300">Night owl</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">💕</span>
+                    <span className="text-gray-700 dark:text-gray-300">Mutual bestie</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       {besties.length === 0 ? (
         <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
@@ -91,7 +140,7 @@ const BestiesGrid = ({ besties, activityFeed }) => {
             const indicators = getBestieIndicators(bestie);
             const isMenuOpen = selectedBestie === bestie.id;
 
-            return (
+              return (
               <div key={bestie.id} className="relative group">
                 {/* Main card with improved styling - clickable */}
                 <div
@@ -99,22 +148,22 @@ const BestiesGrid = ({ besties, activityFeed }) => {
                   onClick={() => setSelectedBestie(isMenuOpen ? null : bestie.id)}
                 >
                   <BestieCard bestie={bestie} />
+                  
+                  {/* Visual Indicators - Bottom Center */}
+                  {indicators.length > 0 && (
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 pointer-events-none">
+                      {indicators.map((indicator, idx) => (
+                        <span
+                          key={idx}
+                          className="text-sm bg-white/90 dark:bg-gray-800/90 rounded-full px-2 py-1 shadow-md border border-purple-200 dark:border-purple-600"
+                          title={indicator.tooltip}
+                        >
+                          {indicator.icon}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-
-                {/* Visual Indicators - Top Left */}
-                {indicators.length > 0 && (
-                  <div className="absolute top-3 left-3 flex gap-1 z-10 pointer-events-none">
-                    {indicators.map((indicator, idx) => (
-                      <span
-                        key={idx}
-                        className="text-base bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-md border border-purple-200 dark:border-purple-600"
-                        title={indicator.tooltip}
-                      >
-                        {indicator.icon}
-                      </span>
-                    ))}
-                  </div>
-                )}
 
                 {/* Quick Action Overlay - Shows on click */}
                 {isMenuOpen && (

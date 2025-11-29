@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../services/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
 
 const AboutBestiesPage = () => {
   const navigate = useNavigate();
-  const { userData } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Mark "viewedAbout" as complete when page loads
+  useEffect(() => {
+    if (currentUser && !userData?.profileCompletion?.viewedAbout) {
+      updateDoc(doc(db, 'users', currentUser.uid), {
+        'profileCompletion.viewedAbout': true,
+      }).catch(err => console.error('Error updating viewedAbout:', err));
+    }
+  }, [currentUser, userData]);
 
   const handleDonation = async (amount) => {
     setLoading(true);
@@ -438,7 +449,7 @@ const AboutBestiesPage = () => {
                 Got a feature idea? Found a bug? Your feedback makes Besties better for everyone.
               </p>
               <a
-                href="mailto:feedback@besties.app"
+                href="mailto:besitesapp.xyz@gmail.com"
                 className="text-sm font-semibold text-green-700 hover:underline"
               >
                 Send Feedback →

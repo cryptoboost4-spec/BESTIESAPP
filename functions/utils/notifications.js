@@ -2,16 +2,45 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const twilio = require('twilio');
 const sgMail = require('@sendgrid/mail');
+const { retryApiCall } = require('./retry');
+const EMAIL_CONFIG = require('./emailConfig');
 
-// Twilio setup
-const twilioClient = twilio(
-  functions.config().twilio.account_sid,
-  functions.config().twilio.auth_token
-);
-const twilioPhone = functions.config().twilio.phone_number;
+// Lazy Twilio client initialization (only when needed)
+let twilioClient = null;
+let twilioPhone = null;
 
-// SendGrid setup
-sgMail.setApiKey(functions.config().sendgrid.api_key);
+function getTwilioClient() {
+  if (!twilioClient) {
+    const accountSid = functions.config().twilio?.account_sid;
+    const authToken = functions.config().twilio?.auth_token;
+    
+    if (!accountSid || !authToken) {
+      throw new Error('Twilio credentials not configured. Please set twilio.account_sid and twilio.auth_token in Firebase Functions config.');
+    }
+    
+    twilioClient = twilio(accountSid, authToken);
+    twilioPhone = functions.config().twilio?.phone_number;
+    
+    if (!twilioPhone) {
+      throw new Error('Twilio phone number not configured. Please set twilio.phone_number in Firebase Functions config.');
+    }
+  }
+  return { client: twilioClient, phone: twilioPhone };
+}
+
+// Lazy SendGrid setup (only when needed)
+let sendGridInitialized = false;
+
+function initializeSendGrid() {
+  if (!sendGridInitialized) {
+    const apiKey = functions.config().sendgrid?.api_key;
+    if (!apiKey) {
+      throw new Error('SendGrid API key not configured. Please set sendgrid.api_key in Firebase Functions config.');
+    }
+    sgMail.setApiKey(apiKey);
+    sendGridInitialized = true;
+  }
+}
 
 // App URL configuration
 const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
@@ -20,34 +49,48 @@ const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
 const db = admin.firestore();
 
 /**
- * Send SMS alert via Twilio
+ * Send SMS alert via Twilio (with retry logic)
  */
 async function sendSMSAlert(phoneNumber, message) {
-  await twilioClient.messages.create({
-    body: message,
-    from: twilioPhone,
-    to: phoneNumber,
-  });
+  const { client, phone } = getTwilioClient();
+  return retryApiCall(
+    async () => {
+      return await client.messages.create({
+        body: message,
+        from: phone,
+        to: phoneNumber,
+      });
+    },
+    { operationName: `SMS to ${phoneNumber}` }
+  );
 }
 
 /**
- * Send WhatsApp alert via Twilio
+ * Send WhatsApp alert via Twilio (with retry logic)
  */
 async function sendWhatsAppAlert(phoneNumber, message) {
-  await twilioClient.messages.create({
-    body: message,
-    from: `whatsapp:${twilioPhone}`,
-    to: `whatsapp:${phoneNumber}`,
-  });
+  const { client, phone } = getTwilioClient();
+  return retryApiCall(
+    async () => {
+      return await client.messages.create({
+        body: message,
+        from: `whatsapp:${phone}`,
+        to: `whatsapp:${phoneNumber}`,
+      });
+    },
+    { operationName: `WhatsApp to ${phoneNumber}` }
+  );
 }
 
 /**
- * Send email alert via SendGrid
+ * Send email alert via SendGrid (with retry logic)
  */
 async function sendEmailAlert(email, message, checkIn) {
+  initializeSendGrid();
+  
   const msg = {
     to: email,
-    from: 'alerts@bestiesapp.com',
+    from: EMAIL_CONFIG.ALERTS,
     subject: '🚨 Safety Alert from Besties',
     text: message,
     html: `
@@ -62,7 +105,12 @@ async function sendEmailAlert(email, message, checkIn) {
     `,
   };
 
-  await sgMail.send(msg);
+  return retryApiCall(
+    async () => {
+      return await sgMail.send(msg);
+    },
+    { operationName: `Email to ${email}` }
+  );
 }
 
 /**
@@ -96,11 +144,16 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
   };
 
   try {
-    await admin.messaging().send(message);
-    console.log(`Push notification sent to token: ${fcmToken.substring(0, 20)}...`);
+    await retryApiCall(
+      async () => {
+        return await admin.messaging().send(message);
+      },
+      { operationName: `Push notification to ${fcmToken.substring(0, 20)}...` }
+    );
+    functions.logger.debug(`Push notification sent to token: ${fcmToken.substring(0, 20)}...`);
   } catch (error) {
     // Token might be invalid or expired
-    console.error('Error sending push notification:', error.message);
+    functions.logger.error('Error sending push notification:', error.message);
     throw error;
   }
 }
@@ -114,7 +167,7 @@ async function sendAlertToBesties(checkInId, checkIn) {
 
   // Initialize cascading alert - notify first bestie only
   if (checkIn.bestieIds.length === 0) {
-    console.log('No besties to notify for check-in:', checkInId);
+    functions.logger.debug('No besties to notify for check-in:', checkInId);
     return;
   }
 
@@ -131,7 +184,7 @@ async function sendAlertToBesties(checkInId, checkIn) {
   // Send notification to first bestie
   await sendCascadingAlert(checkInId, checkIn, firstBestieId, userData);
 
-  console.log(`Cascading alert initialized for check-in ${checkInId}, notified: ${firstBestieId}`);
+  functions.logger.info(`Cascading alert initialized for check-in ${checkInId}, notified: ${firstBestieId}`);
 }
 
 /**
@@ -141,7 +194,7 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
   const bestieDoc = await db.collection('users').doc(bestieId).get();
 
   if (!bestieDoc.exists) {
-    console.log(`Bestie ${bestieId} not found`);
+    functions.logger.warn(`Bestie ${bestieId} not found`);
     return;
   }
 
@@ -179,26 +232,73 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
         );
         notificationsSent.push('Push');
       } catch (pushError) {
-        console.log('Push notification failed:', pushError.message);
+        functions.logger.warn('Push notification failed:', pushError.message);
         // Continue with other notification methods
       }
     }
 
-    // Try WhatsApp first (free - use full message)
-    if (bestieData.notifications?.whatsapp && bestieData.phoneNumber) {
+    // Priority order: Telegram (free) → Facebook Messenger (free) → WhatsApp (free) → Email (free) → SMS (paid)
+    
+    // 1. Telegram (free)
+    let telegramSent = false;
+    if (bestieData.notificationPreferences?.telegram && bestieData.telegramChatId) {
+      try {
+        const { sendTelegramAlert } = require('../index');
+        await sendTelegramAlert(bestieData.telegramChatId, {
+          userName: cleanName,
+          location: checkIn.location || 'Unknown',
+          startTime: checkIn.createdAt?.toDate().toLocaleString() || new Date().toLocaleString(),
+          isEmergency: true,
+          message: fullMessage
+        });
+        notificationsSent.push('Telegram');
+        telegramSent = true;
+      } catch (telegramError) {
+        functions.logger.warn('Telegram failed for check-in alert:', telegramError.message);
+      }
+    }
+
+    // 2. Facebook Messenger (free)
+    let messengerSent = false;
+    const messengerContactsSnapshot = await db.collection('messengerContacts')
+      .where('userId', '==', checkIn.userId)
+      .get();
+    
+    messengerContactsSnapshot.forEach(doc => {
+      const contact = doc.data();
+      const expiresAt = contact.expiresAt?.toMillis();
+      if (expiresAt && expiresAt > Date.now() && contact.messengerPSID) {
+        try {
+          const { sendMessengerAlert } = require('../index');
+          sendMessengerAlert(contact.messengerPSID, {
+            userName: cleanName,
+            location: checkIn.location || 'Unknown',
+            startTime: checkIn.createdAt?.toDate().toLocaleString() || new Date().toLocaleString(),
+            isEmergency: true
+          });
+          messengerSent = true;
+          notificationsSent.push('Messenger');
+        } catch (messengerError) {
+          functions.logger.warn('Messenger failed for check-in alert:', messengerError.message);
+        }
+      }
+    });
+
+    // 3. WhatsApp (free) - only if Telegram and Messenger didn't work
+    if (!telegramSent && !messengerSent && bestieData.notifications?.whatsapp && bestieData.phoneNumber) {
       try {
         await sendWhatsAppAlert(bestieData.phoneNumber, fullMessage);
         notificationsSent.push('WhatsApp');
       } catch (whatsappError) {
-        console.log('WhatsApp failed, trying SMS...');
+        functions.logger.warn('WhatsApp failed, trying SMS...');
         // Fallback to SMS (expensive - use short message)
-        if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
+        if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber && bestieData.smsSubscription?.active) {
           await sendSMSAlert(bestieData.phoneNumber, shortMessage);
           notificationsSent.push('SMS');
         }
       }
-    } else if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
-      // SMS only (expensive - use short message)
+    } else if (!telegramSent && !messengerSent && bestieData.notificationPreferences?.sms && bestieData.phoneNumber && bestieData.smsSubscription?.active) {
+      // SMS only (expensive - use short message) - only if no free channels available
       await sendSMSAlert(bestieData.phoneNumber, shortMessage);
       notificationsSent.push('SMS');
     }
@@ -221,9 +321,9 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
     });
     notificationsSent.push('In-app');
 
-    console.log(`Alert sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
+    functions.logger.info(`Alert sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
   } catch (error) {
-    console.error(`Failed to notify bestie ${bestieId}:`, error);
+    functions.logger.error(`Failed to notify bestie ${bestieId}:`, error);
   }
 }
 

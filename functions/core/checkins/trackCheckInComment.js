@@ -30,6 +30,6 @@ exports.trackCheckInComment = functions.firestore
       createdAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`Tracked check-in comment: ${commenterId} → ${checkInOwnerId}`);
+    functions.logger.debug(`Tracked check-in comment: ${commenterId} → ${checkInOwnerId}`);
     return null;
   });

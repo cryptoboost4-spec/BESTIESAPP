@@ -29,6 +29,12 @@ const BestieRequestCard = ({ request, onRequestHandled }) => {
             throw new Error('Failed to accept request');
           }
 
+          // Track analytics
+          const { logAnalyticsEvent } = require('../services/firebase');
+          logAnalyticsEvent('bestie_request_accepted', {
+            method: 'accept'
+          });
+
           return result;
         } finally {
           setLoading(false);

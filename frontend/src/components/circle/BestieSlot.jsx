@@ -40,9 +40,17 @@ const BestieSlot = ({
             className={`w-14 h-14 md:w-16 md:h-16 rounded-full shadow-xl border-4 border-white hover:shadow-2xl ${
               connectionStrength?.total >= 90
                 ? 'ring-6 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
+                : connectionStrength?.total >= 70
+                ? 'ring-5 ring-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
+                : connectionStrength?.total >= 50
+                ? 'ring-4 ring-pink-400 shadow-[0_0_10px_rgba(236,72,153,0.4)]'
                 : `${status.ringColor} ring-4`
             } hover:ring-6 overflow-hidden flex items-center justify-center relative ${
-              connectionStrength?.total >= 90 ? 'animate-breathe-glow' : 'animate-breathe-subtle'
+              connectionStrength?.total >= 90 
+                ? 'animate-breathe-glow' 
+                : connectionStrength?.total >= 70
+                ? 'animate-pulse-glow'
+                : 'animate-breathe-subtle'
             }`}
             style={{ animationDelay: `${index * 0.3}s` }}
           >
@@ -82,9 +90,9 @@ const BestieSlot = ({
           </div>
         </button>
 
-        {/* Enhanced Tooltip with Connection Strength */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 transform group-hover:-translate-y-1">
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl min-w-max">
+        {/* Enhanced Tooltip with Connection Strength - Mobile responsive */}
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 transform group-hover:-translate-y-1">
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-2 md:px-4 md:py-3 rounded-xl text-xs font-semibold shadow-2xl max-w-[90vw] md:max-w-none md:min-w-max">
             <div className="flex items-center gap-2 mb-2">
               <div className="font-bold text-sm">{bestie.name || 'Unknown'}</div>
               {bestie.isMutual && (
@@ -119,9 +127,9 @@ const BestieSlot = ({
           </div>
         </div>
 
-        {/* Action Menu */}
+        {/* Action Menu - Fixed z-index and mobile positioning */}
         {selectedSlot === index && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-2 z-[200] w-40">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-gray-200 dark:border-gray-700 p-2 z-[9999] w-40 md:w-auto">
             <button
               onClick={() => handleViewProfile(bestie.id)}
               className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"

@@ -15,7 +15,6 @@ import MilestoneCelebration from './components/MilestoneCelebration';
 import BestieCelebrationModal from './components/BestieCelebrationModal';
 import FloatingNotificationBell from './components/FloatingNotificationBell';
 import MobileBottomNav from './components/MobileBottomNav';
-import DesktopNav from './components/DesktopNav';
 
 // Services
 import errorTracker from './services/errorTracking';
@@ -49,6 +48,7 @@ const SubscriptionCancelPage = lazy(() => import('./pages/SubscriptionCancelPage
 const AboutBestiesPage = lazy(() => import('./pages/AboutBestiesPage'));
 const AdminBackfillPage = lazy(() => import('./pages/AdminBackfillPage'));
 const CircleHealthPage = lazy(() => import('./pages/CircleHealthPage'));
+const DataPolicyPage = lazy(() => import('./pages/DataPolicyPage'));
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
@@ -126,7 +126,7 @@ function App() {
             <MilestoneCelebration />
             <BestieCelebrationModal />
             {user && <FloatingNotificationBell />}
-            {user && <DesktopNav />}
+            {/* DesktopNav removed per user request - notifications handled by FloatingNotificationBell */}
             {user && <MobileBottomNav />}
             <div className="App pb-20 md:pb-0">
               <Suspense fallback={<PageLoader />}>
@@ -221,6 +221,10 @@ function App() {
                   <Route
                     path="/circle-health"
                     element={user ? <CircleHealthPage /> : <Navigate to="/login" />}
+                  />
+                  <Route
+                    path="/data-policy"
+                    element={user ? <DataPolicyPage /> : <Navigate to="/login" />}
                   />
 
                   {/* Admin-only routes */}

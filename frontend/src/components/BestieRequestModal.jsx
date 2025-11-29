@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import html2canvas from 'html2canvas';
+// html2canvas will be lazy-loaded when needed
 
 const CARD_TEMPLATES = [
   {
@@ -73,6 +73,8 @@ const BestieRequestModal = ({ onClose }) => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      // Lazy load html2canvas
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: null,
         scale: 2,

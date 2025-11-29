@@ -174,6 +174,12 @@ const OnboardingPage = () => {
         onboardingCompleted: true,
       });
 
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('onboarding_completed', {
+        has_besties: hasBesties
+      });
+
       if (hasBesties) {
         navigate('/create');
       } else {

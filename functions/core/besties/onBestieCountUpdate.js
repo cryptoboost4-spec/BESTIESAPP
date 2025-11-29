@@ -17,7 +17,7 @@ async function awardBestieBadge(userId) {
     .count()
     .get();
 
-  const total = count1.data().count + count2.data().count;
+  const total = (count1.data()?.count || 0) + (count2.data()?.count || 0);
   const badgesRef = db.collection('badges').doc(userId);
   const badgesDoc = await badgesRef.get();
   const badges = badgesDoc.exists ? badgesDoc.data().badges || [] : [];

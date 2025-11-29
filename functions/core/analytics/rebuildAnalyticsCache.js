@@ -20,12 +20,12 @@ exports.rebuildAnalyticsCache = functions.https.onCall(async (data, context) => 
     throw new functions.https.HttpsError('permission-denied', 'Admin access required');
   }
 
-  console.log('🔄 Rebuilding analytics cache from raw data...');
+  functions.logger.info('🔄 Rebuilding analytics cache from raw data...');
 
   try {
     // Count total users
     const usersCount = await db.collection('users').count().get();
-    const totalUsers = usersCount.data().count;
+    const totalUsers = usersCount.data()?.count || 0;
 
     // Count check-ins by status
     const [totalCheckInsCount, activeCheckInsCount, completedCheckInsCount, alertedCheckInsCount] = await Promise.all([
@@ -43,17 +43,39 @@ exports.rebuildAnalyticsCache = functions.https.onCall(async (data, context) => 
     ]);
 
     // Calculate revenue stats (need to scan users for this)
-    const usersSnapshot = await db.collection('users').get();
+    // Use pagination to prevent unbounded reads
+    const BATCH_SIZE = 1000;
+    let lastDoc = null;
     let smsSubscribers = 0;
     let donorsActive = 0;
     let totalDonations = 0;
 
-    usersSnapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.smsSubscription?.active) smsSubscribers++;
-      if (data.donationStats?.isActive) donorsActive++;
-      if (data.donationStats?.totalDonated) totalDonations += data.donationStats.totalDonated;
-    });
+    while (true) {
+      let usersQuery = db.collection('users').limit(BATCH_SIZE);
+      if (lastDoc) {
+        usersQuery = usersQuery.startAfter(lastDoc);
+      }
+
+      const usersSnapshot = await usersQuery.get();
+
+      if (usersSnapshot.empty) {
+        break;
+      }
+
+      usersSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.smsSubscription?.active) smsSubscribers++;
+        if (data.donationStats?.isActive) donorsActive++;
+        if (data.donationStats?.totalDonated) totalDonations += data.donationStats.totalDonated;
+      });
+
+      lastDoc = usersSnapshot.docs[usersSnapshot.docs.length - 1];
+
+      // If we got fewer than BATCH_SIZE, we're done
+      if (usersSnapshot.size < BATCH_SIZE) {
+        break;
+      }
+    }
 
     // Count templates and badges
     const [templatesCount, badgesCount] = await Promise.all([
@@ -67,15 +89,15 @@ exports.rebuildAnalyticsCache = functions.https.onCall(async (data, context) => 
       totalUsers,
 
       // Check-in stats
-      totalCheckIns: totalCheckInsCount.data().count,
-      activeCheckIns: activeCheckInsCount.data().count,
-      completedCheckIns: completedCheckInsCount.data().count,
-      alertedCheckIns: alertedCheckInsCount.data().count,
+      totalCheckIns: totalCheckInsCount.data()?.count || 0,
+      activeCheckIns: activeCheckInsCount.data()?.count || 0,
+      completedCheckIns: completedCheckInsCount.data()?.count || 0,
+      alertedCheckIns: alertedCheckInsCount.data()?.count || 0,
 
       // Bestie stats
-      totalBesties: totalBestiesCount.data().count,
-      pendingBesties: pendingBestiesCount.data().count,
-      acceptedBesties: acceptedBestiesCount.data().count,
+      totalBesties: totalBestiesCount.data()?.count || 0,
+      pendingBesties: pendingBestiesCount.data()?.count || 0,
+      acceptedBesties: acceptedBestiesCount.data()?.count || 0,
 
       // Revenue stats
       smsSubscribers,
@@ -83,8 +105,8 @@ exports.rebuildAnalyticsCache = functions.https.onCall(async (data, context) => 
       totalDonations,
 
       // Engagement stats
-      totalTemplates: templatesCount.data().count,
-      totalBadges: badgesCount.data().count,
+      totalTemplates: templatesCount.data()?.count || 0,
+      totalBadges: badgesCount.data()?.count || 0,
 
       // Metadata
       lastUpdated: admin.firestore.Timestamp.now(),
@@ -95,8 +117,7 @@ exports.rebuildAnalyticsCache = functions.https.onCall(async (data, context) => 
     // Write to analytics_cache
     await db.collection('analytics_cache').doc('realtime').set(cacheData);
 
-    console.log('✅ Analytics cache rebuilt successfully');
-    console.log('Cache data:', cacheData);
+    functions.logger.info('✅ Analytics cache rebuilt successfully', { cacheData });
 
     return {
       success: true,
@@ -104,7 +125,7 @@ exports.rebuildAnalyticsCache = functions.https.onCall(async (data, context) => 
       message: 'Analytics cache rebuilt successfully',
     };
   } catch (error) {
-    console.error('❌ Error rebuilding analytics cache:', error);
+    functions.logger.error('❌ Error rebuilding analytics cache:', error);
     throw new functions.https.HttpsError('internal', 'Failed to rebuild cache: ' + error.message);
   }
 });

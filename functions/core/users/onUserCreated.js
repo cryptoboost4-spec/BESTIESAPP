@@ -78,5 +78,5 @@ exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
     createdAt: admin.firestore.Timestamp.now()
   });
 
-  console.log('User created successfully:', user.uid);
+  functions.logger.info('User created successfully:', user.uid);
 });

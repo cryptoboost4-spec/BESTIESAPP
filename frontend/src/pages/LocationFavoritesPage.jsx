@@ -57,6 +57,12 @@ const LocationFavoritesPage = () => {
       await updateDoc(doc(db, 'users', currentUser.uid), {
         favoriteLocations: updated,
       });
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('location_favorite_added', {
+        total_favorites: updated.length
+      });
+
       setFavorites(updated);
       setNewLocation('');
       setNewEmoji('📍');

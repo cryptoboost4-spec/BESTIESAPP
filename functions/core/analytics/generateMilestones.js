@@ -8,7 +8,7 @@ exports.generateMilestones = functions.pubsub
   .schedule('0 1 * * *') // Run daily at 1:00 AM
   .timeZone('America/New_York')
   .onRun(async (context) => {
-    console.log('🎉 Starting milestone generation...');
+    functions.logger.info('🎉 Starting milestone generation...');
 
     let milestonesCreated = 0;
 
@@ -18,7 +18,7 @@ exports.generateMilestones = functions.pubsub
         .where('status', '==', 'accepted')
         .get();
 
-      console.log(`Checking ${bestiesSnapshot.size} bestie relationships for milestones`);
+      functions.logger.info(`Checking ${bestiesSnapshot.size} bestie relationships for milestones`);
 
       for (const bestieDoc of bestiesSnapshot.docs) {
         const bestieData = bestieDoc.data();
@@ -59,7 +59,7 @@ exports.generateMilestones = functions.pubsub
               });
 
               milestonesCreated += 2;
-              console.log(`Created ${daysTogether} days milestone for ${userId1} & ${userId2}`);
+              functions.logger.info(`Created ${daysTogether} days milestone for ${userId1} & ${userId2}`);
             }
           }
         }
@@ -79,7 +79,7 @@ exports.generateMilestones = functions.pubsub
           .count()
           .get();
 
-        const totalShared = sharedCheckIns1.data().count + sharedCheckIns2.data().count;
+        const totalShared = (sharedCheckIns1.data()?.count || 0) + (sharedCheckIns2.data()?.count || 0);
         const checkInMilestones = [5, 10, 25, 50];
 
         if (checkInMilestones.includes(totalShared)) {
@@ -117,57 +117,79 @@ exports.generateMilestones = functions.pubsub
               });
 
               milestonesCreated += 2;
-              console.log(`Created ${totalShared} check-ins milestone for ${userId1} & ${userId2}`);
+              functions.logger.info(`Created ${totalShared} check-ins milestone for ${userId1} & ${userId2}`);
             }
           }
         }
       }
 
       // Check individual alert response milestones (5, 10, 25, 50 responses)
-      const usersSnapshot = await db.collection('users').get();
+      // Use pagination to prevent unbounded reads
+      const BATCH_SIZE = 1000;
+      let lastDoc = null;
 
-      for (const userDoc of usersSnapshot.docs) {
-        const userId = userDoc.id;
+      while (true) {
+        let usersQuery = db.collection('users').limit(BATCH_SIZE);
+        if (lastDoc) {
+          usersQuery = usersQuery.startAfter(lastDoc);
+        }
 
-        const alertResponses = await db.collection('alert_responses')
-          .where('responderId', '==', userId)
-          .count()
-          .get();
+        const usersSnapshot = await usersQuery.get();
 
-        const responseCount = alertResponses.data().count;
-        const responseMilestones = [5, 10, 25, 50];
+        if (usersSnapshot.empty) {
+          break;
+        }
 
-        if (responseMilestones.includes(responseCount)) {
-          // Check if milestone already exists
-          const existing = await db.collection('circle_milestones')
-            .where('userId', '==', userId)
-            .where('type', '==', 'alerts_responded')
-            .where('value', '==', responseCount)
+        for (const userDoc of usersSnapshot.docs) {
+          const userId = userDoc.id;
+
+          const alertResponses = await db.collection('alert_responses')
+            .where('responderId', '==', userId)
+            .count()
             .get();
 
-          if (existing.empty) {
-            await db.collection('circle_milestones').add({
-              userId: userId,
-              type: 'alerts_responded',
-              value: responseCount,
-              createdAt: admin.firestore.Timestamp.now(),
-              celebrated: false,
-            });
+          const responseCount = alertResponses.data()?.count || 0;
+          const responseMilestones = [5, 10, 25, 50];
 
-            milestonesCreated++;
-            console.log(`Created ${responseCount} alerts responded milestone for ${userId}`);
+          if (responseMilestones.includes(responseCount)) {
+            // Check if milestone already exists
+            const existing = await db.collection('circle_milestones')
+              .where('userId', '==', userId)
+              .where('type', '==', 'alerts_responded')
+              .where('value', '==', responseCount)
+              .get();
+
+            if (existing.empty) {
+              await db.collection('circle_milestones').add({
+                userId: userId,
+                type: 'alerts_responded',
+                value: responseCount,
+                createdAt: admin.firestore.Timestamp.now(),
+                celebrated: false,
+              });
+
+              milestonesCreated++;
+              functions.logger.info(`Created ${responseCount} alerts responded milestone for ${userId}`);
+            }
           }
+        }
+
+        lastDoc = usersSnapshot.docs[usersSnapshot.docs.length - 1];
+
+        // If we got fewer than BATCH_SIZE, we're done
+        if (usersSnapshot.size < BATCH_SIZE) {
+          break;
         }
       }
 
-      console.log(`🎉 Milestone generation complete: ${milestonesCreated} milestones created`);
+      functions.logger.info(`🎉 Milestone generation complete: ${milestonesCreated} milestones created`);
 
       return {
         success: true,
         milestonesCreated,
       };
     } catch (error) {
-      console.error('Error generating milestones:', error);
+      functions.logger.error('Error generating milestones:', error);
       return { success: false, error: error.message };
     }
   });

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
 import LivingCircle from '../components/LivingCircle';
@@ -15,7 +15,7 @@ import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
-import FloatingNotificationBell from '../components/FloatingNotificationBell';
+// FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 
 const HomePage = () => {
@@ -32,6 +32,12 @@ const HomePage = () => {
 
   // Alerted check-ins from besties (where current user is a selected bestie)
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
+
+  // Analytics stats
+  const [emergencyContactCount, setEmergencyContactCount] = useState(0);
+  const [daysActive, setDaysActive] = useState(0);
+  const [nighttimeCheckIns, setNighttimeCheckIns] = useState(0);
+  const [weekendCheckIns, setWeekendCheckIns] = useState(0);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -152,6 +158,63 @@ const HomePage = () => {
     loadBesties();
   }, [currentUser, userData]);
 
+  // Load analytics stats
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const loadAnalytics = async () => {
+      try {
+        // Count emergency contact selections
+        const emergencyQuery = query(
+          collection(db, 'checkins'),
+          where('bestieIds', 'array-contains', currentUser.uid)
+        );
+        const emergencySnapshot = await getDocs(emergencyQuery);
+        setEmergencyContactCount(emergencySnapshot.size);
+
+        // Calculate days active
+        const firstCheckIn = userData?.stats?.firstCheckInDate?.toDate?.() || userData?.stats?.firstCheckInDate;
+        if (firstCheckIn) {
+          const now = new Date();
+          const diffTime = Math.abs(now - firstCheckIn);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          setDaysActive(diffDays);
+        }
+
+        // Count night and weekend check-ins
+        const checkInsQuery = query(
+          collection(db, 'checkins'),
+          where('userId', '==', currentUser.uid)
+        );
+        const checkInsSnapshot = await getDocs(checkInsQuery);
+        let nightCount = 0;
+        let weekendCount = 0;
+
+        checkInsSnapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const createdAt = data.createdAt?.toDate();
+          if (createdAt) {
+            const hour = createdAt.getHours();
+            if (hour >= 21 || hour < 6) {
+              nightCount++;
+            }
+            const day = createdAt.getDay();
+            if (day === 0 || day === 6) {
+              weekendCount++;
+            }
+          }
+        });
+
+        setNighttimeCheckIns(nightCount);
+        setWeekendCheckIns(weekendCount);
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+      }
+    };
+
+    loadAnalytics();
+  }, [currentUser, userData]);
+
   // Weekly Summary Logic
   const hasWeekOfActivity = () => {
     const firstCheckIn = userData?.stats?.firstCheckInDate?.toDate?.() || userData?.stats?.firstCheckInDate;
@@ -214,11 +277,6 @@ const HomePage = () => {
     <div className="min-h-screen bg-pattern">
       <OfflineBanner />
 
-      {/* Notification Bell - No Header */}
-      <div className="fixed top-4 right-4 z-50">
-        <FloatingNotificationBell />
-      </div>
-
       <div className="max-w-4xl mx-auto p-4 pb-20">
         {/* =================================================================
             ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
@@ -231,7 +289,7 @@ const HomePage = () => {
                 <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
                 <InfoButton message="Track your safety journey! These stats show your completed check-ins, bestie connections, and streaks. Keep building those safety habits! 💜" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-3xl font-display text-primary">
                     {userData?.stats?.completedCheckIns || 0}
@@ -255,6 +313,30 @@ const HomePage = () => {
                     {userData?.stats?.longestStreak || 0}
                   </div>
                   <div className="text-sm text-text-secondary">Longest Streak</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-display text-blue-500">
+                    {emergencyContactCount}
+                  </div>
+                  <div className="text-sm text-text-secondary">Times Selected</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-display text-green-500">
+                    {daysActive}
+                  </div>
+                  <div className="text-sm text-text-secondary">Days Active</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-display text-indigo-500">
+                    {nighttimeCheckIns}
+                  </div>
+                  <div className="text-sm text-text-secondary">Night Check-ins</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-display text-teal-500">
+                    {weekendCheckIns}
+                  </div>
+                  <div className="text-sm text-text-secondary">Weekend Check-ins</div>
                 </div>
               </div>
             </div>
@@ -345,15 +427,19 @@ const HomePage = () => {
               ))}
             </div>
 
-            {/* Get Me Out Button - Only shows during active check-ins */}
-            <div className="card p-6 mb-6 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/30 dark:to-red-900/30 border-2 border-orange-200 dark:border-orange-700">
+            {/* Get Me Out Button - Coming Soon */}
+            <div className="card p-6 mb-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-2 border-orange-200 dark:border-orange-700 opacity-75">
               <h3 className="text-lg font-display text-orange-900 dark:text-orange-100 mb-2 text-center">
                 🆘 Need an Exit Strategy?
               </h3>
-              <p className="text-sm text-orange-700 dark:text-orange-300 mb-4 text-center">
-                Feeling uncomfortable? Hold the button for 3 seconds and your besties will call you to help you get out of there.
+              <p className="text-sm text-orange-700 dark:text-orange-300 mb-3 text-center">
+                Feeling uncomfortable? We're working on a way to help you get out safely.
               </p>
-              <GetMeOutButton currentUser={currentUser} userData={userData} />
+              <div className="text-center">
+                <span className="inline-block px-4 py-2 bg-orange-200 dark:bg-orange-800/50 text-orange-800 dark:text-orange-200 rounded-full text-sm font-semibold">
+                  ✨ Coming Soon
+                </span>
+              </div>
             </div>
           </>
         )}

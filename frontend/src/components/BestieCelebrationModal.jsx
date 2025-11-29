@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
-import html2canvas from 'html2canvas';
+// html2canvas will be lazy-loaded when needed
 
 const BestieCelebrationModal = () => {
   const { currentUser, userData } = useAuth();
@@ -135,6 +135,8 @@ const BestieCelebrationModal = () => {
       const cardElement = celebrationCardRef.current;
       if (!cardElement) return;
 
+      // Lazy load html2canvas
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(cardElement, {
         backgroundColor: null,
         scale: 2,

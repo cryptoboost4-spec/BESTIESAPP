@@ -359,17 +359,23 @@ const CreateCheckInPage = () => {
       }
     }, 15000); // 15 second timeout
 
+    let checkInterval = null;
+    let readyTimeout = null;
+
     script.onload = () => {
       clearTimeout(loadTimeout);
       // Double check that the API is fully loaded
-      const checkInterval = setInterval(() => {
+      checkInterval = setInterval(() => {
         if (checkGoogleLoaded()) {
-          clearInterval(checkInterval);
+          if (checkInterval) {
+            clearInterval(checkInterval);
+            checkInterval = null;
+          }
         }
       }, 100);
 
       // Set a short timeout to ensure API is ready
-      setTimeout(() => {
+      readyTimeout = setTimeout(() => {
         if (checkGoogleLoaded()) {
           console.log('Google Maps API loaded successfully');
         }
@@ -387,8 +393,16 @@ const CreateCheckInPage = () => {
 
     document.head.appendChild(script);
 
-    // Cleanup timeout on unmount
-    return () => clearTimeout(loadTimeout);
+    // Cleanup timeouts and intervals on unmount
+    return () => {
+      clearTimeout(loadTimeout);
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
+      if (readyTimeout) {
+        clearTimeout(readyTimeout);
+      }
+    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -505,6 +519,16 @@ const CreateCheckInPage = () => {
           // Add document and get reference
           const docRef = await addDoc(collection(db, 'checkins'), checkInData);
 
+          // Track analytics
+          const { logAnalyticsEvent } = require('../services/firebase');
+          logAnalyticsEvent('checkin_created', {
+            duration: duration,
+            besties_count: selectedBesties.length,
+            messenger_contacts_count: selectedMessengerContacts.length,
+            has_photos: validPhotoURLs.length > 0,
+            has_notes: !!notes
+          });
+
           // Verify the document was created by reading it back
           const docSnap = await getDoc(doc(db, 'checkins', docRef.id));
 
@@ -610,22 +634,17 @@ const CreateCheckInPage = () => {
             />
           </div>
 
-          {/* Select Besties */}
+          {/* Who Should We Alert - Combined Section */}
           <BestieSelector
             besties={besties}
             selectedBesties={selectedBesties}
             setSelectedBesties={setSelectedBesties}
+            messengerContacts={messengerContacts}
+            selectedMessengerContacts={selectedMessengerContacts}
+            setSelectedMessengerContacts={setSelectedMessengerContacts}
+            userId={currentUser?.uid}
+            showMessenger={FEATURES.messengerAlerts}
           />
-
-          {/* Messenger Contacts (Optional) */}
-          {FEATURES.messengerAlerts && (
-            <MessengerContactSelector
-              messengerContacts={messengerContacts}
-              selectedContacts={selectedMessengerContacts}
-              setSelectedContacts={setSelectedMessengerContacts}
-              userId={currentUser?.uid}
-            />
-          )}
 
           {/* Notes and Photos */}
           <NotesPhotosSection

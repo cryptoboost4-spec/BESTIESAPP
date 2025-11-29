@@ -4,6 +4,44 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
 
+// Badge definitions - maps IDs to full badge info
+const BADGE_DEFINITIONS = {
+  // Guardian badges
+  guardian_1: { id: 'guardian_1', name: 'Helper', icon: '🛡️' },
+  guardian_5: { id: 'guardian_5', name: 'Protector', icon: '🛡️✨' },
+  guardian_10: { id: 'guardian_10', name: 'Guardian', icon: '🛡️⭐' },
+  guardian_25: { id: 'guardian_25', name: 'Guardian Angel', icon: '👼' },
+  guardian_50: { id: 'guardian_50', name: 'Safety Queen', icon: '👑' },
+  // Bestie badges
+  besties_5: { id: 'besties_5', name: 'Friend Circle', icon: '💜' },
+  besties_10: { id: 'besties_10', name: 'Squad Goals', icon: '💜✨' },
+  besties_20: { id: 'besties_20', name: 'Community Leader', icon: '💜⭐' },
+  friend_squad: { id: 'friend_squad', name: 'Friend Squad', icon: '👥' },
+  safety_circle: { id: 'safety_circle', name: 'Safety Circle', icon: '🤝' },
+  safety_network: { id: 'safety_network', name: 'Safety Network', icon: '🌐' },
+  // Subscriber badge
+  subscriber_active: { id: 'subscriber_active', name: 'SMS Supporter', icon: '⭐💝' },
+  // Donor badges
+  donor_10: { id: 'donor_10', name: 'Donor', icon: '💝' },
+  donor_25: { id: 'donor_25', name: 'Champion', icon: '💝✨' },
+  donor_50: { id: 'donor_50', name: 'Hero', icon: '💝⭐' },
+  donor_100: { id: 'donor_100', name: 'Legend', icon: '👑💝' },
+  // Check-in badges
+  checkin_10: { id: 'checkin_10', name: 'Safety First', icon: '✅' },
+  checkin_50: { id: 'checkin_50', name: 'Safety Pro', icon: '✅⭐' },
+  checkin_100: { id: 'checkin_100', name: 'Safety Master', icon: '👑✅' },
+  // Additional badges from BadgesPage
+  safety_starter: { id: 'safety_starter', name: 'Safety Starter', icon: '🛡️' },
+  safety_pro: { id: 'safety_pro', name: 'Safety Pro', icon: '⭐' },
+  safety_master: { id: 'safety_master', name: 'Safety Master', icon: '👑' },
+  night_owl: { id: 'night_owl', name: 'Night Owl', icon: '🦉' },
+  early_bird: { id: 'early_bird', name: 'Early Bird', icon: '🐦' },
+  streak_master: { id: 'streak_master', name: 'Streak Master', icon: '🔥' },
+  active_donor: { id: 'active_donor', name: 'Active Donor', icon: '💜' },
+  location_lover: { id: 'location_lover', name: 'Location Lover', icon: '📍' },
+  template_master: { id: 'template_master', name: 'Template Master', icon: '📋' },
+};
+
 const BadgesSection = ({
   currentUser,
   badges,
@@ -14,8 +52,19 @@ const BadgesSection = ({
   const navigate = useNavigate();
   const [showBadgeSelector, setShowBadgeSelector] = useState(false);
 
-  const featuredBadges = badges.filter(b => featuredBadgeIds.includes(b.id));
-  const otherBadges = badges.filter(b => !featuredBadgeIds.includes(b.id));
+  // Convert badge IDs (strings) to full badge objects
+  const badgeObjects = (badges || []).map(badge => {
+    // If it's already an object with id, use it directly
+    if (typeof badge === 'object' && badge.id) {
+      return badge;
+    }
+    // If it's a string ID, look up the full badge info
+    const badgeId = typeof badge === 'string' ? badge : badge?.id;
+    return BADGE_DEFINITIONS[badgeId] || { id: badgeId, name: badgeId, icon: '🏆' };
+  });
+
+  const featuredBadges = badgeObjects.filter(b => featuredBadgeIds.includes(b.id));
+  const otherBadges = badgeObjects.filter(b => !featuredBadgeIds.includes(b.id));
   const allBadgesToShow = [...featuredBadges, ...otherBadges];
 
   const handleToggleFeaturedBadge = async (badgeId) => {
@@ -72,20 +121,22 @@ const BadgesSection = ({
 
         {allBadgesToShow.length > 0 ? (
           <>
-            {/* Featured Badges - Show prominently */}
+            {/* Featured Badges - Single full-width card with up to 3 badges */}
             {featuredBadges.length > 0 && (
               <div className="mb-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {featuredBadges.map((badge) => (
-                    <div
-                      key={badge.id}
-                      className="p-4 rounded-2xl text-center transition-all bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg"
-                    >
-                      <div className="text-4xl mb-2">{badge.icon}</div>
-                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
-                      <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">⭐ Featured</div>
-                    </div>
-                  ))}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg">
+                  <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-3 text-center font-semibold">⭐ Featured Badges</div>
+                  <div className="flex justify-center items-center gap-6">
+                    {featuredBadges.slice(0, 3).map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="text-center flex-shrink-0"
+                      >
+                        <div className="text-4xl mb-1">{badge.icon}</div>
+                        <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -109,7 +160,7 @@ const BadgesSection = ({
                     </div>
                   </>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     {otherBadges.map((badge) => (
                       <div
                         key={badge.id}
@@ -162,9 +213,9 @@ const BadgesSection = ({
               Select up to 3 badges to showcase on your profile ({featuredBadgeIds.length}/3 selected)
             </p>
 
-            {badges.length > 0 ? (
+            {badgeObjects.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-                {badges.map((badge) => {
+                {badgeObjects.map((badge) => {
                   const isSelected = featuredBadgeIds.includes(badge.id);
                   return (
                     <button

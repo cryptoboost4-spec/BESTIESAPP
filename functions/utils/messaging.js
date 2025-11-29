@@ -24,7 +24,8 @@ async function sendNotification(userId, message, config, options = {}) {
     const userData = userDoc.data();
     
     if (!userData) {
-      console.error('User not found:', userId);
+      const functions = require('firebase-functions');
+      functions.logger.error('User not found:', userId);
       return { success: false, error: 'User not found' };
     }
 
@@ -40,9 +41,11 @@ async function sendNotification(userId, message, config, options = {}) {
           body: message
         });
         results.push({ method: 'whatsapp', success: true, sid: result.sid });
-        console.log('WhatsApp sent:', result.sid);
+        const functions = require('firebase-functions');
+        functions.logger.info('WhatsApp sent:', result.sid);
       } catch (error) {
-        console.error('WhatsApp failed:', error.message);
+        const functions = require('firebase-functions');
+        functions.logger.error('WhatsApp failed:', error.message);
         results.push({ method: 'whatsapp', success: false, error: error.message });
       }
     }
@@ -56,9 +59,11 @@ async function sendNotification(userId, message, config, options = {}) {
           body: message
         });
         results.push({ method: 'sms', success: true, sid: result.sid });
-        console.log('SMS sent:', result.sid);
+        const functions = require('firebase-functions');
+        functions.logger.info('SMS sent:', result.sid);
       } catch (error) {
-        console.error('SMS failed:', error.message);
+        const functions = require('firebase-functions');
+        functions.logger.error('SMS failed:', error.message);
         results.push({ method: 'sms', success: false, error: error.message });
       }
     }
@@ -67,7 +72,8 @@ async function sendNotification(userId, message, config, options = {}) {
     // Note: Requires Facebook Messenger API setup
     if (userData.notificationPreferences?.facebook && userData.facebookId) {
       // TODO: Implement Facebook Messenger when account is unblocked
-      console.log('Facebook Messenger not yet implemented');
+      const functions = require('firebase-functions');
+      functions.logger.debug('Facebook Messenger not yet implemented');
     }
 
     // Telegram (Free - Priority 4)
@@ -80,9 +86,11 @@ async function sendNotification(userId, message, config, options = {}) {
           startTime: options.startTime || new Date().toLocaleString()
         });
         results.push({ method: 'telegram', success: true, chatId: userData.telegramChatId });
-        console.log('Telegram sent to chat:', userData.telegramChatId);
+        const functions = require('firebase-functions');
+        functions.logger.info('Telegram sent to chat:', userData.telegramChatId);
       } catch (error) {
-        console.error('Telegram failed:', error.message);
+        const functions = require('firebase-functions');
+        functions.logger.error('Telegram failed:', error.message);
         results.push({ method: 'telegram', success: false, error: error.message });
       }
     }
@@ -102,7 +110,8 @@ async function sendNotification(userId, message, config, options = {}) {
     };
 
   } catch (error) {
-    console.error('Send notification error:', error);
+    const functions = require('firebase-functions');
+    functions.logger.error('Send notification error:', error);
     return { success: false, error: error.message };
   }
 }

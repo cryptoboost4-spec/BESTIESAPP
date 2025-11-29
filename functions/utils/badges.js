@@ -42,7 +42,7 @@ async function updateUserBadges(userId) {
     const userData = userDoc.data();
     
     if (!userData) {
-      console.error('User not found:', userId);
+      functions.logger.error('User not found:', userId);
       return;
     }
 
@@ -106,12 +106,12 @@ async function updateUserBadges(userId) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    console.log(`Updated badges for user ${userId}:`, earnedBadges.length);
+    functions.logger.info(`Updated badges for user ${userId}:`, earnedBadges.length);
     
     return earnedBadges;
 
   } catch (error) {
-    console.error('Error updating badges:', error);
+    functions.logger.error('Error updating badges:', error);
     throw error;
   }
 }

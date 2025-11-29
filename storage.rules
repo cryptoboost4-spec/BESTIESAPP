@@ -42,13 +42,17 @@ service firebase.storage {
       allow delete: if false; // Can only be deleted by cloud function after 7 days
     }
     
-    // Profile pictures
+    // Profile pictures - 2MB limit (smaller than check-in photos)
+    function isUnder2MB() {
+      return request.resource.size < 2 * 1024 * 1024;
+    }
+    
     match /profile-pictures/{userId}/{fileName} {
       allow read: if true; // Public
       allow write: if isAuthenticated()
         && isOwner(userId)
         && isImage()
-        && isUnder10MB();
+        && isUnder2MB();
       allow delete: if isAuthenticated() && isOwner(userId);
     }
 

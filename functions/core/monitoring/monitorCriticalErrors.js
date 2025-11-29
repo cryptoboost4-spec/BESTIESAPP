@@ -1,8 +1,21 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const sgMail = require('@sendgrid/mail');
+const EMAIL_CONFIG = require('../../utils/emailConfig');
 
-sgMail.setApiKey(functions.config().sendgrid.api_key);
+// Lazy SendGrid initialization
+let sendGridInitialized = false;
+
+function initializeSendGrid() {
+  if (!sendGridInitialized) {
+    const apiKey = functions.config().sendgrid?.api_key;
+    if (!apiKey) {
+      throw new Error('SendGrid API key not configured. Please set sendgrid.api_key in Firebase Functions config.');
+    }
+    sgMail.setApiKey(apiKey);
+    sendGridInitialized = true;
+  }
+}
 
 const db = admin.firestore();
 const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
@@ -57,20 +70,20 @@ exports.monitorCriticalErrors = functions.firestore
     const affectsMultipleUsers = uniqueUsers.size >= 2;
 
     if (!isSystemError && !affectsMultipleUsers) {
-      console.log('Single user error, not alerting admin:', error.message);
+      functions.logger.debug('Single user error, not alerting admin:', error.message);
       return null; // Single user error, don't alert
     }
 
-    console.log(`SITE ISSUE detected: ${error.message} (affects ${uniqueUsers.size} users)`);
+    functions.logger.warn(`SITE ISSUE detected: ${error.message} (affects ${uniqueUsers.size} users)`);
 
     // Send email alert to admin
-    const adminEmail = functions.config().admin?.email || 'admin@bestiesapp.com';
-
+    initializeSendGrid();
+    
     const alertType = isSystemError ? 'SYSTEM ERROR' : `SITE ISSUE (${uniqueUsers.size} users affected)`;
 
     const msg = {
-      to: adminEmail,
-      from: 'alerts@bestiesapp.com',
+      to: EMAIL_CONFIG.ADMIN,
+      from: EMAIL_CONFIG.ALERTS,
       subject: `🚨 ${alertType} - ${error.type}`,
       html: `
         <h2 style="color: #dc2626;">${alertType}</h2>
@@ -128,9 +141,9 @@ ${JSON.stringify(error.details, null, 2)}
 
     try {
       await sgMail.send(msg);
-      console.log('Critical error alert sent to admin');
+      functions.logger.info('Critical error alert sent to admin');
     } catch (emailError) {
-      console.error('Failed to send email alert:', emailError);
+      functions.logger.error('Failed to send email alert:', emailError);
     }
 
     return null;

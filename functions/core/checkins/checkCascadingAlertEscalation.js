@@ -44,7 +44,7 @@ exports.checkCascadingAlertEscalation = functions.pubsub
 
       if (remainingBesties.length === 0) {
         // All besties have been notified, stop escalation
-        console.log(`All besties notified for check-in ${checkInId}, no more escalation`);
+        functions.logger.info(`All besties notified for check-in ${checkInId}, no more escalation`);
         await doc.ref.update({
           currentNotifiedBestie: null,
           currentNotificationSentAt: null,
@@ -67,11 +67,11 @@ exports.checkCascadingAlertEscalation = functions.pubsub
 
       escalations.push(sendCascadingAlert(checkInId, checkIn, nextBestieId, userData));
 
-      console.log(`Escalated check-in ${checkInId} to bestie ${nextBestieId} (${notifiedHistory.length + 1}/${allBesties.length})`);
+      functions.logger.info(`Escalated check-in ${checkInId} to bestie ${nextBestieId} (${notifiedHistory.length + 1}/${allBesties.length})`);
     }
 
     await Promise.all(escalations);
 
-    console.log(`Processed ${checkInsSnapshot.size} check-ins for escalation, escalated ${escalations.length}`);
+    functions.logger.info(`Processed ${checkInsSnapshot.size} check-ins for escalation, escalated ${escalations.length}`);
     return null;
   });

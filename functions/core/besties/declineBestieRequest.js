@@ -10,11 +10,23 @@ exports.declineBestieRequest = functions.https.onCall(async (data, context) => {
 
   const { bestieId } = data;
 
+  // Validate bestieId
+  if (!bestieId || typeof bestieId !== 'string' || bestieId.length > 100) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid bestie ID');
+  }
+
   const bestieRef = db.collection('besties').doc(bestieId);
   const bestie = await bestieRef.get();
 
   if (!bestie.exists || bestie.data().recipientId !== context.auth.uid) {
     throw new functions.https.HttpsError('permission-denied', 'Invalid request');
+  }
+
+  const bestieData = bestie.data();
+  
+  // Prevent duplicate decline (idempotency)
+  if (bestieData.status === 'declined') {
+    return { success: true, message: 'Bestie request already declined' };
   }
 
   await bestieRef.update({

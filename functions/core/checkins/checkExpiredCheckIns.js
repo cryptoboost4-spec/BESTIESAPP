@@ -10,32 +10,49 @@ async function checkExpiredCheckIns(config) {
     const now = admin.firestore.Timestamp.now();
     const db = admin.firestore();
 
-    // Find all active check-ins that have expired
-    const expiredSnapshot = await db.collection('checkins')
-      .where('status', '==', 'active')
-      .where('alertTime', '<=', now)
-      .get();
+    let totalProcessed = 0;
+    let lastDoc = null;
+    const BATCH_SIZE = 100;
 
-    if (expiredSnapshot.empty) {
-      console.log('No expired check-ins found');
-      return { success: true, count: 0 };
-    }
+    // Process in batches to avoid unbounded reads
+    while (true) {
+      let query = db.collection('checkins')
+        .where('status', '==', 'active')
+        .where('alertTime', '<=', now)
+        .orderBy('alertTime', 'asc')
+        .limit(BATCH_SIZE);
 
-    console.log(`Found ${expiredSnapshot.size} expired check-ins`);
+      if (lastDoc) {
+        query = query.startAfter(lastDoc);
+      }
 
-    // Process each expired check-in
-    const promises = expiredSnapshot.docs.map(async (doc) => {
-      const checkinId = doc.id;
-      const checkinData = doc.data();
-      const userId = checkinData.userId;
+      const expiredSnapshot = await query.get();
 
-      try {
+      if (expiredSnapshot.empty) {
+        break;
+      }
+
+      const functions = require('firebase-functions');
+      functions.logger.info(`Processing batch of ${expiredSnapshot.size} expired check-ins`);
+
+      // Process each expired check-in in this batch
+      const promises = expiredSnapshot.docs.map(async (doc) => {
+        try {
+          const checkinId = doc.id;
+          const checkinData = doc.data();
+          
+          if (!checkinData || !checkinData.userId) {
+            functions.logger.error('Invalid check-in data:', checkinId);
+            return;
+          }
+          
+          const userId = checkinData.userId;
         // Get user data
         const userDoc = await db.collection('users').doc(userId).get();
         const userData = userDoc.data();
 
         if (!userData) {
-          console.error('User not found for check-in:', checkinId);
+          functions.logger.error('User not found for check-in:', checkinId);
           return;
         }
 
@@ -67,13 +84,13 @@ async function checkExpiredCheckIns(config) {
                   location: checkinData.location?.address || checkinData.location || 'Unknown',
                   startTime: checkinData.createdAt.toDate().toLocaleString()
                 });
-                console.log(`✅ Sent messenger alert to ${contact.name} (${contact.messengerPSID})`);
+                functions.logger.info(`✅ Sent messenger alert to ${contact.name} (${contact.messengerPSID})`);
               } else {
-                console.log(`⏰ Messenger contact ${contact.name} expired, skipping`);
+                functions.logger.debug(`⏰ Messenger contact ${contact.name} expired, skipping`);
               }
             }
           } catch (messengerError) {
-            console.error('Error sending messenger alerts:', messengerError);
+            functions.logger.error('Error sending messenger alerts:', messengerError);
             // Don't fail the whole function if messenger fails
           }
         }
@@ -93,11 +110,13 @@ async function checkExpiredCheckIns(config) {
                 location: checkinData.location?.address || checkinData.location || 'Unknown',
                 startTime: checkinData.createdAt.toDate().toLocaleString()
               });
-              console.log(`✅ Sent Telegram alert to ${bestieData.displayName} (${bestieData.telegramChatId})`);
+              const functions = require('firebase-functions');
+              functions.logger.info(`✅ Sent Telegram alert to ${bestieData.displayName} (${bestieData.telegramChatId})`);
             }
           }
         } catch (telegramError) {
-          console.error('Error sending Telegram alerts:', telegramError);
+          const functions = require('firebase-functions');
+          functions.logger.error('Error sending Telegram alerts:', telegramError);
           // Don't fail the whole function if Telegram fails
         }
         // ===== END TELEGRAM ALERTS =====
@@ -135,22 +154,42 @@ async function checkExpiredCheckIns(config) {
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        console.log('Alert sent for check-in:', checkinId);
+          const functions = require('firebase-functions');
+          functions.logger.info('Alert sent for check-in:', checkinId);
+        } catch (error) {
+          const functions = require('firebase-functions');
+          functions.logger.error('Error processing expired check-in:', doc.id, error);
+          // Continue processing other check-ins even if one fails
+        }
+      });
 
-      } catch (error) {
-        console.error('Error processing expired check-in:', checkinId, error);
+      await Promise.all(promises);
+      totalProcessed += expiredSnapshot.size;
+
+      // If we got fewer than BATCH_SIZE, we're done
+      if (expiredSnapshot.size < BATCH_SIZE) {
+        break;
       }
-    });
 
-    await Promise.all(promises);
+      // Set lastDoc for next iteration
+      lastDoc = expiredSnapshot.docs[expiredSnapshot.docs.length - 1];
+    }
+
+    const functions = require('firebase-functions');
+    if (totalProcessed === 0) {
+      functions.logger.info('No expired check-ins found');
+    } else {
+      functions.logger.info(`Processed ${totalProcessed} expired check-ins total`);
+    }
 
     return {
       success: true,
-      count: expiredSnapshot.size
+      count: totalProcessed
     };
 
   } catch (error) {
-    console.error('Error checking expired check-ins:', error);
+    const functions = require('firebase-functions');
+    functions.logger.error('Error checking expired check-ins:', error);
     throw error;
   }
 }

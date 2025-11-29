@@ -26,7 +26,13 @@ const CheckInCard = ({ checkIn }) => {
   const [extendingButton, setExtendingButton] = useState(null);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(checkIn.notes || '');
-  const [photoURLs, setPhotoURLs] = useState(checkIn.photoURLs || checkIn.photoURL ? [checkIn.photoURL] : []);
+  const [photoURLs, setPhotoURLs] = useState(
+    checkIn.photoURLs?.length > 0 
+      ? checkIn.photoURLs.filter(url => url && url.trim() !== '') 
+      : checkIn.photoURL 
+        ? [checkIn.photoURL] 
+        : []
+  );
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [optimisticAlertTime, setOptimisticAlertTime] = useState(null);
   const { executeOptimistic } = useOptimisticUpdate();
@@ -36,6 +42,20 @@ const CheckInCard = ({ checkIn }) => {
   // Passcode verification states
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [enteredPasscode, setEnteredPasscode] = useState('');
+  
+  // Edit time modal state
+  const [showEditTimeModal, setShowEditTimeModal] = useState(false);
+  const [newAlertTime, setNewAlertTime] = useState('');
+
+  // Sync photo URLs when checkIn prop changes
+  useEffect(() => {
+    const newPhotoURLs = checkIn.photoURLs?.length > 0 
+      ? checkIn.photoURLs.filter(url => url && url.trim() !== '') 
+      : checkIn.photoURL 
+        ? [checkIn.photoURL] 
+        : [];
+    setPhotoURLs(newPhotoURLs);
+  }, [checkIn.photoURLs, checkIn.photoURL]);
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -116,6 +136,15 @@ const CheckInCard = ({ checkIn }) => {
         throw new Error('Check-in status verification failed');
       }
 
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      const checkInData = checkInSnap.data();
+      const actualDuration = checkInData.duration || 0;
+      logAnalyticsEvent('checkin_completed', {
+        duration: actualDuration,
+        was_extended: checkInData.extended || false
+      });
+
       // Keep loader showing for 2 seconds
       setTimeout(() => {
         navigate('/');
@@ -191,6 +220,13 @@ const CheckInCard = ({ checkIn }) => {
 
         if (checkInSnap.exists()) {
           setOptimisticAlertTime(checkInSnap.data().alertTime.toDate());
+
+          // Track analytics
+          const { logAnalyticsEvent } = require('../services/firebase');
+          logAnalyticsEvent('checkin_extended', {
+            minutes_added: minutes,
+            checkin_id: checkIn.id
+          });
         } else {
           throw new Error('Unable to verify extension');
         }
@@ -311,84 +347,82 @@ const CheckInCard = ({ checkIn }) => {
 
     setUpdatingLocation(true);
     haptic.medium();
+    toast.loading('Getting your location...', { id: 'location-update' });
 
     try {
-      // Get FAST location first
-      const fastPosition = await new Promise((resolve, reject) => {
+      // Request high accuracy location directly
+      const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
-          timeout: 5000,
-          maximumAge: 10000
+          enableHighAccuracy: true,  // Request GPS accuracy
+          timeout: 15000,            // 15 second timeout
+          maximumAge: 0              // Don't use cached position
         });
       });
 
-      const { latitude: fastLat, longitude: fastLng, accuracy: fastAccuracy } = fastPosition.coords;
+      const { latitude, longitude, accuracy } = position.coords;
 
+      // Reverse geocode to get address
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${fastLat},${fastLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
 
-      let locationName = `GPS: ${fastLat.toFixed(6)}, ${fastLng.toFixed(6)}`;
+      let locationName = `GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
       if (data.results && data.results.length > 0) {
         locationName = data.results[0].formatted_address;
       }
 
       await updateDoc(doc(db, 'checkins', checkIn.id), {
         location: locationName,
-        gpsCoords: { lat: fastLat, lng: fastLng },
-        locationAccuracy: fastAccuracy,
+        gpsCoords: { lat: latitude, lng: longitude },
+        locationAccuracy: accuracy,
         locationUpdatedAt: Timestamp.now(),
       });
 
       setCurrentLocation(locationName);
-      toast.success('Location updated!');
+      toast.dismiss('location-update');
+      toast.success(`Location updated! (±${Math.round(accuracy)}m accuracy)`);
       setUpdatingLocation(false);
-
-      // Get accurate GPS in background
-      navigator.geolocation.getCurrentPosition(
-        async (accuratePosition) => {
-          const { latitude: accLat, longitude: accLng, accuracy: accAccuracy } = accuratePosition.coords;
-
-          if (fastAccuracy - accAccuracy > 50) {
-            const accResponse = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${accLat},${accLng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
-            );
-            const accData = await accResponse.json();
-
-            let accLocationName = `GPS: ${accLat.toFixed(6)}, ${accLng.toFixed(6)}`;
-            if (accData.results && accData.results.length > 0) {
-              accLocationName = accData.results[0].formatted_address;
-            }
-
-            await updateDoc(doc(db, 'checkins', checkIn.id), {
-              location: accLocationName,
-              gpsCoords: { lat: accLat, lng: accLng },
-              locationAccuracy: accAccuracy,
-              locationUpdatedAt: Timestamp.now(),
-            });
-
-            setCurrentLocation(accLocationName);
-          }
-        },
-        (error) => {
-          console.log('Background accurate GPS failed:', error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        }
-      );
 
     } catch (error) {
       console.error('Error updating location:', error);
+      toast.dismiss('location-update');
+      
       if (error.code === 1) {
-        toast.error('Location permission denied. Please enable location access.', { duration: 4000 });
+        toast.error('Location permission denied. Please enable location access in your browser settings.', { 
+          duration: 6000,
+          icon: '📍',
+        });
+        
+        // Try to request permission again after a delay
+        setTimeout(async () => {
+          try {
+            const permission = await navigator.permissions.query({ name: 'geolocation' });
+            if (permission.state === 'prompt') {
+              toast.loading('Requesting location permission...', { id: 'location-perm-card' });
+              navigator.geolocation.getCurrentPosition(
+                () => {
+                  toast.dismiss('location-perm-card');
+                  toast.success('Location permission granted!');
+                  handleUpdateLocation();
+                },
+                () => {
+                  toast.dismiss('location-perm-card');
+                  toast.error('Please enable location in your browser settings: Settings → Privacy → Location', { duration: 6000 });
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+              );
+            }
+          } catch (permError) {
+            console.log('Permissions API not supported');
+          }
+        }, 2000);
+      } else if (error.code === 2) {
+        toast.error('Location unavailable. Make sure GPS/Location Services are enabled on your device.', { duration: 5000 });
       } else if (error.code === 3) {
-        toast.error('Location timeout. Please try again.', { duration: 3000 });
+        toast.error('Location timeout. Please move to an area with better GPS signal and try again.', { duration: 5000 });
       } else {
-        toast.error('Failed to update location');
+        toast.error('Failed to update location. Please try again.');
       }
       setUpdatingLocation(false);
     }
@@ -432,6 +466,7 @@ const CheckInCard = ({ checkIn }) => {
         isAlerted={isAlerted}
         onExtend={handleExtend}
         extendingButton={extendingButton}
+        onEditTime={() => setShowEditTimeModal(true)}
       />
 
       {/* I'm Safe Button */}
@@ -557,6 +592,67 @@ const CheckInCard = ({ checkIn }) => {
           }}
           isDark={isDark}
         />
+      )}
+
+      {/* Edit Time Modal */}
+      {showEditTimeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowEditTimeModal(false)}>
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 max-w-sm w-full shadow-xl`} onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-display text-text-primary mb-4 text-center">
+              ⏰ Set Alert Time
+            </h3>
+            <p className="text-sm text-text-secondary mb-4 text-center">
+              Choose when you want to be reminded to check in
+            </p>
+            
+            <input
+              type="datetime-local"
+              value={newAlertTime}
+              onChange={(e) => setNewAlertTime(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              className={`w-full p-3 rounded-xl border-2 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} text-text-primary mb-4`}
+            />
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowEditTimeModal(false)}
+                className="flex-1 btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!newAlertTime) {
+                    toast.error('Please select a time');
+                    return;
+                  }
+                  
+                  const selectedTime = new Date(newAlertTime);
+                  if (selectedTime <= new Date()) {
+                    toast.error('Please select a future time');
+                    return;
+                  }
+                  
+                  try {
+                    await updateDoc(doc(db, 'checkins', checkIn.id), {
+                      alertTime: Timestamp.fromDate(selectedTime),
+                    });
+                    setOptimisticAlertTime(selectedTime);
+                    toast.success('Alert time updated!');
+                    setShowEditTimeModal(false);
+                    setNewAlertTime('');
+                  } catch (error) {
+                    console.error('Error updating alert time:', error);
+                    toast.error('Failed to update alert time');
+                  }
+                }}
+                className="flex-1 btn btn-primary"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

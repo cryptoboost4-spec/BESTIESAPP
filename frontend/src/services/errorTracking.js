@@ -1,5 +1,6 @@
 import { db } from './firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import logger from '../utils/logger';
 
 class ErrorTracker {
   constructor() {
@@ -65,7 +66,7 @@ class ErrorTracker {
     // Send to Firestore
     this.sendToFirestore('errors', errorData);
 
-    console.error('Error tracked:', errorData);
+    logger.error('Error tracked:', errorData);
   }
 
   logCustomError(message, details = {}) {
@@ -171,7 +172,7 @@ class ErrorTracker {
         createdAt: Timestamp.now(),
       });
     } catch (error) {
-      console.error('Failed to send to Firestore:', error);
+      logger.error('Failed to send to Firestore:', error);
       // Fallback: store locally
       this.storeLocally(collectionName, data);
     }
@@ -190,7 +191,7 @@ class ErrorTracker {
       
       localStorage.setItem(key, JSON.stringify(stored));
     } catch (error) {
-      console.error('Failed to store locally:', error);
+      logger.error('Failed to store locally:', error);
     }
   }
 

@@ -5,7 +5,8 @@ const CheckInTimer = ({
   duration,
   isAlerted,
   onExtend,
-  extendingButton
+  extendingButton,
+  onEditTime
 }) => {
   const formatTime = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -42,29 +43,39 @@ const CheckInTimer = ({
 
       {/* Extend Buttons - Right under timer */}
       {!isAlerted && (
-        <div className="grid grid-cols-3 gap-2 mt-3">
-          <button
-            onClick={() => onExtend(15)}
-            disabled={extendingButton !== null}
-            className="btn btn-secondary text-sm py-2 active:scale-95"
-          >
-            +15m
-          </button>
-          <button
-            onClick={() => onExtend(30)}
-            disabled={extendingButton !== null}
-            className="btn btn-secondary text-sm py-2 active:scale-95"
-          >
-            +30m
-          </button>
-          <button
-            onClick={() => onExtend(60)}
-            disabled={extendingButton !== null}
-            className="btn btn-secondary text-sm py-2 active:scale-95"
-          >
-            +60m
-          </button>
-        </div>
+        <>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <button
+              onClick={() => onExtend(15)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 active:scale-95"
+            >
+              +15m
+            </button>
+            <button
+              onClick={() => onExtend(30)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 active:scale-95"
+            >
+              +30m
+            </button>
+            <button
+              onClick={() => onExtend(60)}
+              disabled={extendingButton !== null}
+              className="btn btn-secondary text-sm py-2 active:scale-95"
+            >
+              +60m
+            </button>
+          </div>
+          {onEditTime && (
+            <button
+              onClick={onEditTime}
+              className="w-full mt-2 text-xs text-primary hover:text-primary-dark transition-colors underline"
+            >
+              ✏️ Set specific time
+            </button>
+          )}
+        </>
       )}
     </div>
   );

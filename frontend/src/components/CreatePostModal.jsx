@@ -4,8 +4,10 @@ import { db } from '../services/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../services/firebase';
+import { logAnalyticsEvent } from '../services/firebase';
 import toast from 'react-hot-toast';
 import haptic from '../utils/hapticFeedback';
+import { sanitizeUserInput } from '../utils/sanitize';
 
 const CreatePostModal = ({ onClose, onPostCreated }) => {
   const { currentUser, userData } = useAuth();
@@ -45,20 +47,32 @@ const CreatePostModal = ({ onClose, onPostCreated }) => {
         photoURL = await getDownloadURL(photoRef);
       }
 
+      // Sanitize user input to prevent XSS attacks
+      const sanitizedText = sanitizeUserInput(text.trim(), 5000); // Max 5000 chars for posts
+
       // Create post in Firestore
       await addDoc(collection(db, 'posts'), {
         userId: currentUser.uid,
         userName: userData?.displayName || 'Anonymous',
         userPhoto: userData?.photoURL || null,
-        text: text.trim(),
+        text: sanitizedText,
         photoURL: photoURL,
         createdAt: Timestamp.now(),
+        // Denormalize bestieUserIds for efficient Firestore rules
+        bestieUserIds: userData?.bestieUserIds || {},
         reactionCounts: {
           heart: 0,
           laugh: 0,
           fire: 0
         },
         commentCount: 0
+      });
+
+      // Track analytics
+      logAnalyticsEvent('post_created', {
+        has_photo: !!photoURL,
+        has_text: !!text.trim(),
+        text_length: text.trim().length
       });
 
       toast.success('Post created! 🎉');

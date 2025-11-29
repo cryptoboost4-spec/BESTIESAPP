@@ -1,6 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const stripe = require('stripe')(functions.config().stripe.secret_key);
+const stripe = require('stripe')(functions.config().stripe?.secret_key);
+const { checkUserRateLimit, RATE_LIMITS } = require('../../utils/rateLimiting');
+const { retryApiCall } = require('../../utils/retry');
 
 const db = admin.firestore();
 const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
@@ -9,6 +11,29 @@ const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const userId = context.auth.uid;
+
+  // Rate limiting: 10 checkout sessions per hour per user
+  const rateLimit = await checkUserRateLimit(
+    userId,
+    'createCheckoutSession',
+    { count: 10, window: 60 * 60 * 1000 }, // 10 per hour
+    'checkout_sessions'
+  );
+
+  if (!rateLimit.allowed) {
+    const resetIn = Math.ceil((rateLimit.resetAt.getTime() - Date.now()) / 1000);
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      `Rate limit exceeded. Maximum 10 checkout sessions per hour. Try again in ${resetIn} seconds.`,
+      {
+        limit: rateLimit.limit,
+        count: rateLimit.count,
+        resetAt: rateLimit.resetAt.toISOString(),
+      }
+    );
   }
 
   const { amount, type } = data; // type: 'donation' or 'subscription'
@@ -36,12 +61,17 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
     let customerId = userData.stripeCustomerId;
 
     if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: userData.email,
-        metadata: {
-          firebaseUID: context.auth.uid,
+      const customer = await retryApiCall(
+        async () => {
+          return await stripe.customers.create({
+            email: userData.email,
+            metadata: {
+              firebaseUID: context.auth.uid,
+            },
+          });
         },
-      });
+        { operationName: 'Create Stripe customer' }
+      );
       customerId = customer.id;
 
       await db.collection('users').doc(context.auth.uid).update({
@@ -49,8 +79,10 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
       });
     }
 
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Create checkout session (with retry)
+    const session = await retryApiCall(
+      async () => {
+        return await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       mode: type === 'subscription' ? 'subscription' : 'subscription', // Both are subscriptions
@@ -79,10 +111,22 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
         type: type,
       },
     });
+      },
+      { operationName: 'Create Stripe checkout session' }
+    );
+
+    // Track this checkout session for rate limiting
+    await db.collection('checkout_sessions').add({
+      userId,
+      sessionId: session.id,
+      type: type,
+      amount: amount,
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
     return { success: true, url: session.url, sessionId: session.id };
   } catch (error) {
-    console.error('Stripe checkout error:', error);
+    functions.logger.error('Stripe checkout error:', error);
     throw new functions.https.HttpsError('internal', 'Failed to create checkout session');
   }
 });

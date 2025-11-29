@@ -56,27 +56,44 @@ const MessengerContactSelector = ({
       </div>
 
       {activeContacts.length === 0 ? (
-        <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
+        <div className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 border-2 border-pink-200 dark:border-pink-800 rounded-xl p-6">
           <div className="text-center">
-            <div className="text-4xl mb-2">💬</div>
-            <p className="font-semibold text-text-primary mb-2">No Messenger contacts connected</p>
+            <div className="text-4xl mb-2">💜</div>
+            <p className="font-semibold text-text-primary mb-2">Add a Messenger Bestie</p>
             <p className="text-text-secondary text-sm mb-4">
-              Share your Messenger link with emergency contacts. When they click it and send any message,
-              they'll be connected for 20 hours. No 5-person limit!
+              Free & unlimited alerts! Share your link and when they message you, they're connected for 20 hours.
             </p>
-            <button
-              type="button"
-              onClick={copyMessengerLink}
-              className="btn btn-primary inline-flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-              </svg>
-              Copy Your Messenger Link
-            </button>
-            <p className="text-xs text-text-secondary mt-3">
-              Find your link in Settings → Messenger Alerts
-            </p>
+            
+            {/* Tooltip explanation */}
+            <div className="bg-pink-100 dark:bg-pink-900/30 rounded-lg p-3 mb-4 text-left">
+              <p className="text-xs text-pink-800 dark:text-pink-200">
+                <strong>💡 How it works:</strong> Share your link → They click & send any message → Instant 20hr connection for free alerts!
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <button
+                type="button"
+                onClick={copyMessengerLink}
+                className="btn btn-secondary inline-flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy Link
+              </button>
+              <a
+                href={`https://www.facebook.com/dialog/send?link=${encodeURIComponent(MESSENGER_CONFIG.getLinkForUser(userId))}&app_id=464891037130549&redirect_uri=${encodeURIComponent(window.location.href)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary inline-flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.477 2 2 6.145 2 11.235c0 2.894 1.447 5.48 3.71 7.155V22l3.477-1.906c.929.257 1.915.394 2.813.394 5.523 0 10-4.145 10-9.235C22 6.145 17.523 2 12 2z"/>
+                </svg>
+                Share on Messenger
+              </a>
+            </div>
           </div>
         </div>
       ) : (

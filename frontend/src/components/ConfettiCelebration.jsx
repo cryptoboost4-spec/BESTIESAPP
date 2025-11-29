@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
-import confetti from 'canvas-confetti';
+// canvas-confetti will be lazy-loaded when needed
 
 const ConfettiCelebration = ({ trigger = false, type = 'default' }) => {
   useEffect(() => {
     if (!trigger) return;
 
-    const fireConfetti = () => {
+    const fireConfetti = async () => {
+      // Lazy load canvas-confetti
+      const confetti = (await import('canvas-confetti')).default;
       if (type === 'badge') {
         // Badge celebration - stars and hearts
         const count = 200;
@@ -89,7 +91,7 @@ const ConfettiCelebration = ({ trigger = false, type = 'default' }) => {
       }
     };
 
-    fireConfetti();
+    fireConfetti().catch(console.error);
   }, [trigger, type]);
 
   return null; // This component doesn't render anything

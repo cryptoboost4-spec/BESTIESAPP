@@ -49,6 +49,10 @@ const DevAnalyticsPage = () => {
       avgBestiesPerUser: 0,
       templatesCreated: 0,
       badgesEarned: 0,
+      timesSelectedAsEmergency: 0,
+      daysActive: 0,
+      weekendCheckIns: 0,
+      nightCheckIns: 0,
     },
     costs: {
       estimatedSMS: 0,
@@ -108,6 +112,7 @@ const DevAnalyticsPage = () => {
       let new30days = 0;
       let active7days = 0;
       let active30days = 0;
+      let totalDaysActive = 0;
 
       usersSnap.forEach(doc => {
         const data = doc.data();
@@ -120,7 +125,16 @@ const DevAnalyticsPage = () => {
         const lastActive = data.lastActive?.toDate();
         if (lastActive && lastActive > sevenDaysAgo) active7days++;
         if (lastActive && lastActive > thirtyDaysAgo) active30days++;
+
+        // Calculate days active (from first check-in to now)
+        const firstCheckIn = data.stats?.firstCheckInDate?.toDate();
+        if (firstCheckIn) {
+          const daysDiff = Math.ceil((now - firstCheckIn) / (1000 * 60 * 60 * 24));
+          totalDaysActive += daysDiff;
+        }
       });
+
+      const avgDaysActive = totalUsers > 0 ? Math.round(totalDaysActive / totalUsers) : 0;
 
       // Check-ins Analytics (filtered by time range)
       let checkInsQuery = collection(db, 'checkins');
@@ -139,7 +153,10 @@ const DevAnalyticsPage = () => {
       let completedCheckIns = 0;
       let alertedCheckIns = 0;
       let totalDuration = 0;
+      let weekendCheckIns = 0;
+      let nightCheckIns = 0;
       const locationCounts = {};
+      const emergencyContactSelections = {}; // Track how many times each user was selected
 
       checkInsSnap.forEach(doc => {
         const data = doc.data();
@@ -154,7 +171,32 @@ const DevAnalyticsPage = () => {
         if (data.location) {
           locationCounts[data.location] = (locationCounts[data.location] || 0) + 1;
         }
+
+        // Track weekend check-ins (Saturday=6, Sunday=0)
+        const createdAt = data.createdAt?.toDate();
+        if (createdAt) {
+          const day = createdAt.getDay();
+          if (day === 0 || day === 6) {
+            weekendCheckIns++;
+          }
+
+          // Track night check-ins (9pm-6am)
+          const hour = createdAt.getHours();
+          if (hour >= 21 || hour < 6) {
+            nightCheckIns++;
+          }
+        }
+
+        // Track emergency contact selections
+        if (data.bestieIds && Array.isArray(data.bestieIds)) {
+          data.bestieIds.forEach(bestieId => {
+            emergencyContactSelections[bestieId] = (emergencyContactSelections[bestieId] || 0) + 1;
+          });
+        }
       });
+
+      // Calculate total times selected as emergency contact
+      const totalTimesSelected = Object.values(emergencyContactSelections).reduce((sum, count) => sum + count, 0);
 
       const topLocations = Object.entries(locationCounts)
         .map(([location, count]) => ({ location, count }))
@@ -416,6 +458,10 @@ const DevAnalyticsPage = () => {
           avgBestiesPerUser: totalUsers > 0 ? ((acceptedBesties * 2) / totalUsers).toFixed(1) : 0,
           templatesCreated: templatesSnap.size,
           badgesEarned: totalBadgesEarned,
+          timesSelectedAsEmergency: totalTimesSelected,
+          daysActive: avgDaysActive,
+          weekendCheckIns: weekendCheckIns,
+          nightCheckIns: nightCheckIns,
         },
         costs: {
           estimatedSMS: estimatedSMSCost,

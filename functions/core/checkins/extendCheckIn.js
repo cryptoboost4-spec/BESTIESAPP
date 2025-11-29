@@ -1,30 +1,49 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { notifyBestiesAboutCheckIn } = require('../../utils/checkInNotifications');
+const { requireAuth, validateId, validateEnum } = require('../../utils/validation');
+const { RATE_LIMITS, checkUserRateLimit } = require('../../utils/rateLimiting');
 
 const db = admin.firestore();
 
 // Extend check-in
 exports.extendCheckIn = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-  }
-
+  const userId = requireAuth(context);
   const { checkInId, additionalMinutes } = data;
+
+  // Validate checkInId
+  validateId(checkInId, 'check-in ID');
 
   // Validate additionalMinutes - only allow the button values
   const validExtensions = [15, 30, 60];
-  if (!validExtensions.includes(additionalMinutes)) {
+  validateEnum(additionalMinutes, validExtensions, 'Extension duration');
+
+  // Rate limiting: 10 extensions per hour
+  const rateLimit = await checkUserRateLimit(
+    userId,
+    'extendCheckIn',
+    RATE_LIMITS.CHECKIN_EXTENSIONS_PER_HOUR,
+    'checkins',
+    'userId',
+    'lastUpdate'
+  );
+
+  if (!rateLimit.allowed) {
     throw new functions.https.HttpsError(
-      'invalid-argument',
-      'Extension must be 15, 30, or 60 minutes'
+      'resource-exhausted',
+      `Rate limit exceeded. Maximum ${rateLimit.limit} check-in extensions per hour. Try again later.`,
+      {
+        limit: rateLimit.limit,
+        count: rateLimit.count,
+        resetAt: rateLimit.resetAt.toISOString(),
+      }
     );
   }
 
   const checkInRef = db.collection('checkins').doc(checkInId);
   const checkIn = await checkInRef.get();
 
-  if (!checkIn.exists || checkIn.data().userId !== context.auth.uid) {
+  if (!checkIn.exists || checkIn.data().userId !== userId) {
     throw new functions.https.HttpsError('permission-denied', 'Invalid check-in');
   }
 
@@ -52,7 +71,7 @@ exports.extendCheckIn = functions.https.onCall(async (data, context) => {
         }
       );
     } catch (error) {
-      console.error('Error notifying besties about check-in extension:', error);
+      functions.logger.error('Error notifying besties about check-in extension:', error);
       // Don't fail the whole function if notifications fail
     }
   }

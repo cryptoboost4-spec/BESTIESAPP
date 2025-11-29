@@ -76,7 +76,11 @@ export const useOptimisticUpdate = () => {
       return { success: true, data: result };
 
     } catch (error) {
-      console.error('Optimistic update failed:', error);
+      // Error is already handled and shown to user via toast
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Optimistic update failed:', error);
+      }
 
       // Step 4: Rollback optimistic update on error
       if (rollback) {

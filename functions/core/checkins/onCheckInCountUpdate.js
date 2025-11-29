@@ -32,7 +32,7 @@ exports.onCheckInCountUpdate = functions.firestore
         .count()
         .get();
 
-      const total = count.data().count;
+      const total = count.data()?.count || 0;
       const badgesRef = db.collection('badges').doc(newData.userId);
       const badgesDoc = await badgesRef.get();
       const badges = badgesDoc.exists ? badgesDoc.data().badges || [] : [];

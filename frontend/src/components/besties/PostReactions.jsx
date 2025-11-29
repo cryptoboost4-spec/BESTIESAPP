@@ -117,6 +117,13 @@ const PostReactions = ({ postId, initialCounts }) => {
         await updateDoc(postRef, {
           [`reactionCounts.${type}`]: increment(1)
         });
+
+        // Track analytics
+        const { logAnalyticsEvent } = require('../../services/firebase');
+        logAnalyticsEvent('post_reaction_added', {
+          reaction_type: type,
+          post_id: postId
+        });
       }
     } catch (error) {
       console.error('Error handling reaction:', error);
@@ -143,16 +150,16 @@ const PostReactions = ({ postId, initialCounts }) => {
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-all ${
               isActive
                 ? 'bg-purple-100 dark:bg-purple-900 ring-2 ring-purple-500 scale-110'
-                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : count > 0
+                  ? 'bg-pink-50 dark:bg-pink-900/30'
+                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
             } disabled:opacity-50`}
             title={reaction.label}
           >
             <span className="text-lg">{reaction.emoji}</span>
-            {count > 0 && (
-              <span className={`font-semibold ${isActive ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-400'}`}>
-                {count}
-              </span>
-            )}
+            <span className={`font-semibold ${isActive ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-400'}`}>
+              {count}
+            </span>
           </button>
         );
       })}

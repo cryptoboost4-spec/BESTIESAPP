@@ -27,21 +27,11 @@ exports.onDuressCodeUsed = functions.firestore
     const userData = userDoc.data();
 
     // Get all besties in user's circle (favorites)
-    const besties1 = await db.collection('besties')
-      .where('requesterId', '==', alert.userId)
-      .where('status', '==', 'accepted')
-      .where('isFavorite', '==', true)
-      .get();
-
-    const besties2 = await db.collection('besties')
-      .where('recipientId', '==', alert.userId)
-      .where('status', '==', 'accepted')
-      .where('isFavorite', '==', true)
-      .get();
-
-    const bestieIds = [];
-    besties1.forEach(doc => bestieIds.push(doc.data().recipientId));
-    besties2.forEach(doc => bestieIds.push(doc.data().requesterId));
+    const { getUserBestieIds } = require('../../utils/besties');
+    const bestieIds = await getUserBestieIds(alert.userId, {
+      favoritesOnly: true,
+      acceptedOnly: true
+    });
 
     if (bestieIds.length === 0) {
       console.log('No circle besties found for duress alert');

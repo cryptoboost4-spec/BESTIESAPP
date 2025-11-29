@@ -37,13 +37,19 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
             <div>
               <div className="font-semibold text-text-primary flex items-center">
                 Data Retention
-                <InfoButton message="Choose whether to keep your check-in history indefinitely or auto-delete after 24 hours. Keeping history lets you track patterns, while auto-delete maximizes privacy." />
+                <InfoButton message={`Choose whether to keep your check-in history indefinitely or auto-delete after 7 days. We keep running totals (like badge progress) but delete actual location/check-in data for privacy.`} />
               </div>
               <div className="text-sm text-text-secondary">
                 {userData?.settings?.holdData
                   ? 'Keeping all check-in history'
-                  : 'Auto-delete after 24h (default)'}
+                  : 'Auto-delete after 7 days (default)'}
               </div>
+              <button
+                onClick={() => navigate('/data-policy')}
+                className="text-xs text-primary hover:underline mt-1"
+              >
+                Learn how we handle your data →
+              </button>
             </div>
             <button
               onClick={toggleHoldData}

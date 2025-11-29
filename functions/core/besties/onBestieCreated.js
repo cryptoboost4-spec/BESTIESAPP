@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const APP_CONFIG = require('../../utils/appConfig');
 
 const db = admin.firestore();
 
@@ -17,7 +18,7 @@ async function awardBestieBadge(userId) {
     .count()
     .get();
 
-  const total = count1.data().count + count2.data().count;
+  const total = (count1.data()?.count || 0) + (count2.data()?.count || 0);
   const badgesRef = db.collection('badges').doc(userId);
   const badgesDoc = await badgesRef.get();
   const badges = badgesDoc.exists ? badgesDoc.data().badges || [] : [];
@@ -86,5 +87,45 @@ exports.onBestieCreated = functions.firestore
         pendingBesties: admin.firestore.FieldValue.increment(1),
         lastUpdated: admin.firestore.Timestamp.now(),
       }, { merge: true });
+
+      // Send notification to recipient about the bestie request
+      try {
+        const recipientDoc = await db.collection('users').doc(bestie.recipientId).get();
+        if (recipientDoc.exists) {
+          const recipientData = recipientDoc.data();
+          const requesterName = bestie.requesterName || 'Someone';
+
+          // Create in-app notification
+          await db.collection('notifications').add({
+            userId: bestie.recipientId,
+            type: 'bestie_request',
+            title: '💜 New Bestie Request!',
+            message: `${requesterName} wants to be your bestie!`,
+            createdAt: admin.firestore.Timestamp.now(),
+            read: false,
+          });
+
+          // Send push notification if enabled
+          if (recipientData.notificationsEnabled && recipientData.fcmToken) {
+            await admin.messaging().send({
+              token: recipientData.fcmToken,
+              notification: {
+                title: '💜 New Bestie Request!',
+                body: `${requesterName} wants to be your bestie!`,
+              },
+              webpush: {
+                fcmOptions: { link: APP_CONFIG.getUrl(APP_CONFIG.ROUTES.BESTIES) },
+                notification: {
+                  icon: '/logo192.png',
+                  badge: '/logo192.png',
+                  tag: 'bestie-request',
+                }
+              }
+            });
+          }
+        }
+      } catch (notifError) {
+        functions.logger.error('Error sending bestie request notification:', notifError);
+      }
     }
   });

@@ -4,7 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
 import toast from 'react-hot-toast';
-import html2canvas from 'html2canvas';
+// html2canvas will be lazy-loaded when needed
 import { getLayoutById } from './layouts';
 import { getTypographyById, getNameStyle, getBioStyle } from './themes/typography';
 import { BACKGROUNDS } from './themes/backgrounds';
@@ -32,14 +32,18 @@ const AURA_OPTIONS = [
   { id: 'rainbow', name: 'Rainbow', emoji: '🌈', description: 'Rainbow border effect' }
 ];
 
-const ProfileCard = ({ currentUser, userData }) => {
+const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustomizer, setShowCustomizer: externalSetShowCustomizer }) => {
   const navigate = useNavigate();
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showAuraPicker, setShowAuraPicker] = useState(false);
-  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [internalShowCustomizer, setInternalShowCustomizer] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Use external state if provided, otherwise use internal state
+  const showCustomizer = externalShowCustomizer !== undefined ? externalShowCustomizer : internalShowCustomizer;
+  const setShowCustomizer = externalSetShowCustomizer || setInternalShowCustomizer;
 
   const currentGradient = userData?.profile?.backgroundGradient || GRADIENT_OPTIONS[0].gradient;
   const currentAura = userData?.profile?.aura || 'none';
@@ -153,6 +157,8 @@ const ProfileCard = ({ currentUser, userData }) => {
     try {
       toast('Generating image...', { icon: '📸' });
 
+      // Lazy load html2canvas
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(profileCard, {
         backgroundColor: null,
         scale: 2,
@@ -223,7 +229,7 @@ const ProfileCard = ({ currentUser, userData }) => {
     <>
       <div
         id="profile-card-shareable"
-        className={`card mb-6 relative overflow-hidden shadow-2xl profile-card-aura-${currentAura} profile-card-pattern ${patternClass} max-h-80`}
+        className={`card mb-6 relative overflow-hidden shadow-2xl profile-card-aura-${currentAura} profile-card-pattern ${patternClass} pb-2`}
         style={{ background: backgroundStyle }}
       >
         {/* Action Buttons */}
@@ -236,31 +242,14 @@ const ProfileCard = ({ currentUser, userData }) => {
           >
             ✨
           </button>
-        <button
-          onClick={() => navigate('/edit-profile')}
-          className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
-          title="Edit profile"
-        >
-          ✏️
-        </button>
-
-        {/* Color Picker Button */}
-        <button
-          onClick={() => setShowColorPicker(!showColorPicker)}
-          className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
-          title="Change background color"
-        >
-          🎨
-        </button>
-
-        {/* Aura Picker Button */}
-        <button
-          onClick={() => setShowAuraPicker(!showAuraPicker)}
-          className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800"
-          title="Change profile aura"
-        >
-          ✨
-        </button>
+          {/* Edit Profile Button */}
+          <button
+            onClick={() => navigate('/edit-profile')}
+            className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
+            title="Edit profile"
+          >
+            ✏️
+          </button>
 
         {showColorPicker && (
           <>
@@ -376,19 +365,9 @@ const ProfileCard = ({ currentUser, userData }) => {
         {/* Dynamic Layout Component */}
         <LayoutComponent {...layoutProps} />
 
-      {/* Social Sharing Icons - Cute & Small */}
-      <div className="mt-6 relative z-10">
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Share your profile:</p>
-
-        {/* Download Card Button */}
-        <button
-          onClick={handleShareProfileCard}
-          className="mb-3 px-4 py-2 bg-gradient-primary text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-        >
-          📸 Download Profile Card
-        </button>
-
-        <div className="flex gap-2 justify-center flex-wrap">
+      {/* Social Sharing Icons - Compact inside card */}
+      <div className="mt-2 pt-2 border-t border-white/20 relative z-10 px-4">
+        <div className="flex items-center justify-center gap-2">
           {/* Facebook */}
           <button
             onClick={() => {

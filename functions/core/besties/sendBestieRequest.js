@@ -102,7 +102,8 @@ async function sendBestieRequest(req, res, config) {
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log('Bestie request sent:', bestieDoc.id);
+    const functions = require('firebase-functions');
+    functions.logger.info('Bestie request sent:', bestieDoc.id);
 
     return res.status(200).json({
       success: true,
@@ -111,7 +112,8 @@ async function sendBestieRequest(req, res, config) {
     });
 
   } catch (error) {
-    console.error('Error sending bestie request:', error);
+    const functions = require('firebase-functions');
+    functions.logger.error('Error sending bestie request:', error);
     return res.status(500).json({ error: error.message });
   }
 }

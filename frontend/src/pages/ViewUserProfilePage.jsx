@@ -13,6 +13,7 @@ const ViewUserProfilePage = () => {
   const [user, setUser] = useState(null);
   const [badges, setBadges] = useState([]);
   const [recentCheckIns, setRecentCheckIns] = useState([]);
+  const [alertedCheckIns, setAlertedCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [, setIsBestie] = useState(false);
   const [error, setError] = useState(null);
@@ -102,6 +103,20 @@ const ViewUserProfilePage = () => {
         setRecentCheckIns(checkInsData);
       }
 
+      // Load alerted check-ins where current user is a selected bestie
+      const alertedCheckInsQuery = query(
+        collection(db, 'checkins'),
+        where('userId', '==', userId),
+        where('bestieIds', 'array-contains', currentUser.uid),
+        where('status', '==', 'alerted')
+      );
+      const alertedSnapshot = await getDocs(alertedCheckInsQuery);
+      const alertedData = alertedSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setAlertedCheckIns(alertedData);
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -150,6 +165,41 @@ const ViewUserProfilePage = () => {
     <div className="min-h-screen bg-pattern">
 
       <div className="max-w-4xl mx-auto p-4 pb-24 md:pb-6">
+        {/* Alerted Check-Ins - URGENT! */}
+        {alertedCheckIns.length > 0 && (
+          <div className="mb-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-display text-text-primary">⚠️ Urgent Alert</h2>
+              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+                {alertedCheckIns.length}
+              </span>
+            </div>
+            {alertedCheckIns.map((checkIn) => (
+              <div key={checkIn.id} className="card p-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-500">
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">🚨</div>
+                  <div className="flex-1">
+                    <h3 className="font-display text-lg text-red-900 dark:text-red-100 mb-2">
+                      {user?.displayName} Missed Check-In!
+                    </h3>
+                    <div className="text-sm text-red-800 dark:text-red-200 space-y-1">
+                      <div><strong>Location:</strong> {checkIn.location || 'Unknown'}</div>
+                      <div><strong>Expected back:</strong> {checkIn.alertTime?.toDate().toLocaleString()}</div>
+                      {checkIn.notes && <div><strong>Notes:</strong> {checkIn.notes}</div>}
+                    </div>
+                    <button
+                      onClick={() => navigate(`/history/${checkIn.id}`)}
+                      className="mt-3 btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      View Details →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Profile Header - ENHANCED */}
         <div
           className={`card p-8 mb-6 text-center relative overflow-hidden shadow-2xl profile-card-aura-${user?.profile?.aura || 'none'}`}

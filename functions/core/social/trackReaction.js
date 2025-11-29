@@ -31,6 +31,6 @@ exports.trackReaction = functions.firestore
       createdAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`Tracked reaction interaction: ${reactorId} → ${postOwnerId}`);
+    functions.logger.debug(`Tracked reaction interaction: ${reactorId} → ${postOwnerId}`);
     return null;
   });

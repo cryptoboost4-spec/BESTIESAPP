@@ -66,9 +66,6 @@ const ProfileCompletion = ({
     <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-100 dark:border-gray-600">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-display text-gradient">Profile Completion ✨</h2>
-        <span className="text-2xl font-bold text-gradient">
-          {profileCompletion.completed}/{profileCompletion.total}
-        </span>
       </div>
 
       {/* Animated Progress Bar with Color Gradient and Fizzing Effect */}
@@ -80,14 +77,21 @@ const ProfileCompletion = ({
           {/* Shimmer effect */}
           <div className="absolute inset-0 shimmer-effect"></div>
 
-          {/* Fizzing effect at the end of the bar */}
-          {animatedProgress < 100 && (
-            <div className="absolute right-0 top-0 bottom-0 w-8 fizz-effect">
+          {/* Enhanced sizzling/sparking effect at the end of the bar */}
+          {animatedProgress < 100 && animatedProgress > 0 && (
+            <div className="absolute right-0 top-0 bottom-0 w-12 fizz-effect">
+              {/* Spark particles */}
               <div className="fizz-particle fizz-1"></div>
               <div className="fizz-particle fizz-2"></div>
               <div className="fizz-particle fizz-3"></div>
               <div className="fizz-particle fizz-4"></div>
               <div className="fizz-particle fizz-5"></div>
+              <div className="fizz-particle fizz-6"></div>
+              <div className="fizz-particle fizz-7"></div>
+              {/* Sizzle lines */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 sizzle-line sizzle-1"></div>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 sizzle-line sizzle-2"></div>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 sizzle-line sizzle-3"></div>
             </div>
           )}
         </div>
@@ -98,20 +102,6 @@ const ProfileCompletion = ({
           </span>
         </div>
       </div>
-
-      {/* Page indicator */}
-      {totalPages > 1 && (
-        <div className="text-center mb-3">
-          <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-            Step {currentPage + 1} of {totalPages}
-          </span>
-          {!currentPageCompleted && currentPage > 0 && (
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-              Complete all tasks to unlock the next step
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Task List */}
       <div className="space-y-2 mb-4">
@@ -136,31 +126,6 @@ const ProfileCompletion = ({
           </div>
         ))}
       </div>
-
-      {/* Progress indicator - no navigation buttons, auto-advances */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-3 border-t border-purple-200 dark:border-gray-600">
-          {currentPageCompleted && currentPage === totalPages - 1 ? (
-            <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-              🎉 All Done!
-            </span>
-          ) : currentPageCompleted ? (
-            <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 animate-pulse">
-              ✨ Moving to next step...
-            </span>
-          ) : (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {currentPageTasks.filter(t => t.completed).length}/{currentPageTasks.length} complete
-            </span>
-          )}
-        </div>
-      )}
-
-      {!currentPageCompleted && currentPage < totalPages - 1 && (
-        <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-          ✨ Next step unlocks when you complete all tasks above
-        </p>
-      )}
 
       <style>{`
         @keyframes shimmer {
@@ -223,6 +188,16 @@ const ProfileCompletion = ({
           animation-delay: 1.2s;
         }
 
+        .fizz-6 {
+          right: 30%;
+          animation-delay: 0.4s;
+        }
+
+        .fizz-7 {
+          right: 70%;
+          animation-delay: 0.8s;
+        }
+
         @keyframes fizz {
           0% {
             bottom: 0;
@@ -230,15 +205,48 @@ const ProfileCompletion = ({
             transform: translateX(0) scale(0);
           }
           10% {
-            opacity: 0.8;
+            opacity: 0.9;
           }
           50% {
             opacity: 1;
           }
           100% {
-            bottom: 120%;
+            bottom: 150%;
             opacity: 0;
-            transform: translateX(10px) scale(2);
+            transform: translateX(15px) scale(2.5);
+          }
+        }
+
+        /* Sizzle lines effect */
+        .sizzle-line {
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+          animation: sizzle 0.6s infinite;
+          border-radius: 2px;
+        }
+
+        .sizzle-1 {
+          animation-delay: 0s;
+          transform: translateY(-50%) rotate(45deg);
+        }
+
+        .sizzle-2 {
+          animation-delay: 0.2s;
+          transform: translateY(-50%) rotate(-45deg);
+        }
+
+        .sizzle-3 {
+          animation-delay: 0.4s;
+          transform: translateY(-50%) rotate(90deg);
+        }
+
+        @keyframes sizzle {
+          0%, 100% {
+            opacity: 0;
+            transform: translateY(-50%) scale(0.5);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.5);
           }
         }
       `}</style>

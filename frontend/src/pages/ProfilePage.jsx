@@ -30,6 +30,7 @@ const ProfilePage = () => {
   const [weekendCheckIns, setWeekendCheckIns] = useState(0);
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
+  const [showCustomizer, setShowCustomizer] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -226,12 +227,12 @@ const ProfilePage = () => {
       tasks.push({ name: 'Add email', completed: false, path: '/settings', section: 'account' });
     }
 
-    // 7. Customize Profile
-    if (userData?.profile?.customTheme || userData?.profile?.customBanner || userData?.featuredBadges?.length > 0) {
+    // 7. Customize Profile (background customization)
+    if (userData?.profile?.customization?.background || userData?.profile?.customTheme || userData?.profile?.customBanner || userData?.featuredBadges?.length > 0) {
       tasks.push({ name: 'Customize your profile', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: 'Customize your profile', completed: false, path: '/profile', section: null });
+      tasks.push({ name: 'Customize your profile', completed: false, path: null, section: null, action: 'openCustomizer' });
     }
 
     // 8. Earn a Badge
@@ -242,16 +243,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Earn your first badge', completed: false, path: null, section: null, action: 'scrollToBadges' });
     }
 
-    // 9. Fill Bestie Circle (5 besties)
-    const circleCount = userData?.featuredCircle?.length || 0;
-    if (circleCount >= 5) {
-      tasks.push({ name: 'Fill your Bestie Circle (5 besties)', completed: true, path: null, section: null });
-      completed++;
-    } else {
-      tasks.push({ name: `Fill your Bestie Circle (${circleCount}/5)`, completed: false, path: null, section: null, action: 'scrollToBestieCircle' });
-    }
-
-    // 10. Review Notification Settings
+    // 9. Review Notification Settings
     const hasReviewedNotifications = userData?.profileCompletion?.reviewedNotifications || false;
     if (hasReviewedNotifications) {
       tasks.push({ name: 'Review notification settings', completed: true, path: null, section: null });
@@ -260,7 +252,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Review notification settings', completed: false, path: '/settings', section: 'notifications' });
     }
 
-    // 11. Review Privacy Settings
+    // 10. Review Privacy Settings
     const hasReviewedPrivacy = userData?.profileCompletion?.reviewedPrivacy || false;
     if (hasReviewedPrivacy) {
       tasks.push({ name: 'Review privacy settings', completed: true, path: null, section: null });
@@ -269,7 +261,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Review privacy settings', completed: false, path: '/settings', section: 'privacy' });
     }
 
-    // 12. Review Passcode Settings
+    // 11. Review Passcode Settings
     const hasReviewedPasscode = userData?.profileCompletion?.reviewedPasscode || false;
     const hasSafetyPasscode = userData?.security?.safetyPasscode;
     if (hasReviewedPasscode || hasSafetyPasscode) {
@@ -279,7 +271,7 @@ const ProfilePage = () => {
       tasks.push({ name: 'Review passcode settings', completed: false, path: '/settings', section: 'security' });
     }
 
-    // 13. View About Us
+    // 12. View About Us
     const hasViewedAbout = userData?.profileCompletion?.viewedAbout || false;
     if (hasViewedAbout) {
       tasks.push({ name: 'View About Us', completed: true, path: null, section: null });
@@ -288,13 +280,21 @@ const ProfilePage = () => {
       tasks.push({ name: 'View About Us', completed: false, path: '/about', section: null });
     }
 
-    // 14. FINAL CHALLENGE: Invite 5 Besties
-    // Count total besties (not just in circle)
-    if (bestiesCount >= 5) {
-      tasks.push({ name: '🎉 Invite 5 besties to the app', completed: true, path: null, section: null });
+    // 13. Fill Bestie Circle (5 besties)
+    const circleCount = userData?.featuredCircle?.length || 0;
+    if (circleCount >= 5) {
+      tasks.push({ name: 'Fill your Bestie Circle (5 besties)', completed: true, path: null, section: null });
       completed++;
     } else {
-      tasks.push({ name: `🎉 Invite 5 besties (${bestiesCount}/5)`, completed: false, path: '/home', section: null });
+      tasks.push({ name: `Fill your Bestie Circle (${circleCount}/5)`, completed: false, path: '/', section: null });
+    }
+
+    // 14. FINAL CHALLENGE: Add 5 Besties (total, not just circle)
+    if (bestiesCount >= 5) {
+      tasks.push({ name: '🎉 Add 5 besties to the app', completed: true, path: null, section: null });
+      completed++;
+    } else {
+      tasks.push({ name: `🎉 Add 5 besties (${bestiesCount}/5)`, completed: false, path: '/besties', section: null });
     }
 
     const percentage = (completed / tasks.length) * 100;
@@ -307,11 +307,9 @@ const ProfilePage = () => {
       if (photoElement) {
         photoElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    } else if (task.action === 'scrollToBestieCircle') {
-      const bestieCircleElement = document.querySelector('.bestie-circle-section');
-      if (bestieCircleElement) {
-        bestieCircleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    } else if (task.action === 'openCustomizer') {
+      // Open the ProfileCustomizer modal
+      setShowCustomizer(true);
     } else if (task.action === 'scrollToBadges') {
       const badgesElement = document.querySelector('.badges-section');
       if (badgesElement) {
@@ -389,7 +387,12 @@ const ProfilePage = () => {
         )}
 
         {/* Profile Card */}
-        <ProfileCard currentUser={currentUser} userData={userData} />
+        <ProfileCard 
+          currentUser={currentUser} 
+          userData={userData} 
+          showCustomizer={showCustomizer}
+          setShowCustomizer={setShowCustomizer}
+        />
 
         {/* Profile Completion */}
         <ProfileCompletion

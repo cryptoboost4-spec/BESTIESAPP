@@ -17,11 +17,13 @@ const NotificationSettings = ({
     const telegramLink = TELEGRAM_CONFIG.getLinkForUser(currentUserId);
     window.open(telegramLink, '_blank');
   };
+
   return (
     <div className="card p-6 mb-6">
       <h2 className="text-xl font-display text-text-primary mb-4">Notifications</h2>
 
       <div className="space-y-4">
+        {/* WhatsApp - Coming Soon */}
         <div className="flex items-center justify-between opacity-50">
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
@@ -32,7 +34,6 @@ const NotificationSettings = ({
             <div className="text-sm text-text-secondary">Integration in development</div>
           </div>
           <button
-            onClick={() => toggleNotification('whatsapp')}
             className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed flex-shrink-0 ml-3"
             disabled
           >
@@ -40,18 +41,17 @@ const NotificationSettings = ({
           </button>
         </div>
 
+        {/* Telegram */}
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
                 Telegram
                 <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Free & Unlimited</span>
-                <InfoButton message="Connect YOUR Telegram account to receive safety alerts when your besties need help. This is YOUR personal notification channel (like email). Click 'Connect' below, then send /start to the bot!" />
+                <InfoButton message="Connect YOUR Telegram account to receive safety alerts when your besties need help. Click 'Connect' below, then send /start to the bot!" />
               </div>
               <div className="text-sm text-text-secondary mt-1">
-                {userData?.telegramChatId
-                  ? `✅ Connected${userData?.telegramUsername ? ' as @' + userData?.telegramUsername : ''}`
-                  : '⚠️ Not connected'}
+                {userData?.telegramChatId ? '✅ Connected' : '⚠️ Not connected'}
               </div>
             </div>
             <button
@@ -87,41 +87,16 @@ const NotificationSettings = ({
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-semibold text-text-primary flex items-center">
-              Email
-              <InfoButton message="Receive email alerts when your besties check in or trigger an emergency alert. Emails are sent instantly and work on all devices." />
-            </div>
-            <div className="text-sm text-text-secondary">Get alerts via email</div>
-          </div>
-          <button
-            onClick={() => toggleNotification('email')}
-            className={`w-12 h-6 rounded-full transition-colors ${
-              userData?.notificationPreferences?.email
-                ? 'bg-primary'
-                : 'bg-gray-300 dark:bg-gray-600'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
-                userData?.notificationPreferences?.email
-                  ? 'translate-x-6'
-                  : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-
+        {/* Push Notifications */}
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="font-semibold text-text-primary flex items-center">
-              Push Notifications (Beta)
-              <InfoButton message="Browser push notifications only work when your browser is open. For reliable alerts, we recommend using Email or SMS. We're building a mobile app with better push notifications soon! 📱" />
+              Push Notifications
+              <InfoButton message="Browser push notifications work when your browser is open. For mobile alerts, we recommend Telegram or SMS." />
             </div>
             <div className="text-sm text-text-secondary">
               {pushNotificationsSupported
-                ? 'Browser notifications - limited reliability'
+                ? 'Browser notifications'
                 : 'Not supported in this browser'}
             </div>
           </div>
@@ -146,26 +121,21 @@ const NotificationSettings = ({
           </button>
         </div>
 
-        {pushNotificationsSupported && !pushNotificationsEnabled && (
-          <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg">
-            💡 Tip: Email and Facebook Messenger are more reliable for critical safety alerts
-          </div>
-        )}
-
+        {/* SMS Alerts */}
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="font-semibold text-text-primary flex items-center">
                 SMS Alerts
-                <InfoButton message="Text message alerts are currently free during beta (up to 5 per week). Once WhatsApp and Facebook integrations launch, SMS will become a premium feature at $1/month for 20 alerts. Use Email for unlimited free alerts!" />
+                <InfoButton message="Text message alerts - currently free during beta (5 per week)." />
               </div>
               <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-semibold">
-                Free - Limited Time
+                Free Beta
               </span>
             </div>
             <div className="text-sm text-text-secondary">
               {userData?.notificationPreferences?.sms
-                ? `Active - ${smsWeeklyCount}/5 alerts used this week`
+                ? `Active - ${smsWeeklyCount}/5 this week`
                 : 'Not enabled'}
             </div>
           </div>
@@ -186,12 +156,6 @@ const NotificationSettings = ({
             />
           </button>
         </div>
-
-        {userData?.notificationPreferences?.sms && smsWeeklyCount >= 4 && (
-          <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg">
-            ⚠️ You're approaching the weekly limit of 5 SMS alerts. Consider using email or WhatsApp for unlimited free alerts.
-          </div>
-        )}
       </div>
 
       {/* Test Alert Button */}
@@ -201,10 +165,10 @@ const NotificationSettings = ({
           disabled={loading}
           className="w-full btn btn-primary"
         >
-          🧪 Test Notification Channels
+          🧪 Test Notifications
         </button>
         <p className="text-xs text-text-secondary mt-2 text-center">
-          Choose which channels to test - verify your setup is working
+          Send a test notification to verify your setup
         </p>
       </div>
     </div>

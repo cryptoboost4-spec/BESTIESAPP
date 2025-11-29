@@ -2,162 +2,93 @@ import React from 'react';
 
 const BestiesLeaderboard = ({ rankingsPeriod, setRankingsPeriod }) => {
   return (
-    <div className="relative overflow-hidden">
-      {/* Subtle sparkly background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-        <div className="absolute top-2 left-2 text-pink-200 text-sm">✨</div>
-        <div className="absolute top-3 right-3 text-purple-200 text-sm">💫</div>
-        <div className="absolute bottom-2 left-3 text-pink-200 text-sm">⭐</div>
+    <div className="card p-4 bg-white dark:bg-gray-800 border border-pink-100 dark:border-pink-900/30">
+      {/* Header */}
+      <div className="text-center mb-4">
+        <span className="text-3xl">👑</span>
+        <h2 className="text-lg font-display text-pink-500 dark:text-pink-400 mt-1">
+          {rankingsPeriod === 'weekly' && "This Week's Queens"}
+          {rankingsPeriod === 'monthly' && "This Month's Queens"}
+          {rankingsPeriod === 'yearly' && "This Year's Queens"}
+        </h2>
+        <p className="text-xs text-gray-400 dark:text-gray-500">your amazing squad 💕</p>
       </div>
 
-      <div className="card p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-600 shadow-lg relative">
-        {/* Cute header with crown */}
-        <div className="text-center mb-3">
-          <div className="text-3xl mb-1">👑</div>
-          <h2 className="text-lg font-display bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            {rankingsPeriod === 'weekly' && "This Week's Queens"}
-            {rankingsPeriod === 'monthly' && "This Month's Queens"}
-            {rankingsPeriod === 'yearly' && "This Year's Queens"}
-          </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Your amazing squad! 💕</p>
-        </div>
-
-        {/* Period Tabs - Compact */}
-        <div className="flex gap-1.5 justify-center mb-3">
+      {/* Period Tabs */}
+      <div className="flex gap-1 justify-center mb-4">
+        {[
+          { id: 'weekly', label: 'Week' },
+          { id: 'monthly', label: 'Month' },
+          { id: 'yearly', label: 'Year' }
+        ].map(({ id, label }) => (
           <button
-            onClick={() => setRankingsPeriod('weekly')}
-            className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
-              rankingsPeriod === 'weekly'
-                ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
-                : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
+            key={id}
+            onClick={() => setRankingsPeriod(id)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              rankingsPeriod === id
+                ? 'bg-pink-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-100 dark:hover:bg-pink-900/20'
             }`}
           >
-            📅 Week
+            {label}
           </button>
-          <button
-            onClick={() => setRankingsPeriod('monthly')}
-            className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
-              rankingsPeriod === 'monthly'
-                ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
-                : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
-            }`}
-          >
-            🗓️ Month
-          </button>
-          <button
-            onClick={() => setRankingsPeriod('yearly')}
-            className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all ${
-              rankingsPeriod === 'yearly'
-                ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white shadow-md'
-                : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-gray-600'
-            }`}
-          >
-            🎯 Year
-          </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="space-y-2">
-          {/* Most Reliable - Pink gradient */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-pink-300 to-rose-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-pink-200 dark:border-pink-600 hover:scale-[1.02] transition-transform">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-pink-300 to-rose-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                    💖
-                  </div>
-                  <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                    🏆
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display text-sm font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
-                    Most Reliable
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Always there for you 💕</div>
-                </div>
-              </div>
-            </div>
+      {/* Queen Cards */}
+      <div className="space-y-2">
+        {/* Most Reliable */}
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800/30">
+          <div className="w-9 h-9 rounded-full bg-pink-100 dark:bg-pink-800/40 flex items-center justify-center text-lg">
+            💖
           </div>
-
-          {/* Fastest Responder - Purple gradient */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-300 to-fuchsia-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-purple-200 dark:border-purple-600 hover:scale-[1.02] transition-transform">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                    ⚡
-                  </div>
-                  <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                    🏆
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display text-sm font-bold bg-gradient-to-r from-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
-                    Super Speedy
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Quick to the rescue 💜</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Safety Champion - Rose gradient */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-rose-300 to-pink-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-rose-200 dark:border-rose-600 hover:scale-[1.02] transition-transform">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-rose-300 to-pink-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                    🛡️
-                  </div>
-                  <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                    🏆
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display text-sm font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
-                    Guardian Angel
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">Keeping you safe 🌸</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Streak Queen - Yellow gradient */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-300 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-md border border-yellow-200 dark:border-yellow-600 hover:scale-[1.02] transition-transform">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full flex items-center justify-center text-lg shadow-sm">
-                    🔥
-                  </div>
-                  <div className="absolute -top-0.5 -right-0.5 bg-yellow-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                    🏆
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display text-sm font-bold bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
-                    Streak Queen
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300 font-medium">On fire lately! ✨</div>
-                </div>
-              </div>
-            </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-pink-600 dark:text-pink-400">Most Reliable</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">always there for you</p>
           </div>
         </div>
 
-        {/* Cute footer */}
-        <div className="mt-3 pt-2 border-t border-pink-200 dark:border-pink-600 text-center">
-          <p className="text-xs font-semibold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-            {rankingsPeriod === 'weekly' && '💫 Resets Monday'}
-            {rankingsPeriod === 'monthly' && '💫 Resets on 1st'}
-            {rankingsPeriod === 'yearly' && '💫 Resets Jan 1st'}
-          </p>
+        {/* Super Speedy */}
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30">
+          <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-800/40 flex items-center justify-center text-lg">
+            ⚡
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-purple-600 dark:text-purple-400">Super Speedy</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">quick to the rescue</p>
+          </div>
         </div>
+
+        {/* Guardian Angel */}
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/30">
+          <div className="w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-800/40 flex items-center justify-center text-lg">
+            🛡️
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-rose-600 dark:text-rose-400">Guardian Angel</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">keeping you safe</p>
+          </div>
+        </div>
+
+        {/* Streak Queen */}
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30">
+          <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center text-lg">
+            🔥
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-amber-600 dark:text-amber-400">Streak Queen</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">on fire lately</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700 text-center">
+        <p className="text-xs text-gray-400">
+          {rankingsPeriod === 'weekly' && 'resets every monday ✿'}
+          {rankingsPeriod === 'monthly' && 'resets on the 1st ✿'}
+          {rankingsPeriod === 'yearly' && 'resets jan 1st ✿'}
+        </p>
       </div>
     </div>
   );

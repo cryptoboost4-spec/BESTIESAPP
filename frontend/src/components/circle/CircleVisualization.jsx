@@ -2,6 +2,16 @@ import React from 'react';
 import { getConnectionColor } from '../../services/connectionStrength';
 
 const CircleVisualization = ({ slots, connectionStrengths, loadingConnections }) => {
+  // Pre-calculate positions for gradient definitions
+  const getPosition = (index) => {
+    const angle = (index * 72 - 90) * (Math.PI / 180);
+    const radius = 45;
+    return {
+      x: 50 + radius * Math.cos(angle),
+      y: 50 + radius * Math.sin(angle)
+    };
+  };
+
   return (
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none"
@@ -18,10 +28,20 @@ const CircleVisualization = ({ slots, connectionStrengths, loadingConnections })
           const strengthScore = connectionStrength?.total || 0;
           const connectionColor = getConnectionColor(strengthScore);
           const opacity = 0.2 + (strengthScore / 100) * 0.6;
+          
+          // Use userSpaceOnUse with actual coordinates to fix vertical/horizontal line gradient issues
+          const pos = getPosition(index);
 
           return (
             <React.Fragment key={`defs-${index}`}>
-              <linearGradient id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient 
+                id={`gradient-${index}`} 
+                gradientUnits="userSpaceOnUse"
+                x1="50" 
+                y1="50" 
+                x2={pos.x} 
+                y2={pos.y}
+              >
                 <stop offset="0%" stopColor={connectionColor} stopOpacity={opacity} />
                 <stop offset="50%" stopColor={connectionColor} stopOpacity={opacity * 1.5} />
                 <stop offset="100%" stopColor={connectionColor} stopOpacity={opacity} />
@@ -59,7 +79,8 @@ const CircleVisualization = ({ slots, connectionStrengths, loadingConnections })
               y1="50"
               x2={x}
               y2={y}
-              stroke={`url(#gradient-${index})`}
+              stroke={getConnectionColor(strengthScore)}
+              strokeOpacity={0.4 + (strengthScore / 100) * 0.4}
               strokeWidth={strokeWidth}
               strokeDasharray="4 2"
               filter={`url(#glow-${index})`}

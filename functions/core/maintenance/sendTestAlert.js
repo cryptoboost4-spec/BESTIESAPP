@@ -1,8 +1,21 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const sgMail = require('@sendgrid/mail');
+const EMAIL_CONFIG = require('../../utils/emailConfig');
 
-sgMail.setApiKey(functions.config().sendgrid.api_key);
+// Lazy SendGrid initialization
+let sendGridInitialized = false;
+
+function initializeSendGrid() {
+  if (!sendGridInitialized) {
+    const apiKey = functions.config().sendgrid?.api_key;
+    if (!apiKey) {
+      throw new Error('SendGrid API key not configured. Please set sendgrid.api_key in Firebase Functions config.');
+    }
+    sgMail.setApiKey(apiKey);
+    sendGridInitialized = true;
+  }
+}
 
 const db = admin.firestore();
 const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
@@ -64,18 +77,19 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
 
         await admin.messaging().send(pushMessage);
         channelsTested.push = true;
-        console.log('Test push notification sent successfully');
+        functions.logger.info('Test push notification sent successfully');
       } catch (pushError) {
-        console.error('Push notification failed:', pushError.message);
+        functions.logger.error('Push notification failed:', pushError.message);
       }
     }
 
     // Send Email if requested
     if (requestedChannels.email && userData.email && userData.notificationPreferences?.email) {
       try {
+        initializeSendGrid();
         const emailMessage = {
           to: userData.email,
-          from: 'alerts@bestiesapp.com',
+          from: EMAIL_CONFIG.ALERTS,
           subject: '✅ Test Alert - Your Notifications Are Working!',
           text: 'Your email notifications are set up correctly! You\'ll receive alerts via email when your besties need help.',
           html: `
@@ -94,9 +108,9 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
         };
         await sgMail.send(emailMessage);
         channelsTested.email = true;
-        console.log('Test email sent successfully');
+        functions.logger.info('Test email sent successfully');
       } catch (emailError) {
-        console.error('Email notification failed:', emailError.message);
+        functions.logger.error('Email notification failed:', emailError.message);
       }
     }
 
@@ -105,20 +119,20 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       try {
         const twilio = require('twilio');
         const twilioClient = twilio(
-          functions.config().twilio.account_sid,
-          functions.config().twilio.auth_token
+          functions.config().twilio?.account_sid,
+          functions.config().twilio?.auth_token
         );
 
         await twilioClient.messages.create({
-          from: functions.config().twilio.phone_number,
+          from: functions.config().twilio?.phone_number,
           to: userData.phoneNumber,
           body: '✅ Test Alert - Your SMS notifications are working! You\'ll receive safety alerts via text message. - Besties App 💜'
         });
 
         channelsTested.sms = true;
-        console.log('Test SMS sent successfully');
+        functions.logger.info('Test SMS sent successfully');
       } catch (smsError) {
-        console.error('SMS notification failed:', smsError.message);
+        functions.logger.error('SMS notification failed:', smsError.message);
       }
     }
 
@@ -127,20 +141,20 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       try {
         const twilio = require('twilio');
         const twilioClient = twilio(
-          functions.config().twilio.account_sid,
-          functions.config().twilio.auth_token
+          functions.config().twilio?.account_sid,
+          functions.config().twilio?.auth_token
         );
 
         await twilioClient.messages.create({
-          from: `whatsapp:${functions.config().twilio.phone_number}`,
+          from: `whatsapp:${functions.config().twilio?.phone_number}`,
           to: `whatsapp:${userData.phoneNumber}`,
           body: '✅ Test Alert - Your WhatsApp notifications are working perfectly! You\'ll receive safety alerts here. - Besties App 💜'
         });
 
         channelsTested.whatsapp = true;
-        console.log('Test WhatsApp sent successfully');
+        functions.logger.info('Test WhatsApp sent successfully');
       } catch (whatsappError) {
-        console.error('WhatsApp notification failed:', whatsappError.message);
+        functions.logger.error('WhatsApp notification failed:', whatsappError.message);
       }
     }
 
@@ -148,7 +162,7 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
     if (requestedChannels.telegram && userData.telegramChatId && userData.notificationPreferences?.telegram) {
       try {
         const axios = require('axios');
-        const botToken = functions.config().telegram.bot_token;
+        const botToken = functions.config().telegram?.bot_token;
 
         await axios.post(
           `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -160,9 +174,9 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
         );
 
         channelsTested.telegram = true;
-        console.log('Test Telegram sent successfully');
+        functions.logger.info('Test Telegram sent successfully');
       } catch (telegramError) {
-        console.error('Telegram notification failed:', telegramError.message);
+        functions.logger.error('Telegram notification failed:', telegramError.message);
       }
     }
 
@@ -185,7 +199,7 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       note: testedChannelNames.length > 0 ? `Successfully tested: ${testedChannelNames.join(', ')}` : 'No channels tested'
     };
   } catch (error) {
-    console.error('Error sending test alert:', error);
+    functions.logger.error('Error sending test alert:', error);
     if (error.code === 'failed-precondition') {
       throw error;
     }

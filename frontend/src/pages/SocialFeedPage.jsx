@@ -50,6 +50,23 @@ const SocialFeedPage = () => {
 
       const bestieIdsArray = Array.from(bestieIds);
 
+      // Batch fetch user data to avoid N+1 queries
+      const userDataMap = new Map();
+      const BATCH_SIZE = 10; // Firestore 'in' operator limit
+      
+      for (let i = 0; i < bestieIdsArray.length; i += BATCH_SIZE) {
+        const batch = bestieIdsArray.slice(i, i + BATCH_SIZE);
+        const userPromises = batch.map(userId => getDoc(doc(db, 'users', userId)));
+        const userDocs = await Promise.all(userPromises);
+        
+        userDocs.forEach((userDoc, index) => {
+          const userId = batch[index];
+          if (userDoc.exists()) {
+            userDataMap.set(userId, userDoc.data());
+          }
+        });
+      }
+
       // Get check-ins from besties
       const feedItems = [];
       
@@ -81,12 +98,11 @@ const SocialFeedPage = () => {
 
         const checkInsSnap = await getDocs(checkInsQuery);
         
+        // Get user data from map (already fetched)
+        const userData = userDataMap.get(userId) || null;
+        
         for (const checkInDoc of checkInsSnap.docs) {
           const checkInData = checkInDoc.data();
-          
-          // Get user data
-          const userDoc = await getDoc(doc(db, 'users', userId));
-          const userData = userDoc.exists() ? userDoc.data() : null;
 
           feedItems.push({
             id: checkInDoc.id,

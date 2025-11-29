@@ -23,10 +23,10 @@ const SafeLoader = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Floating celebration elements */}
+    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 via-teal-50 to-cyan-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 flex items-center justify-center p-4 overflow-hidden z-50">
+      {/* Floating celebration elements - fewer on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(25)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <div
             key={i}
             className="absolute animate-celebration-float"
@@ -38,87 +38,55 @@ const SafeLoader = () => {
               opacity: 0.4 + Math.random() * 0.4,
             }}
           >
-            <span className="text-3xl">
-              {['🎉', '✨', '💚', '🌟', '💫', '🎊', '🦋', '🌸'][Math.floor(Math.random() * 8)]}
+            <span className="text-2xl md:text-3xl">
+              {['🎉', '✨', '💚', '🌟', '💫', '🎊'][Math.floor(Math.random() * 6)]}
             </span>
           </div>
         ))}
       </div>
 
-      {/* Luxury celebration card */}
-      <div className="w-full max-w-lg text-center relative z-10">
-        <div className="relative bg-white/95 backdrop-blur-xl rounded-[2rem] p-10 shadow-[0_20px_60px_rgba(16,185,129,0.3)] border border-emerald-200/50">
-          {/* Decorative corner accents */}
-          <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-emerald-300/50 rounded-tl-xl"></div>
-          <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-green-300/50 rounded-tr-xl"></div>
-          <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-green-300/50 rounded-bl-xl"></div>
-          <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-emerald-300/50 rounded-br-xl"></div>
-
-          {/* Success animation */}
-          <div className="relative w-32 h-32 mx-auto mb-8">
+      {/* Mobile-optimized celebration card */}
+      <div className="w-full max-w-sm md:max-w-lg text-center relative z-10 px-2">
+        <div className="relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl p-6 md:p-10 shadow-[0_20px_60px_rgba(16,185,129,0.3)]">
+          {/* Success animation - smaller on mobile */}
+          <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-6">
             {/* Pulsing glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-300 via-green-300 to-teal-300 rounded-full animate-pulse-slow opacity-40 blur-xl"></div>
 
-            {/* Checkmark with heart */}
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-28 h-28">
+            {/* Checkmark */}
+            <div className="relative w-24 h-24 md:w-32 md:h-32 flex items-center justify-center">
+              <svg viewBox="0 0 100 100" className="w-20 h-20 md:w-28 md:h-28">
                 <defs>
                   <linearGradient id="successGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#10b981" />
                     <stop offset="50%" stopColor="#34d399" />
                     <stop offset="100%" stopColor="#6ee7b7" />
                   </linearGradient>
-                  <filter id="successGlow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
                 </defs>
-
-                {/* Circle background */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="35"
-                  fill="url(#successGradient)"
-                  filter="url(#successGlow)"
-                  className="animate-scale-bounce"
-                />
-
-                {/* Large checkmark */}
-                <path
-                  d="M30,50 L42,62 L70,34"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="animate-draw-success"
-                />
+                <circle cx="50" cy="50" r="35" fill="url(#successGradient)" className="animate-scale-bounce" />
+                <path d="M30,50 L42,62 L70,34" fill="none" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="animate-draw-success" />
               </svg>
             </div>
           </div>
 
-          {/* Celebration message */}
-          <h2 className="font-display text-3xl md:text-4xl bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent mb-3 leading-tight">
+          {/* Celebration message - responsive text */}
+          <h2 className="font-display text-2xl md:text-4xl bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent mb-2 md:mb-3 leading-tight">
             {message.text}
           </h2>
 
-        <p className="text-xl text-text-secondary font-semibold mb-8 animate-fade-in">
-          {message.subtext}
-        </p>
+          <p className="text-base md:text-xl text-text-secondary font-semibold mb-6 md:mb-8">
+            {message.subtext}
+          </p>
 
           {/* Celebrating animation */}
-          <div className="flex justify-center items-center gap-3 mb-6">
-            <span className="text-3xl animate-bounce-gentle">🎉</span>
-            <span className="text-3xl animate-bounce-gentle" style={{animationDelay: '0.2s'}}>💚</span>
-            <span className="text-3xl animate-bounce-gentle" style={{animationDelay: '0.4s'}}>✨</span>
+          <div className="flex justify-center items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <span className="text-2xl md:text-3xl animate-bounce-gentle">🎉</span>
+            <span className="text-2xl md:text-3xl animate-bounce-gentle" style={{animationDelay: '0.2s'}}>💚</span>
+            <span className="text-2xl md:text-3xl animate-bounce-gentle" style={{animationDelay: '0.4s'}}>✨</span>
           </div>
 
           {/* Gentle reminder */}
-          <p className="text-xs text-gray-400 italic">
+          <p className="text-xs text-gray-400 dark:text-gray-500 italic">
             Until next time, stay safe bestie! 💕
           </p>
         </div>

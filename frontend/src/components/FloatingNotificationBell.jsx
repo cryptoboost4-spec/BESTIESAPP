@@ -70,10 +70,28 @@ const FloatingNotificationBell = () => {
     // Navigate based on notification type
     switch (notification.type) {
       case 'bestie_request':
-        navigate('/besties');
+      case 'bestie_accepted':
+        // Navigate to the user's profile who sent/accepted the request
+        if (notification.requesterId || notification.senderId) {
+          navigate(`/profile/${notification.requesterId || notification.senderId}`);
+        } else {
+          navigate('/besties');
+        }
         break;
       case 'check_in_alert':
-        navigate('/history');
+        // Navigate to the alerter's profile (the person who needs help)
+        if (notification.userId || notification.checkInUserId) {
+          navigate(`/profile/${notification.userId || notification.checkInUserId}`);
+        } else if (notification.checkInId) {
+          // If we have checkInId, navigate to homepage and show the check-in
+          navigate('/');
+        } else {
+          navigate('/');
+        }
+        break;
+      case 'checkin_reminder':
+      case 'checkin_urgent':
+        navigate('/');
         break;
       case 'missed_check_in':
         navigate('/besties');
@@ -82,7 +100,46 @@ const FloatingNotificationBell = () => {
         navigate('/besties');
         break;
       case 'badge_earned':
+        // Track analytics
+        const { logAnalyticsEvent } = require('../services/firebase');
+        logAnalyticsEvent('badge_earned_viewed', {
+          badge_id: notification.badgeId
+        });
+        // Navigate to profile and scroll to badges
         navigate('/profile');
+        setTimeout(() => {
+          const badgesSection = document.querySelector('.badges-section');
+          if (badgesSection) {
+            badgesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+        break;
+      case 'post_comment':
+        // Navigate to besties page and open the specific post's comments
+        if (notification.postId) {
+          navigate('/besties', { state: { openPostId: notification.postId } });
+        } else {
+          navigate('/besties');
+        }
+        break;
+      case 'checkin_reaction':
+        navigate('/besties');
+        break;
+      case 'attention_response':
+        navigate('/besties');
+        break;
+      case 'emergency_sos':
+        // Navigate to the person who triggered SOS profile
+        if (notification.userId) {
+          navigate(`/profile/${notification.userId}`);
+        } else {
+          navigate('/');
+        }
+        break;
+      case 'checkInCreated':
+      case 'checkInExtended':
+      case 'checkInCompleted':
+        navigate('/');
         break;
       default:
         break;
@@ -95,14 +152,26 @@ const FloatingNotificationBell = () => {
     switch (type) {
       case 'bestie_request':
         return '💜';
+      case 'bestie_accepted':
+        return '🎉';
       case 'check_in_alert':
+        return '🚨';
+      case 'checkin_reminder':
         return '⏰';
+      case 'checkin_urgent':
+        return '🚨';
       case 'missed_check_in':
         return '⚠️';
       case 'request_attention':
         return '👋';
       case 'badge_earned':
         return '🏆';
+      case 'post_comment':
+        return '💬';
+      case 'checkin_reaction':
+        return '💜';
+      case 'attention_response':
+        return '🤗';
       case 'system':
         return '📢';
       default:
@@ -127,12 +196,16 @@ const FloatingNotificationBell = () => {
     return date.toLocaleDateString();
   };
 
-  // Simple icon for embedding in pages
+  // Only show when there are notifications
+  if (notifications.length === 0) {
+    return null;
+  }
+
   return (
     <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setShowDropdown(!showDropdown)}
-          className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="relative p-2.5 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/40 dark:to-purple-900/40 hover:from-pink-200 hover:to-purple-200 dark:hover:from-pink-800/50 dark:hover:to-purple-800/50 transition-all shadow-md hover:shadow-lg border border-pink-200/50 dark:border-pink-700/30"
         >
           {/* Bell Icon */}
           <svg

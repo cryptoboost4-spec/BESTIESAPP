@@ -35,6 +35,11 @@ const { onBestieDeleted } = require('./core/besties/onBestieDeleted');
 const { onUserCreated } = require('./core/users/onUserCreated');
 
 // ========================================
+// BADGE FUNCTIONS
+// ========================================
+const { onBadgeEarned } = require('./core/badges/onBadgeEarned');
+
+// ========================================
 // EMERGENCY FUNCTIONS
 // ========================================
 const { onDuressCodeUsed } = require('./core/emergency/onDuressCodeUsed');
@@ -88,7 +93,7 @@ const { backfillBestieUserIds } = require('./core/maintenance/backfillBestieUser
 // Helper: Get Facebook Profile
 async function getFacebookProfile(psid) {
   const response = await axios.get(
-    `https://graph.facebook.com/v18.0/${psid}?fields=name,profile_pic&access_token=${functions.config().facebook.page_token}`
+    `https://graph.facebook.com/v18.0/${psid}?fields=name,profile_pic&access_token=${functions.config().facebook?.page_token}`
   );
   return response.data;
 }
@@ -96,7 +101,7 @@ async function getFacebookProfile(psid) {
 // Helper: Send Messenger Message
 async function sendMessengerMessage(psid, text) {
   await axios.post(
-    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook.page_token}`,
+    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
     {
       recipient: { id: psid },
       message: { text: text }
@@ -107,7 +112,7 @@ async function sendMessengerMessage(psid, text) {
 // Helper: Send Messenger Message with Quick Replies
 async function sendMessengerMessageWithQuickReplies(psid, text, quickReplies) {
   await axios.post(
-    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook.page_token}`,
+    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
     {
       recipient: { id: psid },
       message: {
@@ -131,8 +136,14 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
+    const verifyToken = functions.config().facebook?.verify_token;
     
-    if (mode === 'subscribe' && token === 'besties_verify_abc123') {
+    if (!verifyToken) {
+      functions.logger.error('Facebook verify_token not configured');
+      return res.sendStatus(500);
+    }
+    
+    if (mode === 'subscribe' && token === verifyToken) {
       return res.status(200).send(challenge);
     }
     return res.sendStatus(403);
@@ -167,7 +178,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
               );
             }
           } catch (error) {
-            console.error('Error handling quick reply:', error);
+            functions.logger.error('Error handling quick reply:', error);
           }
         }
         // Handle new contact registration via m.me link
@@ -239,7 +250,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
               ]
             );
           } catch (error) {
-            console.error('Error processing messenger message:', error);
+            functions.logger.error('Error processing messenger message:', error);
           }
         }
       }
@@ -257,7 +268,7 @@ exports.sendMessengerAlert = sendMessengerAlert;
 
 // Helper: Send Telegram Message
 async function sendTelegramMessage(chatId, text, options = {}) {
-  const botToken = functions.config().telegram.bot_token;
+  const botToken = functions.config().telegram?.bot_token;
   await axios.post(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
     {
@@ -327,9 +338,9 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
           `✅ <b>Connected!</b>\n\nHi ${firstName}! Your Telegram is now connected to Besties.\n\nYou'll receive safety alerts here when your besties need help. Stay safe! 💜`
         );
 
-        console.log(`✅ Telegram connected for user ${userId} (chat: ${chatId})`);
+        functions.logger.info(`✅ Telegram connected for user ${userId} (chat: ${chatId})`);
       } catch (error) {
-        console.error('Error connecting Telegram:', error);
+        functions.logger.error('Error connecting Telegram:', error);
         await sendTelegramMessage(
           chatId,
           '❌ Something went wrong. Please try again or contact support.'
@@ -367,15 +378,15 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
           '✅ <b>Disconnected</b>\n\nYour Telegram has been disconnected from Besties. You won\'t receive alerts here anymore.'
         );
 
-        console.log(`✅ Telegram disconnected for chat ${chatId}`);
+        functions.logger.info(`✅ Telegram disconnected for chat ${chatId}`);
       } catch (error) {
-        console.error('Error disconnecting Telegram:', error);
+        functions.logger.error('Error disconnecting Telegram:', error);
       }
     }
 
     return res.sendStatus(200);
   } catch (error) {
-    console.error('Telegram webhook error:', error);
+    functions.logger.error('Telegram webhook error:', error);
     return res.sendStatus(500);
   }
 });
@@ -425,6 +436,9 @@ exports.onBestieDeleted = onBestieDeleted;
 // Users
 exports.onUserCreated = onUserCreated;
 
+// Badges
+exports.onBadgeEarned = onBadgeEarned;
+
 // Emergency
 exports.onDuressCodeUsed = onDuressCodeUsed;
 exports.triggerEmergencySOS = triggerEmergencySOS;
@@ -462,9 +476,11 @@ exports.stripeWebhook = stripeWebhook;
 exports.monitorCriticalErrors = monitorCriticalErrors;
 
 // Social
+const { onPostCreated } = require('./core/social/onPostCreated');
 exports.trackReaction = trackReaction;
 exports.trackPostComment = trackPostComment;
 exports.generateShareCard = generateShareCard;
+exports.onPostCreated = onPostCreated;
 
 // Notifications (scheduled)
 exports.checkBirthdays = functions.pubsub
@@ -486,3 +502,7 @@ exports.sendTestAlert = sendTestAlert;
 exports.migratePhoneNumbers = migratePhoneNumbers;
 exports.fixDoubleCountedStats = fixDoubleCountedStats;
 exports.backfillBestieUserIds = backfillBestieUserIds;
+
+// Migrations
+const { denormalizeBestieUserIds } = require('./migrations/denormalizeBestieUserIds');
+exports.denormalizeBestieUserIds = denormalizeBestieUserIds;

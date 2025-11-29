@@ -250,6 +250,14 @@ const EditProfilePage = () => {
         updatedAt: new Date(),
       });
 
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('profile_updated', {
+        has_photo: !!photoURL,
+        has_bio: !!bio,
+        has_birthdate: !!birthdate
+      });
+
       toast.success('Profile updated successfully!');
 
       // Check if profile is now complete and award badge

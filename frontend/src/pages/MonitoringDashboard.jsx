@@ -70,11 +70,12 @@ const MonitoringDashboard = () => {
       actionsSnap.forEach(doc => actionsList.push({ id: doc.id, ...doc.data() }));
       setUserActions(actionsList);
 
-      // Load funnel events
+      // Load funnel events (limit to prevent unbounded reads)
       const funnelQuery = query(
         collection(db, 'funnel_events'),
         where('createdAt', '>=', startTime),
-        orderBy('createdAt', 'desc')
+        orderBy('createdAt', 'desc'),
+        limit(1000)
       );
       const funnelSnap = await getDocs(funnelQuery);
       

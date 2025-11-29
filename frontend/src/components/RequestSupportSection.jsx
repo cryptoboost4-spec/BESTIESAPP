@@ -5,6 +5,7 @@ import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { notificationService } from '../services/notificationService';
+import { sanitizeUserInput } from '../utils/sanitize';
 
 const RequestSupportSection = () => {
   const { currentUser, userData } = useAuth();
@@ -212,15 +213,19 @@ const RequestSupportSection = () => {
                     });
 
                     // Create a post in the activity feed for this support request
+                    const sanitizedText = sanitizeUserInput(`${attentionTag}\n\nReach out if you can help! 💜`, 5000);
+                    
                     await addDoc(collection(db, 'posts'), {
                       userId: currentUser.uid,
                       userName: userData?.displayName || 'A Bestie',
                       userPhoto: userData?.photoURL || null,
-                      text: `${attentionTag}\n\nReach out if you can help! 💜`,
+                      text: sanitizedText,
                       photoURL: null,
                       createdAt: Timestamp.now(),
                       isSupportRequest: true,
                       supportTag: attentionTag,
+                      // Denormalize bestieUserIds for efficient Firestore rules
+                      bestieUserIds: userData?.bestieUserIds || {},
                     });
 
                     // Notify all besties

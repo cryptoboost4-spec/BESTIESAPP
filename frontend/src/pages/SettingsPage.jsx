@@ -141,6 +141,14 @@ const SettingsPage = () => {
       await updateDoc(doc(db, 'users', currentUser.uid), {
         [`notificationPreferences.${type}`]: newValue,
       });
+
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('notification_setting_changed', {
+        notification_type: type,
+        enabled: newValue
+      });
+
       toast.success(`${type} notifications ${newValue ? 'enabled' : 'disabled'}`);
     } catch (error) {
       console.error('Error updating notification:', error);
@@ -172,6 +180,13 @@ const SettingsPage = () => {
       await updateDoc(doc(db, 'users', currentUser.uid), {
         'settings.holdData': newValue,
       });
+
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('data_retention_changed', {
+        hold_data: newValue
+      });
+
       toast.success(newValue ? 'Data will be kept indefinitely' : 'Data will be deleted after 24h');
     } catch (error) {
       console.error('Error updating data retention:', error);
@@ -444,9 +459,9 @@ const SettingsPage = () => {
         <div className="card p-6 mb-6">
           <button
             onClick={handleSignOut}
-            className="w-full btn bg-red-500 hover:bg-red-600 text-white py-3 text-lg font-semibold"
+            className="w-full btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 text-base font-medium transition-colors"
           >
-            🚪 Log Out
+            Log Out
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, qu
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getAnalytics, logEvent, isSupported } from 'firebase/analytics';
 import firebaseConfig from '../config/firebase';
 
 // Initialize Firebase
@@ -15,6 +16,27 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
 export const messaging = getMessaging(app);
+
+// Initialize Analytics (only in browser, not SSR)
+let analytics = null;
+if (typeof window !== 'undefined') {
+  isSupported().then((yes) => {
+    if (yes) {
+      analytics = getAnalytics(app);
+    }
+  });
+}
+
+// Analytics helper function
+export const logAnalyticsEvent = (eventName, eventParams = {}) => {
+  if (analytics) {
+    try {
+      logEvent(analytics, eventName, eventParams);
+    } catch (error) {
+      console.error('Analytics error:', error);
+    }
+  }
+};
 
 // Enable offline persistence for better caching
 enableIndexedDbPersistence(db).catch((err) => {

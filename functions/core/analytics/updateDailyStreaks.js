@@ -8,7 +8,7 @@ exports.updateDailyStreaks = functions.pubsub
   .schedule('0 1 * * *') // Run daily at 1 AM
   .timeZone('America/New_York')
   .onRun(async (context) => {
-    console.log('📊 Starting daily streak update...');
+    functions.logger.info('📊 Starting daily streak update...');
 
     const now = new Date();
     const yesterday = new Date(now);
@@ -18,11 +18,26 @@ exports.updateDailyStreaks = functions.pubsub
     const yesterdayEnd = new Date(yesterday);
     yesterdayEnd.setHours(23, 59, 59, 999);
 
-    // Get all users
-    const usersSnapshot = await db.collection('users').get();
+    // Get all users with pagination to prevent unbounded reads
+    const BATCH_SIZE = 1000;
+    let lastDoc = null;
     const updatePromises = [];
 
-    for (const userDoc of usersSnapshot.docs) {
+    while (true) {
+      let usersQuery = db.collection('users').limit(BATCH_SIZE);
+      if (lastDoc) {
+        usersQuery = usersQuery.startAfter(lastDoc);
+      }
+
+      const usersSnapshot = await usersQuery.get();
+
+      if (usersSnapshot.empty) {
+        break;
+      }
+
+      const batchUpdatePromises = [];
+
+      for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       const userId = userDoc.id;
       const lastActive = userData.lastActive?.toDate();
@@ -69,7 +84,7 @@ exports.updateDailyStreaks = functions.pubsub
         newLongestStreak !== longestStreak ||
         newDaysActive !== daysActive
       ) {
-        updatePromises.push(
+        batchUpdatePromises.push(
           userDoc.ref.update({
             'stats.currentStreak': newStreak,
             'stats.longestStreak': newLongestStreak,
@@ -77,10 +92,21 @@ exports.updateDailyStreaks = functions.pubsub
           })
         );
       }
+      }
+
+      // Add batch promises to main array
+      updatePromises.push(...batchUpdatePromises);
+
+      lastDoc = usersSnapshot.docs[usersSnapshot.docs.length - 1];
+
+      // If we got fewer than BATCH_SIZE, we're done
+      if (usersSnapshot.size < BATCH_SIZE) {
+        break;
+      }
     }
 
     await Promise.all(updatePromises);
 
-    console.log(`✅ Updated streaks for ${updatePromises.length} users`);
+    functions.logger.info(`✅ Updated streaks for ${updatePromises.length} users`);
     return null;
   });

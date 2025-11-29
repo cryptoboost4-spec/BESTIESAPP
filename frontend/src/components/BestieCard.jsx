@@ -201,17 +201,8 @@ const BestieCard = ({ bestie, onRemove }) => {
             </div>
           </div>
 
-          {/* Status badges */}
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <div className="badge bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/40 dark:to-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-600 text-xs font-semibold">
-              💜 Bestie
-            </div>
-            {bestie.role === 'guardian' && (
-              <div className="badge bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-600 text-xs font-semibold">
-                🛡️ Guardian
-              </div>
-            )}
-          </div>
+          {/* Placeholder for indicators - will be added by parent */}
+          <div className="bestie-indicators-slot"></div>
         </div>
       </div>
 

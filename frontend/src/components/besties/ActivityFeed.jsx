@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PostReactions from './PostReactions';
 import PostComments from './PostComments';
 
@@ -8,9 +9,26 @@ const ActivityFeed = ({
   addReaction,
   setSelectedCheckIn,
   setShowComments,
-  getTimeAgo
+  getTimeAgo,
+  initialPostId = null
 }) => {
-  const [showPostComments, setShowPostComments] = useState(null); // Store post ID
+  const navigate = useNavigate();
+  const [showPostComments, setShowPostComments] = useState(initialPostId); // Store post ID
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Open post comments if initialPostId is provided
+  React.useEffect(() => {
+    if (initialPostId && !showPostComments) {
+      setShowPostComments(initialPostId);
+    }
+  }, [initialPostId]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(activityFeed.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedFeed = activityFeed.slice(startIndex, startIndex + itemsPerPage);
+
   if (activityFeed.length === 0) {
     return (
       <div className="card p-6 md:p-8 text-center">
@@ -26,7 +44,7 @@ const ActivityFeed = ({
   return (
     <>
       <div className="space-y-3">
-        {activityFeed.slice(0, 15).map((activity) => (
+        {paginatedFeed.map((activity) => (
           <div key={activity.id} className="card p-3 md:p-4">
             {activity.type === 'checkin' && (
               <div>
@@ -36,7 +54,12 @@ const ActivityFeed = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-text-primary text-sm md:text-base break-words">
-                      <span className="text-primary">{activity.userName}</span>
+                      <button
+                        onClick={() => navigate(`/user/${activity.userId}`)}
+                        className="text-primary hover:underline font-semibold"
+                      >
+                        {activity.userName}
+                      </button>
                       {activity.status === 'completed' && ' completed check-in safely ✅'}
                       {activity.status === 'active' && ' is currently checked in 🔔'}
                       {activity.status === 'alerted' && ' MISSED check-in 🚨'}
@@ -65,56 +88,43 @@ const ActivityFeed = ({
                   </div>
                 </div>
 
-                {/* Reactions */}
+                {/* Reactions - Always show for non-alerted check-ins */}
                 {activity.status !== 'alerted' && (
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <button
-                        onClick={() => addReaction(activity.id, '💜')}
-                        className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                        title="Proud"
-                      >
-                        💜
-                      </button>
-                      <button
-                        onClick={() => addReaction(activity.id, '😮‍💨')}
-                        className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                        title="Relieved"
-                      >
-                        😮‍💨
-                      </button>
-                      <button
-                        onClick={() => addReaction(activity.id, '🎉')}
-                        className="text-xl md:text-2xl hover:scale-110 transition-transform"
-                        title="Celebrate"
-                      >
-                        🎉
-                      </button>
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    {/* Reaction and comment counts - Always visible */}
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      {['💜', '😮‍💨', '🎉'].map(emoji => {
+                        const count = reactions[activity.id]?.filter(r => r.emoji === emoji).length || 0;
+                        return (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(activity.id, emoji)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all hover:scale-105 ${
+                              count > 0
+                                ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                                : 'bg-gray-100 dark:bg-gray-700 hover:bg-pink-50 dark:hover:bg-pink-900/20'
+                            }`}
+                          >
+                            <span className="text-base">{emoji}</span>
+                            {count > 0 && <span className="font-semibold">{count}</span>}
+                          </button>
+                        );
+                      })}
                       <button
                         onClick={() => {
                           setSelectedCheckIn(activity);
                           setShowComments(true);
                         }}
-                        className="ml-auto text-xs md:text-sm text-primary hover:underline font-semibold"
+                        className={`ml-auto flex items-center gap-1 px-2 py-1 rounded-full transition-all hover:scale-105 ${
+                          activity.checkInData?.commentCount > 0
+                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                            : 'bg-gray-100 dark:bg-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-600 dark:text-gray-400'
+                        }`}
                       >
-                        💬 Comment
+                        <span className="text-base">💬</span>
+                        <span className="font-semibold">{activity.checkInData?.commentCount || 0}</span>
                       </button>
                     </div>
-                    {/* Show reaction counts */}
-                    {reactions[activity.id] && reactions[activity.id].length > 0 && (
-                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                        {Object.entries(
-                          reactions[activity.id].reduce((acc, r) => {
-                            acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                            return acc;
-                          }, {})
-                        ).map(([emoji, count]) => (
-                          <span key={emoji} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                            {emoji} {count}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -125,7 +135,12 @@ const ActivityFeed = ({
                 <div className="text-2xl md:text-3xl flex-shrink-0">{activity.badge.icon || '🏆'}</div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-text-primary text-sm md:text-base break-words">
-                    <span className="text-primary">{activity.userName}</span>
+                    <button
+                      onClick={() => navigate(`/user/${activity.userId}`)}
+                      className="text-primary hover:underline font-semibold"
+                    >
+                      {activity.userName}
+                    </button>
                     {' earned the '}<span className="text-yellow-600">{activity.badge.name}</span> badge! 🎉
                   </h3>
                   <p className="text-xs md:text-sm text-text-secondary">
@@ -214,7 +229,12 @@ const ActivityFeed = ({
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-text-primary text-sm md:text-base">
-                          {activity.userName}
+                          <button
+                            onClick={() => navigate(`/user/${activity.userId}`)}
+                            className="text-primary hover:underline font-semibold"
+                          >
+                            {activity.userName}
+                          </button>
                         </h3>
                         <p className="text-xs md:text-sm text-text-secondary">
                           {getTimeAgo(activity.timestamp)}
@@ -267,6 +287,43 @@ const ActivityFeed = ({
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-200 dark:hover:bg-purple-800/40 transition-colors"
+          >
+            ← Prev
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-8 h-8 rounded-full text-sm font-semibold transition-all ${
+                  currentPage === page
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-200 dark:hover:bg-purple-800/40 transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
 
       {/* Post Comments Modal */}
       {showPostComments && (

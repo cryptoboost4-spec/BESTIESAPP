@@ -1,64 +1,77 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { sendSMSAlert, sendWhatsAppAlert, sendEmailAlert, sendPushNotification } = require('../../utils/notifications');
+const { requireAuth, validateLocation, validateBoolean } = require('../../utils/validation');
+const { RATE_LIMITS, checkUserRateLimit } = require('../../utils/rateLimiting');
 
 const db = admin.firestore();
 
 exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-  }
-
+  const userId = requireAuth(context);
   const { location, isReversePIN } = data;
 
+  // Validate location
+  validateLocation(location, 500);
+
+  // Validate isReversePIN if provided
+  if (isReversePIN !== undefined) {
+    validateBoolean(isReversePIN, 'isReversePIN');
+  }
+
   // Rate limiting: 3 SOS per hour
-  const oneHourAgo = admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() - 60 * 60 * 1000)
+  const rateLimit = await checkUserRateLimit(
+    userId,
+    'triggerEmergencySOS',
+    RATE_LIMITS.SOS_PER_HOUR,
+    'emergency_sos',
+    'userId',
+    'createdAt'
   );
 
-  const recentSosCount = await db.collection('emergency_sos')
-    .where('userId', '==', context.auth.uid)
-    .where('createdAt', '>=', oneHourAgo)
-    .count()
-    .get();
-
-  const sosCount = recentSosCount.data().count;
-
-  // Warn after 2nd use
-  if (sosCount === 2) {
+  if (!rateLimit.allowed) {
     throw new functions.https.HttpsError(
       'resource-exhausted',
-      'Warning: You have triggered SOS twice in the last hour. You have 1 more use remaining before hitting the hourly limit.'
+      `SOS limit reached: Maximum ${rateLimit.limit} emergency SOS calls per hour. Please wait before triggering again.`,
+      {
+        limit: rateLimit.limit,
+        count: rateLimit.count,
+        resetAt: rateLimit.resetAt.toISOString(),
+      }
     );
   }
 
-  // Block after 3rd use
-  if (sosCount >= 3) {
-    throw new functions.https.HttpsError(
-      'resource-exhausted',
-      'SOS limit reached: Maximum 3 emergency SOS calls per hour. Please wait before triggering again.'
-    );
+  // Warn if approaching limit
+  if (rateLimit.count === 2) {
+    functions.logger.warn(`User ${userId} has triggered SOS twice in the last hour`);
   }
 
-  const userDoc = await db.collection('users').doc(context.auth.uid).get();
+  const userDoc = await db.collection('users').doc(userId).get();
   const userData = userDoc.data();
 
-  const besties1 = await db.collection('besties')
-    .where('requesterId', '==', context.auth.uid)
-    .where('status', '==', 'accepted')
+  // Get bestie circle (favorites) with notifications enabled
+  const { getUserBestieIds } = require('../../utils/besties');
+  const bestieIds = await getUserBestieIds(userId, {
+    favoritesOnly: true,
+    acceptedOnly: true
+  });
+
+  // Get active Facebook Messenger contacts
+  const now = Date.now();
+  const messengerContactsSnapshot = await db.collection('messengerContacts')
+    .where('userId', '==', userId)
     .get();
 
-  const besties2 = await db.collection('besties')
-    .where('recipientId', '==', context.auth.uid)
-    .where('status', '==', 'accepted')
-    .get();
-
-  const bestieIds = [];
-  besties1.forEach(doc => bestieIds.push(doc.data().recipientId));
-  besties2.forEach(doc => bestieIds.push(doc.data().requesterId));
+  const activeMessengerContacts = [];
+  messengerContactsSnapshot.forEach(doc => {
+    const contact = doc.data();
+    const expiresAt = contact.expiresAt?.toMillis();
+    if (expiresAt && expiresAt > now) {
+      activeMessengerContacts.push(contact.messengerPSID);
+    }
+  });
 
   const sosRef = await db.collection('emergency_sos').add({
-    userId: context.auth.uid,
+    userId: userId,
     location: location || 'Unknown',
     isReversePIN: isReversePIN || false,
     notifiedBesties: bestieIds,
@@ -83,6 +96,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     ? `URGENT: ${cleanName} sent a silent alert. Check Besties app immediately.`
     : `EMERGENCY: ${cleanName} needs help NOW! Location: ${location || 'Unknown'}. Check Besties app!`;
 
+  // Send to bestie circle with notifications enabled
   const notifications = bestieIds.map(async (bestieId) => {
     const bestieDoc = await db.collection('users').doc(bestieId).get();
     if (!bestieDoc.exists) return;
@@ -90,8 +104,16 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     const bestieData = bestieDoc.data();
     const notificationsSent = [];
 
+    // Only send if notifications are enabled
+    if (!bestieData.notificationsEnabled) {
+      functions.logger.debug(`Skipping ${bestieId} - notifications disabled`);
+      return;
+    }
+
     try {
-      // Try push notification first (ALWAYS try - it's fast and free)
+      // Priority order: Push (free) → Telegram (free) → Facebook Messenger (free) → WhatsApp (free) → Email (free) → SMS (paid)
+      
+      // 1. Push notification (ALWAYS try first - it's fast and free)
       if (bestieData.fcmToken && bestieData.notificationsEnabled) {
         try {
           const pushTitle = isReversePIN ? '🚨 Silent Emergency Alert' : '🆘 EMERGENCY SOS';
@@ -106,33 +128,93 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
             {
               type: 'emergency_sos',
               sosId: sosRef.id,
-              userId: context.auth.uid,
+              userId: userId,
               isReversePIN: isReversePIN || false,
             }
           );
           notificationsSent.push('Push');
         } catch (pushError) {
-          console.log('Push notification failed for SOS:', pushError.message);
+          functions.logger.warn('Push notification failed for SOS:', pushError.message);
         }
       }
 
-      // Send SMS and WhatsApp if phone number available
-      if (bestieData.phoneNumber) {
-        // SMS is expensive - use short message
-        await sendSMSAlert(bestieData.phoneNumber, shortAlertMessage);
-        notificationsSent.push('SMS');
-        // WhatsApp is free - use full message
-        await sendWhatsAppAlert(bestieData.phoneNumber, fullAlertMessage);
-        notificationsSent.push('WhatsApp');
+      // 2. Telegram (free)
+      let telegramSent = false;
+      if (bestieData.notificationPreferences?.telegram && bestieData.telegramChatId) {
+        try {
+          const { sendTelegramAlert } = require('../../index');
+          await sendTelegramAlert(bestieData.telegramChatId, {
+            userName: cleanName,
+            location: location || 'Unknown',
+            startTime: new Date().toLocaleString(),
+            isEmergency: true,
+            message: fullAlertMessage
+          });
+          notificationsSent.push('Telegram');
+          telegramSent = true;
+        } catch (telegramError) {
+          functions.logger.warn('Telegram failed for SOS:', telegramError.message);
+        }
       }
 
-      // Send email if enabled
+      // 3. Facebook Messenger (free) - check if user has active messenger contacts
+      let messengerSent = false;
+      const messengerContactsSnapshot = await db.collection('messengerContacts')
+        .where('userId', '==', userId)
+        .where('messengerPSID', '==', bestieData.messengerPSID || '')
+        .get();
+      
+      if (!messengerContactsSnapshot.empty) {
+        const contact = messengerContactsSnapshot.docs[0].data();
+        const expiresAt = contact.expiresAt?.toMillis();
+        if (expiresAt && expiresAt > Date.now()) {
+          try {
+            const { sendMessengerAlert } = require('../../index');
+            await sendMessengerAlert(contact.messengerPSID, {
+              userName: cleanName,
+              location: location || 'Unknown',
+              startTime: new Date().toLocaleString(),
+              isEmergency: true
+            });
+            notificationsSent.push('Messenger');
+            messengerSent = true;
+          } catch (messengerError) {
+            functions.logger.warn('Messenger failed for SOS:', messengerError.message);
+          }
+        }
+      }
+
+      // 4. WhatsApp (free) - only if Telegram and Messenger didn't work
+      if (!telegramSent && !messengerSent && bestieData.phoneNumber) {
+        try {
+          await sendWhatsAppAlert(bestieData.phoneNumber, fullAlertMessage);
+          notificationsSent.push('WhatsApp');
+        } catch (whatsappError) {
+          functions.logger.warn('WhatsApp failed for SOS:', whatsappError.message);
+        }
+      }
+
+      // 5. Email (free)
       if (bestieData.email && bestieData.notificationPreferences?.email) {
-        await sendEmailAlert(bestieData.email, fullAlertMessage, {
-          location: location || 'Unknown',
-          alertTime: admin.firestore.Timestamp.now(),
-        });
-        notificationsSent.push('Email');
+        try {
+          await sendEmailAlert(bestieData.email, fullAlertMessage, {
+            location: location || 'Unknown',
+            alertTime: admin.firestore.Timestamp.now(),
+          });
+          notificationsSent.push('Email');
+        } catch (emailError) {
+          functions.logger.warn('Email failed for SOS:', emailError.message);
+        }
+      }
+
+      // 6. SMS (paid) - ONLY if free channels didn't work
+      if (!telegramSent && !messengerSent && bestieData.phoneNumber && bestieData.smsSubscription?.active) {
+        try {
+          await sendSMSAlert(bestieData.phoneNumber, shortAlertMessage);
+          notificationsSent.push('SMS');
+        } catch (smsError) {
+          functions.logger.warn('SMS failed for SOS:', smsError.message);
+        }
       }
 
       // Create in-app notification (ALWAYS - regardless of other settings)
@@ -147,13 +229,32 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       });
       notificationsSent.push('In-app');
 
-      console.log(`SOS sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
+      functions.logger.info(`SOS sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
     } catch (error) {
-      console.error(`Failed SOS to ${bestieId}:`, error);
+      functions.logger.error(`Failed SOS to ${bestieId}:`, error);
     }
   });
 
   await Promise.all(notifications);
+
+  // Send to active Facebook Messenger contacts
+  if (activeMessengerContacts.length > 0) {
+    const { sendMessengerAlert } = require('../../index');
+    const messengerPromises = activeMessengerContacts.map(async (psid) => {
+      try {
+        await sendMessengerAlert(psid, {
+          userName: cleanName,
+          location: location || 'Unknown',
+          startTime: new Date().toLocaleString(),
+          isEmergency: true
+        });
+        functions.logger.info(`SOS sent to Messenger contact: ${psid}`);
+      } catch (error) {
+        functions.logger.error(`Failed to send SOS to Messenger contact ${psid}:`, error);
+      }
+    });
+    await Promise.all(messengerPromises);
+  }
 
   return { success: true, sosId: sosRef.id };
 });

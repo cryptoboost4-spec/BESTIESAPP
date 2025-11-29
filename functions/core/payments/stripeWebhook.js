@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const stripe = require('stripe')(functions.config().stripe.secret_key);
+const stripe = require('stripe')(functions.config().stripe?.secret_key);
 const { updateUserBadges } = require('../../utils/badges');
 
 const db = admin.firestore();
@@ -8,14 +8,14 @@ const db = admin.firestore();
 // Webhook to handle Stripe events
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
-  const webhookSecret = functions.config().stripe.webhook_secret;
+  const webhookSecret = functions.config().stripe?.webhook_secret;
 
   let event;
 
   try {
     event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    functions.logger.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -24,7 +24,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
   const existingEvent = await eventRef.get();
 
   if (existingEvent.exists) {
-    console.log(`Webhook event ${event.id} already processed, skipping`);
+    functions.logger.info(`Webhook event ${event.id} already processed, skipping`);
     return res.status(200).json({ received: true, message: 'Event already processed' });
   }
 
@@ -108,7 +108,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
       break;
 
     default:
-      console.log(`Unhandled event type ${event.type}`);
+      functions.logger.warn(`Unhandled event type ${event.type}`);
   }
 
     // Mark event as successfully processed
@@ -122,7 +122,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
       error: error.message,
       errorStack: error.stack
     });
-    console.error('Webhook processing error:', error);
+    functions.logger.error('Webhook processing error:', error);
     // Still return 200 to prevent Stripe from retrying
     // (we logged the error for manual investigation)
     res.status(200).json({ received: true, error: 'Processing failed but logged' });

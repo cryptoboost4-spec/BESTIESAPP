@@ -16,6 +16,7 @@ exports.dailyAnalyticsAggregation = functions.pubsub
     const checkInsSnapshot = await db.collection('checkins')
       .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(yesterday))
       .where('createdAt', '<', admin.firestore.Timestamp.fromDate(today))
+      .limit(10000) // Limit to prevent unbounded reads (10k check-ins per day is reasonable)
       .get();
 
     const stats = {

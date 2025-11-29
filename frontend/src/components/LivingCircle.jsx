@@ -53,35 +53,62 @@ const LivingCircle = ({ userId, onAddClick }) => {
         ),
       ]);
 
+      // Collect all bestie IDs first
+      const bestieIds = [];
+      requesterQuery.docs.forEach(doc => bestieIds.push(doc.data().recipientId));
+      recipientQuery.docs.forEach(doc => bestieIds.push(doc.data().requesterId));
+
+      // Batch load all user documents in parallel
+      const userDocsPromises = bestieIds.map(id => getDoc(doc(db, 'users', id)));
+      const userDocs = await Promise.all(userDocsPromises);
+      const userDataMap = {};
+      userDocs.forEach((userDoc, index) => {
+        if (userDoc.exists()) {
+          userDataMap[bestieIds[index]] = userDoc.data();
+        }
+      });
+
+      // Batch load active check-ins for all besties at once (only for 'all_besties' visibility)
+      const allBestieIdsForCheckIns = bestieIds.filter(id => {
+        const userData = userDataMap[id];
+        return (userData?.privacySettings?.checkInVisibility || 'all_besties') === 'all_besties';
+      });
+
+      let activeCheckInsMap = {};
+      if (allBestieIdsForCheckIns.length > 0) {
+        // Use Promise.all to check check-ins in parallel (limit to 10 concurrent)
+        const checkInPromises = allBestieIdsForCheckIns.map(bestieId => 
+          getDocs(
+            query(
+              collection(db, 'checkins'),
+              where('userId', '==', bestieId),
+              where('status', 'in', ['active', 'alerted'])
+            )
+          ).then(snap => ({ bestieId, hasActive: !snap.empty }))
+        );
+        const checkInResults = await Promise.all(checkInPromises);
+        checkInResults.forEach(({ bestieId, hasActive }) => {
+          activeCheckInsMap[bestieId] = hasActive;
+        });
+      }
+
       const bestiesList = [];
 
+      // Process requester besties
       for (const docSnap of requesterQuery.docs) {
         const data = docSnap.data();
-        const userDoc = await getDoc(doc(db, 'users', data.recipientId));
-        const userData = userDoc.exists() ? userDoc.data() : {};
+        const userData = userDataMap[data.recipientId] || {};
 
-        // Check for active check-ins
-        const checkInVisibility = userData.privacySettings?.checkInVisibility || 'all_besties';
+        // Check for active check-ins (optimized)
         let hasActiveCheckIn = false;
-
+        const checkInVisibility = userData.privacySettings?.checkInVisibility || 'all_besties';
+        
         if (checkInVisibility === 'all_besties') {
-          const activeCheckInsQuery = query(
-            collection(db, 'checkins'),
-            where('userId', '==', data.recipientId),
-            where('status', 'in', ['active', 'alerted'])
-          );
-          const activeCheckIns = await getDocs(activeCheckInsQuery);
-          hasActiveCheckIn = !activeCheckIns.empty;
+          hasActiveCheckIn = activeCheckInsMap[data.recipientId] || false;
         } else if (checkInVisibility === 'circle') {
           const theirFeaturedCircle = userData.featuredCircle || [];
           if (theirFeaturedCircle.includes(userId)) {
-            const activeCheckInsQuery = query(
-              collection(db, 'checkins'),
-              where('userId', '==', data.recipientId),
-              where('status', 'in', ['active', 'alerted'])
-            );
-            const activeCheckIns = await getDocs(activeCheckInsQuery);
-            hasActiveCheckIn = !activeCheckIns.empty;
+            hasActiveCheckIn = activeCheckInsMap[data.recipientId] || false;
           }
         }
 
@@ -99,33 +126,21 @@ const LivingCircle = ({ userId, onAddClick }) => {
         });
       }
 
+      // Process recipient besties
       for (const docSnap of recipientQuery.docs) {
         const data = docSnap.data();
-        const userDoc = await getDoc(doc(db, 'users', data.requesterId));
-        const userData = userDoc.exists() ? userDoc.data() : {};
+        const userData = userDataMap[data.requesterId] || {};
 
-        // Check for active check-ins
-        const checkInVisibility = userData.privacySettings?.checkInVisibility || 'all_besties';
+        // Check for active check-ins (optimized)
         let hasActiveCheckIn = false;
-
+        const checkInVisibility = userData.privacySettings?.checkInVisibility || 'all_besties';
+        
         if (checkInVisibility === 'all_besties') {
-          const activeCheckInsQuery = query(
-            collection(db, 'checkins'),
-            where('userId', '==', data.requesterId),
-            where('status', 'in', ['active', 'alerted'])
-          );
-          const activeCheckIns = await getDocs(activeCheckInsQuery);
-          hasActiveCheckIn = !activeCheckIns.empty;
+          hasActiveCheckIn = activeCheckInsMap[data.requesterId] || false;
         } else if (checkInVisibility === 'circle') {
           const theirFeaturedCircle = userData.featuredCircle || [];
           if (theirFeaturedCircle.includes(userId)) {
-            const activeCheckInsQuery = query(
-              collection(db, 'checkins'),
-              where('userId', '==', data.requesterId),
-              where('status', 'in', ['active', 'alerted'])
-            );
-            const activeCheckIns = await getDocs(activeCheckInsQuery);
-            hasActiveCheckIn = !activeCheckIns.empty;
+            hasActiveCheckIn = activeCheckInsMap[data.requesterId] || false;
           }
         }
 
@@ -145,7 +160,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       setAllBesties(bestiesList);
 
-      // Get user's featured circle
+      // Get user's featured circle (already loaded above, reuse)
       const userDoc = await getDoc(doc(db, 'users', userId));
       const featuredIds = userDoc.exists() ? (userDoc.data().featuredCircle || []) : [];
 
@@ -164,14 +179,16 @@ const LivingCircle = ({ userId, onAddClick }) => {
       const finalCircle = featured.slice(0, 5);
       setCircleBesties(finalCircle);
 
-      // CRITICAL: Save auto-filled circle to Firestore
-      if (needsAutoFill && finalCircle.length > 0) {
-        await saveFeaturedCircle(finalCircle);
-      }
-
+      // Show circle immediately (don't wait for connection data)
       setLoading(false);
 
-      // Load connection strengths and last seen
+      // CRITICAL: Save auto-filled circle to Firestore (don't await - do in background)
+      if (needsAutoFill && finalCircle.length > 0) {
+        saveFeaturedCircle(finalCircle).catch(err => console.error('Error saving featured circle:', err));
+      }
+
+      // Load connection strengths and last seen (in background, don't block UI)
+      // This loads progressively so the circle appears faster
       loadConnectionData(finalCircle);
     } catch (error) {
       console.error('Error loading besties:', error);
@@ -181,22 +198,38 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
   const loadConnectionData = async (besties) => {
     setLoadingConnections(true);
-    const strengths = {};
-    const lastSeenData = {};
-
-    for (const bestie of besties) {
+    
+    // Load all connection data in parallel for better performance
+    const connectionPromises = besties.map(async (bestie) => {
       try {
-        // Calculate connection strength
-        const strength = await calculateConnectionStrength(userId, bestie.id);
-        strengths[bestie.id] = strength;
-
-        // Get last interaction
-        const lastInteraction = await getLastInteraction(userId, bestie.id);
-        lastSeenData[bestie.id] = lastInteraction;
+        const [strength, lastInteraction] = await Promise.all([
+          calculateConnectionStrength(userId, bestie.id),
+          getLastInteraction(userId, bestie.id)
+        ]);
+        return {
+          bestieId: bestie.id,
+          strength,
+          lastInteraction
+        };
       } catch (error) {
         console.error(`Error loading connection data for ${bestie.id}:`, error);
+        return {
+          bestieId: bestie.id,
+          strength: null,
+          lastInteraction: null
+        };
       }
-    }
+    });
+
+    const results = await Promise.all(connectionPromises);
+    
+    const strengths = {};
+    const lastSeenData = {};
+    
+    results.forEach(({ bestieId, strength, lastInteraction }) => {
+      if (strength) strengths[bestieId] = strength;
+      if (lastInteraction) lastSeenData[bestieId] = lastInteraction;
+    });
 
     setConnectionStrengths(strengths);
     setLastSeen(lastSeenData);

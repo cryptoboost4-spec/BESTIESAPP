@@ -6,51 +6,9 @@ import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
 import haptic from '../utils/hapticFeedback';
 
-// Emergency numbers by country
-const EMERGENCY_NUMBERS = [
-  { country: 'Australia', code: 'AU', police: '000', ambulance: '000', fire: '000', flag: '🇦🇺', timezones: ['Australia/'] },
-  { country: 'USA', code: 'US', police: '911', ambulance: '911', fire: '911', flag: '🇺🇸', timezones: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'] },
-  { country: 'UK', code: 'GB', police: '999', ambulance: '999', fire: '999', flag: '🇬🇧', timezones: ['Europe/London'] },
-  { country: 'Canada', code: 'CA', police: '911', ambulance: '911', fire: '911', flag: '🇨🇦', timezones: ['America/Toronto', 'America/Vancouver'] },
-  { country: 'NZ', code: 'NZ', police: '111', ambulance: '111', fire: '111', flag: '🇳🇿', timezones: ['Pacific/Auckland'] },
-  { country: 'Europe (EU)', code: 'EU', police: '112', ambulance: '112', fire: '112', flag: '🇪🇺', timezones: ['Europe/'] },
-];
+// Universal emergency number - 112 works in most countries
+const EMERGENCY_NUMBER = '112';
 
-// Detect user's country from phone number first, then timezone
-const detectUserCountry = (phoneNumber) => {
-  // Try phone number first (most reliable)
-  if (phoneNumber) {
-    // Remove spaces and special characters
-    const cleanPhone = phoneNumber.replace(/[\s\-()]/g, '');
-
-    // Check country code
-    if (cleanPhone.startsWith('+61') || cleanPhone.startsWith('61')) {
-      return EMERGENCY_NUMBERS.find(c => c.code === 'AU');
-    } else if (cleanPhone.startsWith('+1') || cleanPhone.startsWith('1')) {
-      // Could be USA or Canada - check length (US: 11 digits, Canada: varies)
-      // Default to USA as it's more common
-      return EMERGENCY_NUMBERS.find(c => c.code === 'US');
-    } else if (cleanPhone.startsWith('+44') || cleanPhone.startsWith('44')) {
-      return EMERGENCY_NUMBERS.find(c => c.code === 'GB');
-    } else if (cleanPhone.startsWith('+64') || cleanPhone.startsWith('64')) {
-      return EMERGENCY_NUMBERS.find(c => c.code === 'NZ');
-    }
-  }
-
-  // Fall back to timezone detection
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  for (const country of EMERGENCY_NUMBERS) {
-    for (const tz of country.timezones) {
-      if (timezone.includes(tz)) {
-        return country;
-      }
-    }
-  }
-
-  // Default to showing all if can't detect
-  return null;
-};
 
 const EmergencySOSButton = ({ hasActiveAlert = false }) => {
   const { currentUser, userData } = useAuth();
@@ -58,16 +16,12 @@ const EmergencySOSButton = ({ hasActiveAlert = false }) => {
   const [countdown, setCountdown] = useState(null);
   const [alertSent, setAlertSent] = useState(false); // Show orange alert screen after SOS sent
   const [holdProgress, setHoldProgress] = useState(0); // Progress for hold-to-cancel (0-100)
-  const [showAllCountries, setShowAllCountries] = useState(false);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false); // Show passcode verification modal
   const [passcodeInput, setPasscodeInput] = useState('');
   const countdownInterval = useRef(null);
   const holdIntervalRef = useRef(null);
   const holdStartTimeRef = useRef(null);
   const { executeOptimistic} = useOptimisticUpdate();
-
-  // Detect user's country (phone number first, then timezone)
-  const userCountry = detectUserCountry(userData?.phoneNumber);
 
   // Prevent navigation away from orange alert screen
   useEffect(() => {
@@ -86,6 +40,20 @@ const EmergencySOSButton = ({ hasActiveAlert = false }) => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [alertSent]);
+
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownInterval.current) {
+        clearInterval(countdownInterval.current);
+        countdownInterval.current = null;
+      }
+      if (holdIntervalRef.current) {
+        clearInterval(holdIntervalRef.current);
+        holdIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const handleSOSPress = () => {
     // Emergency haptic feedback when button is pressed
@@ -153,6 +121,13 @@ const EmergencySOSButton = ({ hasActiveAlert = false }) => {
           status: 'active',
           type: 'sos',
           message: '🚨 EMERGENCY - User needs immediate help!'
+        });
+
+        // Track analytics
+        const { logAnalyticsEvent } = require('../services/firebase');
+        logAnalyticsEvent('sos_triggered', {
+          is_reverse_pin: false,
+          has_location: !!location
         });
 
         return docRef;
@@ -288,55 +263,22 @@ const EmergencySOSButton = ({ hasActiveAlert = false }) => {
             Your besties have been notified!
           </p>
 
-          {/* Emergency Numbers */}
+          {/* Emergency Number - 112 */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-6">
-            <h3 className="text-white font-bold text-lg mb-3">📞 Emergency Numbers</h3>
+            <h3 className="text-white font-bold text-lg mb-3">📞 Call Emergency Services</h3>
 
-            {/* Show user's country first if detected, or all countries */}
-            {userCountry && !showAllCountries ? (
-              <>
-                <a
-                  href={`tel:${userCountry.police}`}
-                  className="bg-white/30 hover:bg-white/40 backdrop-blur-sm rounded-lg p-4 transition-all block mb-3"
-                >
-                  <div className="text-4xl mb-2">{userCountry.flag}</div>
-                  <div className="text-white text-sm font-semibold mb-1">{userCountry.country} Emergency</div>
-                  <div className="text-white text-3xl font-bold">{userCountry.police}</div>
-                </a>
-                <button
-                  onClick={() => setShowAllCountries(true)}
-                  className="text-white/80 text-sm underline hover:text-white"
-                >
-                  Not in {userCountry.country}? Show all countries →
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  {EMERGENCY_NUMBERS.map((country) => (
-                    <a
-                      key={country.country}
-                      href={`tel:${country.police}`}
-                      className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-3 transition-all"
-                    >
-                      <div className="text-2xl mb-1">{country.flag}</div>
-                      <div className="text-white text-xs font-semibold">{country.country}</div>
-                      <div className="text-white text-lg font-bold">{country.police}</div>
-                    </a>
-                  ))}
-                </div>
-                {userCountry && (
-                  <button
-                    onClick={() => setShowAllCountries(false)}
-                    className="text-white/80 text-sm underline hover:text-white mt-2"
-                  >
-                    ← Show only my country ({userCountry.country})
-                  </button>
-                )}
-              </>
-            )}
+            <a
+              href={`tel:${EMERGENCY_NUMBER}`}
+              className="bg-white/30 hover:bg-white/40 backdrop-blur-sm rounded-lg p-6 transition-all block mb-3"
+            >
+              <div className="text-5xl mb-2">🚨</div>
+              <div className="text-white text-5xl font-bold mb-2">{EMERGENCY_NUMBER}</div>
+              <div className="text-white text-sm font-semibold">Tap to call</div>
+            </a>
 
-            <p className="text-white/80 text-xs mt-3">Tap to call emergency services</p>
+            <p className="text-white/80 text-xs mt-3">
+              112 is the international emergency number and works in most countries worldwide
+            </p>
           </div>
 
           {/* Hold-to-Cancel Button */}

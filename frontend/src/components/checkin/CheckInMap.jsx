@@ -230,52 +230,125 @@ const CheckInMap = ({
       setLoading(true);
       toast.loading('Getting your location...', { id: 'gps-loading' });
 
-      navigator.geolocation.getCurrentPosition(
+      // Use watchPosition for better accuracy, then stop after first good reading
+      const watchId = navigator.geolocation.watchPosition(
         (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          const gpsCoords = { lat, lng };
+          const accuracy = position.coords.accuracy; // in meters
+          
+          // Stop watching once we get a good reading (< 20m accuracy) or after 5 seconds
+          navigator.geolocation.clearWatch(watchId);
+          
+          // If accuracy is poor, try one more time with getCurrentPosition
+          if (accuracy > 20) {
+            navigator.geolocation.getCurrentPosition(
+              (betterPosition) => {
+                const betterLat = betterPosition.coords.latitude;
+                const betterLng = betterPosition.coords.longitude;
+                const betterAccuracy = betterPosition.coords.accuracy;
+                const gpsCoords = { lat: betterLat, lng: betterLng };
 
-          // Use reverse geocoding to get address from coordinates
-          const geocoder = new window.google.maps.Geocoder();
-          geocoder.geocode({ location: gpsCoords }, (results, status) => {
-            toast.dismiss('gps-loading');
-            setLoading(false);
+                // Use reverse geocoding to get address from coordinates
+                const geocoder = new window.google.maps.Geocoder();
+                geocoder.geocode({ location: gpsCoords }, (results, status) => {
+                  toast.dismiss('gps-loading');
+                  setLoading(false);
 
-            if (status === 'OK' && results[0]) {
-              setLocationInput(results[0].formatted_address);
-              toast.success('Location captured!', { duration: 2000 });
-            } else {
-              // Fallback to coordinates if geocoding fails
-              setLocationInput(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-              toast.success('Location captured (coordinates only)', { duration: 2000 });
-            }
+                  if (status === 'OK' && results[0]) {
+                    setLocationInput(results[0].formatted_address);
+                    toast.success(`Location captured! (Accuracy: ${Math.round(betterAccuracy)}m)`, { duration: 2000 });
+                  } else {
+                    setLocationInput(`GPS: ${betterLat.toFixed(6)}, ${betterLng.toFixed(6)}`);
+                    toast.success(`Location captured (Accuracy: ${Math.round(betterAccuracy)}m)`, { duration: 2000 });
+                  }
 
-            setGpsCoords(gpsCoords); // Store coordinates for map
-          });
-        },
-        (error) => {
-          toast.dismiss('gps-loading');
-          setLoading(false);
-          console.error('Geolocation error:', error);
+                  setGpsCoords(gpsCoords);
+                });
+              },
+              (error) => {
+                // Fallback to first reading
+                const gpsCoords = { lat, lng };
+                const geocoder = new window.google.maps.Geocoder();
+                geocoder.geocode({ location: gpsCoords }, (results, status) => {
+                  toast.dismiss('gps-loading');
+                  setLoading(false);
 
-          // Provide specific error messages based on error code
-          if (error.code === 1) {
-            toast.error('Location permission denied. Please enable location access in your browser settings.', { duration: 6000 });
-          } else if (error.code === 2) {
-            toast.error('Location unavailable. Make sure location services are enabled on your device.', { duration: 5000 });
-          } else if (error.code === 3) {
-            toast.error('Location request timed out. Please try again or search for your location.', { duration: 5000 });
+                  if (status === 'OK' && results[0]) {
+                    setLocationInput(results[0].formatted_address);
+                    toast.success(`Location captured! (Accuracy: ${Math.round(accuracy)}m)`, { duration: 2000 });
+                  } else {
+                    setLocationInput(`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                    toast.success(`Location captured (Accuracy: ${Math.round(accuracy)}m)`, { duration: 2000 });
+                  }
+
+                  setGpsCoords(gpsCoords);
+                });
+              },
+              { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
           } else {
-            toast.error('Could not get location. Please search manually.', { duration: 4000 });
+            // Good accuracy, use this reading
+            const gpsCoords = { lat, lng };
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ location: gpsCoords }, (results, status) => {
+              toast.dismiss('gps-loading');
+              setLoading(false);
+
+              if (status === 'OK' && results[0]) {
+                setLocationInput(results[0].formatted_address);
+                toast.success(`Location captured! (Accuracy: ${Math.round(accuracy)}m)`, { duration: 2000 });
+              } else {
+                setLocationInput(`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                toast.success(`Location captured (Accuracy: ${Math.round(accuracy)}m)`, { duration: 2000 });
+              }
+
+              setGpsCoords(gpsCoords);
+            });
           }
         },
-        {
-          timeout: 30000, // 30 second timeout (increased from 10s)
-          enableHighAccuracy: true, // Better accuracy
-          maximumAge: 0 // Don't use cached location
-        }
+        (error) => {
+          navigator.geolocation.clearWatch(watchId);
+          // Fallback to getCurrentPosition
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              const accuracy = position.coords.accuracy;
+              const gpsCoords = { lat, lng };
+
+              const geocoder = new window.google.maps.Geocoder();
+              geocoder.geocode({ location: gpsCoords }, (results, status) => {
+                toast.dismiss('gps-loading');
+                setLoading(false);
+
+                if (status === 'OK' && results[0]) {
+                  setLocationInput(results[0].formatted_address);
+                  toast.success(`Location captured! (Accuracy: ${Math.round(accuracy)}m)`, { duration: 2000 });
+                } else {
+                  setLocationInput(`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                  toast.success(`Location captured (Accuracy: ${Math.round(accuracy)}m)`, { duration: 2000 });
+                }
+
+                setGpsCoords(gpsCoords);
+              });
+            },
+            (fallbackError) => {
+              toast.dismiss('gps-loading');
+              setLoading(false);
+              console.error('Geolocation error:', fallbackError);
+              // Show error message (handled below)
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
+      
+      // Stop watching after 10 seconds max
+      setTimeout(() => {
+        navigator.geolocation.clearWatch(watchId);
+      }, 10000);
     } else {
       toast.error('Geolocation not supported by your browser. Please search for your location manually.');
     }
@@ -374,7 +447,7 @@ const CheckInMap = ({
       </div>
 
       <p className="text-xs text-text-secondary p-3 px-6">
-        💡 <strong className="text-primary">Double-tap to unlock the map,</strong> then drag to move it and double-tap again to save
+        💜 <strong className="text-primary">Your safety matters.</strong> Add as much location detail as you'd like to share
       </p>
     </div>
   );
