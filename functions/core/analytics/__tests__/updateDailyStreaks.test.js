@@ -2,22 +2,9 @@
  * Tests for updateDailyStreaks scheduled function
  */
 const admin = require('firebase-admin');
-const updateDailyStreaks = require('../updateDailyStreaks');
+const { updateDailyStreaks } = require('../updateDailyStreaks');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      where: jest.fn(() => ({
-        get: jest.fn(),
-      })),
-      get: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('updateDailyStreaks', () => {
   let mockUsersSnapshot;
@@ -42,10 +29,39 @@ describe('updateDailyStreaks', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => ({
-      doc: jest.fn(() => mockUserRef),
-      get: jest.fn().mockResolvedValue(mockUsersSnapshot),
-    }));
+    db.collection = jest.fn((name) => {
+      if (name === 'users') {
+        const mockCollection = {
+          doc: jest.fn((id) => {
+            if (id === 'user1') {
+              return mockUserRef;
+            }
+            return {
+              update: jest.fn().mockResolvedValue(),
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
+          limit: jest.fn((size) => {
+            return {
+              startAfter: jest.fn(() => ({
+                get: jest.fn().mockResolvedValue({
+                  empty: true,
+                  docs: [],
+                }),
+              })),
+              get: jest.fn().mockResolvedValue(mockUsersSnapshot),
+            };
+          }),
+        };
+        return mockCollection;
+      }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
+    });
   });
 
   afterEach(() => {

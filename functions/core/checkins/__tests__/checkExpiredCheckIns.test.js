@@ -6,34 +6,11 @@ const { sendBulkNotifications } = require('../../../utils/messaging');
 const checkExpiredCheckIns = require('../checkExpiredCheckIns');
 
 jest.mock('../../../utils/messaging');
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          orderBy: jest.fn(() => ({
-            limit: jest.fn(() => ({
-              startAfter: jest.fn(() => ({
-                get: jest.fn(),
-              })),
-              get: jest.fn(),
-            })),
-          })),
-        })),
-      })),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-    FieldPath: {
-      documentId: jest.fn(() => 'documentId'),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('checkExpiredCheckIns', () => {
   let mockExpiredCheckInsSnapshot;
+  let mockCollectionFn;
   let mockUserDoc;
   let mockMessengerContactsSnapshot;
 
@@ -87,27 +64,45 @@ describe('checkExpiredCheckIns', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn((collectionName) => {
+    mockCollectionFn = jest.fn((collectionName) => {
       if (collectionName === 'checkins') {
-        return {
-          where: jest.fn(() => ({
-            where: jest.fn(() => ({
-              orderBy: jest.fn(() => ({
-                limit: jest.fn(() => ({
-                  get: jest.fn().mockResolvedValue(mockExpiredCheckInsSnapshot),
-                  startAfter: jest.fn(() => ({
-                    get: jest.fn().mockResolvedValue({ empty: true }),
-                  })),
-                })),
-              })),
-            })),
-          })),
-        };
+        // Create a chainable query mock
+        const createQuery = () => ({
+          where: jest.fn((field, op, value) => {
+            return {
+              where: jest.fn((field2, op2, value2) => {
+                return {
+                  orderBy: jest.fn((field3, dir) => {
+                    return {
+                      limit: jest.fn((size) => {
+                        return {
+                          startAfter: jest.fn((doc) => {
+                            return {
+                              get: jest.fn().mockResolvedValue({
+                                empty: true,
+                                size: 0,
+                                docs: [],
+                              }),
+                            };
+                          }),
+                          get: jest.fn().mockResolvedValue(mockExpiredCheckInsSnapshot),
+                        };
+                      }),
+                      get: jest.fn().mockResolvedValue(mockExpiredCheckInsSnapshot),
+                    };
+                  }),
+                };
+              }),
+            };
+          }),
+        });
+        return createQuery();
       }
       if (collectionName === 'users') {
         return {
           doc: jest.fn(() => ({
             get: jest.fn().mockResolvedValue(mockUserDoc),
+            update: jest.fn().mockResolvedValue(),
           })),
         };
       }
@@ -124,6 +119,7 @@ describe('checkExpiredCheckIns', () => {
         })),
       };
     });
+    db.collection = mockCollectionFn;
 
     sendBulkNotifications.mockResolvedValue();
   });
@@ -136,8 +132,7 @@ describe('checkExpiredCheckIns', () => {
     test('should find expired check-ins', async () => {
       await checkExpiredCheckIns({});
 
-      const db = admin.firestore();
-      expect(db.collection).toHaveBeenCalledWith('checkins');
+      expect(mockCollectionFn).toHaveBeenCalledWith('checkins');
     });
 
     test('should process check-ins in batches', async () => {
@@ -161,8 +156,7 @@ describe('checkExpiredCheckIns', () => {
     test('should update check-in status to alerted', async () => {
       await checkExpiredCheckIns({});
 
-      const db = admin.firestore();
-      expect(db.collection).toHaveBeenCalled();
+      expect(mockCollectionFn).toHaveBeenCalled();
     });
 
     test('should send notifications to besties', async () => {

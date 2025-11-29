@@ -7,15 +7,7 @@ const { generateShareCard } = require('../generateShareCard');
 const { checkRateLimit, getClientIP } = require('../../../utils/rateLimiting');
 
 jest.mock('../../../utils/rateLimiting');
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(() => ({
-        get: jest.fn(),
-      })),
-    })),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('generateShareCard', () => {
   let mockReq;
@@ -129,7 +121,8 @@ describe('generateShareCard', () => {
   describe('Error Handling', () => {
     test('should return default HTML on error', async () => {
       const db = admin.firestore();
-      db.collection.mockImplementation(() => {
+      // Make the collection call throw an error
+      db.collection = jest.fn(() => {
         throw new Error('Database error');
       });
 
@@ -137,6 +130,8 @@ describe('generateShareCard', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(500);
       expect(mockRes.send).toHaveBeenCalled();
+      const html = mockRes.send.mock.calls[0][0];
+      expect(html).toContain('Besties');
     });
   });
 });

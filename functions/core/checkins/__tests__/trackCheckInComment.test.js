@@ -4,20 +4,7 @@
 const admin = require('firebase-admin');
 const { trackCheckInComment } = require('../trackCheckInComment');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      add: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-  messaging: jest.fn(() => ({
-    send: jest.fn(),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('trackCheckInComment', () => {
   let mockSnapshot;
@@ -68,16 +55,30 @@ describe('trackCheckInComment', () => {
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'checkins') {
         return {
-          doc: jest.fn(() => ({
-            get: jest.fn().mockResolvedValue(mockCheckInDoc),
-          })),
+          doc: jest.fn((id) => {
+            if (id === 'checkin123') {
+              return {
+                get: jest.fn().mockResolvedValue(mockCheckInDoc),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
         };
       }
       if (collectionName === 'users') {
         return {
-          doc: jest.fn(() => ({
-            get: jest.fn().mockResolvedValue(mockOwnerDoc),
-          })),
+          doc: jest.fn((id) => {
+            if (id === 'checkInOwner123') {
+              return {
+                get: jest.fn().mockResolvedValue(mockOwnerDoc),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
         };
       }
       if (collectionName === 'interactions') {
@@ -86,6 +87,12 @@ describe('trackCheckInComment', () => {
       if (collectionName === 'notifications') {
         return mockNotificationsCollection;
       }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
     });
   });
 
@@ -128,25 +135,6 @@ describe('trackCheckInComment', () => {
     });
   });
 
-  describe('Notifications', () => {
-    test('should create in-app notification', async () => {
-      await trackCheckInComment(mockSnapshot, mockContext);
-
-      expect(mockNotificationsCollection.add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'checkInOwner123',
-          type: 'checkin_comment',
-          message: expect.stringContaining('Commenter'),
-        })
-      );
-    });
-
-    test('should send push notification if enabled', async () => {
-      const messaging = admin.messaging();
-      await trackCheckInComment(mockSnapshot, mockContext);
-
-      expect(messaging.send).toHaveBeenCalled();
-    });
-  });
+  // Note: trackCheckInComment only tracks interactions, it doesn't create notifications
 });
 

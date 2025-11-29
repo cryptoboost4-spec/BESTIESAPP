@@ -4,24 +4,7 @@
 const admin = require('firebase-admin');
 const { dailyAnalyticsAggregation } = require('../dailyAnalyticsAggregation');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          get: jest.fn(),
-        })),
-        get: jest.fn(),
-      })),
-      add: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-      fromDate: jest.fn((date) => ({ seconds: date.getTime() / 1000 })),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('dailyAnalyticsAggregation', () => {
   let mockCheckInsSnapshot;
@@ -52,16 +35,31 @@ describe('dailyAnalyticsAggregation', () => {
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'checkins') {
         return {
-          where: jest.fn(() => ({
-            where: jest.fn(() => ({
-              get: jest.fn().mockResolvedValue(mockCheckInsSnapshot),
-            })),
-          })),
+          where: jest.fn((field, op, value) => {
+            return {
+              where: jest.fn((field2, op2, value2) => {
+                return {
+                  limit: jest.fn((size) => {
+                    return {
+                      get: jest.fn().mockResolvedValue(mockCheckInsSnapshot),
+                    };
+                  }),
+                  get: jest.fn().mockResolvedValue(mockCheckInsSnapshot),
+                };
+              }),
+            };
+          }),
         };
       }
       if (collectionName === 'daily_stats') {
         return mockDailyStatsCollection;
       }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
     });
   });
 

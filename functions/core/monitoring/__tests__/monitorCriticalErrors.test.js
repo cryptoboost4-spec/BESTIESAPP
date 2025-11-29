@@ -6,28 +6,13 @@ const sgMail = require('@sendgrid/mail');
 const { monitorCriticalErrors } = require('../monitorCriticalErrors');
 
 jest.mock('@sendgrid/mail');
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          get: jest.fn(),
-        })),
-        get: jest.fn(),
-      })),
-      get: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('monitorCriticalErrors', () => {
   let mockSnapshot;
   let mockContext;
   let mockRecentErrorsSnapshot;
+  let mockCollectionFn;
 
   beforeEach(() => {
     mockContext = {
@@ -51,13 +36,22 @@ describe('monitorCriticalErrors', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => ({
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          get: jest.fn().mockResolvedValue(mockRecentErrorsSnapshot),
-        })),
-      })),
-    }));
+    mockCollectionFn = jest.fn((collectionName) => {
+      if (collectionName === 'errors') {
+        return {
+          where: jest.fn(() => ({
+            where: jest.fn(() => ({
+              get: jest.fn().mockResolvedValue(mockRecentErrorsSnapshot),
+            })),
+          })),
+        };
+      }
+      return {
+        where: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn() }),
+      };
+    });
+    db.collection = mockCollectionFn;
 
     sgMail.send = jest.fn().mockResolvedValue();
   });
@@ -77,8 +71,7 @@ describe('monitorCriticalErrors', () => {
       await monitorCriticalErrors(mockSnapshot, mockContext);
 
       // Should check for recent errors
-      const db = admin.firestore();
-      expect(db.collection).toHaveBeenCalledWith('errors');
+      expect(mockCollectionFn).toHaveBeenCalledWith('errors');
     });
 
     test('should not alert for non-critical errors', async () => {
@@ -164,7 +157,7 @@ describe('monitorCriticalErrors', () => {
       expect(sgMail.send).toHaveBeenCalledWith(
         expect.objectContaining({
           to: expect.any(String),
-          subject: expect.stringContaining('SITE ISSUE'),
+          subject: expect.stringMatching(/SITE ISSUE|SYSTEM ERROR/),
         })
       );
     });

@@ -8,16 +8,6 @@ const { notifyBestiesAboutCheckIn } = require('../../../utils/checkInNotificatio
 
 // Mock dependencies
 jest.mock('../../../utils/checkInNotifications');
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-}));
 
 describe('completeCheckIn', () => {
   let mockContext;
@@ -47,9 +37,29 @@ describe('completeCheckIn', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => ({
-      doc: jest.fn(() => mockCheckInRef),
-    }));
+    // Override collection to return our mock
+    db.collection = jest.fn((name) => {
+      if (name === 'checkins') {
+        return {
+          doc: jest.fn((id) => {
+            if (id === 'checkin123') {
+              return mockCheckInRef;
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+              update: jest.fn().mockResolvedValue(),
+            };
+          }),
+        };
+      }
+      // Default for other collections
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+          update: jest.fn().mockResolvedValue(),
+        })),
+      };
+    });
 
     mockData = { checkInId: 'checkin123' };
     notifyBestiesAboutCheckIn.mockResolvedValue();
@@ -93,7 +103,7 @@ describe('completeCheckIn', () => {
 
       await expect(
         completeCheckIn(mockData, mockContext)
-      ).rejects.toThrow('permission-denied');
+      ).rejects.toThrow('Invalid check-in');
     });
 
     test('should throw if user does not own check-in', async () => {
@@ -104,16 +114,24 @@ describe('completeCheckIn', () => {
 
       await expect(
         completeCheckIn(mockData, mockContext)
-      ).rejects.toThrow('permission-denied');
+      ).rejects.toThrow('Invalid check-in');
     });
   });
 
   describe('Idempotency', () => {
     test('should return success if check-in already completed', async () => {
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'user123',
-        status: 'completed',
-      }));
+      // Create a fresh mock for this test
+      const completedCheckInDoc = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          status: 'completed',
+          bestieIds: ['bestie1', 'bestie2'],
+          location: 'Test Location',
+          duration: 30,
+        })),
+      };
+      mockCheckInRef.get = jest.fn().mockResolvedValue(completedCheckInDoc);
 
       const result = await completeCheckIn(mockData, mockContext);
 
@@ -124,6 +142,19 @@ describe('completeCheckIn', () => {
 
   describe('Successful Completion', () => {
     test('should update check-in status to completed', async () => {
+      // Create a fresh mock for this test
+      const activeCheckInDoc = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          status: 'active',
+          bestieIds: ['bestie1', 'bestie2'],
+          location: 'Test Location',
+          duration: 30,
+        })),
+      };
+      mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+
       await completeCheckIn(mockData, mockContext);
 
       expect(mockCheckInRef.update).toHaveBeenCalledWith(
@@ -135,6 +166,19 @@ describe('completeCheckIn', () => {
     });
 
     test('should notify besties about completion', async () => {
+      // Create a fresh mock for this test
+      const activeCheckInDoc = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          status: 'active',
+          bestieIds: ['bestie1', 'bestie2'],
+          location: 'Test Location',
+          duration: 30,
+        })),
+      };
+      mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+
       await completeCheckIn(mockData, mockContext);
 
       expect(notifyBestiesAboutCheckIn).toHaveBeenCalledWith(
@@ -148,6 +192,19 @@ describe('completeCheckIn', () => {
     });
 
     test('should return success on completion', async () => {
+      // Create a fresh mock for this test
+      const activeCheckInDoc = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          status: 'active',
+          bestieIds: ['bestie1', 'bestie2'],
+          location: 'Test Location',
+          duration: 30,
+        })),
+      };
+      mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+
       const result = await completeCheckIn(mockData, mockContext);
 
       expect(result).toEqual({ success: true });
@@ -156,6 +213,15 @@ describe('completeCheckIn', () => {
 
   describe('Notification Error Handling', () => {
     test('should complete check-in even if notification fails', async () => {
+      mockCheckInDoc.exists = true;
+      mockCheckInDoc.data = jest.fn(() => ({
+        userId: 'user123',
+        status: 'active',
+        bestieIds: ['bestie1', 'bestie2'],
+        location: 'Test Location',
+        duration: 30,
+      }));
+
       notifyBestiesAboutCheckIn.mockRejectedValue(new Error('Notification failed'));
 
       const result = await completeCheckIn(mockData, mockContext);
@@ -165,6 +231,7 @@ describe('completeCheckIn', () => {
     });
 
     test('should not throw if bestieIds is empty', async () => {
+      mockCheckInDoc.exists = true;
       mockCheckInDoc.data = jest.fn(() => ({
         userId: 'user123',
         status: 'active',
@@ -180,6 +247,15 @@ describe('completeCheckIn', () => {
 
   describe('Data Integrity', () => {
     test('should NOT update user stats directly', async () => {
+      mockCheckInDoc.exists = true;
+      mockCheckInDoc.data = jest.fn(() => ({
+        userId: 'user123',
+        status: 'active',
+        bestieIds: ['bestie1', 'bestie2'],
+        location: 'Test Location',
+        duration: 30,
+      }));
+
       // This test ensures we're not double-counting
       // Stats should only be updated by onCheckInCountUpdate trigger
       await completeCheckIn(mockData, mockContext);

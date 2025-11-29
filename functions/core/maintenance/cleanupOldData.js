@@ -8,7 +8,7 @@ exports.cleanupOldData = functions.pubsub
   .schedule('0 3 * * *') // Run daily at 3:00 AM
   .timeZone('America/New_York')
   .onRun(async (context) => {
-    console.log('Starting data cleanup...');
+    functions.logger.info('Starting data cleanup...');
 
     const now = admin.firestore.Timestamp.now();
     const sevenDaysAgo = admin.firestore.Timestamp.fromDate(
@@ -34,7 +34,7 @@ exports.cleanupOldData = functions.pubsub
 
       userIds.push(...usersWithoutSettings.docs.map(doc => doc.id));
 
-      console.log(`Found ${userIds.length} users without data retention enabled`);
+      functions.logger.info(`Found ${userIds.length} users without data retention enabled`);
 
       // Delete old check-ins
       for (const userId of userIds) {
@@ -57,7 +57,7 @@ exports.cleanupOldData = functions.pubsub
                 deletedPhotos++;
               }
             } catch (photoError) {
-              console.error('Error deleting photo:', photoError);
+              functions.logger.error('Error deleting photo:', photoError);
             }
           }
 
@@ -77,7 +77,7 @@ exports.cleanupOldData = functions.pubsub
         }
       }
 
-      console.log(`Cleanup complete: ${deletedCheckIns} check-ins, ${deletedSOS} SOS, ${deletedPhotos} photos deleted`);
+      functions.logger.info(`Cleanup complete: ${deletedCheckIns} check-ins, ${deletedSOS} SOS, ${deletedPhotos} photos deleted`);
 
       return {
         success: true,
@@ -86,7 +86,7 @@ exports.cleanupOldData = functions.pubsub
         deletedPhotos,
       };
     } catch (error) {
-      console.error('Error during cleanup:', error);
+      functions.logger.error('Error during cleanup:', error);
       return { success: false, error: error.message };
     }
   });

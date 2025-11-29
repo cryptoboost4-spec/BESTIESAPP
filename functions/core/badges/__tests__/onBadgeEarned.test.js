@@ -4,20 +4,7 @@
 const admin = require('firebase-admin');
 const { onBadgeEarned } = require('../onBadgeEarned');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      add: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-  messaging: jest.fn(() => ({
-    send: jest.fn(),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('onBadgeEarned', () => {
   let mockBeforeSnapshot;
@@ -62,14 +49,27 @@ describe('onBadgeEarned', () => {
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'users') {
         return {
-          doc: jest.fn(() => ({
-            get: jest.fn().mockResolvedValue(mockUserDoc),
-          })),
+          doc: jest.fn((id) => {
+            if (id === 'user123') {
+              return {
+                get: jest.fn().mockResolvedValue(mockUserDoc),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
         };
       }
       if (collectionName === 'notifications') {
         return mockNotificationsCollection;
       }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
     });
   });
 
@@ -79,7 +79,8 @@ describe('onBadgeEarned', () => {
 
   describe('Badge Detection', () => {
     test('should detect newly earned badges', async () => {
-      await onBadgeEarned(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBadgeEarned(change, mockContext);
 
       expect(mockNotificationsCollection.add).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -91,7 +92,8 @@ describe('onBadgeEarned', () => {
     });
 
     test('should not notify for existing badges', async () => {
-      await onBadgeEarned(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBadgeEarned(change, mockContext);
 
       // Should not notify for 'first_checkin' as it already existed
       const addCalls = mockNotificationsCollection.add.mock.calls;
@@ -105,8 +107,9 @@ describe('onBadgeEarned', () => {
       mockAfterSnapshot.data = jest.fn(() => ({
         badges: ['first_checkin'],
       }));
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
 
-      const result = await onBadgeEarned(mockAfterSnapshot, mockContext);
+      const result = await onBadgeEarned(change, mockContext);
 
       expect(result).toBeNull();
       expect(mockNotificationsCollection.add).not.toHaveBeenCalled();
@@ -115,7 +118,8 @@ describe('onBadgeEarned', () => {
 
   describe('Notifications', () => {
     test('should create in-app notification for new badge', async () => {
-      await onBadgeEarned(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBadgeEarned(change, mockContext);
 
       expect(mockNotificationsCollection.add).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -128,7 +132,8 @@ describe('onBadgeEarned', () => {
 
     test('should send push notification if enabled', async () => {
       const messaging = admin.messaging();
-      await onBadgeEarned(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBadgeEarned(change, mockContext);
 
       expect(messaging.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -147,7 +152,8 @@ describe('onBadgeEarned', () => {
       }));
 
       const messaging = admin.messaging();
-      await onBadgeEarned(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBadgeEarned(change, mockContext);
 
       expect(messaging.send).not.toHaveBeenCalled();
     });
@@ -156,14 +162,16 @@ describe('onBadgeEarned', () => {
   describe('Error Handling', () => {
     test('should not throw if user document missing', async () => {
       mockUserDoc.exists = false;
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
 
-      await expect(onBadgeEarned(mockAfterSnapshot, mockContext)).resolves.not.toThrow();
+      await expect(onBadgeEarned(change, mockContext)).resolves.not.toThrow();
     });
 
     test('should not throw if notification creation fails', async () => {
       mockNotificationsCollection.add.mockRejectedValue(new Error('Notification failed'));
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
 
-      await expect(onBadgeEarned(mockAfterSnapshot, mockContext)).resolves.not.toThrow();
+      await expect(onBadgeEarned(change, mockContext)).resolves.not.toThrow();
     });
   });
 });

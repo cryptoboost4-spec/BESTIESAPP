@@ -6,23 +6,7 @@ const sgMail = require('@sendgrid/mail');
 const { checkBirthdays } = require('../checkBirthdays');
 
 jest.mock('@sendgrid/mail');
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      get: jest.fn(),
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          get: jest.fn(),
-        })),
-        get: jest.fn(),
-      })),
-    })),
-  })),
-  messaging: jest.fn(() => ({
-    send: jest.fn(),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('checkBirthdays', () => {
   let mockUsersSnapshot;

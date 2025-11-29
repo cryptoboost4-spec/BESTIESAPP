@@ -1,40 +1,15 @@
 /**
  * Rate Limiting Utility Tests
  */
+// Use global mocks from jest.setup.js
+const admin = require('firebase-admin');
+
+// Import after mocks are set up
 const {
   RATE_LIMITS,
   checkUserRateLimit,
   checkRateLimit,
 } = require('../rateLimiting');
-const admin = require('firebase-admin');
-
-// Mock Firestore
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          get: jest.fn(),
-        })),
-        get: jest.fn(),
-      })),
-      doc: jest.fn(() => ({
-        get: jest.fn(),
-        set: jest.fn(),
-        update: jest.fn(),
-      })),
-    })),
-  })),
-  firestore: {
-    Timestamp: {
-      now: jest.fn(() => ({ toMillis: () => Date.now() })),
-      fromDate: jest.fn((date) => ({ toMillis: () => date.getTime() })),
-    },
-    FieldValue: {
-      increment: jest.fn((val) => val),
-    },
-  },
-}));
 
 describe('Rate Limiting Utilities', () => {
   describe('RATE_LIMITS', () => {
@@ -67,9 +42,25 @@ describe('Rate Limiting Utilities', () => {
     });
 
     test('should return allowed=true if count is below limit', async () => {
-      mockSnapshot.size = 1;
+      const mockSnapshotWithSize = {
+        size: 1,
+        forEach: jest.fn(),
+      };
       const db = admin.firestore();
-      db.collection = jest.fn(() => mockQuery);
+      // Override collection to return our mock query - ensure it supports chaining
+      const mockQuery = {
+        where: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+      };
+      db.collection = jest.fn((name) => {
+        if (name === 'testCollection') {
+          return mockQuery;
+        }
+        return {
+          where: jest.fn().mockReturnThis(),
+          get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn() }),
+        };
+      });
 
       const result = await checkUserRateLimit(
         'user123',
@@ -84,9 +75,25 @@ describe('Rate Limiting Utilities', () => {
     });
 
     test('should return allowed=false if count exceeds limit', async () => {
-      mockSnapshot.size = 3;
+      const mockSnapshotWithSize = {
+        size: 3,
+        forEach: jest.fn(),
+      };
       const db = admin.firestore();
-      db.collection = jest.fn(() => mockQuery);
+      // Override collection to return our mock query - ensure it supports chaining
+      const mockQuery = {
+        where: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+      };
+      db.collection = jest.fn((name) => {
+        if (name === 'testCollection') {
+          return mockQuery;
+        }
+        return {
+          where: jest.fn().mockReturnThis(),
+          get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn() }),
+        };
+      });
 
       const result = await checkUserRateLimit(
         'user123',

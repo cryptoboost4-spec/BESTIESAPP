@@ -57,16 +57,25 @@ describe('Notification Utilities', () => {
     });
 
     test('should handle Twilio errors', async () => {
-      mockMessages.create.mockRejectedValue(new Error('Twilio error'));
+      // Create a new mock that rejects
+      const rejectMock = jest.fn().mockRejectedValue(new Error('Twilio error'));
+      mockTwilioClient.messages.create = rejectMock;
+      twilio.mockImplementation(() => mockTwilioClient);
 
       await expect(
         sendSMSAlert('+61412345678', 'Test message')
-      ).rejects.toThrow();
+      ).rejects.toThrow('Twilio error');
     });
   });
 
   describe('sendWhatsAppAlert', () => {
     test('should send WhatsApp message via Twilio', async () => {
+      // Reset mocks to ensure clean state
+      jest.clearAllMocks();
+      mockMessages.create = jest.fn().mockResolvedValue({ sid: 'test_sid' });
+      mockTwilioClient.messages = mockMessages;
+      twilio.mockImplementation(() => mockTwilioClient);
+
       await sendWhatsAppAlert('+61412345678', 'Test message');
 
       expect(mockMessages.create).toHaveBeenCalledWith(
@@ -81,22 +90,36 @@ describe('Notification Utilities', () => {
 
   describe('sendEmailAlert', () => {
     test('should send email via SendGrid', async () => {
-      await sendEmailAlert('test@example.com', 'Subject', 'Body');
+      const checkIn = {
+        location: 'Test Location',
+        alertTime: {
+          toMillis: () => Date.now(),
+        },
+      };
+
+      await sendEmailAlert('test@example.com', 'Test message', checkIn);
 
       expect(sgMail.send).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'test@example.com',
-          subject: 'Subject',
-          text: 'Body',
+          subject: '🚨 Safety Alert from Besties',
+          text: 'Test message',
         })
       );
     });
 
     test('should handle SendGrid errors', async () => {
+      const checkIn = {
+        location: 'Test Location',
+        alertTime: {
+          toMillis: () => Date.now(),
+        },
+      };
+
       sgMail.send.mockRejectedValue(new Error('SendGrid error'));
 
       await expect(
-        sendEmailAlert('test@example.com', 'Subject', 'Body')
+        sendEmailAlert('test@example.com', 'Test message', checkIn)
       ).rejects.toThrow();
     });
   });

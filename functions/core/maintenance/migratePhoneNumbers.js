@@ -80,7 +80,7 @@ exports.migratePhoneNumbers = functions.https.onCall(async (data, context) => {
 
         migratedCount++;
       } catch (error) {
-        console.error(`Error migrating phone for user ${userDoc.id}:`, error);
+        functions.logger.error(`Error migrating phone for user ${userDoc.id}:`, error);
         errors.push({ userId: userDoc.id, oldPhone: phoneNumber, error: error.message });
       }
     }
@@ -93,7 +93,7 @@ exports.migratePhoneNumbers = functions.https.onCall(async (data, context) => {
       errors: errors.length > 0 ? errors : null,
     };
   } catch (error) {
-    console.error('Error in phone migration:', error);
+    functions.logger.error('Error in phone migration:', error);
     throw new functions.https.HttpsError('internal', 'Migration failed');
   }
 });

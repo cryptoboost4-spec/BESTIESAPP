@@ -5,20 +5,7 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { acknowledgeAlert } = require('../acknowledgeAlert');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      add: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-    FieldValue: {
-      arrayUnion: jest.fn((value) => value),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('acknowledgeAlert', () => {
   let mockContext;
@@ -103,28 +90,45 @@ describe('acknowledgeAlert', () => {
 
   describe('Authorization', () => {
     test('should throw if check-in does not exist', async () => {
-      mockCheckInDoc.exists = false;
+      // Create a new mock with exists = false
+      const nonExistentCheckIn = {
+        exists: false,
+        data: jest.fn(() => ({})),
+      };
+      mockCheckInRef.get = jest.fn().mockResolvedValue(nonExistentCheckIn);
 
       await expect(
         acknowledgeAlert(mockData, mockContext)
-      ).rejects.toThrow('not-found');
+      ).rejects.toThrow('Check-in not found');
     });
 
     test('should throw if user is not a bestie for this check-in', async () => {
+      mockCheckInDoc.exists = true;
       mockCheckInDoc.data = jest.fn(() => ({
         userId: 'user123',
-        bestieIds: ['other-bestie'],
+        bestieIds: ['other-bestie'], // bestie123 is not in this array
         acknowledgedBy: [],
       }));
 
       await expect(
         acknowledgeAlert(mockData, mockContext)
-      ).rejects.toThrow('permission-denied');
+      ).rejects.toThrow('You are not authorized to acknowledge this alert');
     });
   });
 
   describe('Acknowledgment', () => {
     test('should add user to acknowledgedBy array', async () => {
+      // Ensure check-in exists and user is authorized (bestie123 is in bestieIds)
+      mockCheckInDoc.exists = true;
+      mockCheckInDoc.data = jest.fn(() => ({
+        userId: 'user123',
+        bestieIds: ['bestie123', 'bestie456'], // bestie123 is authorized
+        acknowledgedBy: [],
+        alertedAt: {
+          toMillis: () => Date.now() - 5 * 60 * 1000,
+        },
+      }));
+
       await acknowledgeAlert(mockData, mockContext);
 
       expect(mockCheckInRef.update).toHaveBeenCalledWith(
@@ -135,6 +139,7 @@ describe('acknowledgeAlert', () => {
     });
 
     test('should not duplicate if already acknowledged', async () => {
+      mockCheckInDoc.exists = true;
       mockCheckInDoc.data = jest.fn(() => ({
         userId: 'user123',
         bestieIds: ['bestie123'],
@@ -151,6 +156,16 @@ describe('acknowledgeAlert', () => {
     });
 
     test('should track alert response', async () => {
+      mockCheckInDoc.exists = true;
+      mockCheckInDoc.data = jest.fn(() => ({
+        userId: 'user123',
+        bestieIds: ['bestie123', 'bestie456'],
+        acknowledgedBy: [],
+        alertedAt: {
+          toMillis: () => Date.now() - 5 * 60 * 1000,
+        },
+      }));
+
       await acknowledgeAlert(mockData, mockContext);
 
       expect(mockAlertResponsesCollection.add).toHaveBeenCalledWith(
@@ -165,6 +180,7 @@ describe('acknowledgeAlert', () => {
 
     test('should calculate response time correctly', async () => {
       const alertedAt = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
+      mockCheckInDoc.exists = true;
       mockCheckInDoc.data = jest.fn(() => ({
         userId: 'user123',
         bestieIds: ['bestie123'],
@@ -186,6 +202,16 @@ describe('acknowledgeAlert', () => {
 
   describe('Response', () => {
     test('should return success', async () => {
+      mockCheckInDoc.exists = true;
+      mockCheckInDoc.data = jest.fn(() => ({
+        userId: 'user123',
+        bestieIds: ['bestie123', 'bestie456'],
+        acknowledgedBy: [],
+        alertedAt: {
+          toMillis: () => Date.now() - 5 * 60 * 1000,
+        },
+      }));
+
       const result = await acknowledgeAlert(mockData, mockContext);
 
       expect(result).toEqual({ success: true });

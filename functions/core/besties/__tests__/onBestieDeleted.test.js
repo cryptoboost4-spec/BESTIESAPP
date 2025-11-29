@@ -4,20 +4,7 @@
 const admin = require('firebase-admin');
 const { onBestieDeleted } = require('../onBestieDeleted');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-    FieldValue: {
-      increment: jest.fn((val) => val),
-      arrayRemove: jest.fn((val) => val),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('onBestieDeleted', () => {
   let mockSnapshot;
@@ -55,7 +42,14 @@ describe('onBestieDeleted', () => {
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'analytics_cache') {
         return {
-          doc: jest.fn(() => mockCacheRef),
+          doc: jest.fn((id) => {
+            if (id === 'realtime') {
+              return mockCacheRef;
+            }
+            return {
+              set: jest.fn().mockResolvedValue(),
+            };
+          }),
         };
       }
       if (collectionName === 'users') {
@@ -67,9 +61,18 @@ describe('onBestieDeleted', () => {
             if (userId === 'recipient123') {
               return mockRecipientRef;
             }
+            return {
+              update: jest.fn().mockResolvedValue(),
+            };
           }),
         };
       }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
     });
   });
 

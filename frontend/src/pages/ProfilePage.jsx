@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, onSnapshot, limit } from 'firebase/firestore';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';

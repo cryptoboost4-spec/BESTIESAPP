@@ -4,31 +4,7 @@
 const admin = require('firebase-admin');
 const { onBestieCreated } = require('../onBestieCreated');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      add: jest.fn(),
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          count: jest.fn(() => ({
-            get: jest.fn(),
-          })),
-        })),
-      })),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-    FieldValue: {
-      increment: jest.fn((val) => val),
-      arrayUnion: jest.fn((val) => val),
-    },
-  })),
-  messaging: jest.fn(() => ({
-    send: jest.fn(),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('onBestieCreated', () => {
   let mockSnapshot;
@@ -76,21 +52,35 @@ describe('onBestieCreated', () => {
       add: jest.fn().mockResolvedValue(),
     };
 
+    // Mock for awardBestieBadge queries
     mockBestiesQuery = {
-      where: jest.fn(() => ({
-        where: jest.fn(() => ({
-          count: jest.fn(() => ({
-            get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
-          })),
-        })),
-      })),
+      where: jest.fn((field, op, value) => {
+        // Support chaining: where().where().count().get()
+        return {
+          where: jest.fn((field2, op2, value2) => {
+            return {
+              count: jest.fn(() => ({
+                get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+              })),
+            };
+          }),
+        };
+      }),
     };
 
     const db = admin.firestore();
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'analytics_cache') {
         return {
-          doc: jest.fn(() => mockCacheRef),
+          doc: jest.fn((id) => {
+            if (id === 'realtime') {
+              return mockCacheRef;
+            }
+            return {
+              set: jest.fn().mockResolvedValue(),
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
         };
       }
       if (collectionName === 'users') {
@@ -100,7 +90,16 @@ describe('onBestieCreated', () => {
               return mockRequesterRef;
             }
             if (userId === 'recipient123') {
-              return mockRecipientRef;
+              return {
+                ...mockRecipientRef,
+                get: jest.fn().mockResolvedValue({
+                  exists: true,
+                  data: () => ({
+                    notificationsEnabled: true,
+                    fcmToken: 'fcm-token',
+                  }),
+                }),
+              };
             }
             return {
               get: jest.fn().mockResolvedValue({

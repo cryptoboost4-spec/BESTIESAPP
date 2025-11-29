@@ -4,17 +4,7 @@
 const admin = require('firebase-admin');
 const { trackPostComment } = require('../trackPostComment');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      add: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('trackPostComment', () => {
   let mockSnapshot;
@@ -48,14 +38,27 @@ describe('trackPostComment', () => {
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'posts') {
         return {
-          doc: jest.fn(() => ({
-            get: jest.fn().mockResolvedValue(mockPostDoc),
-          })),
+          doc: jest.fn((id) => {
+            if (id === 'post123') {
+              return {
+                get: jest.fn().mockResolvedValue(mockPostDoc),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
         };
       }
       if (collectionName === 'interactions') {
         return mockInteractionsCollection;
       }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
     });
   });
 

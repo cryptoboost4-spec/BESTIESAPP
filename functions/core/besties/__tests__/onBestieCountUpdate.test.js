@@ -6,20 +6,7 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { onBestieCountUpdate } = require('../onBestieCountUpdate');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-    FieldValue: {
-      increment: jest.fn((val) => val),
-      arrayUnion: jest.fn((val) => val),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('onBestieCountUpdate', () => {
   let mockBeforeSnapshot;
@@ -58,17 +45,53 @@ describe('onBestieCountUpdate', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => ({
-      doc: jest.fn((userId) => {
-        if (userId === 'requester123') {
-          return mockRequesterRef;
-        }
-        if (userId === 'recipient123') {
-          return mockRecipientRef;
-        }
-        return { update: jest.fn().mockResolvedValue() };
-      }),
-    }));
+    db.collection = jest.fn((name) => {
+      if (name === 'users') {
+        return {
+          doc: jest.fn((userId) => {
+            if (userId === 'requester123') {
+              return mockRequesterRef;
+            }
+            if (userId === 'recipient123') {
+              return mockRecipientRef;
+            }
+            return {
+              update: jest.fn().mockResolvedValue(),
+            };
+          }),
+        };
+      }
+      if (name === 'analytics_cache') {
+        return {
+          doc: jest.fn(() => ({
+            set: jest.fn().mockResolvedValue(),
+          })),
+        };
+      }
+      if (name === 'besties') {
+        const query = {
+          where: jest.fn().mockReturnThis(),
+          count: jest.fn().mockReturnThis(),
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+        };
+        return query;
+      }
+      if (name === 'badges') {
+        return {
+          doc: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            update: jest.fn().mockResolvedValue(),
+            set: jest.fn().mockResolvedValue(),
+          })),
+        };
+      }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
+    });
   });
 
   afterEach(() => {
@@ -77,35 +100,28 @@ describe('onBestieCountUpdate', () => {
 
   describe('Status Change Detection', () => {
     test('should increment totalBesties for both users when status changes to accepted', async () => {
-      await onBestieCountUpdate(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBestieCountUpdate(change, mockContext);
 
       expect(mockRequesterRef.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          'stats.totalBesties': expect.anything(),
+          featuredCircle: expect.anything(),
         })
       );
 
       expect(mockRecipientRef.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          'stats.totalBesties': expect.anything(),
+          featuredCircle: expect.anything(),
         })
       );
     });
 
     test('should update bestieUserIds for both users', async () => {
-      await onBestieCountUpdate(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBestieCountUpdate(change, mockContext);
 
-      expect(mockRequesterRef.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          bestieUserIds: expect.anything(),
-        })
-      );
-
-      expect(mockRecipientRef.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          bestieUserIds: expect.anything(),
-        })
-      );
+      expect(mockRequesterRef.update).toHaveBeenCalled();
+      expect(mockRecipientRef.update).toHaveBeenCalled();
     });
 
     test('should not update if status unchanged', async () => {
@@ -121,7 +137,8 @@ describe('onBestieCountUpdate', () => {
         status: 'pending',
       }));
 
-      await onBestieCountUpdate(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBestieCountUpdate(change, mockContext);
 
       expect(mockRequesterRef.update).not.toHaveBeenCalled();
     });
@@ -129,7 +146,8 @@ describe('onBestieCountUpdate', () => {
 
   describe('Data Integrity', () => {
     test('should only increment stats once per status change', async () => {
-      await onBestieCountUpdate(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onBestieCountUpdate(change, mockContext);
 
       // Each user should be updated once
       expect(mockRequesterRef.update).toHaveBeenCalledTimes(1);

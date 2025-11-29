@@ -20,7 +20,7 @@ exports.fixDoubleCountedStats = functions.https.onCall(async (data, context) => 
     throw new functions.https.HttpsError('permission-denied', 'Admin access required');
   }
 
-  console.log('🔄 Starting data migration to fix double-counted stats...');
+  functions.logger.info('🔄 Starting data migration to fix double-counted stats...');
 
   try {
     const { fixDoubleCountedStats } = require('../../migrations/fixDoubleCountedStats');
@@ -32,7 +32,7 @@ exports.fixDoubleCountedStats = functions.https.onCall(async (data, context) => 
       ...result,
     };
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    functions.logger.error('❌ Migration failed:', error);
     throw new functions.https.HttpsError('internal', 'Migration failed: ' + error.message);
   }
 });

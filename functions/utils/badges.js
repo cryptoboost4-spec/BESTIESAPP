@@ -175,8 +175,66 @@ async function checkForNewBadge(userId, previousCount, category) {
   return null;
 }
 
+/**
+ * Check and award badges based on user stats (synchronous utility function)
+ * This is a pure function that calculates badges from stats without database access
+ * @param {object} userStats - User statistics object
+ * @param {array} existingBadges - Array of existing badge objects with 'type' or 'id' field
+ * @returns {array} - Array of badges that should be awarded
+ */
+function checkAndAwardBadges(userStats, existingBadges = []) {
+  const badgesToAward = [];
+  const existingBadgeIds = new Set(
+    existingBadges.map(b => b.type || b.id || b.badgeId)
+  );
+
+  // Check-in badges
+  if (userStats.completedCheckIns >= 1 && !existingBadgeIds.has('first_checkin')) {
+    badgesToAward.push({
+      type: 'first_checkin',
+      id: 'checkin_10',
+      name: 'Safety First',
+      requirement: 1,
+      icon: '✅',
+      category: 'checkins',
+    });
+  }
+
+  // Bestie badges
+  if (userStats.totalBesties >= 1 && !existingBadgeIds.has('first_bestie')) {
+    badgesToAward.push({
+      type: 'first_bestie',
+      id: 'besties_5',
+      name: 'Friend Circle',
+      requirement: 1,
+      icon: '💜',
+      category: 'besties',
+    });
+  }
+
+  // Check for tier-based badges
+  // Check-in tiers
+  for (const badge of BADGE_TIERS.checkins) {
+    if (userStats.completedCheckIns >= badge.requirement && 
+        !existingBadgeIds.has(badge.id)) {
+      badgesToAward.push({ ...badge, type: badge.id, category: 'checkins' });
+    }
+  }
+
+  // Bestie tiers
+  for (const badge of BADGE_TIERS.besties) {
+    if (userStats.totalBesties >= badge.requirement && 
+        !existingBadgeIds.has(badge.id)) {
+      badgesToAward.push({ ...badge, type: badge.id, category: 'besties' });
+    }
+  }
+
+  return badgesToAward;
+}
+
 module.exports = {
   updateUserBadges,
   checkForNewBadge,
+  checkAndAwardBadges,
   BADGE_TIERS
 };

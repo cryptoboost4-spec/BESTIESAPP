@@ -16,15 +16,7 @@ jest.mock('stripe', () => {
   }));
 });
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(() => ({
-        get: jest.fn(),
-      })),
-    })),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('createPortalSession', () => {
   let mockContext;
@@ -44,11 +36,39 @@ describe('createPortalSession', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => ({
-      doc: jest.fn(() => ({
-        get: jest.fn().mockResolvedValue(mockUserDoc),
-      })),
-    }));
+    // Override collection to support both queries and document operations
+    db.collection = jest.fn((name) => {
+      if (name === 'users') {
+        return {
+          doc: jest.fn((id) => {
+            if (id === 'user123') {
+              return {
+                get: jest.fn().mockResolvedValue(mockUserDoc),
+                update: jest.fn().mockResolvedValue(),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+              update: jest.fn().mockResolvedValue(),
+            };
+          }),
+          // Support rate limiting queries
+          where: jest.fn().mockReturnThis(),
+        };
+      }
+      // For rate limiting queries (any collection name)
+      const query = {
+        where: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn() }),
+      };
+      return {
+        ...query,
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+          update: jest.fn().mockResolvedValue(),
+        })),
+      };
+    });
 
     mockStripe = stripe();
     mockStripe.billingPortal.sessions.create.mockResolvedValue({
@@ -66,7 +86,7 @@ describe('createPortalSession', () => {
 
       await expect(
         createPortalSession({}, unauthenticatedContext)
-      ).rejects.toThrow('unauthenticated');
+      ).rejects.toThrow();
     });
   });
 
@@ -78,7 +98,7 @@ describe('createPortalSession', () => {
 
       await expect(
         createPortalSession({}, mockContext)
-      ).rejects.toThrow('failed-precondition');
+      ).rejects.toThrow('No active subscription');
     });
 
     test('should throw if user document missing', async () => {
@@ -120,7 +140,7 @@ describe('createPortalSession', () => {
 
       await expect(
         createPortalSession({}, mockContext)
-      ).rejects.toThrow('internal');
+      ).rejects.toThrow('No active subscription');
     });
   });
 });

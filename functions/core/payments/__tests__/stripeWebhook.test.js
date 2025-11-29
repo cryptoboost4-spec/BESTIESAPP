@@ -6,18 +6,18 @@ const stripe = require('stripe');
 const { stripeWebhook } = require('../stripeWebhook');
 const { updateUserBadges } = require('../../../utils/badges');
 
-jest.mock('stripe');
-jest.mock('../../../utils/badges');
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
+jest.mock('stripe', () => {
+  return jest.fn(() => ({
+    webhooks: {
+      constructEvent: jest.fn(),
     },
-  })),
-}));
+    customers: {
+      retrieve: jest.fn(),
+    },
+  }));
+});
+jest.mock('../../../utils/badges');
+// Use global mocks from jest.setup.js
 
 describe('stripeWebhook', () => {
   let mockReq;
@@ -58,7 +58,13 @@ describe('stripeWebhook', () => {
     };
 
     mockWebhookEventsCollection = {
-      doc: jest.fn(() => mockEventDoc),
+      doc: jest.fn((eventId) => {
+        // Return a new mock doc ref for each event ID
+        return {
+          get: jest.fn().mockResolvedValue(mockEventDoc),
+          set: jest.fn().mockResolvedValue(),
+        };
+      }),
     };
 
     const db = admin.firestore();
@@ -74,9 +80,17 @@ describe('stripeWebhook', () => {
     });
 
     mockStripe = stripe();
-    mockStripe.webhooks = {
-      constructEvent: jest.fn(),
-    };
+    // Set default mock return value for constructEvent - must return event object
+    mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
+      id: 'evt_test123',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          metadata: { firebaseUID: 'user123', type: 'subscription' },
+          subscription: 'sub_test123',
+        },
+      },
+    });
 
     updateUserBadges.mockResolvedValue();
   });
@@ -87,7 +101,7 @@ describe('stripeWebhook', () => {
 
   describe('Signature Verification', () => {
     test('should verify webhook signature', async () => {
-      mockStripe.webhooks.constructEvent.mockReturnValue({
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
         id: 'evt_test123',
         type: 'checkout.session.completed',
         data: {
@@ -108,7 +122,8 @@ describe('stripeWebhook', () => {
     });
 
     test('should return 400 if signature verification fails', async () => {
-      mockStripe.webhooks.constructEvent.mockImplementation(() => {
+      // Reset the mock to throw an error
+      mockStripe.webhooks.constructEvent = jest.fn().mockImplementationOnce(() => {
         throw new Error('Invalid signature');
       });
 
@@ -121,10 +136,17 @@ describe('stripeWebhook', () => {
 
   describe('Idempotency', () => {
     test('should check if event already processed', async () => {
-      mockEventDoc.exists = true;
-      mockEventDoc.get = jest.fn().mockResolvedValue({ exists: true });
+      const existingEventDoc = {
+        exists: true,
+        get: jest.fn().mockResolvedValue({ exists: true }),
+      };
+      
+      mockWebhookEventsCollection.doc = jest.fn(() => ({
+        get: jest.fn().mockResolvedValue(existingEventDoc),
+        set: jest.fn().mockResolvedValue(),
+      }));
 
-      mockStripe.webhooks.constructEvent.mockReturnValue({
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
         id: 'evt_test123',
         type: 'checkout.session.completed',
         data: { object: {} },
@@ -139,7 +161,14 @@ describe('stripeWebhook', () => {
     });
 
     test('should store event to prevent reprocessing', async () => {
-      mockStripe.webhooks.constructEvent.mockReturnValue({
+      const eventDocRef = {
+        get: jest.fn().mockResolvedValue({ exists: false }),
+        set: jest.fn().mockResolvedValue(),
+      };
+      
+      mockWebhookEventsCollection.doc = jest.fn(() => eventDocRef);
+
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
         id: 'evt_test123',
         type: 'checkout.session.completed',
         data: {
@@ -152,13 +181,13 @@ describe('stripeWebhook', () => {
 
       await stripeWebhook(mockReq, mockRes);
 
-      expect(mockEventDoc.set).toHaveBeenCalled();
+      expect(eventDocRef.set).toHaveBeenCalled();
     });
   });
 
   describe('Event Handling', () => {
     test('should handle checkout.session.completed for subscription', async () => {
-      mockStripe.webhooks.constructEvent.mockReturnValue({
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
         id: 'evt_test123',
         type: 'checkout.session.completed',
         data: {
@@ -181,7 +210,7 @@ describe('stripeWebhook', () => {
     });
 
     test('should handle checkout.session.completed for donation', async () => {
-      mockStripe.webhooks.constructEvent.mockReturnValue({
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
         id: 'evt_test123',
         type: 'checkout.session.completed',
         data: {
@@ -204,7 +233,7 @@ describe('stripeWebhook', () => {
     });
 
     test('should handle customer.subscription.deleted', async () => {
-      mockStripe.webhooks.constructEvent.mockReturnValue({
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
         id: 'evt_test123',
         type: 'customer.subscription.deleted',
         data: {
@@ -222,7 +251,7 @@ describe('stripeWebhook', () => {
 
   describe('Error Handling', () => {
     test('should handle processing errors gracefully', async () => {
-      mockStripe.webhooks.constructEvent.mockReturnValue({
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
         id: 'evt_test123',
         type: 'checkout.session.completed',
         data: {

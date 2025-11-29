@@ -13,7 +13,7 @@ const db = admin.firestore();
  * Safe to run multiple times - uses arrayUnion which won't duplicate entries.
  */
 async function backfillBestieUserIds() {
-  console.log('🚀 Starting bestieUserIds backfill...\n');
+  functions.logger.info('🚀 Starting bestieUserIds backfill...\n');
 
   try {
     // Get all accepted besties
@@ -21,10 +21,10 @@ async function backfillBestieUserIds() {
       .where('status', '==', 'accepted')
       .get();
 
-    console.log(`📊 Found ${bestiesSnapshot.size} accepted bestie relationships\n`);
+    functions.logger.info(`📊 Found ${bestiesSnapshot.size} accepted bestie relationships\n`);
 
     if (bestiesSnapshot.empty) {
-      console.log('✅ No besties to process. Done!');
+      functions.logger.info('✅ No besties to process. Done!');
       return { success: true, processed: 0, errors: [] };
     }
 
@@ -40,15 +40,15 @@ async function backfillBestieUserIds() {
 
       // Validate data
       if (!bestie.requesterId || !bestie.recipientId) {
-        console.log(`⚠️  Skipping ${doc.id}: Missing requester or recipient ID`);
+        functions.logger.warn(`⚠️  Skipping ${doc.id}: Missing requester or recipient ID`);
         skipped++;
         continue;
       }
 
       try {
-        console.log(`Processing ${processed}/${bestiesSnapshot.size}: ${doc.id}`);
-        console.log(`  Requester: ${bestie.requesterId}`);
-        console.log(`  Recipient: ${bestie.recipientId}`);
+        functions.logger.info(`Processing ${processed}/${bestiesSnapshot.size}: ${doc.id}`);
+        functions.logger.info(`  Requester: ${bestie.requesterId}`);
+        functions.logger.info(`  Recipient: ${bestie.recipientId}`);
 
         // Update both users' bestieUserIds arrays
         // arrayUnion prevents duplicates, so safe to run multiple times
@@ -67,11 +67,11 @@ async function backfillBestieUserIds() {
 
         await batch.commit();
 
-        console.log(`  ✅ Updated both users\n`);
+        functions.logger.info(`  ✅ Updated both users\n`);
         updated++;
 
       } catch (error) {
-        console.error(`  ❌ Error processing ${doc.id}:`, error.message);
+        functions.logger.error(`  ❌ Error processing ${doc.id}:`, error.message);
         errors.push({
           bestieId: doc.id,
           requesterId: bestie.requesterId,
@@ -82,22 +82,22 @@ async function backfillBestieUserIds() {
     }
 
     // Summary
-    console.log('\n' + '='.repeat(60));
-    console.log('📋 BACKFILL SUMMARY');
-    console.log('='.repeat(60));
-    console.log(`Total besties processed: ${processed}`);
-    console.log(`Successfully updated: ${updated}`);
-    console.log(`Skipped (missing data): ${skipped}`);
-    console.log(`Errors: ${errors.length}`);
+    functions.logger.info('\n' + '='.repeat(60));
+    functions.logger.info('📋 BACKFILL SUMMARY');
+    functions.logger.info('='.repeat(60));
+    functions.logger.info(`Total besties processed: ${processed}`);
+    functions.logger.info(`Successfully updated: ${updated}`);
+    functions.logger.info(`Skipped (missing data): ${skipped}`);
+    functions.logger.info(`Errors: ${errors.length}`);
 
     if (errors.length > 0) {
-      console.log('\n❌ Errors encountered:');
+      functions.logger.error('\n❌ Errors encountered:');
       errors.forEach(err => {
-        console.log(`  - Bestie ${err.bestieId}: ${err.error}`);
+        functions.logger.error(`  - Bestie ${err.bestieId}: ${err.error}`);
       });
     }
 
-    console.log('\n✅ Backfill complete!');
+    functions.logger.info('\n✅ Backfill complete!');
 
     return {
       success: errors.length === 0,
@@ -108,7 +108,7 @@ async function backfillBestieUserIds() {
     };
 
   } catch (error) {
-    console.error('💥 Fatal error during backfill:', error);
+    functions.logger.error('💥 Fatal error during backfill:', error);
     throw error;
   }
 }
@@ -125,7 +125,7 @@ exports.backfillBestieUserIds = functions.https.onCall(async (data, context) => 
     throw new functions.https.HttpsError('permission-denied', 'Must be admin to run backfill');
   }
 
-  console.log(`🔧 Backfill triggered by admin: ${context.auth.uid}`);
+  functions.logger.info(`🔧 Backfill triggered by admin: ${context.auth.uid}`);
 
   try {
     const result = await backfillBestieUserIds();
@@ -135,7 +135,7 @@ exports.backfillBestieUserIds = functions.https.onCall(async (data, context) => 
       ...result
     };
   } catch (error) {
-    console.error('❌ Backfill failed:', error);
+    functions.logger.error('❌ Backfill failed:', error);
     throw new functions.https.HttpsError('internal', 'Backfill failed: ' + error.message);
   }
 });

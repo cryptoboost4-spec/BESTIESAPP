@@ -6,19 +6,7 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { onCheckInCountUpdate } = require('../onCheckInCountUpdate');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-    FieldValue: {
-      increment: jest.fn((val) => val),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('onCheckInCountUpdate', () => {
   let mockBeforeSnapshot;
@@ -50,9 +38,51 @@ describe('onCheckInCountUpdate', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => ({
-      doc: jest.fn(() => mockUserRef),
-    }));
+    db.collection = jest.fn((name) => {
+      if (name === 'users') {
+        return {
+          doc: jest.fn((id) => {
+            if (id === 'user123') {
+              return mockUserRef;
+            }
+            return {
+              update: jest.fn().mockResolvedValue(),
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
+        };
+      }
+      if (name === 'analytics_cache') {
+        return {
+          doc: jest.fn(() => ({
+            set: jest.fn().mockResolvedValue(),
+          })),
+        };
+      }
+      if (name === 'checkins') {
+        const query = {
+          where: jest.fn().mockReturnThis(),
+          count: jest.fn().mockReturnThis(),
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+        };
+        return query;
+      }
+      if (name === 'badges') {
+        return {
+          doc: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            update: jest.fn().mockResolvedValue(),
+            set: jest.fn().mockResolvedValue(),
+          })),
+        };
+      }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
+    });
   });
 
   afterEach(() => {
@@ -61,7 +91,8 @@ describe('onCheckInCountUpdate', () => {
 
   describe('Status Change Detection', () => {
     test('should increment completedCheckIns when status changes to completed', async () => {
-      await onCheckInCountUpdate(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onCheckInCountUpdate(change, mockContext);
 
       expect(mockUserRef.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -75,8 +106,9 @@ describe('onCheckInCountUpdate', () => {
         userId: 'user123',
         status: 'alerted',
       }));
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
 
-      await onCheckInCountUpdate(mockAfterSnapshot, mockContext);
+      await onCheckInCountUpdate(change, mockContext);
 
       expect(mockUserRef.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -96,7 +128,8 @@ describe('onCheckInCountUpdate', () => {
         status: 'active',
       }));
 
-      await onCheckInCountUpdate(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onCheckInCountUpdate(change, mockContext);
 
       // Should not update if status didn't change
       expect(mockUserRef.update).not.toHaveBeenCalled();
@@ -105,7 +138,8 @@ describe('onCheckInCountUpdate', () => {
 
   describe('Data Integrity', () => {
     test('should only increment stats once per status change', async () => {
-      await onCheckInCountUpdate(mockAfterSnapshot, mockContext);
+      const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
+      await onCheckInCountUpdate(change, mockContext);
 
       // Should only be called once
       expect(mockUserRef.update).toHaveBeenCalledTimes(1);

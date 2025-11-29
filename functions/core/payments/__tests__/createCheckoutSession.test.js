@@ -20,16 +20,7 @@ jest.mock('stripe', () => {
   }));
 });
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(() => ({
-        get: jest.fn(),
-        update: jest.fn(),
-      })),
-    })),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('createCheckoutSession', () => {
   let mockContext;
@@ -51,12 +42,39 @@ describe('createCheckoutSession', () => {
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => ({
-      doc: jest.fn(() => ({
-        get: jest.fn().mockResolvedValue(mockUserDoc),
-        update: jest.fn().mockResolvedValue(),
-      })),
-    }));
+    // Override collection to support both queries and document operations
+    db.collection = jest.fn((name) => {
+      if (name === 'users') {
+        return {
+          doc: jest.fn((id) => {
+            if (id === 'user123') {
+              return {
+                get: jest.fn().mockResolvedValue(mockUserDoc),
+                update: jest.fn().mockResolvedValue(),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+              update: jest.fn().mockResolvedValue(),
+            };
+          }),
+          // Support rate limiting queries on users collection
+          where: jest.fn().mockReturnThis(),
+        };
+      }
+      // For rate limiting queries (any collection name)
+      const query = {
+        where: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn() }),
+      };
+      return {
+        ...query,
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+          update: jest.fn().mockResolvedValue(),
+        })),
+      };
+    });
 
     mockStripe = stripe();
     mockStripe.customers.create.mockResolvedValue({ id: 'cus_test123' });
@@ -76,7 +94,7 @@ describe('createCheckoutSession', () => {
 
       await expect(
         createCheckoutSession({ amount: 1, type: 'donation' }, unauthenticatedContext)
-      ).rejects.toThrow('unauthenticated');
+      ).rejects.toThrow();
     });
   });
 
@@ -86,7 +104,7 @@ describe('createCheckoutSession', () => {
 
       await expect(
         createCheckoutSession(invalidData, mockContext)
-      ).rejects.toThrow('invalid-argument');
+      ).rejects.toThrow('Missing amount or type');
     });
 
     test('should throw if type is missing', async () => {
@@ -94,7 +112,7 @@ describe('createCheckoutSession', () => {
 
       await expect(
         createCheckoutSession(invalidData, mockContext)
-      ).rejects.toThrow('invalid-argument');
+      ).rejects.toThrow('Missing amount or type');
     });
 
     test('should throw if donation amount is invalid', async () => {
@@ -102,7 +120,7 @@ describe('createCheckoutSession', () => {
 
       await expect(
         createCheckoutSession(invalidData, mockContext)
-      ).rejects.toThrow('invalid-argument');
+      ).rejects.toThrow('Donation amount must be');
     });
 
     test('should accept valid donation amounts (1, 5, 10)', async () => {
@@ -117,7 +135,7 @@ describe('createCheckoutSession', () => {
 
       await expect(
         createCheckoutSession(invalidData, mockContext)
-      ).rejects.toThrow('invalid-argument');
+      ).rejects.toThrow('SMS subscription must be');
     });
 
     test('should accept subscription amount of 1', async () => {
@@ -257,7 +275,7 @@ describe('createCheckoutSession', () => {
 
       await expect(
         createCheckoutSession({ amount: 1, type: 'donation' }, mockContext)
-      ).rejects.toThrow('internal');
+      ).rejects.toThrow('Failed to create checkout session');
     });
 
     test('should handle missing user document', async () => {

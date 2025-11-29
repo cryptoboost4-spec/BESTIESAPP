@@ -7,19 +7,7 @@ const { onCheckInCreated } = require('../onCheckInCreated');
 const { notifyBestiesAboutCheckIn } = require('../../../utils/checkInNotifications');
 
 jest.mock('../../../utils/checkInNotifications');
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-    FieldValue: {
-      increment: jest.fn((val) => val),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('onCheckInCreated', () => {
   let mockSnapshot;
@@ -66,7 +54,15 @@ describe('onCheckInCreated', () => {
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'users') {
         return {
-          doc: jest.fn(() => mockUserRef),
+          doc: jest.fn((id) => {
+            if (id === 'user123') {
+              return mockUserRef;
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+              update: jest.fn().mockResolvedValue(),
+            };
+          }),
         };
       }
       if (collectionName === 'analytics_cache') {
@@ -74,6 +70,12 @@ describe('onCheckInCreated', () => {
           doc: jest.fn(() => mockCacheRef),
         };
       }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
     });
 
     notifyBestiesAboutCheckIn.mockResolvedValue();
@@ -145,7 +147,8 @@ describe('onCheckInCreated', () => {
         'user123',
         ['bestie1', 'bestie2'],
         'checkInCreated',
-        expect.any(Object)
+        expect.any(Object),
+        []
       );
     });
 

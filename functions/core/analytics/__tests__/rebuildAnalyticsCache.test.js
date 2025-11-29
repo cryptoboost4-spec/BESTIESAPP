@@ -5,17 +5,7 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { rebuildAnalyticsCache } = require('../rebuildAnalyticsCache');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      get: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('rebuildAnalyticsCache', () => {
   let mockContext;
@@ -27,6 +17,13 @@ describe('rebuildAnalyticsCache', () => {
   beforeEach(() => {
     mockContext = {
       auth: { uid: 'admin123' },
+    };
+
+    const mockAdminUserDoc = {
+      exists: true,
+      data: jest.fn(() => ({
+        isAdmin: true,
+      })),
     };
 
     mockUsersSnapshot = {
@@ -49,17 +46,35 @@ describe('rebuildAnalyticsCache', () => {
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'users') {
         return {
-          get: jest.fn().mockResolvedValue(mockUsersSnapshot),
+          doc: jest.fn((userId) => {
+            if (userId === 'admin123') {
+              return {
+                get: jest.fn().mockResolvedValue(mockAdminUserDoc),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            };
+          }),
+          count: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 100 }) }),
+          })),
         };
       }
       if (collectionName === 'checkins') {
         return {
-          get: jest.fn().mockResolvedValue(mockCheckInsSnapshot),
+          where: jest.fn(() => ({
+            count: jest.fn(() => ({
+              get: jest.fn().mockResolvedValue({ data: () => ({ count: 500 }) }),
+            })),
+          })),
         };
       }
       if (collectionName === 'besties') {
         return {
-          get: jest.fn().mockResolvedValue(mockBestiesSnapshot),
+          count: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 200 }) }),
+          })),
         };
       }
       if (collectionName === 'analytics_cache') {

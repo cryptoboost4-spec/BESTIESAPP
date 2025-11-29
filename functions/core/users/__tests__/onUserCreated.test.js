@@ -5,68 +5,115 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { onUserCreated } = require('../onUserCreated');
 
-jest.mock('firebase-admin', () => ({
-  firestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(),
-      add: jest.fn(),
-    })),
-    Timestamp: {
-      now: jest.fn(() => ({ seconds: Date.now() / 1000 })),
-    },
-  })),
-  messaging: jest.fn(() => ({
-    send: jest.fn(),
-  })),
-}));
+// Use global mocks from jest.setup.js
 
 describe('onUserCreated', () => {
-  let mockSnapshot;
-  let mockContext;
-  let mockNotificationsCollection;
+  let mockUser;
+  let mockCacheRef;
+  let mockUserRef;
+  let mockBadgesRef;
 
   beforeEach(() => {
-    mockContext = {
-      params: { userId: 'user123' },
+    // Firebase Auth user object (not Firestore snapshot)
+    mockUser = {
+      uid: 'user123',
+      email: 'test@example.com',
+      displayName: 'Test User',
+      photoURL: null,
+      phoneNumber: null,
     };
 
-    mockSnapshot = {
-      data: jest.fn(() => ({
-        displayName: 'Test User',
-        email: 'test@example.com',
-      })),
+    mockCacheRef = {
+      set: jest.fn().mockResolvedValue(),
     };
 
-    mockNotificationsCollection = {
-      add: jest.fn().mockResolvedValue(),
+    mockUserRef = {
+      set: jest.fn().mockResolvedValue(),
+    };
+
+    mockBadgesRef = {
+      set: jest.fn().mockResolvedValue(),
     };
 
     const db = admin.firestore();
-    db.collection = jest.fn(() => mockNotificationsCollection);
+    db.collection = jest.fn((name) => {
+      if (name === 'analytics_cache') {
+        return {
+          doc: jest.fn((id) => {
+            if (id === 'realtime') {
+              return mockCacheRef;
+            }
+            return {
+              set: jest.fn().mockResolvedValue(),
+            };
+          }),
+        };
+      }
+      if (name === 'users') {
+        return {
+          doc: jest.fn((userId) => {
+            if (userId === 'user123') {
+              return mockUserRef;
+            }
+            return {
+              set: jest.fn().mockResolvedValue(),
+            };
+          }),
+        };
+      }
+      if (name === 'badges') {
+        return {
+          doc: jest.fn((userId) => {
+            if (userId === 'user123') {
+              return mockBadgesRef;
+            }
+            return {
+              set: jest.fn().mockResolvedValue(),
+            };
+          }),
+        };
+      }
+      // Default
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
+    });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Welcome Notification', () => {
-    test('should create welcome notification', async () => {
-      await onUserCreated(mockSnapshot, mockContext);
+  describe('User Initialization', () => {
+    test('should create user document', async () => {
+      await onUserCreated(mockUser);
 
-      expect(mockNotificationsCollection.add).toHaveBeenCalledWith(
+      expect(mockUserRef.set).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 'user123',
-          type: 'welcome',
-          title: expect.stringContaining('Welcome'),
+          uid: 'user123',
+          email: 'test@example.com',
+          displayName: 'Test User',
         })
       );
     });
 
-    test('should include user display name in notification', async () => {
-      await onUserCreated(mockSnapshot, mockContext);
+    test('should create badges document', async () => {
+      await onUserCreated(mockUser);
 
-      const addCall = mockNotificationsCollection.add.mock.calls[0][0];
-      expect(addCall.message).toContain('Test User');
+      expect(mockBadgesRef.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user123',
+          badges: [],
+        })
+      );
+    });
+
+    test('should update analytics cache', async () => {
+      await onUserCreated(mockUser);
+
+      expect(mockCacheRef.set).toHaveBeenCalled();
     });
   });
 
