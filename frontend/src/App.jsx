@@ -125,7 +125,11 @@ function App() {
             <ScrollToTop />
             <MilestoneCelebration />
             <BestieCelebrationModal />
-            {user && <FloatingNotificationBell />}
+            {user && (
+              <div className="fixed top-16 right-4 z-50">
+                <FloatingNotificationBell />
+              </div>
+            )}
             {/* DesktopNav removed per user request - notifications handled by FloatingNotificationBell */}
             {user && <MobileBottomNav />}
             <div className="App pb-20 md:pb-0">

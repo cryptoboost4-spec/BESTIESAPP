@@ -39,18 +39,18 @@ const DonationCard = () => {
           disabled={loading}
           className="btn btn-secondary p-6 flex flex-col items-center gap-2 hover:scale-105 transition-transform"
         >
-          <span className="text-2xl">☕</span>
+          <span className="text-2xl">💜</span>
           <span className="font-display text-xl">$1</span>
-          <span className="text-xs text-text-secondary">Coffee</span>
+          <span className="text-xs text-text-secondary">Support</span>
         </button>
         <button
           onClick={() => handleDonation(5)}
           disabled={loading}
           className="btn btn-primary p-6 flex flex-col items-center gap-2 transform scale-105 shadow-lg hover:scale-110 transition-transform"
         >
-          <span className="text-2xl">🍕</span>
+          <span className="text-2xl">☕</span>
           <span className="font-display text-xl">$5</span>
-          <span className="text-xs">Pizza Slice</span>
+          <span className="text-xs">Coffee</span>
         </button>
         <button
           onClick={() => handleDonation(10)}

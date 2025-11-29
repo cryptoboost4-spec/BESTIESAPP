@@ -60,10 +60,10 @@ const ProfileWithBubble = ({
 
       {/* Speech Bubble - Only shows when user requests attention */}
       {shouldShowBubble && (
-        <div className="absolute -top-2 -right-2 z-10 animate-bounce-slow">
+        <div className="absolute -top-2 -right-2 z-10 animate-bounce-slow max-w-[calc(100vw-4rem)] sm:max-w-none">
           {/* Speech bubble */}
-          <div className={`bg-purple-500 text-white rounded-full ${bubbleSize} font-semibold whitespace-nowrap shadow-lg relative`}>
-            {requestAttention.tag}
+          <div className={`bg-purple-500 text-white rounded-full ${bubbleSize} font-semibold shadow-lg relative break-words`} style={{ maxWidth: 'min(200px, calc(100vw - 2rem))', wordWrap: 'break-word' }}>
+            <span className="whitespace-normal break-words">{requestAttention.tag}</span>
 
             {/* Small triangle pointer to profile */}
             <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-purple-500"></div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { db, storage } from '../services/firebase';
-import { doc, updateDoc, getDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, addDoc, Timestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
@@ -17,7 +17,7 @@ import CheckInNotes from './checkin/CheckInNotes';
 import PasscodeModal from './checkin/PasscodeModal';
 
 const CheckInCard = ({ checkIn }) => {
-  const { userData } = useAuth();
+  const { currentUser, userData } = useAuth();
   const { isDark } = useDarkMode();
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(0);
@@ -134,6 +134,24 @@ const CheckInCard = ({ checkIn }) => {
 
       if (!checkInSnap.exists() || checkInSnap.data().status !== 'completed') {
         throw new Error('Check-in status verification failed');
+      }
+
+      // Delete check-in related notifications (reminder and urgent)
+      try {
+        const notificationsRef = collection(db, 'notifications');
+        const notificationsQuery = query(
+          notificationsRef,
+          where('userId', '==', currentUser.uid),
+          where('type', 'in', ['checkin_reminder', 'checkin_urgent'])
+        );
+        const notificationsSnapshot = await getDocs(notificationsQuery);
+        const deletePromises = notificationsSnapshot.docs.map(notifDoc => 
+          deleteDoc(notifDoc.ref)
+        );
+        await Promise.all(deletePromises);
+      } catch (error) {
+        console.error('Error deleting check-in notifications:', error);
+        // Don't fail the check-in completion if notification deletion fails
       }
 
       // Track analytics

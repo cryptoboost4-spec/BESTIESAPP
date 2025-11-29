@@ -36,8 +36,6 @@ const HomePage = () => {
   // Analytics stats
   const [emergencyContactCount, setEmergencyContactCount] = useState(0);
   const [daysActive, setDaysActive] = useState(0);
-  const [nighttimeCheckIns, setNighttimeCheckIns] = useState(0);
-  const [weekendCheckIns, setWeekendCheckIns] = useState(0);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -181,32 +179,6 @@ const HomePage = () => {
           setDaysActive(diffDays);
         }
 
-        // Count night and weekend check-ins
-        const checkInsQuery = query(
-          collection(db, 'checkins'),
-          where('userId', '==', currentUser.uid)
-        );
-        const checkInsSnapshot = await getDocs(checkInsQuery);
-        let nightCount = 0;
-        let weekendCount = 0;
-
-        checkInsSnapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const createdAt = data.createdAt?.toDate();
-          if (createdAt) {
-            const hour = createdAt.getHours();
-            if (hour >= 21 || hour < 6) {
-              nightCount++;
-            }
-            const day = createdAt.getDay();
-            if (day === 0 || day === 6) {
-              weekendCount++;
-            }
-          }
-        });
-
-        setNighttimeCheckIns(nightCount);
-        setWeekendCheckIns(weekendCount);
       } catch (error) {
         console.error('Error loading analytics:', error);
       }
@@ -325,18 +297,6 @@ const HomePage = () => {
                     {daysActive}
                   </div>
                   <div className="text-sm text-text-secondary">Days Active</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-display text-indigo-500">
-                    {nighttimeCheckIns}
-                  </div>
-                  <div className="text-sm text-text-secondary">Night Check-ins</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-display text-teal-500">
-                    {weekendCheckIns}
-                  </div>
-                  <div className="text-sm text-text-secondary">Weekend Check-ins</div>
                 </div>
               </div>
             </div>

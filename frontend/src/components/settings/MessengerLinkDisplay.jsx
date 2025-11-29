@@ -67,27 +67,15 @@ Why use this?
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-display text-text-primary flex items-center gap-2">
-          Facebook Messenger Contacts
+          <svg className="w-6 h-6 text-[#0084FF]" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0C5.373 0 0 4.975 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.09.301 2.246.464 3.442.464 6.627 0 12-4.974 12-11.111C24 4.975 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/>
+          </svg>
+          Facebook Messenger
           <InfoButton message={infoMessage} />
         </h2>
         <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full font-semibold">
           Free & Unlimited
         </span>
-      </div>
-
-      {/* Link */}
-      <div className="mb-3">
-        <div className="flex gap-2">
-          <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 text-sm font-mono text-text-primary overflow-x-auto whitespace-nowrap">
-            {messengerLink}
-          </div>
-          <button
-            onClick={handleCopy}
-            className={`btn ${copied ? 'btn-success' : 'btn-secondary'} flex-shrink-0`}
-          >
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-        </div>
       </div>
 
       {/* Share Icons - Compact */}

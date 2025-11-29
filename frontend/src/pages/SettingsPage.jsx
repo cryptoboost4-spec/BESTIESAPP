@@ -15,6 +15,7 @@ import PrivacySettings from '../components/settings/PrivacySettings';
 import SecurityPasscodes from '../components/settings/SecurityPasscodes';
 import PreferencesAndQuickAccess from '../components/settings/PreferencesAndQuickAccess';
 import LegalSection from '../components/settings/LegalSection';
+import PricingTiers from '../components/settings/PricingTiers';
 import { FEATURES } from '../config/features';
 
 const SettingsPage = () => {
@@ -305,23 +306,34 @@ const SettingsPage = () => {
       return;
     }
 
+    // Optimistic update - update UI immediately
+    const newValue = !pushNotificationsEnabled;
+    setPushNotificationsEnabled(newValue);
+
+    // Then do the actual work in the background
     setLoading(true);
     try {
-      if (pushNotificationsEnabled) {
-        // Disable notifications
-        const success = await notificationService.disableNotifications();
-        if (success) {
-          setPushNotificationsEnabled(false);
-        }
-      } else {
+      if (newValue) {
         // Enable notifications - this will request permission
         const success = await notificationService.enableNotifications();
-        if (success) {
+        if (!success) {
+          // Revert on failure
+          setPushNotificationsEnabled(false);
+          toast.error('Failed to enable push notifications');
+        }
+      } else {
+        // Disable notifications
+        const success = await notificationService.disableNotifications();
+        if (!success) {
+          // Revert on failure
           setPushNotificationsEnabled(true);
+          toast.error('Failed to disable push notifications');
         }
       }
     } catch (error) {
       console.error('Push notification error:', error);
+      // Revert on error
+      setPushNotificationsEnabled(!newValue);
       toast.error('Failed to update push notifications');
     } finally {
       setLoading(false);
@@ -331,6 +343,15 @@ const SettingsPage = () => {
   const handleSendTestAlert = async (selectedChannels) => {
     setLoading(true);
     try {
+      // Check if push notifications are properly set up
+      if (selectedChannels.push && pushNotificationsEnabled) {
+        if (!userData?.fcmToken) {
+          toast.error('Push notifications are enabled but no FCM token found. Please refresh the page and try again.', { duration: 6000 });
+          setLoading(false);
+          return;
+        }
+      }
+
       const result = await apiService.sendTestAlert(selectedChannels);
 
       if (result.data && result.data.success) {
@@ -343,17 +364,17 @@ const SettingsPage = () => {
         if (channels.telegram) testedChannels.push('Telegram');
 
         if (testedChannels.length > 0) {
-          toast.success(`✅ Test alerts sent successfully to: ${testedChannels.join(', ')}!`, { duration: 6000 });
+          toast.success(`✅ Test alerts sent successfully to: ${testedChannels.join(', ')}! Check your notifications.`, { duration: 6000 });
           setShowTestAlertModal(false);
         } else {
           toast.error('No channels were tested. Make sure channels are enabled and configured.', { duration: 5000 });
         }
       } else {
-        toast.error('Failed to send test alert');
+        toast.error(result.data?.error || 'Failed to send test alert');
       }
     } catch (error) {
       console.error('Test alert error:', error);
-      toast.error(error.message || 'Failed to send test alert');
+      toast.error(error.message || 'Failed to send test alert. Make sure you have enabled notifications and have a valid FCM token.');
     } finally {
       setLoading(false);
     }
@@ -398,6 +419,9 @@ const SettingsPage = () => {
             <MessengerLinkDisplay userId={currentUser?.uid} />
           </div>
         )}
+
+        {/* Pricing Tiers */}
+        <PricingTiers />
 
         {/* SMS Subscription */}
         <PremiumSMSSection

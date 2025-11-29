@@ -67,42 +67,57 @@ const SocialFeedPage = () => {
         });
       }
 
-      // Get check-ins from besties
+      // OPTIMIZED: Get check-ins from all besties at once using 'in' operator
+      // Firestore 'in' operator supports up to 10 values, so batch if needed
       const feedItems = [];
+      const BATCH_SIZE = 10; // Firestore 'in' operator limit
       
-      for (const userId of bestieIdsArray) {
-        let checkInsQuery = query(
-          collection(db, 'checkins'),
-          where('userId', '==', userId),
-          orderBy('createdAt', 'desc'),
-          limit(10)
-        );
-
+      // Create all queries in parallel batches
+      const queryPromises = [];
+      
+      for (let i = 0; i < bestieIdsArray.length; i += BATCH_SIZE) {
+        const batch = bestieIdsArray.slice(i, i + BATCH_SIZE);
+        
+        // Build query based on filter
+        let checkInsQuery;
         if (filter === 'active') {
           checkInsQuery = query(
             collection(db, 'checkins'),
-            where('userId', '==', userId),
+            where('userId', 'in', batch),
             where('status', '==', 'active'),
             orderBy('createdAt', 'desc'),
-            limit(10)
+            limit(50) // Get more per batch, we'll sort and limit later
           );
         } else if (filter === 'completed') {
           checkInsQuery = query(
             collection(db, 'checkins'),
-            where('userId', '==', userId),
+            where('userId', 'in', batch),
             where('status', '==', 'completed'),
             orderBy('createdAt', 'desc'),
-            limit(10)
+            limit(50)
+          );
+        } else {
+          // All check-ins
+          checkInsQuery = query(
+            collection(db, 'checkins'),
+            where('userId', 'in', batch),
+            orderBy('createdAt', 'desc'),
+            limit(50)
           );
         }
-
-        const checkInsSnap = await getDocs(checkInsQuery);
         
-        // Get user data from map (already fetched)
-        const userData = userDataMap.get(userId) || null;
-        
-        for (const checkInDoc of checkInsSnap.docs) {
+        queryPromises.push(getDocs(checkInsQuery));
+      }
+      
+      // Execute all queries in parallel
+      const allSnapshots = await Promise.all(queryPromises);
+      
+      // Process all results
+      allSnapshots.forEach(snapshot => {
+        snapshot.forEach(checkInDoc => {
           const checkInData = checkInDoc.data();
+          const userId = checkInData.userId;
+          const userData = userDataMap.get(userId) || null;
 
           feedItems.push({
             id: checkInDoc.id,
@@ -111,8 +126,8 @@ const SocialFeedPage = () => {
             userPhoto: userData?.photoURL || null,
             isOwn: userId === currentUser.uid,
           });
-        }
-      }
+        });
+      });
 
       // Sort by creation time
       feedItems.sort((a, b) => b.createdAt - a.createdAt);
