@@ -26,9 +26,13 @@ service cloud.firestore {
       // Check if viewer is in denormalized bestieUserIds (optimized - no get() call needed)
       // Fallback to get() for old check-ins that don't have bestieUserIds denormalized
       // Use denormalized field if available (fast), otherwise fallback to get() (slow but backward compatible)
+      let userDocPath = /databases/$(database)/documents/users/$(checkIn.userId);
       let isBestie = ('bestieUserIds' in checkIn && checkIn.bestieUserIds != null) 
         ? (request.auth.uid in checkIn.bestieUserIds)
-        : (request.auth.uid in get(/databases/$(database)/documents/users/$(checkIn.userId)).data.bestieUserIds);
+        : (exists(userDocPath) &&
+           'bestieUserIds' in get(userDocPath).data &&
+           get(userDocPath).data.bestieUserIds != null &&
+           request.auth.uid in get(userDocPath).data.bestieUserIds);
 
       return (
         // Owner can always see their own check-ins
@@ -250,7 +254,10 @@ service cloud.firestore {
         // Use denormalized bestieUserIds if available (fast), otherwise fallback to get() (slow but backward compatible)
         (('bestieUserIds' in resource.data && resource.data.bestieUserIds != null) 
           ? (request.auth.uid in resource.data.bestieUserIds)
-          : (request.auth.uid in get(/databases/$(database)/documents/users/$(resource.data.userId)).data.bestieUserIds)) ||
+          : (exists(/databases/$(database)/documents/users/$(resource.data.userId)) &&
+             'bestieUserIds' in get(/databases/$(database)/documents/users/$(resource.data.userId)).data &&
+             get(/databases/$(database)/documents/users/$(resource.data.userId)).data.bestieUserIds != null &&
+             request.auth.uid in get(/databases/$(database)/documents/users/$(resource.data.userId)).data.bestieUserIds)) ||
         isAdmin()
       );
       allow create: if isSignedIn();
