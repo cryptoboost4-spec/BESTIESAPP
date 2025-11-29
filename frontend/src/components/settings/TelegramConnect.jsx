@@ -46,8 +46,7 @@ Key points:
             <span className="text-lg">✅</span>
             <div className="flex-1">
               <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-                Connected
-                {userData.telegramUsername && <span className="font-normal"> as @{userData.telegramUsername}</span>}
+                {userData.telegramUsername ? `@${userData.telegramUsername}` : 'Telegram connected'}
               </p>
               <p className="text-xs text-green-700 dark:text-green-400 mt-1">
                 Send <strong>/disconnect</strong> to the bot to disconnect

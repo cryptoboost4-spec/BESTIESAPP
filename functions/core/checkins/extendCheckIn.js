@@ -76,5 +76,26 @@ exports.extendCheckIn = functions.https.onCall(async (data, context) => {
     }
   }
 
+  // Notify selected messenger contacts about check-in extension
+  if (checkInData.messengerContactIds && checkInData.messengerContactIds.length > 0) {
+    try {
+      const { sendMessengerContactNotifications } = require('../../utils/checkInNotifications');
+      const userDoc = await db.collection('users').doc(checkInData.userId).get();
+      const userData = userDoc.data();
+      const userName = userData?.displayName || 'Your bestie';
+      const message = `⏰ ${userName} extended their check-in by ${additionalMinutes} minutes`;
+      
+      // Send to only the selected messenger contacts
+      await sendMessengerContactNotifications(
+        checkInData.userId,
+        message,
+        checkInData.messengerContactIds
+      );
+    } catch (error) {
+      functions.logger.error('Error notifying messenger contacts about check-in extension:', error);
+      // Don't fail the whole function if notifications fail
+    }
+  }
+
   return { success: true, newAlertTime: newAlertTime.toISOString() };
 });

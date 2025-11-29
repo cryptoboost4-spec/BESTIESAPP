@@ -71,16 +71,27 @@ service cloud.firestore {
     
     // Check-ins collection
     match /checkins/{checkInId} {
-      allow read: if isSignedIn() && canViewCheckIn(resource.data);
+      // Allow read if user can view check-in (complex privacy check)
+      // OR if user is in bestieIds (query-safe for alerted check-ins)
+      // OR if user is the owner
+      allow read: if isSignedIn() && (
+        canViewCheckIn(resource.data) ||
+        // Query-safe: allow reading if user is in bestieIds (for alerted check-ins query)
+        (request.auth.uid in resource.data.bestieIds && resource.data.status == 'alerted') ||
+        // Query-safe: allow reading if user is the owner
+        request.auth.uid == resource.data.userId
+      );
 
       allow create: if isSignedIn() &&
         request.auth.uid == request.resource.data.userId &&
-        request.resource.data.keys().hasAll(['userId', 'location', 'duration', 'bestieIds', 'status', 'createdAt']) &&
+        request.resource.data.keys().hasAll(['userId', 'location', 'duration', 'status', 'createdAt']) &&
         request.resource.data.status == 'active' &&
         request.resource.data.duration >= 10 &&
         request.resource.data.duration <= 180 &&
-        request.resource.data.bestieIds.size() > 0 &&
-        request.resource.data.bestieIds.size() <= 5;
+        (
+          (request.resource.data.bestieIds != null && request.resource.data.bestieIds.size() > 0 && request.resource.data.bestieIds.size() <= 5) ||
+          (request.resource.data.messengerContactIds != null && request.resource.data.messengerContactIds.size() > 0)
+        );
 
       allow update: if isSignedIn() && (
         isOwner(resource.data.userId) ||
@@ -140,7 +151,11 @@ service cloud.firestore {
          request.resource.data.status == 'accepted') ||
         // Requester can cancel
         (request.auth.uid == resource.data.requesterId &&
-         request.resource.data.status == 'cancelled')
+         request.resource.data.status == 'cancelled') ||
+        // Either party can update isFavorite (circle membership)
+        ((request.auth.uid == resource.data.requesterId ||
+          request.auth.uid == resource.data.recipientId) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFavorite']))
       );
       
       allow delete: if isSignedIn() && (

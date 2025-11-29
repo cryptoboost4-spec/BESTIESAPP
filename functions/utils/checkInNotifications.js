@@ -205,16 +205,29 @@ async function sendEmailNotification(email, userName, notificationType, checkInD
 
 /**
  * Send notifications to user's active messenger contacts
+ * @param {string} userId - User ID
+ * @param {string} message - Message to send
+ * @param {string[]} selectedContactIds - Optional: Array of contact IDs to filter by. If provided, only sends to these contacts.
  */
-async function sendMessengerContactNotifications(userId, message) {
+async function sendMessengerContactNotifications(userId, message, selectedContactIds = null) {
   try {
     const db = admin.firestore();
     const now = Date.now();
 
     // Get active messenger contacts for this user
-    const contactsSnapshot = await db.collection('messengerContacts')
-      .where('userId', '==', userId)
-      .get();
+    let contactsSnapshot;
+    if (selectedContactIds && selectedContactIds.length > 0) {
+      // If specific contacts are selected, get only those
+      contactsSnapshot = await db.collection('messengerContacts')
+        .where(admin.firestore.FieldPath.documentId(), 'in', selectedContactIds)
+        .where('userId', '==', userId)
+        .get();
+    } else {
+      // Otherwise, get all active contacts (backward compatible)
+      contactsSnapshot = await db.collection('messengerContacts')
+        .where('userId', '==', userId)
+        .get();
+    }
 
     if (contactsSnapshot.empty) {
       console.log('No messenger contacts found for user:', userId);

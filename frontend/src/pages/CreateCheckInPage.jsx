@@ -204,6 +204,7 @@ const CreateCheckInPage = () => {
 
         // Auto-select besties who have any contact method (phone+SMS, telegram, or push)
         // Allow messenger-only check-ins - no SMS requirement
+        // For quick check-ins, always auto-select all besties with contact info
         if (!location.state?.template && bestiesWithUserData.length > 0) {
           // Prefer besties with phone+SMS, but also include those with telegram or push
           const bestiesWithContact = bestiesWithUserData.filter(b => 
@@ -213,26 +214,26 @@ const CreateCheckInPage = () => {
             b.notificationPreferences?.push
           );
           setSelectedBesties(bestiesWithContact.map(b => b.id));
+          
+          if (location.state?.quickType) {
+            console.log('Quick check-in detected, besties auto-selected:', bestiesWithContact.length);
+          }
 
-          // Warn if some besties can't receive alerts
-          const cantReceiveAlerts = bestiesWithUserData.filter(b => !b.phone || !b.smsEnabled);
+          // Warn if some besties can't receive alerts (no contact method at all)
+          const cantReceiveAlerts = bestiesWithUserData.filter(b => {
+            // Check if bestie has ANY contact method
+            const hasPhoneSMS = b.phone && b.smsEnabled;
+            const hasTelegram = b.telegramChatId || b.notificationPreferences?.telegram;
+            const hasPush = b.notificationPreferences?.push;
+            return !hasPhoneSMS && !hasTelegram && !hasPush;
+          });
+          
           if (cantReceiveAlerts.length > 0) {
-            console.warn('⚠️ Some circle besties missing phone/SMS:', cantReceiveAlerts);
-            const missingPhone = cantReceiveAlerts.filter(b => !b.phone).length;
-            const missingSMS = cantReceiveAlerts.filter(b => b.phone && !b.smsEnabled).length;
-
-            let message = '';
-            if (missingPhone > 0 && missingSMS > 0) {
-              message = `${missingPhone} bestie(s) need to add their phone number and ${missingSMS} need to enable SMS alerts`;
-            } else if (missingPhone > 0) {
-              message = `${missingPhone} bestie(s) need to add their phone number`;
-            } else {
-              message = `${missingSMS} bestie(s) need to enable SMS alerts in Settings`;
-            }
-
-            toast(message, {
+            console.warn('⚠️ Some circle besties have no contact method enabled:', cantReceiveAlerts);
+            const bestieNames = cantReceiveAlerts.map(b => b.name || 'Unknown').join(', ');
+            toast(`⚠️ ${cantReceiveAlerts.length} bestie(s) need to enable notifications (SMS, Telegram, or Push): ${bestieNames}`, {
               icon: 'ℹ️',
-              duration: 5000
+              duration: 6000
             });
           }
         }
@@ -274,12 +275,19 @@ const CreateCheckInPage = () => {
       );
 
       setMessengerContacts(activeContacts);
+
+      // Auto-select all active messenger contacts for quick check-ins only
+      if (location.state?.quickType && activeContacts.length > 0) {
+        const allContactIds = activeContacts.map(c => c.id);
+        setSelectedMessengerContacts(allContactIds);
+        console.log('Quick check-in: Auto-selected messenger contacts:', allContactIds.length);
+      }
     }, (error) => {
       console.error('Error loading messenger contacts:', error);
     });
 
     return () => unsubscribe();
-  }, [currentUser, authLoading]);
+  }, [currentUser, authLoading, location.state]);
 
   // Auto-submit quick check-ins after besties are loaded
   useEffect(() => {
@@ -698,7 +706,7 @@ const CreateCheckInPage = () => {
           <button
             type="submit"
             id="create-checkin-submit-btn"
-            disabled={loading || selectedBesties.length === 0}
+            disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
             className="w-full btn btn-primary text-lg py-4"
           >
             {loading ? 'Creating...' : '🛡️ Start Check-In'}

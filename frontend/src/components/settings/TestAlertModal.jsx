@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const TestAlertModal = ({ isOpen, onClose, userData, onSendTest, loading }) => {
+  // Determine which channels are actually enabled
+  const pushEnabled = userData?.notificationsEnabled && !!userData?.fcmToken;
+  const telegramEnabled = userData?.notificationPreferences?.telegram && !!userData?.telegramChatId;
+  const smsEnabled = userData?.notificationPreferences?.sms && !!userData?.phoneNumber;
+
   const [selectedChannels, setSelectedChannels] = useState({
-    push: true,
+    push: false,
     sms: false,
     telegram: false
   });
+
+  // Reset selected channels when modal opens or userData changes
+  // Only select push by default if it's actually enabled
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedChannels({
+        push: pushEnabled,
+        sms: false,
+        telegram: false
+      });
+    }
+  }, [isOpen, pushEnabled]);
 
   if (!isOpen) return null;
 
@@ -13,20 +30,23 @@ const TestAlertModal = ({ isOpen, onClose, userData, onSendTest, loading }) => {
     {
       id: 'push',
       name: 'Push Notifications',
-      enabled: userData?.notificationsEnabled,
-      description: 'Browser push notification'
+      enabled: pushEnabled,
+      description: 'Browser push notification',
+      missing: !userData?.notificationsEnabled ? 'Not enabled in settings' : !userData?.fcmToken ? 'FCM token missing - enable push notifications' : null
     },
     {
       id: 'telegram',
       name: 'Telegram',
-      enabled: userData?.notificationPreferences?.telegram && userData?.telegramChatId,
-      description: 'Send to your Telegram'
+      enabled: telegramEnabled,
+      description: 'Send to your Telegram',
+      missing: !userData?.notificationPreferences?.telegram ? 'Not enabled in settings' : !userData?.telegramChatId ? 'Not connected - connect Telegram first' : null
     },
     {
       id: 'sms',
       name: 'SMS',
-      enabled: userData?.notificationPreferences?.sms && userData?.phoneNumber,
-      description: 'Send text message'
+      enabled: smsEnabled,
+      description: 'Send text message',
+      missing: !userData?.notificationPreferences?.sms ? 'Not enabled in settings' : !userData?.phoneNumber ? 'Phone number missing' : null
     }
   ];
 
@@ -96,9 +116,9 @@ const TestAlertModal = ({ isOpen, onClose, userData, onSendTest, loading }) => {
                     )}
                   </div>
                   <p className="text-sm text-text-secondary mt-1">{channel.description}</p>
-                  {!channel.enabled && (
+                  {!channel.enabled && channel.missing && (
                     <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                      Enable this in notification settings first
+                      {channel.missing}
                     </p>
                   )}
                 </div>

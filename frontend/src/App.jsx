@@ -15,6 +15,7 @@ import MilestoneCelebration from './components/MilestoneCelebration';
 import BestieCelebrationModal from './components/BestieCelebrationModal';
 import FloatingNotificationBell from './components/FloatingNotificationBell';
 import MobileBottomNav from './components/MobileBottomNav';
+import Header from './components/Header';
 
 // Services
 import errorTracker from './services/errorTracking';
@@ -126,11 +127,14 @@ function App() {
             <MilestoneCelebration />
             <BestieCelebrationModal />
             {user && (
-              <div className="fixed top-16 right-4 z-50">
-                <FloatingNotificationBell />
-              </div>
+              <>
+                {/* Desktop Header - visible on md+ screens, hidden on mobile */}
+                <Header />
+                <div className="fixed top-16 right-4 z-50">
+                  <FloatingNotificationBell />
+                </div>
+              </>
             )}
-            {/* DesktopNav removed per user request - notifications handled by FloatingNotificationBell */}
             {user && <MobileBottomNav />}
             <div className="App pb-20 md:pb-0">
               <Suspense fallback={<PageLoader />}>

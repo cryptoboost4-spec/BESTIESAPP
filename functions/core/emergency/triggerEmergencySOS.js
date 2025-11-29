@@ -8,7 +8,15 @@ const db = admin.firestore();
 
 exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
   try {
+    functions.logger.info('triggerEmergencySOS called', { 
+      hasContext: !!context, 
+      hasAuth: !!context?.auth,
+      dataKeys: Object.keys(data || {})
+    });
+
     const userId = requireAuth(context);
+    functions.logger.info('Authentication successful', { userId });
+    
     const { location, isReversePIN } = data;
 
     // Normalize location - allow "Location unavailable" or undefined/null
@@ -28,66 +36,114 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       }
     }
 
-  // Validate isReversePIN if provided
-  if (isReversePIN !== undefined) {
-    validateBoolean(isReversePIN, 'isReversePIN');
-  }
-
-  // Rate limiting: 3 SOS per hour
-  const rateLimit = await checkUserRateLimit(
-    userId,
-    'triggerEmergencySOS',
-    RATE_LIMITS.SOS_PER_HOUR,
-    'emergency_sos',
-    'userId',
-    'createdAt'
-  );
-
-  if (!rateLimit.allowed) {
-    throw new functions.https.HttpsError(
-      'resource-exhausted',
-      `SOS limit reached: Maximum ${rateLimit.limit} emergency SOS calls per hour. Please wait before triggering again.`,
-      {
-        limit: rateLimit.limit,
-        count: rateLimit.count,
-        resetAt: rateLimit.resetAt.toISOString(),
-      }
-    );
-  }
-
-  // Warn if approaching limit
-  if (rateLimit.count === 2) {
-    functions.logger.warn(`User ${userId} has triggered SOS twice in the last hour`);
-  }
-
-  const userDoc = await db.collection('users').doc(userId).get();
-  if (!userDoc.exists) {
-    throw new functions.https.HttpsError('not-found', 'User not found');
-  }
-  const userData = userDoc.data();
-
-  // Get bestie circle (favorites) with notifications enabled
-  const { getUserBestieIds } = require('../../utils/besties');
-  const bestieIds = await getUserBestieIds(userId, {
-    favoritesOnly: true,
-    acceptedOnly: true
-  });
-
-  // Get active Facebook Messenger contacts
-  const now = Date.now();
-  const messengerContactsSnapshot = await db.collection('messengerContacts')
-    .where('userId', '==', userId)
-    .get();
-
-  const activeMessengerContacts = [];
-  messengerContactsSnapshot.forEach(doc => {
-    const contact = doc.data();
-    const expiresAt = contact.expiresAt?.toMillis();
-    if (expiresAt && expiresAt > now) {
-      activeMessengerContacts.push(contact.messengerPSID);
+    // Validate isReversePIN if provided
+    if (isReversePIN !== undefined) {
+      validateBoolean(isReversePIN, 'isReversePIN');
     }
-  });
 
+    // Rate limiting: 3 SOS per hour
+    let rateLimit;
+    try {
+      functions.logger.info('Checking rate limit', { userId });
+      rateLimit = await checkUserRateLimit(
+        userId,
+        'triggerEmergencySOS',
+        RATE_LIMITS.SOS_PER_HOUR,
+        'emergency_sos',
+        'userId',
+        'createdAt'
+      );
+      functions.logger.info('Rate limit check completed', { 
+        allowed: rateLimit.allowed, 
+        count: rateLimit.count,
+        limit: rateLimit.limit
+      });
+    } catch (rateLimitError) {
+      functions.logger.error('Rate limit check failed', { 
+        error: rateLimitError.message,
+        stack: rateLimitError.stack,
+        userId
+      });
+      // Continue with default rate limit result to allow SOS to proceed
+      rateLimit = {
+        allowed: true,
+        count: 0,
+        limit: 3,
+        resetAt: new Date(Date.now() + 3600000),
+        remaining: 3
+      };
+      functions.logger.warn('Using default rate limit due to error', { rateLimit });
+    }
+
+    if (!rateLimit.allowed) {
+      throw new functions.https.HttpsError(
+        'resource-exhausted',
+        `SOS limit reached: Maximum ${rateLimit.limit} emergency SOS calls per hour. Please wait before triggering again.`,
+        {
+          limit: rateLimit.limit,
+          count: rateLimit.count,
+          resetAt: rateLimit.resetAt.toISOString(),
+        }
+      );
+    }
+
+    // Warn if approaching limit
+    if (rateLimit.count === 2) {
+      functions.logger.warn(`User ${userId} has triggered SOS twice in the last hour`);
+    }
+
+    functions.logger.info('Fetching user document', { userId });
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      functions.logger.error('User document not found', { userId });
+      throw new functions.https.HttpsError('not-found', 'User not found');
+    }
+    const userData = userDoc.data();
+    functions.logger.info('User document fetched', { 
+      userId,
+      hasDisplayName: !!userData?.displayName
+    });
+
+    // Get bestie circle (favorites) with notifications enabled
+    functions.logger.info('Fetching bestie IDs', { userId });
+    const { getUserBestieIds } = require('../../utils/besties');
+    const bestieIds = await getUserBestieIds(userId, {
+      favoritesOnly: true,
+      acceptedOnly: true
+    });
+    functions.logger.info('Bestie IDs fetched', { 
+      userId,
+      bestieCount: bestieIds.length,
+      bestieIds
+    });
+
+    // Get active Facebook Messenger contacts
+    functions.logger.info('Fetching messenger contacts', { userId });
+    const now = Date.now();
+    const messengerContactsSnapshot = await db.collection('messengerContacts')
+      .where('userId', '==', userId)
+      .get();
+
+    const activeMessengerContacts = [];
+    messengerContactsSnapshot.forEach(doc => {
+      const contact = doc.data();
+      const expiresAt = contact.expiresAt?.toMillis();
+      if (expiresAt && expiresAt > now) {
+        activeMessengerContacts.push(contact.messengerPSID);
+      }
+    });
+    functions.logger.info('Messenger contacts fetched', { 
+      userId,
+      activeCount: activeMessengerContacts.length,
+      totalCount: messengerContactsSnapshot.size
+    });
+
+    functions.logger.info('Creating SOS document', { 
+      userId,
+      location: normalizedLocation,
+      bestieCount: bestieIds.length,
+      messengerContactCount: activeMessengerContacts.length
+    });
     const sosRef = await db.collection('emergency_sos').add({
       userId: userId,
       location: normalizedLocation,
@@ -95,6 +151,10 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       notifiedBesties: bestieIds,
       status: 'active',
       createdAt: admin.firestore.Timestamp.now(),
+    });
+    functions.logger.info('SOS document created', { 
+      userId,
+      sosId: sosRef.id
     });
 
     // Sanitize display name to prevent spam flags
@@ -251,9 +311,24 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     await Promise.all(messengerPromises);
   }
 
+    functions.logger.info('SOS trigger completed successfully', { 
+      userId,
+      sosId: sosRef.id,
+      bestieCount: bestieIds.length,
+      messengerContactCount: activeMessengerContacts.length
+    });
     return { success: true, sosId: sosRef.id };
   } catch (error) {
-    functions.logger.error('Error in triggerEmergencySOS:', error);
+    functions.logger.error('Error in triggerEmergencySOS:', {
+      error: error.message,
+      stack: error.stack,
+      code: error.code,
+      userId: error.userId || 'unknown',
+      context: {
+        hasContext: !!error.context,
+        hasAuth: !!error.context?.auth
+      }
+    });
     // Re-throw HttpsErrors as-is
     if (error.code && error.message) {
       throw error;
