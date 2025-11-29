@@ -119,15 +119,19 @@ describe('acknowledgeAlert', () => {
   describe('Acknowledgment', () => {
     test('should add user to acknowledgedBy array', async () => {
       // Ensure check-in exists and user is authorized (bestie123 is in bestieIds)
-      mockCheckInDoc.exists = true;
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'user123',
-        bestieIds: ['bestie123', 'bestie456'], // bestie123 is authorized
-        acknowledgedBy: [],
-        alertedAt: {
-          toMillis: () => Date.now() - 5 * 60 * 1000,
-        },
-      }));
+      const authorizedCheckIn = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          bestieIds: ['bestie123', 'bestie456'], // bestie123 is authorized
+          acknowledgedBy: [],
+          alertedAt: {
+            toMillis: () => Date.now() - 5 * 60 * 1000,
+          },
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(authorizedCheckIn);
 
       await acknowledgeAlert(mockData, mockContext);
 
@@ -139,15 +143,19 @@ describe('acknowledgeAlert', () => {
     });
 
     test('should not duplicate if already acknowledged', async () => {
-      mockCheckInDoc.exists = true;
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'user123',
-        bestieIds: ['bestie123'],
-        acknowledgedBy: ['bestie123'],
-        alertedAt: {
-          toMillis: () => Date.now() - 5 * 60 * 1000,
-        },
-      }));
+      const alreadyAcknowledgedCheckIn = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          bestieIds: ['bestie123'],
+          acknowledgedBy: ['bestie123'],
+          alertedAt: {
+            toMillis: () => Date.now() - 5 * 60 * 1000,
+          },
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(alreadyAcknowledgedCheckIn);
 
       await acknowledgeAlert(mockData, mockContext);
 
@@ -156,15 +164,19 @@ describe('acknowledgeAlert', () => {
     });
 
     test('should track alert response', async () => {
-      mockCheckInDoc.exists = true;
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'user123',
-        bestieIds: ['bestie123', 'bestie456'],
-        acknowledgedBy: [],
-        alertedAt: {
-          toMillis: () => Date.now() - 5 * 60 * 1000,
-        },
-      }));
+      const authorizedCheckIn = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          bestieIds: ['bestie123', 'bestie456'],
+          acknowledgedBy: [],
+          alertedAt: {
+            toMillis: () => Date.now() - 5 * 60 * 1000,
+          },
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(authorizedCheckIn);
 
       await acknowledgeAlert(mockData, mockContext);
 
@@ -180,15 +192,19 @@ describe('acknowledgeAlert', () => {
 
     test('should calculate response time correctly', async () => {
       const alertedAt = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
-      mockCheckInDoc.exists = true;
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'user123',
-        bestieIds: ['bestie123'],
-        acknowledgedBy: [],
-        alertedAt: {
-          toMillis: () => alertedAt.getTime(),
-        },
-      }));
+      const authorizedCheckIn = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          bestieIds: ['bestie123'],
+          acknowledgedBy: [],
+          alertedAt: {
+            toMillis: () => alertedAt.getTime(),
+          },
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(authorizedCheckIn);
 
       await acknowledgeAlert(mockData, mockContext);
 
@@ -202,15 +218,19 @@ describe('acknowledgeAlert', () => {
 
   describe('Response', () => {
     test('should return success', async () => {
-      mockCheckInDoc.exists = true;
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'user123',
-        bestieIds: ['bestie123', 'bestie456'],
-        acknowledgedBy: [],
-        alertedAt: {
-          toMillis: () => Date.now() - 5 * 60 * 1000,
-        },
-      }));
+      const authorizedCheckIn = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          bestieIds: ['bestie123', 'bestie456'],
+          acknowledgedBy: [],
+          alertedAt: {
+            toMillis: () => Date.now() - 5 * 60 * 1000,
+          },
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(authorizedCheckIn);
 
       const result = await acknowledgeAlert(mockData, mockContext);
 

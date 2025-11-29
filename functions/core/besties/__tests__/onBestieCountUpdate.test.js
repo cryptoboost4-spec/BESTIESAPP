@@ -100,6 +100,7 @@ describe('onBestieCountUpdate', () => {
 
   describe('Status Change Detection', () => {
     test('should increment totalBesties for both users when status changes to accepted', async () => {
+      jest.clearAllMocks();
       const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
       await onBestieCountUpdate(change, mockContext);
 
@@ -117,6 +118,7 @@ describe('onBestieCountUpdate', () => {
     });
 
     test('should update bestieUserIds for both users', async () => {
+      jest.clearAllMocks();
       const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
       await onBestieCountUpdate(change, mockContext);
 
@@ -146,10 +148,11 @@ describe('onBestieCountUpdate', () => {
 
   describe('Data Integrity', () => {
     test('should only increment stats once per status change', async () => {
+      jest.clearAllMocks();
       const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
       await onBestieCountUpdate(change, mockContext);
 
-      // Each user should be updated once
+      // Each user should be updated once for featuredCircle
       expect(mockRequesterRef.update).toHaveBeenCalledTimes(1);
       expect(mockRecipientRef.update).toHaveBeenCalledTimes(1);
     });

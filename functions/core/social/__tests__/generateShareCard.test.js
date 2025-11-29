@@ -120,6 +120,7 @@ describe('generateShareCard', () => {
 
   describe('Error Handling', () => {
     test('should return default HTML on error', async () => {
+      mockReq.query.invite = 'user123'; // Set invite to trigger database call
       const db = admin.firestore();
       // Make the collection call throw an error
       db.collection = jest.fn(() => {

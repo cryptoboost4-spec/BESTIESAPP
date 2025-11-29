@@ -47,6 +47,11 @@ exports.sendBestieInvite = functions.https.onCall(async (data, context) => {
   }
 
   const userDoc = await db.collection('users').doc(userId).get();
+  
+  if (!userDoc.exists) {
+    throw new functions.https.HttpsError('not-found', 'User not found');
+  }
+  
   const userData = userDoc.data();
 
   const inviteMessage = message ||

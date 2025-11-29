@@ -124,6 +124,7 @@ describe('declineBestieRequest', () => {
           status: 'declined',
         })),
       };
+      jest.clearAllMocks();
       mockBestieRef.get = jest.fn().mockResolvedValue(declinedBestieDoc);
 
       const result = await declineBestieRequest(mockData, mockContext);
@@ -144,6 +145,7 @@ describe('declineBestieRequest', () => {
           status: 'pending',
         })),
       };
+      jest.clearAllMocks();
       mockBestieRef.get = jest.fn().mockResolvedValue(pendingBestieDoc);
 
       await declineBestieRequest(mockData, mockContext);
@@ -166,6 +168,7 @@ describe('declineBestieRequest', () => {
           status: 'pending',
         })),
       };
+      jest.clearAllMocks();
       mockBestieRef.get = jest.fn().mockResolvedValue(pendingBestieDoc);
 
       const result = await declineBestieRequest(mockData, mockContext);

@@ -36,10 +36,13 @@ describe('dailyAnalyticsAggregation', () => {
       if (collectionName === 'checkins') {
         return {
           where: jest.fn((field, op, value) => {
+            // First where clause returns a query that supports chaining
             return {
               where: jest.fn((field2, op2, value2) => {
+                // Second where clause returns a query that supports limit
                 return {
                   limit: jest.fn((size) => {
+                    // limit returns a query that supports get
                     return {
                       get: jest.fn().mockResolvedValue(mockCheckInsSnapshot),
                     };
@@ -47,6 +50,7 @@ describe('dailyAnalyticsAggregation', () => {
                   get: jest.fn().mockResolvedValue(mockCheckInsSnapshot),
                 };
               }),
+              get: jest.fn().mockResolvedValue(mockCheckInsSnapshot),
             };
           }),
         };

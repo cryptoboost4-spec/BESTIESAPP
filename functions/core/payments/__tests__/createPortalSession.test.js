@@ -5,16 +5,29 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const stripe = require('stripe');
 const { createPortalSession } = require('../createPortalSession');
+const { checkUserRateLimit } = require('../../../utils/rateLimiting');
 
+// Create a shared mock instance that both the module and tests can use
+// Create instance directly in factory to avoid hoisting/TDZ issues
 jest.mock('stripe', () => {
-  return jest.fn(() => ({
+  // Create the instance directly in the factory (no external reference)
+  const mockInstance = {
     billingPortal: {
       sessions: {
         create: jest.fn(),
       },
     },
-  }));
+  };
+  // Return a function that returns the shared instance
+  // This function will be called as stripe(config) when modules load
+  const mockStripe = jest.fn(() => mockInstance);
+  // Attach the instance to the mock function for easy access in tests
+  mockStripe._mockInstance = mockInstance;
+  return mockStripe;
 });
+
+jest.mock('../../../utils/rateLimiting');
+jest.mock('../../../utils/retry'); // Mock retryApiCall
 
 // Use global mocks from jest.setup.js
 
@@ -27,6 +40,14 @@ describe('createPortalSession', () => {
     mockContext = {
       auth: { uid: 'user123' },
     };
+
+    // Mock checkUserRateLimit
+    const { checkUserRateLimit } = require('../../../utils/rateLimiting');
+    checkUserRateLimit.mockResolvedValue({ allowed: true });
+
+    // Mock retryApiCall to just execute the function immediately
+    const { retryApiCall } = require('../../../utils/retry');
+    retryApiCall.mockImplementation(async (fn) => fn());
 
     mockUserDoc = {
       exists: true,
@@ -42,8 +63,20 @@ describe('createPortalSession', () => {
         return {
           doc: jest.fn((id) => {
             if (id === 'user123') {
+              // Create a fresh doc ref each time to capture current mockUserDoc state
               return {
-                get: jest.fn().mockResolvedValue(mockUserDoc),
+                get: jest.fn(async () => {
+                  // Return current state of mockUserDoc - if exists is false, data should return undefined
+                  return {
+                    exists: mockUserDoc.exists,
+                    data: () => {
+                      if (!mockUserDoc.exists) {
+                        return undefined;
+                      }
+                      return mockUserDoc.data();
+                    },
+                  };
+                }),
                 update: jest.fn().mockResolvedValue(),
               };
             }
@@ -54,6 +87,18 @@ describe('createPortalSession', () => {
           }),
           // Support rate limiting queries
           where: jest.fn().mockReturnThis(),
+        };
+      }
+      // For portal_sessions collection
+      if (name === 'portal_sessions') {
+        return {
+          add: jest.fn().mockResolvedValue(),
+          where: jest.fn().mockReturnThis(),
+          get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn() }),
+          doc: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+            update: jest.fn().mockResolvedValue(),
+          })),
         };
       }
       // For rate limiting queries (any collection name)
@@ -70,14 +115,30 @@ describe('createPortalSession', () => {
       };
     });
 
-    mockStripe = stripe();
+    // Get the mock instance from the mocked stripe function
+    // The module calls stripe(config) at load time, so calling stripe() again returns the same instance
+    const stripe = require('stripe');
+    mockStripe = stripe('test-key'); // Call it to get the mock instance
+    
+    // Reset and set up mocks for each test
+    mockStripe.billingPortal.sessions.create.mockReset();
     mockStripe.billingPortal.sessions.create.mockResolvedValue({
       url: 'https://billing.stripe.com/test',
+    });
+
+    checkUserRateLimit.mockResolvedValue({
+      allowed: true,
+      count: 1,
+      limit: 5,
+      remaining: 4,
     });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Re-setup retryApiCall mock after clearAllMocks
+    const { retryApiCall } = require('../../../utils/retry');
+    retryApiCall.mockImplementation(async (fn) => fn());
   });
 
   describe('Authentication', () => {
@@ -102,7 +163,11 @@ describe('createPortalSession', () => {
     });
 
     test('should throw if user document missing', async () => {
+      // Set exists to false - this will cause data() to return undefined
+      // and accessing userData.stripeCustomerId will throw TypeError
       mockUserDoc.exists = false;
+      // Clear the data function so it returns undefined when exists is false
+      mockUserDoc.data = jest.fn(() => undefined);
 
       await expect(
         createPortalSession({}, mockContext)
@@ -134,13 +199,13 @@ describe('createPortalSession', () => {
 
   describe('Error Handling', () => {
     test('should handle Stripe API errors', async () => {
-      mockStripe.billingPortal.sessions.create.mockRejectedValue(
-        new Error('Stripe API error')
-      );
+      // Mock retryApiCall to reject with an error
+      const { retryApiCall } = require('../../../utils/retry');
+      retryApiCall.mockRejectedValue(new Error('Stripe API error'));
 
       await expect(
         createPortalSession({}, mockContext)
-      ).rejects.toThrow('No active subscription');
+      ).rejects.toThrow('Failed to create portal session');
     });
   });
 });

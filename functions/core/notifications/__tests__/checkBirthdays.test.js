@@ -1,7 +1,11 @@
 /**
  * Tests for checkBirthdays function
  */
+// Set GCLOUD_PROJECT before requiring any Firebase modules
+process.env.GCLOUD_PROJECT = 'test-project';
+
 const admin = require('firebase-admin');
+const functions = require('firebase-functions');
 const sgMail = require('@sendgrid/mail');
 const { checkBirthdays } = require('../checkBirthdays');
 
@@ -12,10 +16,16 @@ describe('checkBirthdays', () => {
   let mockUsersSnapshot;
   let mockBestiesSnapshot;
   let mockUserDocs;
+  let bestiesSnapshot1;
+  let bestiesSnapshot2;
 
   beforeEach(() => {
     const today = new Date();
-    const birthdate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // Use today's month and day for the birthdate to ensure it matches
+    // Format: YYYY-MM-DD (use a fixed year like 2000 to avoid timezone issues)
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const birthdateStr = `2000-${month}-${day}`;
 
     mockUserDocs = [
       {
@@ -23,7 +33,7 @@ describe('checkBirthdays', () => {
         data: () => ({
           displayName: 'Birthday User',
           profile: {
-            birthdate: birthdate.toISOString().split('T')[0], // Today's date
+            birthdate: birthdateStr, // Today's month and day
           },
           email: 'birthday@example.com',
         }),
@@ -41,46 +51,132 @@ describe('checkBirthdays', () => {
 
     mockUsersSnapshot = {
       docs: mockUserDocs,
+      empty: false,
     };
 
-    mockBestiesSnapshot = {
-      forEach: jest.fn((callback) => {
-        callback({
-          data: () => ({ recipientId: 'bestie1' }),
-        });
-      }),
+    // Create bestie documents that will be returned by the queries
+    // Query 1: requesterId === 'user1' -> returns docs with recipientId (the bestie)
+    const bestieDoc1 = {
+      data: () => ({ recipientId: 'bestie1', requesterId: 'user1', status: 'accepted' }),
     };
+    // Query 2: recipientId === 'user1' -> returns docs with requesterId (the bestie)
+    const bestieDoc2 = {
+      data: () => ({ requesterId: 'bestie1', recipientId: 'user1', status: 'accepted' }),
+    };
+    
+    // Separate snapshots for each query - recreate in beforeEach to ensure fresh state
+    // forEach must iterate over docs array like Firestore does
+    bestiesSnapshot1 = {
+      forEach: function(callback) {
+        [bestieDoc1].forEach(callback);
+      },
+      size: 1,
+      docs: [bestieDoc1],
+      empty: false,
+    };
+    
+    bestiesSnapshot2 = {
+      forEach: function(callback) {
+        [bestieDoc2].forEach(callback);
+      },
+      size: 1,
+      docs: [bestieDoc2],
+      empty: false,
+    };
+    
+    mockBestiesSnapshot = bestiesSnapshot1; // Default, but we'll use separate ones
 
     const db = admin.firestore();
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'users') {
-        return {
+        const usersCollection = {
           get: jest.fn().mockResolvedValue(mockUsersSnapshot),
-          doc: jest.fn((userId) => ({
-            get: jest.fn().mockResolvedValue({
-              exists: true,
-              data: () => ({
-                displayName: 'Bestie',
-                email: 'bestie@example.com',
-                fcmToken: 'fcm-token',
-                notificationsEnabled: true,
+          doc: jest.fn((userId) => {
+            if (userId === 'bestie1') {
+              return {
+                get: jest.fn().mockResolvedValue({
+                  exists: true,
+                  data: () => ({
+                    displayName: 'Bestie',
+                    email: 'bestie@example.com',
+                    fcmToken: 'fcm-token',
+                    notificationsEnabled: true,
+                    notificationPreferences: {
+                      email: true,
+                    },
+                  }),
+                }),
+              };
+            }
+            return {
+              get: jest.fn().mockResolvedValue({
+                exists: false,
+                data: () => ({}),
               }),
-            }),
+            };
+          }),
+          limit: jest.fn(() => ({
+            startAfter: jest.fn(() => ({
+              get: jest.fn().mockResolvedValue({
+                empty: true,
+                size: 0,
+                docs: [],
+              }),
+            })),
+            get: jest.fn().mockResolvedValue(mockUsersSnapshot),
           })),
         };
+        return usersCollection;
       }
       if (collectionName === 'besties') {
         return {
-          where: jest.fn(() => ({
-            where: jest.fn(() => ({
-              where: jest.fn(() => ({
-                get: jest.fn().mockResolvedValue(mockBestiesSnapshot),
-              })),
-            })),
-            get: jest.fn().mockResolvedValue(mockBestiesSnapshot),
-          })),
+          where: jest.fn((field, op, value) => {
+            // Query 1: requesterId === 'user1' -> returns docs with recipientId (the bestie)
+            if (field === 'requesterId' && value === 'user1') {
+              return {
+                where: jest.fn((field2, op2, value2) => {
+                  // Second where clause: status === 'accepted'
+                  if (field2 === 'status' && op2 === '==' && value2 === 'accepted') {
+                    return {
+                      get: jest.fn().mockResolvedValue(bestiesSnapshot1),
+                    };
+                  }
+                  return {
+                    get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn(), docs: [], empty: true }),
+                  };
+                }),
+                get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn(), docs: [], empty: true }),
+              };
+            }
+            // Query 2: recipientId === 'user1' -> returns docs with requesterId (the bestie)
+            if (field === 'recipientId' && value === 'user1') {
+              return {
+                where: jest.fn((field2, op2, value2) => {
+                  // Second where clause: status === 'accepted'
+                  if (field2 === 'status' && op2 === '==' && value2 === 'accepted') {
+                    return {
+                      get: jest.fn().mockResolvedValue(bestiesSnapshot2),
+                    };
+                  }
+                  return {
+                    get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn(), docs: [], empty: true }),
+                  };
+                }),
+                get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn(), docs: [], empty: true }),
+              };
+            }
+            return {
+              where: jest.fn().mockReturnThis(),
+              get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn(), docs: [], empty: true }),
+            };
+          }),
         };
       }
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        })),
+      };
     });
 
     sgMail.send = jest.fn().mockResolvedValue();
@@ -119,10 +215,11 @@ describe('checkBirthdays', () => {
     });
 
     test('should send push notifications if enabled', async () => {
-      const messaging = admin.messaging();
       await checkBirthdays({});
 
-      expect(messaging.send).toHaveBeenCalled();
+      // Get the shared messaging instance
+      const messagingInstance = admin.messaging();
+      expect(messagingInstance.send).toHaveBeenCalled();
     });
 
     test('should send email notifications', async () => {

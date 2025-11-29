@@ -43,9 +43,17 @@ describe('rebuildAnalyticsCache', () => {
     };
 
     const db = admin.firestore();
+    
+    // Mock for pagination queries
+    const mockUsersQuerySnapshot = {
+      empty: true,
+      size: 0,
+      docs: [],
+    };
+    
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'users') {
-        return {
+        const collection = {
           doc: jest.fn((userId) => {
             if (userId === 'admin123') {
               return {
@@ -59,7 +67,14 @@ describe('rebuildAnalyticsCache', () => {
           count: jest.fn(() => ({
             get: jest.fn().mockResolvedValue({ data: () => ({ count: 100 }) }),
           })),
+          limit: jest.fn(() => ({
+            startAfter: jest.fn(() => ({
+              get: jest.fn().mockResolvedValue(mockUsersQuerySnapshot),
+            })),
+            get: jest.fn().mockResolvedValue(mockUsersQuerySnapshot),
+          })),
         };
+        return collection;
       }
       if (collectionName === 'checkins') {
         return {
@@ -68,12 +83,34 @@ describe('rebuildAnalyticsCache', () => {
               get: jest.fn().mockResolvedValue({ data: () => ({ count: 500 }) }),
             })),
           })),
+          count: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 500 }) }),
+          })),
         };
       }
       if (collectionName === 'besties') {
         return {
+          where: jest.fn(() => ({
+            count: jest.fn(() => ({
+              get: jest.fn().mockResolvedValue({ data: () => ({ count: 200 }) }),
+            })),
+          })),
           count: jest.fn(() => ({
             get: jest.fn().mockResolvedValue({ data: () => ({ count: 200 }) }),
+          })),
+        };
+      }
+      if (collectionName === 'templates') {
+        return {
+          count: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+          })),
+        };
+      }
+      if (collectionName === 'badges') {
+        return {
+          count: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
           })),
         };
       }
@@ -82,6 +119,11 @@ describe('rebuildAnalyticsCache', () => {
           doc: jest.fn(() => mockCacheRef),
         };
       }
+      return {
+        count: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+        })),
+      };
     });
   });
 
@@ -91,6 +133,7 @@ describe('rebuildAnalyticsCache', () => {
 
   describe('Cache Rebuild', () => {
     test('should rebuild analytics cache with current stats', async () => {
+      jest.clearAllMocks();
       await rebuildAnalyticsCache({}, mockContext);
 
       expect(mockCacheRef.set).toHaveBeenCalledWith(
@@ -103,6 +146,7 @@ describe('rebuildAnalyticsCache', () => {
     });
 
     test('should count all collections', async () => {
+      jest.clearAllMocks();
       await rebuildAnalyticsCache({}, mockContext);
 
       const db = admin.firestore();

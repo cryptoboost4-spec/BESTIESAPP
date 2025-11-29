@@ -243,6 +243,7 @@ describe('sendBestieInvite', () => {
       });
 
       // The function will throw TypeError when trying to access userData.displayName
+      // because userDoc.data() returns undefined when exists is false
       await expect(
         sendBestieInvite(mockData, mockContext)
       ).rejects.toThrow();

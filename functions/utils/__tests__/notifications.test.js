@@ -19,6 +19,12 @@ jest.mock('firebase-functions', () => ({
       api_key: 'test_key',
     },
   })),
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+  },
 }));
 
 describe('Notification Utilities', () => {
@@ -57,28 +63,50 @@ describe('Notification Utilities', () => {
     });
 
     test('should handle Twilio errors', async () => {
-      // Create a new mock that rejects
+      // Clear the module cache first to reset the cached twilioClient
+      jest.resetModules();
+      
+      // Re-mock twilio after resetModules (the mock is also reset)
+      const twilio = require('twilio');
       const rejectMock = jest.fn().mockRejectedValue(new Error('Twilio error'));
-      mockTwilioClient.messages.create = rejectMock;
-      twilio.mockImplementation(() => mockTwilioClient);
+      const newMockTwilioClient = {
+        messages: {
+          create: rejectMock,
+        },
+      };
+      twilio.mockImplementation(() => newMockTwilioClient);
+      
+      // Now require the module so it uses the new mock
+      const notifications = require('../notifications');
 
       await expect(
-        sendSMSAlert('+61412345678', 'Test message')
+        notifications.sendSMSAlert('+61412345678', 'Test message')
       ).rejects.toThrow('Twilio error');
     });
   });
 
   describe('sendWhatsAppAlert', () => {
     test('should send WhatsApp message via Twilio', async () => {
-      // Reset mocks to ensure clean state
+      // Clear the module cache first to reset the cached twilioClient
+      jest.resetModules();
+      
+      // Re-mock twilio after resetModules (the mock is also reset)
+      const twilio = require('twilio');
       jest.clearAllMocks();
-      mockMessages.create = jest.fn().mockResolvedValue({ sid: 'test_sid' });
-      mockTwilioClient.messages = mockMessages;
-      twilio.mockImplementation(() => mockTwilioClient);
+      const freshMockMessages = {
+        create: jest.fn().mockResolvedValue({ sid: 'test_sid' }),
+      };
+      const freshMockTwilioClient = {
+        messages: freshMockMessages,
+      };
+      twilio.mockImplementation(() => freshMockTwilioClient);
+      
+      // Now require the module so it uses the new mock
+      const notifications = require('../notifications');
 
-      await sendWhatsAppAlert('+61412345678', 'Test message');
+      await notifications.sendWhatsAppAlert('+61412345678', 'Test message');
 
-      expect(mockMessages.create).toHaveBeenCalledWith(
+      expect(freshMockMessages.create).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'whatsapp:+61412345678',
           from: expect.stringContaining('whatsapp:'),

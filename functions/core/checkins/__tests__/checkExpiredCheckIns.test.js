@@ -24,9 +24,13 @@ describe('checkExpiredCheckIns', () => {
           data: () => ({
             userId: 'user123',
             location: 'Test Location',
+            status: 'active', // Must be active, not alerted
             alertTime: { toMillis: () => Date.now() - 60000 },
             bestieIds: ['bestie1'],
             messengerContactIds: ['contact1'],
+            createdAt: {
+              toDate: () => new Date(Date.now() - 3600000), // 1 hour ago
+            },
           }),
         },
         {
@@ -34,8 +38,12 @@ describe('checkExpiredCheckIns', () => {
           data: () => ({
             userId: 'user456',
             location: 'Another Location',
+            status: 'active', // Must be active, not alerted
             alertTime: { toMillis: () => Date.now() - 120000 },
             bestieIds: ['bestie2'],
+            createdAt: {
+              toDate: () => new Date(Date.now() - 3600000), // 1 hour ago
+            },
           }),
         },
       ],
@@ -111,6 +119,18 @@ describe('checkExpiredCheckIns', () => {
           where: jest.fn(() => ({
             get: jest.fn().mockResolvedValue(mockMessengerContactsSnapshot),
           })),
+        };
+      }
+      if (collectionName === 'checkins') {
+        return {
+          doc: jest.fn(() => ({
+            update: jest.fn().mockResolvedValue(),
+          })),
+        };
+      }
+      if (collectionName === 'analytics') {
+        return {
+          add: jest.fn().mockResolvedValue(),
         };
       }
       return {

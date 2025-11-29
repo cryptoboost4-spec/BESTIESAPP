@@ -82,12 +82,14 @@ describe('onBestieDeleted', () => {
 
   describe('Bestie Deletion', () => {
     test('should update analytics cache', async () => {
+      jest.clearAllMocks();
       await onBestieDeleted(mockSnapshot, mockContext);
 
       expect(mockCacheRef.set).toHaveBeenCalled();
     });
 
     test('should remove bestieUserIds from both users', async () => {
+      jest.clearAllMocks();
       await onBestieDeleted(mockSnapshot, mockContext);
 
       expect(mockRequesterRef.update).toHaveBeenCalledWith(
@@ -104,6 +106,7 @@ describe('onBestieDeleted', () => {
     });
 
     test('should remove from featuredCircle for both users', async () => {
+      jest.clearAllMocks();
       await onBestieDeleted(mockSnapshot, mockContext);
 
       expect(mockRequesterRef.update).toHaveBeenCalledWith(
@@ -111,12 +114,25 @@ describe('onBestieDeleted', () => {
           featuredCircle: expect.anything(),
         })
       );
+
+      expect(mockRecipientRef.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          featuredCircle: expect.anything(),
+        })
+      );
     });
 
     test('should decrement totalBesties for both users', async () => {
+      jest.clearAllMocks();
       await onBestieDeleted(mockSnapshot, mockContext);
 
       expect(mockRequesterRef.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'stats.totalBesties': expect.anything(),
+        })
+      );
+
+      expect(mockRecipientRef.update).toHaveBeenCalledWith(
         expect.objectContaining({
           'stats.totalBesties': expect.anything(),
         })

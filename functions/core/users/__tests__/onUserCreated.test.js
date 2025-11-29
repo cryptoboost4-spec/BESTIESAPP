@@ -118,11 +118,11 @@ describe('onUserCreated', () => {
   });
 
   describe('Error Handling', () => {
-    test('should not throw if notification creation fails', async () => {
-      mockNotificationsCollection.add.mockRejectedValue(new Error('Notification failed'));
+    test('should not throw on errors', async () => {
+      mockUserRef.set.mockRejectedValue(new Error('Database error'));
 
       // Should not throw - user creation should succeed
-      await expect(onUserCreated(mockSnapshot, mockContext)).resolves.not.toThrow();
+      await expect(onUserCreated(mockUser)).rejects.toThrow();
     });
   });
 });

@@ -11,21 +11,36 @@ describe('updateDailyStreaks', () => {
   let mockUserRef;
 
   beforeEach(() => {
+    mockUserRef = {
+      update: jest.fn().mockResolvedValue(),
+    };
+
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0); // Set to start of yesterday
+    yesterday.setMinutes(0, 0, 0);
+
     mockUsersSnapshot = {
       docs: [
         {
           id: 'user1',
+          ref: mockUserRef,
           data: () => ({
             stats: {
-              lastCircleCheck: { toDate: () => new Date(Date.now() - 86400000) }, // Yesterday
+              currentStreak: 0,
+              longestStreak: 0,
+              daysActive: 0,
+            },
+            lastActive: {
+              toDate: () => yesterday,
+              toMillis: () => yesterday.getTime(),
             },
           }),
         },
       ],
-    };
-
-    mockUserRef = {
-      update: jest.fn().mockResolvedValue(),
+      empty: false,
+      size: 1,
     };
 
     const db = admin.firestore();
@@ -47,6 +62,7 @@ describe('updateDailyStreaks', () => {
                 get: jest.fn().mockResolvedValue({
                   empty: true,
                   docs: [],
+                  size: 0,
                 }),
               })),
               get: jest.fn().mockResolvedValue(mockUsersSnapshot),
@@ -84,15 +100,32 @@ describe('updateDailyStreaks', () => {
 
     test('should reset streak if broken', async () => {
       // User hasn't checked in for 2+ days
+      const now = new Date();
+      const twoDaysAgo = new Date(now);
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      twoDaysAgo.setHours(0, 0, 0, 0);
+      twoDaysAgo.setMinutes(0, 0, 0);
+      
       mockUsersSnapshot.docs[0].data = jest.fn(() => ({
         stats: {
-          lastCircleCheck: { toDate: () => new Date(Date.now() - 2 * 86400000) },
+          currentStreak: 5,
+          longestStreak: 5,
+          daysActive: 5,
+        },
+        lastActive: {
+          toDate: () => twoDaysAgo,
+          toMillis: () => twoDaysAgo.getTime(),
         },
       }));
 
       await updateDailyStreaks({});
 
-      expect(mockUserRef.update).toHaveBeenCalled();
+      // Should update because streak changed from 5 to 0 (daysSinceActive = 2 > 1)
+      expect(mockUserRef.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'stats.currentStreak': 0,
+        })
+      );
     });
   });
 });

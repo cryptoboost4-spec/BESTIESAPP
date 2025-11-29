@@ -6,15 +6,25 @@ const stripe = require('stripe');
 const { stripeWebhook } = require('../stripeWebhook');
 const { updateUserBadges } = require('../../../utils/badges');
 
+// Create a shared mock instance that both the module and tests can use
+// Create a shared mock instance that both the module and tests can use
+// Create instance directly in factory to avoid hoisting/TDZ issues
 jest.mock('stripe', () => {
-  return jest.fn(() => ({
+  // Create the instance directly in the factory (no external reference)
+  const mockInstance = {
     webhooks: {
       constructEvent: jest.fn(),
     },
     customers: {
       retrieve: jest.fn(),
     },
-  }));
+  };
+  // Return a function that returns the shared instance
+  // This function will be called as stripe(config) when modules load
+  const mockStripe = jest.fn(() => mockInstance);
+  // Attach the instance to the mock function for easy access in tests
+  mockStripe._mockInstance = mockInstance;
+  return mockStripe;
 });
 jest.mock('../../../utils/badges');
 // Use global mocks from jest.setup.js
@@ -57,13 +67,19 @@ describe('stripeWebhook', () => {
       update: jest.fn().mockResolvedValue(),
     };
 
+    // Create event refs that will be reused - need to ensure update is always available
+    const eventRefs = new Map();
     mockWebhookEventsCollection = {
       doc: jest.fn((eventId) => {
-        // Return a new mock doc ref for each event ID
-        return {
-          get: jest.fn().mockResolvedValue(mockEventDoc),
-          set: jest.fn().mockResolvedValue(),
-        };
+        // Return the same ref for the same event ID, or create a new one
+        if (!eventRefs.has(eventId)) {
+          eventRefs.set(eventId, {
+            get: jest.fn().mockResolvedValue(mockEventDoc),
+            set: jest.fn().mockResolvedValue(),
+            update: jest.fn().mockResolvedValue(), // Always include update
+          });
+        }
+        return eventRefs.get(eventId);
       }),
     };
 
@@ -79,9 +95,18 @@ describe('stripeWebhook', () => {
       }
     });
 
-    mockStripe = stripe();
+    // Get the mock instance from the mocked stripe function
+    // The module calls stripe(config) at load time, so calling stripe() again returns the same instance
+    const stripe = require('stripe');
+    mockStripe = stripe('test-key'); // Call it to get the mock instance
+    
+    // Reset and set up mocks for each test
+    mockStripe.webhooks.constructEvent.mockReset();
+    mockStripe.customers.retrieve.mockReset();
+    
     // Set default mock return value for constructEvent - must return event object
-    mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
+    // This ensures event.id is always available
+    const defaultEvent = {
       id: 'evt_test123',
       type: 'checkout.session.completed',
       data: {
@@ -90,7 +115,8 @@ describe('stripeWebhook', () => {
           subscription: 'sub_test123',
         },
       },
-    });
+    };
+    mockStripe.webhooks.constructEvent.mockReturnValue(defaultEvent);
 
     updateUserBadges.mockResolvedValue();
   });
@@ -101,7 +127,7 @@ describe('stripeWebhook', () => {
 
   describe('Signature Verification', () => {
     test('should verify webhook signature', async () => {
-      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
+      const testEvent = {
         id: 'evt_test123',
         type: 'checkout.session.completed',
         data: {
@@ -110,25 +136,29 @@ describe('stripeWebhook', () => {
             subscription: 'sub_test123',
           },
         },
-      });
+      };
+      // Ensure the mock returns the event before the function tries to access event.id
+      mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue(testEvent);
 
       await stripeWebhook(mockReq, mockRes);
 
       expect(mockStripe.webhooks.constructEvent).toHaveBeenCalledWith(
         'test-body',
         'test-signature',
-        expect.anything()
+        'whsec_test_secret' // webhook_secret from jest.setup.js
       );
+      expect(mockRes.json).toHaveBeenCalledWith({ received: true });
     });
 
     test('should return 400 if signature verification fails', async () => {
-      // Reset the mock to throw an error
-      mockStripe.webhooks.constructEvent = jest.fn().mockImplementationOnce(() => {
+      // Reset the mock to throw an error - this should return early before accessing event.id
+      mockStripe.webhooks.constructEvent = jest.fn().mockImplementation(() => {
         throw new Error('Invalid signature');
       });
 
       await stripeWebhook(mockReq, mockRes);
 
+      // Should return early with 400, so event.id should never be accessed
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.send).toHaveBeenCalled();
     });
@@ -144,6 +174,7 @@ describe('stripeWebhook', () => {
       mockWebhookEventsCollection.doc = jest.fn(() => ({
         get: jest.fn().mockResolvedValue(existingEventDoc),
         set: jest.fn().mockResolvedValue(),
+        update: jest.fn().mockResolvedValue(), // Add update method for catch block
       }));
 
       mockStripe.webhooks.constructEvent = jest.fn().mockReturnValue({
@@ -164,6 +195,7 @@ describe('stripeWebhook', () => {
       const eventDocRef = {
         get: jest.fn().mockResolvedValue({ exists: false }),
         set: jest.fn().mockResolvedValue(),
+        update: jest.fn().mockResolvedValue(), // Add update method
       };
       
       mockWebhookEventsCollection.doc = jest.fn(() => eventDocRef);

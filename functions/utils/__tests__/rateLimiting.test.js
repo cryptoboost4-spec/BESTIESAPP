@@ -48,13 +48,23 @@ describe('Rate Limiting Utilities', () => {
       };
       const db = admin.firestore();
       // Override collection to return our mock query - ensure it supports chaining
-      const mockQuery = {
-        where: jest.fn().mockReturnThis(),
-        get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
-      };
       db.collection = jest.fn((name) => {
         if (name === 'testCollection') {
-          return mockQuery;
+          return {
+            where: jest.fn((field, op, value) => {
+              // First where clause returns a query that supports chaining
+              return {
+                where: jest.fn((field2, op2, value2) => {
+                  // Second where clause returns the final query
+                  return {
+                    get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+                  };
+                }),
+                get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+              };
+            }),
+            get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+          };
         }
         return {
           where: jest.fn().mockReturnThis(),
@@ -81,13 +91,23 @@ describe('Rate Limiting Utilities', () => {
       };
       const db = admin.firestore();
       // Override collection to return our mock query - ensure it supports chaining
-      const mockQuery = {
-        where: jest.fn().mockReturnThis(),
-        get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
-      };
       db.collection = jest.fn((name) => {
         if (name === 'testCollection') {
-          return mockQuery;
+          return {
+            where: jest.fn((field, op, value) => {
+              // First where clause returns a query that supports chaining
+              return {
+                where: jest.fn((field2, op2, value2) => {
+                  // Second where clause returns the final query
+                  return {
+                    get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+                  };
+                }),
+                get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+              };
+            }),
+            get: jest.fn().mockResolvedValue(mockSnapshotWithSize),
+          };
         }
         return {
           where: jest.fn().mockReturnThis(),

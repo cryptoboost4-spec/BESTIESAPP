@@ -5,10 +5,14 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const stripe = require('stripe');
 const { createCheckoutSession } = require('../createCheckoutSession');
+const { checkUserRateLimit } = require('../../../utils/rateLimiting');
 
+// Create a shared mock instance that both the module and tests can use
+// Create instance directly in factory to avoid hoisting/TDZ issues
 // Mock Stripe
 jest.mock('stripe', () => {
-  return jest.fn(() => ({
+  // Create the instance directly in the factory (no external reference)
+  const mockInstance = {
     customers: {
       create: jest.fn(),
     },
@@ -17,8 +21,17 @@ jest.mock('stripe', () => {
         create: jest.fn(),
       },
     },
-  }));
+  };
+  // Return a function that returns the shared instance
+  // This function will be called as stripe(config) when modules load
+  const mockStripe = jest.fn(() => mockInstance);
+  // Attach the instance to the mock function for easy access in tests
+  mockStripe._mockInstance = mockInstance;
+  return mockStripe;
 });
+
+jest.mock('../../../utils/rateLimiting');
+jest.mock('../../../utils/retry'); // Mock retryApiCall
 
 // Use global mocks from jest.setup.js
 
@@ -27,31 +40,58 @@ describe('createCheckoutSession', () => {
   let mockData;
   let mockUserDoc;
   let mockStripe;
+  let mockUserRef;
 
   beforeEach(() => {
     mockContext = {
       auth: { uid: 'user123' },
     };
 
-    mockUserDoc = {
+    // Mock checkUserRateLimit
+    const { checkUserRateLimit } = require('../../../utils/rateLimiting');
+    checkUserRateLimit.mockResolvedValue({ allowed: true });
+
+    // Mock retryApiCall to just execute the function immediately
+    const { retryApiCall } = require('../../../utils/retry');
+    retryApiCall.mockImplementation(async (fn) => fn());
+
+    // Create mockUserDoc that can be updated
+    const createMockUserDoc = () => ({
       exists: true,
       data: jest.fn(() => ({
         email: 'test@example.com',
         stripeCustomerId: null,
       })),
-    };
+    });
+    
+    mockUserDoc = createMockUserDoc();
 
     const db = admin.firestore();
+    
+    // Create the user ref that will be reused
+    mockUserRef = {
+      get: jest.fn(async () => {
+        // Return current state - if exists is false, data() should return undefined
+        return {
+          exists: mockUserDoc.exists,
+          data: () => {
+            if (!mockUserDoc.exists) {
+              return undefined;
+            }
+            return mockUserDoc.data();
+          },
+        };
+      }),
+      update: jest.fn().mockResolvedValue(),
+    };
+    
     // Override collection to support both queries and document operations
     db.collection = jest.fn((name) => {
       if (name === 'users') {
         return {
           doc: jest.fn((id) => {
             if (id === 'user123') {
-              return {
-                get: jest.fn().mockResolvedValue(mockUserDoc),
-                update: jest.fn().mockResolvedValue(),
-              };
+              return mockUserRef; // Return the shared mock ref
             }
             return {
               get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
@@ -60,6 +100,14 @@ describe('createCheckoutSession', () => {
           }),
           // Support rate limiting queries on users collection
           where: jest.fn().mockReturnThis(),
+        };
+      }
+      // For checkout_sessions collection
+      if (name === 'checkout_sessions') {
+        return {
+          add: jest.fn().mockResolvedValue({ id: 'checkout_session_id' }),
+          where: jest.fn().mockReturnThis(),
+          get: jest.fn().mockResolvedValue({ size: 0, forEach: jest.fn() }),
         };
       }
       // For rate limiting queries (any collection name)
@@ -73,19 +121,39 @@ describe('createCheckoutSession', () => {
           get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
           update: jest.fn().mockResolvedValue(),
         })),
+        add: jest.fn().mockResolvedValue({ id: 'doc_id' }),
       };
     });
 
-    mockStripe = stripe();
+    // Get the mock instance from the mocked stripe function
+    // The module calls stripe(config) at load time, so calling stripe() again returns the same instance
+    const stripe = require('stripe');
+    mockStripe = stripe('test-key'); // Call it to get the mock instance
+    
+    // Reset and set up mocks for each test
+    mockStripe.customers.create.mockReset();
+    mockStripe.checkout.sessions.create.mockReset();
+    
+    // Set up default resolved values
     mockStripe.customers.create.mockResolvedValue({ id: 'cus_test123' });
     mockStripe.checkout.sessions.create.mockResolvedValue({
       id: 'session_test123',
       url: 'https://checkout.stripe.com/test',
     });
+
+    checkUserRateLimit.mockResolvedValue({
+      allowed: true,
+      count: 1,
+      limit: 10,
+      remaining: 9,
+    });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Re-setup retryApiCall mock after clearAllMocks
+    const { retryApiCall } = require('../../../utils/retry');
+    retryApiCall.mockImplementation(async (fn) => fn());
   });
 
   describe('Authentication', () => {
@@ -180,11 +248,10 @@ describe('createCheckoutSession', () => {
         stripeCustomerId: null,
       }));
 
-      const db = admin.firestore();
       await createCheckoutSession({ amount: 1, type: 'donation' }, mockContext);
 
-      const userRef = db.collection().doc();
-      expect(userRef.update).toHaveBeenCalledWith(
+      // Check the shared mockUserRef that the function uses
+      expect(mockUserRef.update).toHaveBeenCalledWith(
         expect.objectContaining({
           stripeCustomerId: 'cus_test123',
         })
@@ -279,7 +346,10 @@ describe('createCheckoutSession', () => {
     });
 
     test('should handle missing user document', async () => {
+      // Set exists to false - this will cause data() to return undefined
+      // and accessing userData.stripeCustomerId will throw TypeError
       mockUserDoc.exists = false;
+      mockUserDoc.data = jest.fn(() => undefined);
 
       await expect(
         createCheckoutSession({ amount: 1, type: 'donation' }, mockContext)

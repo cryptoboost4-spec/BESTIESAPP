@@ -109,7 +109,7 @@ describe('extendCheckIn', () => {
     });
 
     test('should throw if additionalMinutes is invalid', async () => {
-      const invalidData = { checkInId: 'checkin123', additionalMinutes: 20 };
+      const invalidData = { checkInId: 'checkin123', additionalMinutes: 200 }; // > 120 is invalid
 
       await expect(
         extendCheckIn(invalidData, mockContext)
@@ -131,7 +131,10 @@ describe('extendCheckIn', () => {
             bestieIds: ['bestie1'],
           })),
         };
+        jest.clearAllMocks();
         mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+        checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
+        notifyBestiesAboutCheckIn.mockResolvedValue();
         
         const validData = { checkInId: 'checkin123', additionalMinutes: minutes };
         await expect(extendCheckIn(validData, mockContext)).resolves.toBeDefined();
@@ -154,7 +157,10 @@ describe('extendCheckIn', () => {
           bestieIds: ['bestie1'],
         })),
       };
+      jest.clearAllMocks();
       mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+      checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
+      notifyBestiesAboutCheckIn.mockResolvedValue();
 
       await extendCheckIn(mockData, mockContext);
 
@@ -169,6 +175,18 @@ describe('extendCheckIn', () => {
     });
 
     test('should throw if rate limit exceeded', async () => {
+      const activeCheckInDoc = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          status: 'active',
+          duration: 30,
+          alertTime: { toDate: () => new Date(Date.now() + 30 * 60 * 1000) },
+          bestieIds: ['bestie1'],
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
       checkUserRateLimit.mockResolvedValue({
         allowed: false,
         count: 10,
@@ -185,7 +203,13 @@ describe('extendCheckIn', () => {
 
   describe('Authorization', () => {
     test('should throw if check-in does not exist', async () => {
-      mockCheckInDoc.exists = false;
+      const nonExistentCheckIn = {
+        exists: false,
+        data: jest.fn(() => ({})),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(nonExistentCheckIn);
+      checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
 
       await expect(
         extendCheckIn(mockData, mockContext)
@@ -193,10 +217,16 @@ describe('extendCheckIn', () => {
     });
 
     test('should throw if user does not own check-in', async () => {
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'other-user',
-        status: 'active',
-      }));
+      const otherUserCheckIn = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'other-user',
+          status: 'active',
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(otherUserCheckIn);
+      checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
 
       await expect(
         extendCheckIn(mockData, mockContext)
@@ -220,7 +250,10 @@ describe('extendCheckIn', () => {
           bestieIds: ['bestie1'],
         })),
       };
+      jest.clearAllMocks();
       mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+      checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
+      notifyBestiesAboutCheckIn.mockResolvedValue();
 
       await extendCheckIn(mockData, mockContext);
 
@@ -246,7 +279,10 @@ describe('extendCheckIn', () => {
           bestieIds: ['bestie1'],
         })),
       };
+      jest.clearAllMocks();
       mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+      checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
+      notifyBestiesAboutCheckIn.mockResolvedValue();
 
       await extendCheckIn(mockData, mockContext);
 
@@ -290,7 +326,10 @@ describe('extendCheckIn', () => {
           bestieIds: ['bestie1'],
         })),
       };
+      jest.clearAllMocks();
       mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+      checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
+      notifyBestiesAboutCheckIn.mockResolvedValue();
 
       await extendCheckIn(mockData, mockContext);
 
@@ -300,24 +339,29 @@ describe('extendCheckIn', () => {
         'checkInExtended',
         expect.objectContaining({
           extension: 15,
-        })
+        }),
+        [] // messengerContactIds
       );
     });
   });
 
   describe('Error Handling', () => {
     test('should extend check-in even if notification fails', async () => {
-      mockCheckInDoc.exists = true;
-      mockCheckInDoc.data = jest.fn(() => ({
-        userId: 'user123',
-        status: 'active',
-        duration: 30,
-        alertTime: {
-          toDate: () => new Date(Date.now() + 30 * 60 * 1000),
-        },
-        bestieIds: ['bestie1'],
-      }));
-
+      const activeCheckInDoc = {
+        exists: true,
+        data: jest.fn(() => ({
+          userId: 'user123',
+          status: 'active',
+          duration: 30,
+          alertTime: {
+            toDate: () => new Date(Date.now() + 30 * 60 * 1000),
+          },
+          bestieIds: ['bestie1'],
+        })),
+      };
+      jest.clearAllMocks();
+      mockCheckInRef.get = jest.fn().mockResolvedValue(activeCheckInDoc);
+      checkUserRateLimit.mockResolvedValue({ allowed: true, count: 1, limit: 10, remaining: 9 });
       notifyBestiesAboutCheckIn.mockRejectedValue(new Error('Notification failed'));
 
       const result = await extendCheckIn(mockData, mockContext);

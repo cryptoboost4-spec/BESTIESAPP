@@ -9,7 +9,6 @@ cd functions
 call npm install
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install functions dependencies
-    pause
     exit /b 1
 )
 echo.
@@ -19,7 +18,6 @@ cd ..\frontend
 call npm install
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install frontend dependencies
-    pause
     exit /b 1
 )
 echo.
@@ -30,5 +28,4 @@ echo ================================================
 echo.
 echo You can now run: firebase deploy
 echo.
-pause
 

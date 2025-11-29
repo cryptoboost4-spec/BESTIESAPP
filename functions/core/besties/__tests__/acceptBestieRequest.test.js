@@ -56,6 +56,45 @@ describe('acceptBestieRequest', () => {
     };
 
     const db = admin.firestore();
+    
+    // Mock runTransaction - must be set up before the function uses db
+    db.runTransaction = jest.fn(async (callback) => {
+      const transaction = {
+        get: jest.fn((ref) => {
+          // Handle both direct ref comparison and path/id matching
+          if (ref === mockBestieRef || (ref && (ref.id === 'bestie123' || ref.path?.includes('bestie123')))) {
+            return Promise.resolve(mockBestieDoc);
+          }
+          // Check if ref is a user document ref
+          if (ref && (ref.id === 'requester123' || ref.path?.includes('requester123') || 
+              (typeof ref === 'object' && 'id' in ref && ref.id === 'requester123'))) {
+            return Promise.resolve(mockRequesterDoc);
+          }
+          if (ref && (ref.id === 'accepter123' || ref.path?.includes('accepter123') ||
+              (typeof ref === 'object' && 'id' in ref && ref.id === 'accepter123'))) {
+            return Promise.resolve(mockAccepterDoc);
+          }
+          return Promise.resolve({ exists: false, data: () => ({}) });
+        }),
+        update: jest.fn((ref, data) => {
+          // Call the actual ref's update method if it's our mock
+          // Check by reference equality first, then by id/path
+          if (ref === mockBestieRef || 
+              (ref && (ref.id === 'bestie123' || ref.path?.includes('bestie123')))) {
+            // Store the update call on the mock
+            mockBestieRef.update(data);
+            return;
+          }
+          // For user refs, track but don't call update (they're not mocked refs)
+          if (ref && (ref.id === 'requester123' || ref.id === 'accepter123')) {
+            return;
+          }
+          return;
+        }),
+      };
+      return callback(transaction);
+    });
+    
     // Override collection method to return our mocks
     db.collection = jest.fn((collectionName) => {
       if (collectionName === 'notifications') {
@@ -75,13 +114,15 @@ describe('acceptBestieRequest', () => {
         };
       }
       if (collectionName === 'users') {
+        const requesterRef = { id: 'requester123', path: 'users/requester123' };
+        const accepterRef = { id: 'accepter123', path: 'users/accepter123' };
         return {
           doc: jest.fn((docId) => {
             if (docId === 'requester123') {
-              return { get: jest.fn().mockResolvedValue(mockRequesterDoc), update: jest.fn().mockResolvedValue() };
+              return { ...requesterRef, get: jest.fn().mockResolvedValue(mockRequesterDoc), update: jest.fn().mockResolvedValue() };
             }
             if (docId === 'accepter123') {
-              return { get: jest.fn().mockResolvedValue(mockAccepterDoc), update: jest.fn().mockResolvedValue() };
+              return { ...accepterRef, get: jest.fn().mockResolvedValue(mockAccepterDoc), update: jest.fn().mockResolvedValue() };
             }
             return { get: jest.fn().mockResolvedValue({ exists: false, data: () => ({}) }), update: jest.fn().mockResolvedValue() };
           }),
@@ -169,6 +210,7 @@ describe('acceptBestieRequest', () => {
           status: 'accepted',
         })),
       };
+      jest.clearAllMocks();
       mockBestieRef.get = jest.fn().mockResolvedValue(acceptedBestieDoc);
 
       const result = await acceptBestieRequest(mockData, mockContext);
@@ -189,6 +231,7 @@ describe('acceptBestieRequest', () => {
           status: 'pending',
         })),
       };
+      jest.clearAllMocks();
       mockBestieRef.get = jest.fn().mockResolvedValue(pendingBestieDoc);
 
       await acceptBestieRequest(mockData, mockContext);
@@ -211,6 +254,7 @@ describe('acceptBestieRequest', () => {
           status: 'pending',
         })),
       };
+      jest.clearAllMocks();
       mockBestieRef.get = jest.fn().mockResolvedValue(pendingBestieDoc);
 
       await acceptBestieRequest(mockData, mockContext);
@@ -237,10 +281,11 @@ describe('acceptBestieRequest', () => {
       };
       mockBestieRef.get = jest.fn().mockResolvedValue(pendingBestieDoc);
 
-      const messaging = admin.messaging();
       await acceptBestieRequest(mockData, mockContext);
 
-      expect(messaging.send).toHaveBeenCalledWith(
+      // Get the shared messaging instance
+      const messagingInstance = admin.messaging();
+      expect(messagingInstance.send).toHaveBeenCalledWith(
         expect.objectContaining({
           token: 'fcm-token-123',
           notification: expect.objectContaining({
@@ -364,15 +409,18 @@ describe('acceptBestieRequest', () => {
     });
 
     test('should handle push notification failure gracefully', async () => {
-      mockBestieDoc.exists = true;
-      mockBestieDoc.data = jest.fn(() => ({
-        requesterId: 'requester123',
-        recipientId: 'accepter123',
-        status: 'pending',
-      }));
-
-      const messaging = admin.messaging();
-      messaging.send.mockRejectedValue(new Error('FCM failed'));
+      const pendingBestieDoc = {
+        exists: true,
+        data: jest.fn(() => ({
+          requesterId: 'requester123',
+          recipientId: 'accepter123',
+          status: 'pending',
+        })),
+      };
+      jest.clearAllMocks();
+      mockBestieRef.get = jest.fn().mockResolvedValue(pendingBestieDoc);
+      const messagingInstance = admin.messaging();
+      messagingInstance.send.mockRejectedValue(new Error('FCM failed'));
 
       const result = await acceptBestieRequest(mockData, mockContext);
 

@@ -86,9 +86,11 @@ describe('onBadgeEarned', () => {
         expect.objectContaining({
           userId: 'user123',
           type: 'badge_earned',
-          badgeId: 'safety_pro',
         })
       );
+      // Check that badgeType is in the data field
+      const addCall = mockNotificationsCollection.add.mock.calls[0][0];
+      expect(addCall.data).toHaveProperty('badgeType', 'safety_pro');
     });
 
     test('should not notify for existing badges', async () => {
@@ -131,11 +133,13 @@ describe('onBadgeEarned', () => {
     });
 
     test('should send push notification if enabled', async () => {
-      const messaging = admin.messaging();
+      // mockUserDoc already has fcmToken and notificationsEnabled set in beforeEach
       const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
       await onBadgeEarned(change, mockContext);
 
-      expect(messaging.send).toHaveBeenCalledWith(
+      // Get the shared messaging instance
+      const messagingInstance = admin.messaging();
+      expect(messagingInstance.send).toHaveBeenCalledWith(
         expect.objectContaining({
           token: 'fcm-token-123',
           notification: expect.objectContaining({

@@ -67,23 +67,28 @@ const createTimestamp = (millis = Date.now()) => ({
   toDate: () => new Date(millis),
 });
 
-// Mock Firebase Admin
+// Mock Firebase Admin - use singleton pattern so cached db references work
+// This ensures that when functions cache `const db = admin.firestore()`, 
+// they get the same instance that tests can override
+let mockDbInstance = null;
 const mockFirestoreFn = jest.fn(() => {
-  const db = {
-    collection: jest.fn((name) => createMockCollection()),
-    doc: jest.fn((path) => {
-      const parts = path ? path.split('/') : [];
-      return createMockDocRef({ id: parts[parts.length - 1] || 'mock-doc-id' });
-    }),
-    batch: jest.fn(() => ({
-      update: jest.fn().mockReturnThis(),
-      set: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      commit: jest.fn().mockResolvedValue(),
-    })),
-    getAll: jest.fn().mockResolvedValue([]),
-  };
-  return db;
+  if (!mockDbInstance) {
+    mockDbInstance = {
+      collection: jest.fn((name) => createMockCollection()),
+      doc: jest.fn((path) => {
+        const parts = path ? path.split('/') : [];
+        return createMockDocRef({ id: parts[parts.length - 1] || 'mock-doc-id' });
+      }),
+      batch: jest.fn(() => ({
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        delete: jest.fn().mockReturnThis(),
+        commit: jest.fn().mockResolvedValue(),
+      })),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+  }
+  return mockDbInstance;
 });
 
 // Attach static methods to the mock function
@@ -108,9 +113,12 @@ jest.mock('firebase-admin', () => ({
     getUser: jest.fn(),
     createUser: jest.fn(),
   })),
-  messaging: jest.fn(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
+  messaging: (() => {
+    const mockMessagingInstance = {
+      send: jest.fn().mockResolvedValue({}),
+    };
+    return jest.fn(() => mockMessagingInstance);
+  })(),
   storage: jest.fn(() => ({
     bucket: jest.fn(() => ({
       file: jest.fn(() => ({
@@ -132,6 +140,12 @@ jest.mock('firebase-functions', () => ({
         this.details = details;
       }
     },
+  },
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
   },
   pubsub: {
     schedule: jest.fn(() => ({
@@ -156,7 +170,7 @@ jest.mock('firebase-functions', () => ({
   config: jest.fn(() => ({
     sendgrid: { api_key: 'SG.test-key' },
     twilio: { account_sid: 'test-sid', auth_token: 'test-token', phone_number: '+1234567890' },
-    stripe: { secret_key: 'sk_test_key', publishable_key: 'pk_test_key' },
+    stripe: { secret_key: 'sk_test_key', publishable_key: 'pk_test_key', webhook_secret: 'whsec_test_secret' },
     telegram: { bot_token: 'test-bot-token' },
     facebook: { page_token: 'test-page-token' },
     google: { maps_api_key: 'test-maps-key' },

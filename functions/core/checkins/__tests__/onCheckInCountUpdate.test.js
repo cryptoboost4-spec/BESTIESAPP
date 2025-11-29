@@ -30,11 +30,24 @@ describe('onCheckInCountUpdate', () => {
       data: jest.fn(() => ({
         userId: 'user123',
         status: 'completed',
+        completedAt: {
+          toDate: () => new Date(),
+          toMillis: () => Date.now(),
+        },
       })),
     };
 
     mockUserRef = {
       update: jest.fn().mockResolvedValue(),
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () => ({
+          stats: {
+            currentStreak: 0,
+            longestStreak: 0,
+          },
+        }),
+      }),
     };
 
     const db = admin.firestore();
@@ -60,12 +73,67 @@ describe('onCheckInCountUpdate', () => {
         };
       }
       if (name === 'checkins') {
-        const query = {
-          where: jest.fn().mockReturnThis(),
-          count: jest.fn().mockReturnThis(),
-          get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayCheckInsSnapshot = {
+          size: 1, // This is the first completion today
+          docs: [],
         };
-        return query;
+        const yesterdayCheckInsSnapshot = {
+          size: 0, // No completion yesterday, so streak should be 1
+          docs: [],
+        };
+        return {
+          where: jest.fn((field, op, value) => {
+            if (field === 'userId' && op === '==' && value === 'user123') {
+              return {
+                where: jest.fn((field2, op2, value2) => {
+                  if (field2 === 'status' && op2 === '==' && value2 === 'completed') {
+                    return {
+                      count: jest.fn(() => ({
+                        get: jest.fn().mockResolvedValue({ data: () => ({ count: 1 }) }),
+                      })),
+                      where: jest.fn((field3, op3, value3) => {
+                        if (field3 === 'completedAt') {
+                          return {
+                            where: jest.fn(() => ({
+                              get: jest.fn().mockResolvedValue(todayCheckInsSnapshot),
+                            })),
+                            get: jest.fn().mockResolvedValue(todayCheckInsSnapshot),
+                          };
+                        }
+                        return {
+                          get: jest.fn().mockResolvedValue({ size: 0, docs: [] }),
+                        };
+                      }),
+                      get: jest.fn().mockResolvedValue({ size: 0, docs: [] }),
+                    };
+                  }
+                  return {
+                    count: jest.fn(() => ({
+                      get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+                    })),
+                    get: jest.fn().mockResolvedValue({ size: 0, docs: [] }),
+                  };
+                }),
+                count: jest.fn(() => ({
+                  get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+                })),
+                get: jest.fn().mockResolvedValue({ size: 0, docs: [] }),
+              };
+            }
+            return {
+              where: jest.fn().mockReturnThis(),
+              count: jest.fn(() => ({
+                get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+              })),
+              get: jest.fn().mockResolvedValue({ size: 0, docs: [] }),
+            };
+          }),
+          count: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+          })),
+        };
       }
       if (name === 'badges') {
         return {
@@ -91,6 +159,7 @@ describe('onCheckInCountUpdate', () => {
 
   describe('Status Change Detection', () => {
     test('should increment completedCheckIns when status changes to completed', async () => {
+      jest.clearAllMocks();
       const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
       await onCheckInCountUpdate(change, mockContext);
 
@@ -106,6 +175,7 @@ describe('onCheckInCountUpdate', () => {
         userId: 'user123',
         status: 'alerted',
       }));
+      jest.clearAllMocks();
       const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
 
       await onCheckInCountUpdate(change, mockContext);
@@ -138,11 +208,12 @@ describe('onCheckInCountUpdate', () => {
 
   describe('Data Integrity', () => {
     test('should only increment stats once per status change', async () => {
+      jest.clearAllMocks();
       const change = { before: mockBeforeSnapshot, after: mockAfterSnapshot };
       await onCheckInCountUpdate(change, mockContext);
 
-      // Should only be called once
-      expect(mockUserRef.update).toHaveBeenCalledTimes(1);
+      // Should be called twice: once for completedCheckIns, once for lastCircleCheck
+      expect(mockUserRef.update).toHaveBeenCalledTimes(2);
     });
   });
 });
