@@ -175,11 +175,22 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       : `EMERGENCY: ${cleanName} needs help NOW! Location: ${normalizedLocation}. Check Besties app!`;
 
   // Send to bestie circle with notifications enabled
-  const notifications = bestieIds.map(async (bestieId) => {
-    const bestieDoc = await db.collection('users').doc(bestieId).get();
-    if (!bestieDoc.exists) return;
+  // Batch fetch all bestie documents at once to avoid N+1 queries
+  // db.getAll() can handle up to 100 documents, so batching only needed if > 100
+  const bestieDocRefs = bestieIds.map(bestieId => db.collection('users').doc(bestieId));
+  const bestieDocs = await db.getAll(...bestieDocRefs);
+  
+  // Build a Map for O(1) lookups
+  const bestieDataMap = new Map();
+  bestieDocs.forEach(doc => {
+    if (doc.exists) {
+      bestieDataMap.set(doc.id, doc.data());
+    }
+  });
 
-    const bestieData = bestieDoc.data();
+  const notifications = bestieIds.map(async (bestieId) => {
+    const bestieData = bestieDataMap.get(bestieId);
+    if (!bestieData) return;
     const notificationsSent = [];
 
     // Only send if notifications are enabled

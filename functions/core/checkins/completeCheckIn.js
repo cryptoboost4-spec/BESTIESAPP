@@ -69,6 +69,7 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
         .where(admin.firestore.FieldPath.documentId(), 'in', checkInData.messengerContactIds)
         .get();
       
+      const { retryApiCall } = require('../../utils/retry');
       const now = Date.now();
       const sendPromises = messengerContactsSnapshot.docs
         .filter(doc => {
@@ -78,10 +79,13 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
         .map(async (doc) => {
           const contact = doc.data();
           try {
-            await sendMessengerMessage(contact.messengerPSID, message);
+            await retryApiCall(
+              () => sendMessengerMessage(contact.messengerPSID, message),
+              { maxRetries: 3, operationName: `Messenger completion to ${contact.name}` }
+            );
             functions.logger.info(`✅ Messenger completion sent to contact ${contact.name}`);
           } catch (error) {
-            functions.logger.error(`❌ Messenger failed for contact ${contact.name}:`, error.message);
+            functions.logger.error(`❌ Messenger failed for contact ${contact.name}:`, { error: error.message, contactName: contact.name });
           }
         });
       

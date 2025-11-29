@@ -117,14 +117,11 @@ export const logProfileView = async (viewerId, profileOwnerId) => {
  */
 export const incrementEmergencyContactCount = async (bestieId) => {
   try {
-    const userRef = doc(db, 'users', bestieId);
-
-    // Use Firestore increment to atomically update the counter
-    await updateDoc(userRef, {
-      'stats.timesSelectedAsEmergencyContact': increment(1),
-    });
-
-    console.log(`Emergency contact count incremented for ${bestieId}`);
+    // This operation requires updating another user's document
+    // Security rules don't allow this, so we'll skip it for now
+    // TODO: Move this to a Cloud Function if needed for analytics
+    // For now, we'll just log it silently to avoid permission errors
+    console.log(`Emergency contact count would be incremented for ${bestieId} (skipped - requires Cloud Function)`);
   } catch (error) {
     console.error('Error incrementing emergency contact count:', error);
   }

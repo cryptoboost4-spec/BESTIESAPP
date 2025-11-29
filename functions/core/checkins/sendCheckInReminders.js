@@ -25,7 +25,7 @@ exports.sendCheckInReminders = functions.pubsub
         .where('alertTime', '<=', sixMinutesFromNow)
         .get();
 
-      console.log(`Found ${checkInsSnapshot.size} check-ins to remind about`);
+      functions.logger.info(`Found ${checkInsSnapshot.size} check-ins to remind about`);
 
       const notifications = [];
 
@@ -84,12 +84,12 @@ exports.sendCheckInReminders = functions.pubsub
           notifications.push(
             admin.messaging().send(message)
               .then(() => {
-                console.log(`Sent reminder to user ${checkIn.userId} for check-in ${doc.id}`);
+                functions.logger.info(`Sent reminder to user ${checkIn.userId} for check-in ${doc.id}`);
                 // Mark as reminded
                 return doc.ref.update({ reminderSent: true });
               })
               .catch((error) => {
-                console.error(`Failed to send notification to ${checkIn.userId}:`, error);
+                functions.logger.error(`Failed to send notification to ${checkIn.userId}:`, error);
                 // If token is invalid, remove it
                 if (error.code === 'messaging/invalid-registration-token' ||
                     error.code === 'messaging/registration-token-not-registered') {
@@ -105,10 +105,10 @@ exports.sendCheckInReminders = functions.pubsub
 
       await Promise.all(notifications);
 
-      console.log(`Sent ${notifications.length} push notification reminders`);
+      functions.logger.info(`Sent ${notifications.length} push notification reminders`);
       return null;
     } catch (error) {
-      console.error('Error sending check-in reminders:', error);
+      functions.logger.error('Error sending check-in reminders:', error);
       return null;
     }
   });

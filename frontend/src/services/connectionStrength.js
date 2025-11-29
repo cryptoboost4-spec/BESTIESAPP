@@ -425,10 +425,11 @@ export const getLastInteraction = async (userId, bestieId) => {
     }
 
     // Fallback: check check-ins
+    // Use bestieUserIds for better security rule compatibility
     const checkInQuery = query(
       collection(db, 'checkins'),
       where('userId', '==', userId),
-      where('bestieIds', 'array-contains', bestieId),
+      where('bestieUserIds', 'array-contains', bestieId),
       orderBy('createdAt', 'desc'),
       limit(1)
     );

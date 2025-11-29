@@ -15,12 +15,12 @@ exports.onDuressCodeUsed = functions.firestore
       return null;
     }
 
-    console.log('🚨 DURESS CODE DETECTED:', alert.userId);
+    functions.logger.info('🚨 DURESS CODE DETECTED:', { userId: alert.userId });
 
     // Get user data
     const userDoc = await db.collection('users').doc(alert.userId).get();
     if (!userDoc.exists) {
-      console.error('User not found for duress alert:', alert.userId);
+      functions.logger.error('User not found for duress alert:', { userId: alert.userId });
       return null;
     }
 
@@ -34,7 +34,7 @@ exports.onDuressCodeUsed = functions.firestore
     });
 
     if (bestieIds.length === 0) {
-      console.log('No circle besties found for duress alert');
+      functions.logger.warn('No circle besties found for duress alert', { userId: alert.userId });
       return null;
     }
 
@@ -44,11 +44,22 @@ exports.onDuressCodeUsed = functions.firestore
     const shortMessage = `🚨 DURESS: ${userData.displayName} is in danger! Location: ${alert.location}. Call police!`;
 
     // Send critical alerts to all circle besties
-    const notifications = bestieIds.map(async (bestieId) => {
-      const bestieDoc = await db.collection('users').doc(bestieId).get();
-      if (!bestieDoc.exists) return;
+    // Batch fetch all bestie documents at once to avoid N+1 queries
+    // db.getAll() can handle up to 100 documents, so batching only needed if > 100
+    const bestieDocRefs = bestieIds.map(bestieId => db.collection('users').doc(bestieId));
+    const bestieDocs = await db.getAll(...bestieDocRefs);
+    
+    // Build a Map for O(1) lookups
+    const bestieDataMap = new Map();
+    bestieDocs.forEach(doc => {
+      if (doc.exists) {
+        bestieDataMap.set(doc.id, doc.data());
+      }
+    });
 
-      const bestieData = bestieDoc.data();
+    const notifications = bestieIds.map(async (bestieId) => {
+      const bestieData = bestieDataMap.get(bestieId);
+      if (!bestieData) return;
 
       try {
         // Send ALL notification types for duress - this is critical
@@ -57,14 +68,14 @@ exports.onDuressCodeUsed = functions.firestore
           try {
             await sendWhatsAppAlert(bestieData.phoneNumber, fullMessage);
           } catch (error) {
-            console.log('WhatsApp failed for duress alert');
+            functions.logger.warn('WhatsApp failed for duress alert', { bestieId, error: error.message });
           }
 
           // SMS (expensive but critical - use short message)
           try {
             await sendSMSAlert(bestieData.phoneNumber, shortMessage);
           } catch (error) {
-            console.log('SMS failed for duress alert');
+            functions.logger.warn('SMS failed for duress alert', { bestieId, error: error.message });
           }
         }
 
@@ -104,12 +115,12 @@ exports.onDuressCodeUsed = functions.firestore
         });
 
       } catch (error) {
-        console.error(`Failed to send duress alert to ${bestieId}:`, error);
+        functions.logger.error('Failed to send duress alert to bestie', { bestieId, error: error.message });
       }
     });
 
     await Promise.all(notifications);
 
-    console.log(`Duress alert sent to ${bestieIds.length} circle besties`);
+    functions.logger.info('Duress alert sent to circle besties', { userId: alert.userId, bestieCount: bestieIds.length });
     return null;
   });

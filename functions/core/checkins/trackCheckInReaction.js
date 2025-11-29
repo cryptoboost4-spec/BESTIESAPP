@@ -30,6 +30,6 @@ exports.trackCheckInReaction = functions.firestore
       createdAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`Tracked check-in reaction: ${reactorId} → ${checkInOwnerId}`);
+    functions.logger.info(`Tracked check-in reaction: ${reactorId} → ${checkInOwnerId}`);
     return null;
   });

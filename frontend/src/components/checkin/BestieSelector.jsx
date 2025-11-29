@@ -20,8 +20,9 @@ const BestieSelector = ({
   const [copied, setCopied] = useState(false);
 
   // Filter active messenger contacts
+  // Handle null case (not loaded yet) - treat as empty array
   const now = Date.now();
-  const activeMessengerContacts = messengerContacts.filter(
+  const activeMessengerContacts = (messengerContacts || []).filter(
     contact => contact.expiresAt?.toMillis() > now
   );
 
@@ -120,7 +121,7 @@ const BestieSelector = ({
                     <div className="flex items-center gap-3">
                       <div className="flex-shrink-0">
                         {contact.photoURL ? (
-                          <img src={contact.photoURL} alt={contact.name} className="w-10 h-10 rounded-full object-cover" />
+                          <img src={contact.photoURL} alt={contact.name} className="w-10 h-10 rounded-full object-cover" loading="lazy" />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
                             {contact.name?.charAt(0) || '?'}

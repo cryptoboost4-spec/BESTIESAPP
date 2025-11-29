@@ -302,7 +302,7 @@ const BestieRequestModal = ({ onClose }) => {
             {/* Profile Photo */}
             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-4xl font-display overflow-hidden mx-auto mb-4 border-4 border-white shadow-xl">
               {userData?.photoURL ? (
-                <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
+                <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" loading="lazy" />
               ) : (
                 <span className="bg-gradient-primary text-white w-full h-full flex items-center justify-center">
                   {userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'}

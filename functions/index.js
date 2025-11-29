@@ -33,6 +33,7 @@ const { onBestieDeleted } = require('./core/besties/onBestieDeleted');
 // USER FUNCTIONS
 // ========================================
 const { onUserCreated } = require('./core/users/onUserCreated');
+const { onUserRequestAttention } = require('./core/users/onUserRequestAttention');
 
 // ========================================
 // BADGE FUNCTIONS
@@ -429,6 +430,7 @@ exports.onBestieDeleted = onBestieDeleted;
 
 // Users
 exports.onUserCreated = onUserCreated;
+exports.onUserRequestAttention = onUserRequestAttention;
 
 // Badges
 exports.onBadgeEarned = onBadgeEarned;

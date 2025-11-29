@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -76,13 +76,15 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       let activeCheckInsMap = {};
       if (allBestieIdsForCheckIns.length > 0) {
-        // Use Promise.all to check check-ins in parallel (limit to 10 concurrent)
+        // Check check-ins in parallel (already optimized with Promise.all)
+        // Use limit(1) since we only need to know if any exist
         const checkInPromises = allBestieIdsForCheckIns.map(bestieId => 
           getDocs(
             query(
               collection(db, 'checkins'),
               where('userId', '==', bestieId),
-              where('status', 'in', ['active', 'alerted'])
+              where('status', 'in', ['active', 'alerted']),
+              limit(1) // We only need to know if any exist, not fetch all
             )
           ).then(snap => ({ bestieId, hasActive: !snap.empty }))
         );
@@ -324,7 +326,11 @@ const LivingCircle = ({ userId, onAddClick }) => {
     }
   };
 
-  const slots = Array.from({ length: 5 }, (_, i) => circleBesties[i] || null);
+  // Memoize slots array to avoid recreating on every render
+  const slots = useMemo(() => 
+    Array.from({ length: 5 }, (_, i) => circleBesties[i] || null),
+    [circleBesties]
+  );
 
   if (loading) {
     return (

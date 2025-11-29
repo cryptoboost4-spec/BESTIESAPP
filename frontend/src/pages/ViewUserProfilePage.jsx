@@ -107,7 +107,7 @@ const ViewUserProfilePage = () => {
       const alertedCheckInsQuery = query(
         collection(db, 'checkins'),
         where('userId', '==', userId),
-        where('bestieIds', 'array-contains', currentUser.uid),
+        where('bestieUserIds', 'array-contains', currentUser.uid),
         where('status', '==', 'alerted')
       );
       const alertedSnapshot = await getDocs(alertedCheckInsQuery);
@@ -216,7 +216,7 @@ const ViewUserProfilePage = () => {
           <div className="relative z-10">
             <div className="w-36 h-36 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center text-white text-5xl font-display overflow-hidden border-4 border-white shadow-2xl ring-4 ring-purple-200">
               {user?.photoURL ? (
-                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 user?.displayName?.[0] || 'U'
               )}

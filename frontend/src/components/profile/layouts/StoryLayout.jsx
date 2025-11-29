@@ -42,7 +42,7 @@ const StoryLayout = ({
       <div className="relative z-10 mb-6">
         <div className="w-40 h-40 bg-gradient-primary rounded-full flex items-center justify-center text-white text-6xl font-display overflow-hidden shadow-2xl ring-4 ring-white/50">
           {profilePhoto ? (
-            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span>{displayName?.[0] || 'U'}</span>
           )}

@@ -66,7 +66,7 @@ const ClassicLayout = ({
           className={`w-36 h-36 bg-gradient-primary flex items-center justify-center text-white text-5xl font-display overflow-hidden hover:scale-105 transition-all ${getPhotoShapeClass()} ${getPhotoBorderClass()}`}
         >
           {profilePhoto ? (
-            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span>{displayName?.[0] || 'U'}</span>
           )}

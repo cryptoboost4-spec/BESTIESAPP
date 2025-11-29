@@ -86,11 +86,15 @@ async function checkExpiredCheckIns(config) {
               if (expiresAt && expiresAt.toMillis && now < expiresAt.toMillis()) {
                 // Import sendMessengerAlert from utils (fixes circular dependency)
                 const { sendMessengerAlert } = require('../../utils/checkInNotifications');
-                await sendMessengerAlert(contact.messengerPSID, {
-                  userName: userData.displayName,
-                  location: checkinData.location?.address || checkinData.location || 'Unknown',
-                  startTime: checkinData.createdAt.toDate().toLocaleString()
-                });
+                const { retryApiCall } = require('../../utils/retry');
+                await retryApiCall(
+                  () => sendMessengerAlert(contact.messengerPSID, {
+                    userName: userData.displayName,
+                    location: checkinData.location?.address || checkinData.location || 'Unknown',
+                    startTime: checkinData.createdAt.toDate().toLocaleString()
+                  }),
+                  { maxRetries: 3, operationName: `Messenger alert to ${contact.name}` }
+                );
                 functions.logger.info(`✅ Sent messenger alert to ${contact.name} (${contact.messengerPSID})`);
               } else {
                 functions.logger.debug(`⏰ Messenger contact ${contact.name} expired, skipping`);

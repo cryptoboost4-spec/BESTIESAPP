@@ -66,7 +66,7 @@ const SplitScreenLayout = ({
           className={`w-28 h-28 bg-gradient-primary flex items-center justify-center text-white text-4xl font-display overflow-hidden flex-shrink-0 ${getPhotoShapeClass()} ${getPhotoBorderClass()}`}
         >
           {profilePhoto ? (
-            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span>{displayName?.[0] || 'U'}</span>
           )}

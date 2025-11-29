@@ -4,7 +4,6 @@ import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import { notificationService } from '../services/notificationService';
 import { sanitizeUserInput } from '../utils/sanitize';
 
 const RequestSupportSection = () => {
@@ -228,37 +227,9 @@ const RequestSupportSection = () => {
                       bestieUserIds: userData?.bestieUserIds || {},
                     });
 
-                    // Notify all besties
-                    try {
-                      const bestiesQuery = query(
-                        collection(db, 'besties'),
-                        where('status', '==', 'accepted')
-                      );
-                      const bestiesSnapshot = await getDocs(bestiesQuery);
-                      const userBesties = [];
-
-                      bestiesSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        // Get the other person's ID (not mine)
-                        if (data.requesterId === currentUser.uid) {
-                          userBesties.push({ id: data.recipientId });
-                        } else if (data.recipientId === currentUser.uid) {
-                          userBesties.push({ id: data.requesterId });
-                        }
-                      });
-
-                      // Send notification to each bestie
-                      for (const bestie of userBesties) {
-                        await notificationService.notifyRequestAttention(
-                          bestie.id,
-                          userData?.displayName || 'A bestie',
-                          currentUser.uid
-                        );
-                      }
-                    } catch (notifError) {
-                      console.error('Error sending notifications:', notifError);
-                      // Don't fail the whole operation if notifications fail
-                    }
+                    // Notifications will be created automatically by Cloud Function
+                    // when requestAttention field is updated (onUserRequestAttention trigger)
+                    // No need to manually create notifications here
 
                     toast.success('Your besties have been notified 💜');
                     setShowRequestAttention(false);

@@ -78,15 +78,25 @@ class NotificationService {
 
   /**
    * Send a request attention notification
+   * Note: Notifications can only be created by Cloud Functions per security rules
+   * This will fail silently - notifications should be created server-side
    */
   async notifyRequestAttention(userId, bestieName, bestieId) {
-    return this.createNotification(
-      userId,
-      'request_attention',
-      'Someone Needs You',
-      `${bestieName} is requesting your attention`,
-      { bestieName, bestieId }
-    );
+    try {
+      // Security rules prevent direct creation - this will fail
+      // TODO: Create a Cloud Function for this or update security rules
+      return this.createNotification(
+        userId,
+        'request_attention',
+        'Someone Needs You',
+        `${bestieName} is requesting your attention`,
+        { bestieName, bestieId }
+      );
+    } catch (error) {
+      // Silently fail - notifications should be created via Cloud Function
+      console.warn('Notification creation failed (expected - should use Cloud Function):', error.message);
+      return null;
+    }
   }
 
   /**

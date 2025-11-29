@@ -30,6 +30,6 @@ exports.trackPostComment = functions.firestore
       createdAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`Tracked comment interaction: ${commenterId} → ${postOwnerId}`);
+    functions.logger.info(`Tracked comment interaction: ${commenterId} → ${postOwnerId}`);
     return null;
   });

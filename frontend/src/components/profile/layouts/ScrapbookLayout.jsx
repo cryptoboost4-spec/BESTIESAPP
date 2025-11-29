@@ -60,7 +60,7 @@ const ScrapbookLayout = ({
       <div className="relative inline-block z-10 mb-4 transform rotate-2">
         <div className="w-32 h-32 bg-gradient-primary rounded-2xl flex items-center justify-center text-white text-4xl font-display overflow-hidden shadow-xl border-4 border-white">
           {profilePhoto ? (
-            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span>{displayName?.[0] || 'U'}</span>
           )}

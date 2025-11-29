@@ -250,7 +250,7 @@ const SocialShareCardsModal = ({ onClose }) => {
             {/* Profile Photo */}
             <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center text-white text-5xl font-display overflow-hidden mx-auto mb-4 border-4 border-white shadow-xl">
               {userData?.photoURL ? (
-                <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
+                <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" loading="lazy" />
               ) : (
                 userData?.displayName?.[0] || currentUser?.email?.[0] || 'U'
               )}

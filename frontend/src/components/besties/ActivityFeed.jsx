@@ -169,6 +169,7 @@ const ActivityFeed = ({
                           src={activity.postData.userPhoto}
                           alt={activity.userName}
                           className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-pink-300 dark:ring-pink-600"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display flex-shrink-0 ring-2 ring-pink-300 dark:ring-pink-600">
@@ -221,6 +222,7 @@ const ActivityFeed = ({
                           src={activity.postData.userPhoto}
                           alt={activity.userName}
                           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-display flex-shrink-0">
@@ -256,6 +258,7 @@ const ActivityFeed = ({
                         src={activity.postData.photoURL}
                         alt="Post"
                         className="w-full rounded-xl mb-2 max-h-96 object-cover"
+                        loading="lazy"
                       />
                     )}
 

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BestieCard from '../BestieCard';
 import toast from 'react-hot-toast';
 import { db } from '../../services/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 
-const BestiesGrid = ({ besties, activityFeed }) => {
+const BestiesGrid = ({ besties, activityFeed, featuredCircle = [] }) => {
   const navigate = useNavigate();
   const [selectedBestie, setSelectedBestie] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -38,41 +38,52 @@ const BestiesGrid = ({ besties, activityFeed }) => {
     }
   };
 
-  // Get visual indicators for a bestie based on actual activity data
-  const getBestieIndicators = (bestie) => {
-    const indicators = [];
-    const bestieActivities = activityFeed.filter(a => a.userId === bestie.userId);
+  // Memoize indicators map to avoid recalculating on every render
+  const indicatorsMap = useMemo(() => {
+    const map = new Map();
+    if (!activityFeed || activityFeed.length === 0) return map;
 
-    // Only show indicators based on actual earned criteria
-    
-    // Fast responder - responded to an alert in last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const hasRecentResponse = bestieActivities.some(a => 
-      a.type === 'checkin' && a.timestamp > oneHourAgo
-    );
-    if (hasRecentResponse) {
-      indicators.push({ icon: '⚡', tooltip: 'Active recently' });
-    }
 
-    // Reliable - has completed 5+ check-ins visible in feed
-    const completedCount = bestieActivities.filter(a => 
-      a.type === 'checkin' && a.status === 'completed'
-    ).length;
-    if (completedCount >= 5) {
-      indicators.push({ icon: '🛡️', tooltip: 'Very reliable' });
-    }
+    besties.forEach(bestie => {
+      const indicators = [];
+      const bestieActivities = activityFeed.filter(a => a.userId === bestie.userId);
 
-    // Night owl - has 3+ night check-ins (9pm-6am)
-    const nightCheckIns = bestieActivities.filter(a => {
-      if (a.type !== 'checkin' || !a.timestamp) return false;
-      const hour = a.timestamp.getHours?.() ?? new Date(a.timestamp).getHours();
-      return hour >= 21 || hour <= 6;
+      // Fast responder - responded to an alert in last hour
+      const hasRecentResponse = bestieActivities.some(a => 
+        a.type === 'checkin' && a.timestamp > oneHourAgo
+      );
+      if (hasRecentResponse) {
+        indicators.push({ icon: '⚡', tooltip: 'Active recently' });
+      }
+
+      // Reliable - has completed 5+ check-ins visible in feed
+      const completedCount = bestieActivities.filter(a => 
+        a.type === 'checkin' && a.status === 'completed'
+      ).length;
+      if (completedCount >= 5) {
+        indicators.push({ icon: '🛡️', tooltip: 'Very reliable' });
+      }
+
+      // Night owl - has 3+ night check-ins (9pm-6am)
+      const nightCheckIns = bestieActivities.filter(a => {
+        if (a.type !== 'checkin' || !a.timestamp) return false;
+        const hour = a.timestamp.getHours?.() ?? new Date(a.timestamp).getHours();
+        return hour >= 21 || hour <= 6;
+      });
+      if (nightCheckIns.length >= 3) {
+        indicators.push({ icon: '🌙', tooltip: 'Night owl' });
+      }
+
+      map.set(bestie.id, indicators.slice(0, 3));
     });
-    if (nightCheckIns.length >= 3) {
-      indicators.push({ icon: '🌙', tooltip: 'Night owl' });
-    }
 
-    return indicators.slice(0, 3);
+    return map;
+  }, [besties, activityFeed]);
+
+  // Get visual indicators for a bestie (now just a lookup)
+  const getBestieIndicators = (bestie) => {
+    return indicatorsMap.get(bestie.id) || [];
   };
 
   return (
@@ -147,7 +158,8 @@ const BestiesGrid = ({ besties, activityFeed }) => {
                   className="h-full transform transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                   onClick={() => setSelectedBestie(isMenuOpen ? null : bestie.id)}
                 >
-                  <BestieCard bestie={bestie} />
+                  <BestieCard
+                featuredCircle={featuredCircle} bestie={bestie} />
                   
                   {/* Visual Indicators - Bottom Center */}
                   {indicators.length > 0 && (

@@ -60,7 +60,15 @@ const CheckInCard = ({ checkIn }) => {
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const alertTime = optimisticAlertTime || checkIn.alertTime.toDate();
+      // Handle null/undefined alertTime safely
+      const alertTime = optimisticAlertTime || 
+        (checkIn.alertTime?.toDate ? checkIn.alertTime.toDate() : null);
+      
+      if (!alertTime) {
+        setTimeLeft(0);
+        return;
+      }
+      
       const now = new Date();
       const diff = alertTime - now;
       setTimeLeft(Math.max(0, diff));
@@ -167,7 +175,15 @@ const CheckInCard = ({ checkIn }) => {
   const handleExtend = async (minutes) => {
     haptic.light();
 
-    const currentAlertTime = optimisticAlertTime || checkIn.alertTime.toDate();
+    // Handle null/undefined alertTime safely
+    const currentAlertTime = optimisticAlertTime || 
+      (checkIn.alertTime?.toDate ? checkIn.alertTime.toDate() : null);
+    
+    if (!currentAlertTime) {
+      toast.error('Unable to extend check-in: missing alert time');
+      return;
+    }
+    
     const newAlertTime = new Date(currentAlertTime.getTime() + minutes * 60 * 1000);
     setOptimisticAlertTime(newAlertTime);
     setExtendingButton(minutes);
@@ -182,7 +198,10 @@ const CheckInCard = ({ checkIn }) => {
         const checkInSnap = await getDoc(checkInRef);
 
         if (checkInSnap.exists()) {
-          setOptimisticAlertTime(checkInSnap.data().alertTime.toDate());
+          const alertTime = checkInSnap.data().alertTime;
+          if (alertTime?.toDate) {
+            setOptimisticAlertTime(alertTime.toDate());
+          }
 
           // Track analytics
           const { logAnalyticsEvent } = require('../services/firebase');
@@ -478,7 +497,8 @@ const CheckInCard = ({ checkIn }) => {
         isOpen={showEditTimeModal}
         onClose={() => setShowEditTimeModal(false)}
         checkInId={checkIn.id}
-        currentAlertTime={optimisticAlertTime || checkIn.alertTime.toDate()}
+        currentAlertTime={optimisticAlertTime || 
+          (checkIn.alertTime?.toDate ? checkIn.alertTime.toDate() : new Date())}
         onTimeUpdated={(newTime) => setOptimisticAlertTime(newTime)}
         isDark={isDark}
       />

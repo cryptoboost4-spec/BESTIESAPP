@@ -30,7 +30,9 @@ const CreateCheckInPage = () => {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [besties, setBesties] = useState([]);
-  const [messengerContacts, setMessengerContacts] = useState([]);
+  const [bestiesLoading, setBestiesLoading] = useState(true);
+  const [messengerContacts, setMessengerContacts] = useState(null); // null = not loaded yet, [] = loaded but empty
+  const [messengerLoading, setMessengerLoading] = useState(true);
   const [selectedMessengerContacts, setSelectedMessengerContacts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showingLoader, setShowingLoader] = useState(false);
@@ -116,10 +118,13 @@ const CreateCheckInPage = () => {
     const userDocRef = doc(db, 'users', currentUser.uid);
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
       try {
+        // DON'T set loading to false yet - wait until data is actually loaded
+        
         if (!userDoc.exists()) {
           console.error('❌ User document does not exist');
           console.groupEnd();
           setBesties([]);
+          setBestiesLoading(false); // Set to false AFTER setting empty array
           return;
         }
 
@@ -129,6 +134,7 @@ const CreateCheckInPage = () => {
         if (featuredIds.length === 0) {
           console.warn('⚠️ featuredCircle is empty - no besties to load');
           setBesties([]);
+          setBestiesLoading(false); // Set to false AFTER setting empty array
           return;
         }
 
@@ -201,6 +207,8 @@ const CreateCheckInPage = () => {
         );
 
         setBesties(bestiesWithUserData);
+        // CRITICAL: Set loading to false AFTER data is set
+        setBestiesLoading(false);
 
         // Auto-select besties who have any contact method (phone+SMS, telegram, or push)
         // Allow messenger-only check-ins - no SMS requirement
@@ -219,31 +227,39 @@ const CreateCheckInPage = () => {
             console.log('Quick check-in detected, besties auto-selected:', bestiesWithContact.length);
           }
 
-          // Warn if some besties can't receive alerts (no contact method at all)
-          const cantReceiveAlerts = bestiesWithUserData.filter(b => {
-            // Check if bestie has ANY contact method
-            const hasPhoneSMS = b.phone && b.smsEnabled;
-            const hasTelegram = b.telegramChatId || b.notificationPreferences?.telegram;
-            const hasPush = b.notificationPreferences?.push;
-            return !hasPhoneSMS && !hasTelegram && !hasPush;
-          });
-          
-          if (cantReceiveAlerts.length > 0) {
-            console.warn('⚠️ Some circle besties have no contact method enabled:', cantReceiveAlerts);
-            const bestieNames = cantReceiveAlerts.map(b => b.name || 'Unknown').join(', ');
-            toast(`⚠️ ${cantReceiveAlerts.length} bestie(s) need to enable notifications (SMS, Telegram, or Push): ${bestieNames}`, {
-              icon: 'ℹ️',
-              duration: 6000
+          // Only warn if we're NOT using messenger contacts (which can receive alerts)
+          // If messenger contacts are available, they can receive alerts even if regular besties don't have contact methods
+          if (messengerContacts === null || (messengerContacts && messengerContacts.length === 0)) {
+            // Warn if some besties can't receive alerts (no contact method at all)
+            const cantReceiveAlerts = bestiesWithUserData.filter(b => {
+              // Check if bestie has ANY contact method
+              const hasPhoneSMS = b.phone && b.smsEnabled;
+              const hasTelegram = b.telegramChatId || b.notificationPreferences?.telegram;
+              const hasPush = b.notificationPreferences?.push;
+              return !hasPhoneSMS && !hasTelegram && !hasPush;
             });
+            
+            if (cantReceiveAlerts.length > 0) {
+              console.warn('⚠️ Some circle besties have no contact method enabled:', cantReceiveAlerts);
+              const bestieNames = cantReceiveAlerts.map(b => b.name || 'Unknown').join(', ');
+              toast(`⚠️ ${cantReceiveAlerts.length} bestie(s) need to enable notifications (SMS, Telegram, or Push): ${bestieNames}`, {
+                icon: 'ℹ️',
+                duration: 6000
+              });
+            }
           }
         }
       } catch (error) {
         console.error('Error loading besties:', error);
         toast.error('Failed to load besties');
+        setBesties([]);
+        setBestiesLoading(false); // Set to false even on error
       }
     }, (error) => {
       console.error('Error in featuredCircle listener:', error);
       toast.error('Failed to load besties');
+      setBesties([]);
+      setBestiesLoading(false); // Set to false even on error
     });
 
     console.groupEnd();
@@ -275,6 +291,7 @@ const CreateCheckInPage = () => {
       );
 
       setMessengerContacts(activeContacts);
+      setMessengerLoading(false);
 
       // Auto-select all active messenger contacts for quick check-ins only
       if (location.state?.quickType && activeContacts.length > 0) {
@@ -284,6 +301,8 @@ const CreateCheckInPage = () => {
       }
     }, (error) => {
       console.error('Error loading messenger contacts:', error);
+      setMessengerContacts([]); // Set to empty array on error
+      setMessengerLoading(false);
     });
 
     return () => unsubscribe();
@@ -291,20 +310,23 @@ const CreateCheckInPage = () => {
 
   // Auto-submit quick check-ins after besties are loaded
   useEffect(() => {
-    // Only auto-submit if:
-    // 1. shouldAutoSubmit is true
-    // 2. Not currently loading
-    // 3. Besties have been loaded (besties array is populated, even if empty)
-    // 4. Messenger contacts have been loaded (messengerContacts array is populated, even if empty)
-    const bestiesLoaded = besties !== null && besties !== undefined; // Array has been initialized
-    const messengerLoaded = messengerContacts !== null && messengerContacts !== undefined; // Array has been initialized
+    // CRITICAL: Check loading states FIRST - if still loading, do nothing
+    if (bestiesLoading || messengerLoading) {
+      return; // Still loading, wait
+    }
     
-    if (shouldAutoSubmit && !loading && bestiesLoaded && messengerLoaded) {
-      // Check if we have at least one contact method (regular besties OR messenger contacts)
-      const hasRegularBesties = selectedBesties.length > 0;
-      const hasMessengerContacts = selectedMessengerContacts.length > 0;
-      
-      if (hasRegularBesties || hasMessengerContacts) {
+    // Only proceed if:
+    // 1. shouldAutoSubmit is true
+    // 2. Not currently submitting (loading === false)
+    if (!shouldAutoSubmit || loading) {
+      return;
+    }
+    
+    // Check if we have at least one contact method (regular besties OR messenger contacts)
+    const hasRegularBesties = selectedBesties.length > 0;
+    const hasMessengerContacts = selectedMessengerContacts.length > 0;
+    
+    if (hasRegularBesties || hasMessengerContacts) {
         // Besties are loaded and auto-selected, now trigger submit IMMEDIATELY
         console.log('Auto-submitting quick check-in with besties:', selectedBesties, 'messenger:', selectedMessengerContacts);
 
@@ -329,8 +351,7 @@ const CreateCheckInPage = () => {
           navigate('/');
         }, 2000);
       }
-    }
-  }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading, besties, messengerContacts, navigate]);
+  }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading, bestiesLoading, messengerLoading, messengerContacts, navigate]);
 
   // Load Google Places API
   useEffect(() => {

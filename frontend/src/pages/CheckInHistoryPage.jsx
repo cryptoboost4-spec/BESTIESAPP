@@ -484,6 +484,7 @@ const CheckInHistoryPage = () => {
                                     src={url}
                                     alt={`Check-in ${idx + 1}`}
                                     className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                                    loading="lazy"
                                   />
                                 </a>
                               ))}

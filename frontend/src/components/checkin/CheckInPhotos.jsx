@@ -33,6 +33,7 @@ const CheckInPhotos = ({
                 src={url}
                 alt={`Check-in ${index + 1}`}
                 className="w-full h-full object-cover rounded-xl"
+                loading="lazy"
               />
               {!isAlerted && (
                 <button

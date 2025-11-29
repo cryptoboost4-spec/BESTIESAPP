@@ -56,7 +56,7 @@ const BentoLayout = ({
             className={`w-20 h-20 bg-gradient-primary flex items-center justify-center text-white text-3xl font-display overflow-hidden mb-2 shadow-md ${getPhotoShapeClass()}`}
           >
             {profilePhoto ? (
-              <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+              <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <span>{displayName?.[0] || 'U'}</span>
             )}

@@ -147,6 +147,7 @@ const NotesPhotosSection = ({
                     src={preview}
                     alt={`Preview ${index + 1}`}
                     className="w-full h-full rounded-xl object-cover"
+                    loading="lazy"
                   />
                   <button
                     type="button"

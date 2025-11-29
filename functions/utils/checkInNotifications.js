@@ -2,6 +2,7 @@ const admin = require('firebase-admin');
 const axios = require('axios');
 const functions = require('firebase-functions');
 const sgMail = require('@sendgrid/mail');
+const { retryApiCall } = require('./retry');
 
 sgMail.setApiKey(functions.config().sendgrid?.api_key);
 
@@ -29,7 +30,7 @@ const NOTIFICATION_CONFIG = {
 async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, checkInData, messengerContactIds = []) {
   // Check if this notification type is enabled
   if (!NOTIFICATION_CONFIG[notificationType]) {
-    console.log(`Notification type ${notificationType} is disabled, skipping`);
+    functions.logger.debug(`Notification type ${notificationType} is disabled, skipping`);
     return;
   }
 
@@ -39,7 +40,7 @@ async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, ch
     // Get user data
     const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
-      console.error('User not found:', userId);
+      functions.logger.error('User not found:', { userId });
       return;
     }
 
@@ -55,26 +56,44 @@ async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, ch
       await sendMessengerContactNotifications(userId, message, messengerContactIds);
     }
 
+    // Batch fetch all bestie documents at once to avoid N+1 queries
+    // db.getAll() can handle up to 100 documents, so batch in chunks if > 100
+    const bestieDataMap = new Map();
+    const BATCH_SIZE = 100;
+    
+    for (let i = 0; i < bestieIds.length; i += BATCH_SIZE) {
+      const batch = bestieIds.slice(i, i + BATCH_SIZE);
+      const bestieDocRefs = batch.map(id => db.collection('users').doc(id));
+      const bestieDocs = await db.getAll(...bestieDocRefs);
+      
+      bestieDocs.forEach(doc => {
+        if (doc.exists) {
+          bestieDataMap.set(doc.id, doc.data());
+        }
+      });
+    }
+
     // Send to each bestie via their enabled free channels
     const notificationPromises = bestieIds.map(async (bestieId) => {
       try {
-        const bestieDoc = await db.collection('users').doc(bestieId).get();
-        if (!bestieDoc.exists) {
-          console.log(`Bestie ${bestieId} not found`);
+        const bestieData = bestieDataMap.get(bestieId);
+        if (!bestieData) {
+          functions.logger.debug(`Bestie ${bestieId} not found in batch fetch`);
           return;
         }
-
-        const bestieData = bestieDoc.data();
         const channelResults = [];
 
         // 1. Send via Telegram (if bestie has it connected and enabled)
         if (bestieData.notificationPreferences?.telegram && bestieData.telegramChatId) {
           try {
-            await sendTelegramNotification(bestieData.telegramChatId, message);
+            await retryApiCall(
+              () => sendTelegramNotification(bestieData.telegramChatId, message),
+              { maxRetries: 3, operationName: `Telegram notification to ${bestieId}` }
+            );
             channelResults.push({ channel: 'telegram', success: true });
-            console.log(`✅ Telegram sent to bestie ${bestieId}`);
+            functions.logger.info(`✅ Telegram sent to bestie ${bestieId}`);
           } catch (error) {
-            console.error(`❌ Telegram failed for bestie ${bestieId}:`, error.message);
+            functions.logger.error(`❌ Telegram failed for bestie ${bestieId}:`, { error: error.message, bestieId });
             channelResults.push({ channel: 'telegram', success: false, error: error.message });
           }
         }
@@ -82,11 +101,14 @@ async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, ch
         // 2. Send via Email (if bestie has email enabled)
         if (bestieData.notificationPreferences?.email && bestieData.email) {
           try {
-            await sendEmailNotification(bestieData.email, userName, notificationType, checkInData);
+            await retryApiCall(
+              () => sendEmailNotification(bestieData.email, userName, notificationType, checkInData),
+              { maxRetries: 3, operationName: `Email notification to ${bestieId}` }
+            );
             channelResults.push({ channel: 'email', success: true });
-            console.log(`✅ Email sent to bestie ${bestieId}`);
+            functions.logger.info(`✅ Email sent to bestie ${bestieId}`);
           } catch (error) {
-            console.error(`❌ Email failed for bestie ${bestieId}:`, error.message);
+            functions.logger.error(`❌ Email failed for bestie ${bestieId}:`, { error: error.message, bestieId });
             channelResults.push({ channel: 'email', success: false, error: error.message });
           }
         }
@@ -103,17 +125,21 @@ async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, ch
 
         return { bestieId, channels: channelResults };
       } catch (error) {
-        console.error(`Error notifying bestie ${bestieId}:`, error);
+        functions.logger.error(`Error notifying bestie ${bestieId}:`, { error: error.message, bestieId, stack: error.stack });
         return { bestieId, error: error.message };
       }
     });
 
     const results = await Promise.all(notificationPromises);
-    console.log(`Check-in notification (${notificationType}) sent to ${bestieIds.length} besties:`, results);
+    functions.logger.info(`Check-in notification (${notificationType}) sent to ${bestieIds.length} besties`, { 
+      notificationType, 
+      bestieCount: bestieIds.length,
+      resultsCount: results.length 
+    });
 
     return results;
   } catch (error) {
-    console.error('Error in notifyBestiesAboutCheckIn:', error);
+    functions.logger.error('Error in notifyBestiesAboutCheckIn:', { error: error.message, userId, notificationType, stack: error.stack });
     throw error;
   }
 }
@@ -231,7 +257,7 @@ async function sendMessengerContactNotifications(userId, message, selectedContac
     }
 
     if (contactsSnapshot.empty) {
-      console.log('No messenger contacts found for user:', userId);
+      functions.logger.debug('No messenger contacts found for user:', { userId });
       return;
     }
 
@@ -244,16 +270,19 @@ async function sendMessengerContactNotifications(userId, message, selectedContac
       .map(async (doc) => {
         const contact = doc.data();
         try {
-          await sendMessengerMessage(contact.messengerPSID, message);
-          console.log(`✅ Messenger sent to contact ${contact.name}`);
+          await retryApiCall(
+            () => sendMessengerMessage(contact.messengerPSID, message),
+            { maxRetries: 3, operationName: `Messenger message to ${contact.name}` }
+          );
+          functions.logger.info(`✅ Messenger sent to contact ${contact.name}`, { contactName: contact.name, userId });
         } catch (error) {
-          console.error(`❌ Messenger failed for contact ${contact.name}:`, error.message);
+          functions.logger.error(`❌ Messenger failed for contact ${contact.name}:`, { error: error.message, contactName: contact.name, userId });
         }
       });
 
     await Promise.all(sendPromises);
   } catch (error) {
-    console.error('Error sending messenger contact notifications:', error);
+    functions.logger.error('Error sending messenger contact notifications:', { error: error.message, userId, stack: error.stack });
   }
 }
 

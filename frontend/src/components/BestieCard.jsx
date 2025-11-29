@@ -7,7 +7,7 @@ import ProfileWithBubble from './ProfileWithBubble';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useAuth } from '../contexts/AuthContext';
 
-const BestieCard = ({ bestie, onRemove }) => {
+const BestieCard = ({ bestie, onRemove, featuredCircle = [] }) => {
   const { isDark } = useDarkMode();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -137,8 +137,8 @@ const BestieCard = ({ bestie, onRemove }) => {
         <div className="absolute inset-0 bg-gradient-to-br from-pink-300 via-purple-300 to-pink-300 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
 
         <div className="relative card p-5 bg-gradient-to-br from-pink-50/50 via-purple-50/50 to-pink-50/50 dark:from-pink-900/10 dark:via-purple-900/10 dark:to-pink-900/10 border-2 border-pink-200 dark:border-pink-600 hover:shadow-xl transition-all hover:transform hover:-translate-y-1 min-h-[280px] flex flex-col">
-          {/* Circle badge - top right */}
-          {bestie.isFavorite && (
+          {/* Circle badge - top right - check featuredCircle, not just isFavorite */}
+          {featuredCircle.includes(bestie.userId) && (
             <div className="absolute top-3 right-3">
               <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1">
                 ⭐ Circle

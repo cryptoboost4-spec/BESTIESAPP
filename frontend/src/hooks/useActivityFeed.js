@@ -107,14 +107,20 @@ export function useActivityFeed(currentUser, besties, userData) {
         );
         allQueryPromises.push(getDocs(checkInsAsBestieQuery).then(snap => ({ type: 'checkinsAsBestie', snap })));
         
-        const postsQuery = query(
-          collection(db, 'posts'),
-          where('userId', 'in', batch),
-          where('createdAt', '>=', twoDaysAgo),
-          orderBy('createdAt', 'desc'),
-          limit(100)
-        );
-        allQueryPromises.push(getDocs(postsQuery).then(snap => ({ type: 'posts', snap, batch })));
+        // Firestore 'in' queries require at least one element and max 10
+        if (batch.length > 0 && batch.length <= 10) {
+          const postsQuery = query(
+            collection(db, 'posts'),
+            where('userId', 'in', batch),
+            where('createdAt', '>=', twoDaysAgo),
+            orderBy('createdAt', 'desc'),
+            limit(100)
+          );
+          allQueryPromises.push(getDocs(postsQuery).then(snap => ({ type: 'posts', snap, batch })).catch(err => {
+            console.warn('Error loading posts for batch:', err);
+            return { type: 'posts', snap: { forEach: () => {}, empty: true }, batch: [] };
+          }));
+        }
       }
       
       for (let i = 0; i < bestieIds.length; i += BATCH_SIZE) {

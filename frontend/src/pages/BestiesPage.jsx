@@ -37,6 +37,7 @@ const BestiesPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [featuredCircle, setFeaturedCircle] = useState([]);
 
   // Activity feed - using custom hook
   const { activityFeed, activityLoading, missedCheckIns, requestsForAttention } = useActivityFeed(currentUser, besties, userData);
@@ -111,6 +112,17 @@ const BestiesPage = () => {
         console.error('Error loading recipient besties:', error);
         setBesties(bestiesList);
         setLoading(false);
+      });
+
+      // Also load featuredCircle from user document to sync circle status
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      getDoc(userDocRef).then((userDoc) => {
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setFeaturedCircle(userData.featuredCircle || []);
+        }
+      }).catch((error) => {
+        console.error('Error loading featuredCircle:', error);
       });
     });
 
@@ -358,7 +370,13 @@ const BestiesPage = () => {
       if (aRecent && !bRecent) return -1;
       if (!aRecent && bRecent) return 1;
 
-      // If neither has recent activity, favorites first
+      // If neither has recent activity, circle members first (check featuredCircle, not just isFavorite)
+      const aInCircle = featuredCircle.includes(a.userId);
+      const bInCircle = featuredCircle.includes(b.userId);
+      if (aInCircle && !bInCircle) return -1;
+      if (!aInCircle && bInCircle) return 1;
+      
+      // Then favorites (for backward compatibility)
       if (a.isFavorite && !b.isFavorite) return -1;
       if (!a.isFavorite && b.isFavorite) return 1;
 
@@ -468,6 +486,7 @@ const BestiesPage = () => {
 
           {/* Besties Grid */}
           <BestiesGrid
+            featuredCircle={featuredCircle}
             besties={filteredBesties}
             activityFeed={activityFeed}
           />

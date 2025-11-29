@@ -63,7 +63,8 @@ const HomePage = () => {
     const checkInsQuery = query(
       collection(db, 'checkins'),
       where('userId', '==', currentUser.uid),
-      where('status', 'in', ['active', 'alerted'])
+      where('status', 'in', ['active', 'alerted']),
+      limit(50) // Reasonable limit for active check-ins
     );
 
     const unsubscribeCheckIns = onSnapshot(
@@ -87,7 +88,8 @@ const HomePage = () => {
     const alertedBestieQuery = query(
       collection(db, 'checkins'),
       where('bestieIds', 'array-contains', currentUser.uid),
-      where('status', '==', 'alerted')
+      where('status', '==', 'alerted'),
+      limit(20) // Reasonable limit for alerted check-ins
     );
 
     const unsubscribeAlerted = onSnapshot(
@@ -162,9 +164,11 @@ const HomePage = () => {
     const loadAnalytics = async () => {
       try {
         // Count emergency contact selections
+        // Use bestieUserIds for better security rule compatibility
         const emergencyQuery = query(
           collection(db, 'checkins'),
-          where('bestieIds', 'array-contains', currentUser.uid)
+          where('bestieUserIds', 'array-contains', currentUser.uid),
+          limit(1000) // Limit for analytics count (reasonable upper bound)
         );
         const emergencySnapshot = await getDocs(emergencyQuery);
         setEmergencyContactCount(emergencySnapshot.size);

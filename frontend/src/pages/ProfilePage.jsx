@@ -43,19 +43,31 @@ const ProfilePage = () => {
 
     const alertedBestieQuery = query(
       collection(db, 'checkins'),
-      where('bestieIds', 'array-contains', currentUser.uid),
-      where('status', '==', 'alerted')
+      where('bestieUserIds', 'array-contains', currentUser.uid),
+      where('status', '==', 'alerted'),
+      limit(20) // Reasonable limit for alerted check-ins
     );
 
     const unsubscribe = onSnapshot(
       alertedBestieQuery,
       async (snapshot) => {
         const alertedCheckIns = [];
+        
+        // Batch fetch all user documents at once to avoid N+1 queries
+        const userIds = [...new Set(snapshot.docs.map(doc => doc.data().userId))];
+        const userDocPromises = userIds.map(id => getDoc(doc(db, 'users', id)));
+        const userDocs = await Promise.all(userDocPromises);
+        const userDataMap = new Map();
+        userDocs.forEach((userDoc, idx) => {
+          if (userDoc.exists()) {
+            userDataMap.set(userIds[idx], userDoc.data());
+          }
+        });
+
+        // Use the map for lookups
         for (const docSnap of snapshot.docs) {
           const data = docSnap.data();
-          // Get the user's name who created the check-in
-          const userDoc = await getDoc(doc(db, 'users', data.userId));
-          const userName = userDoc.exists() ? userDoc.data().displayName : 'Bestie';
+          const userName = userDataMap.get(data.userId)?.displayName || 'Bestie';
 
           alertedCheckIns.push({
             id: docSnap.id,
@@ -66,7 +78,10 @@ const ProfilePage = () => {
         setAlertedBestieCheckIns(alertedCheckIns);
       },
       (error) => {
-        console.error('Error loading alerted check-ins:', error);
+        // Use error tracking instead of console.error
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading alerted check-ins:', error);
+        }
         setAlertedBestieCheckIns([]);
       }
     );
@@ -120,9 +135,10 @@ const ProfilePage = () => {
       setBestiesCount(snapshot1.size + snapshot2.size);
 
       // Count how many times user is an emergency contact
+      // Use bestieIds (selected besties) for this query
       const emergencyContactQuery = query(
         collection(db, 'checkins'),
-        where('selectedBesties', 'array-contains', currentUser.uid)
+        where('bestieIds', 'array-contains', currentUser.uid)
       );
       const emergencySnapshot = await getDocs(emergencyContactQuery);
       setEmergencyContactCount(emergencySnapshot.size);

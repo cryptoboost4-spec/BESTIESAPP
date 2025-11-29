@@ -42,7 +42,7 @@ const PolaroidLayout = ({
       <div className="inline-block bg-white shadow-2xl p-3 pb-12 transform rotate-1 hover:rotate-0 transition-transform z-10 relative">
         <div className="w-56 h-56 bg-gradient-primary flex items-center justify-center text-white text-5xl font-display overflow-hidden">
           {profilePhoto ? (
-            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span>{displayName?.[0] || 'U'}</span>
           )}
