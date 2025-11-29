@@ -5,9 +5,11 @@ import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import ProfileWithBubble from './ProfileWithBubble';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const BestieCard = ({ bestie, onRemove }) => {
   const { isDark } = useDarkMode();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [userPhoto, setUserPhoto] = useState(null);
   const [requestAttention, setRequestAttention] = useState(null);
@@ -61,9 +63,40 @@ const BestieCard = ({ bestie, onRemove }) => {
     setShowProfileMenu(false);
 
     try {
+      const newIsFavorite = !bestie.isFavorite;
+      
+      // Update isFavorite on besties document
       await updateDoc(doc(db, 'besties', bestie.id), {
-        isFavorite: !bestie.isFavorite,
+        isFavorite: newIsFavorite,
       });
+      
+      // Also update featuredCircle on user document (this is what actually controls the circle)
+      // Use bestie.userId (the actual user ID), not bestie.id (the bestie document ID)
+      if (currentUser && bestie.userId) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const currentFeaturedCircle = userDoc.data().featuredCircle || [];
+          let updatedFeaturedCircle;
+          
+          if (newIsFavorite) {
+            // Add to circle (max 5)
+            if (!currentFeaturedCircle.includes(bestie.userId) && currentFeaturedCircle.length < 5) {
+              updatedFeaturedCircle = [...currentFeaturedCircle, bestie.userId];
+            } else {
+              updatedFeaturedCircle = currentFeaturedCircle; // Already in circle or at max
+            }
+          } else {
+            // Remove from circle
+            updatedFeaturedCircle = currentFeaturedCircle.filter(id => id !== bestie.userId);
+          }
+          
+          await updateDoc(userDocRef, {
+            featuredCircle: updatedFeaturedCircle
+          });
+        }
+      }
+      
       toast.success(bestie.isFavorite ? 'Removed from circle' : 'Added to circle!');
     } catch (error) {
       console.error('Error toggling circle:', error);

@@ -291,7 +291,15 @@ const CreateCheckInPage = () => {
 
   // Auto-submit quick check-ins after besties are loaded
   useEffect(() => {
-    if (shouldAutoSubmit && !loading) {
+    // Only auto-submit if:
+    // 1. shouldAutoSubmit is true
+    // 2. Not currently loading
+    // 3. Besties have been loaded (besties array is populated, even if empty)
+    // 4. Messenger contacts have been loaded (messengerContacts array is populated, even if empty)
+    const bestiesLoaded = besties !== null && besties !== undefined; // Array has been initialized
+    const messengerLoaded = messengerContacts !== null && messengerContacts !== undefined; // Array has been initialized
+    
+    if (shouldAutoSubmit && !loading && bestiesLoaded && messengerLoaded) {
       // Check if we have at least one contact method (regular besties OR messenger contacts)
       const hasRegularBesties = selectedBesties.length > 0;
       const hasMessengerContacts = selectedMessengerContacts.length > 0;
@@ -322,7 +330,7 @@ const CreateCheckInPage = () => {
         }, 2000);
       }
     }
-  }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading, navigate]);
+  }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading, besties, messengerContacts, navigate]);
 
   // Load Google Places API
   useEffect(() => {

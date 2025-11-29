@@ -26,7 +26,7 @@ const NOTIFICATION_CONFIG = {
  * @param {string} notificationType - Type of notification (created, extended, completed, updated)
  * @param {object} checkInData - Check-in data
  */
-async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, checkInData) {
+async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, checkInData, messengerContactIds = []) {
   // Check if this notification type is enabled
   if (!NOTIFICATION_CONFIG[notificationType]) {
     console.log(`Notification type ${notificationType} is disabled, skipping`);
@@ -50,8 +50,9 @@ async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, ch
     const message = formatCheckInNotification(notificationType, userName, checkInData);
 
     // Send messenger notifications once (not per bestie to avoid duplicates)
-    if (notificationType === 'checkInCreated' || notificationType === 'checkInExtended') {
-      await sendMessengerContactNotifications(userId, message);
+    // Only send to selected messenger contacts if provided
+    if ((notificationType === 'checkInCreated' || notificationType === 'checkInExtended') && messengerContactIds.length > 0) {
+      await sendMessengerContactNotifications(userId, message, messengerContactIds);
     }
 
     // Send to each bestie via their enabled free channels
@@ -274,9 +275,18 @@ async function sendMessengerMessage(psid, text) {
   );
 }
 
+/**
+ * Send Messenger Alert (for expired check-ins)
+ */
+async function sendMessengerAlert(psid, alertData) {
+  const message = `🚨 SAFETY ALERT 🚨\n\n${alertData.userName} needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
+  await sendMessengerMessage(psid, message);
+}
+
 module.exports = {
   notifyBestiesAboutCheckIn,
   sendMessengerContactNotifications,
   sendMessengerMessage,
+  sendMessengerAlert,
   NOTIFICATION_CONFIG
 };

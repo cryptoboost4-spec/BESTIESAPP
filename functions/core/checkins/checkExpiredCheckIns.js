@@ -80,11 +80,12 @@ async function checkExpiredCheckIns(config) {
             for (const contactDoc of messengerContactsSnapshot.docs) {
               const contact = contactDoc.data();
               const now = Date.now();
-              const expiresAt = contact.expiresAt.toMillis();
+              const expiresAt = contact.expiresAt;
               
-              if (now < expiresAt) {
-                // Import sendMessengerAlert from index
-                const { sendMessengerAlert } = require('../../index');
+              // Check if contact is still active (has valid expiration)
+              if (expiresAt && expiresAt.toMillis && now < expiresAt.toMillis()) {
+                // Import sendMessengerAlert from utils (fixes circular dependency)
+                const { sendMessengerAlert } = require('../../utils/checkInNotifications');
                 await sendMessengerAlert(contact.messengerPSID, {
                   userName: userData.displayName,
                   location: checkinData.location?.address || checkinData.location || 'Unknown',

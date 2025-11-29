@@ -38,15 +38,30 @@ exports.acceptBestieRequest = functions.https.onCall(async (data, context) => {
       return; // Already accepted, exit transaction
     }
     
+    const requesterRef = db.collection('users').doc(currentBestieData.requesterId);
+    const recipientRef = db.collection('users').doc(currentBestieData.recipientId);
+    
     // Update bestie status atomically
     transaction.update(bestieRef, {
       status: 'accepted',
       acceptedAt: admin.firestore.Timestamp.now(),
     });
+    
+    // CRITICAL: Update bestieUserIds synchronously in transaction to prevent race condition
+    // This ensures permissions work immediately when frontend tries to read user documents
+    transaction.update(requesterRef, {
+      bestieUserIds: admin.firestore.FieldValue.arrayUnion(currentBestieData.recipientId),
+      'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+    });
+    
+    transaction.update(recipientRef, {
+      bestieUserIds: admin.firestore.FieldValue.arrayUnion(currentBestieData.requesterId),
+      'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+    });
   });
 
-  // Stats are updated by onBestieCountUpdate trigger - no need to update here
-  // (Removed duplicate increment to fix double-counting bug)
+  // Note: featuredCircle and badges are still updated by onBestieCountUpdate trigger
+  // to avoid making the transaction too large
 
   // Send notification to the requester that their request was accepted
   try {

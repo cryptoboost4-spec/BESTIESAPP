@@ -294,7 +294,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
 
   // Send to active Facebook Messenger contacts
   if (activeMessengerContacts.length > 0) {
-    const { sendMessengerAlert } = require('../../index');
+    const { sendMessengerAlert } = require('../../utils/checkInNotifications');
     const messengerPromises = activeMessengerContacts.map(async (psid) => {
       try {
         await sendMessengerAlert(psid, {

@@ -56,10 +56,12 @@ service cloud.firestore {
       // Admins can read all profiles
       allow read: if isSignedIn() && (
         request.auth.uid == userId ||
-        // They have me in their bestieUserIds
+        // They have me in their bestieUserIds (null-safe check)
         (resource.data.bestieUserIds != null && request.auth.uid in resource.data.bestieUserIds) ||
-        // OR I have them in my bestieUserIds (allows reading right after adding them)
-        (userId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.bestieUserIds) ||
+        // OR I have them in my bestieUserIds (allows reading right after adding them, null-safe)
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.bestieUserIds != null &&
+         userId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.bestieUserIds) ||
         (resource.data.isAdmin == true && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
       );
       allow create: if isSignedIn() && request.auth.uid == userId;
@@ -90,7 +92,7 @@ service cloud.firestore {
         request.resource.data.duration <= 180 &&
         (
           (request.resource.data.bestieIds != null && request.resource.data.bestieIds.size() > 0 && request.resource.data.bestieIds.size() <= 5) ||
-          (request.resource.data.messengerContactIds != null && request.resource.data.messengerContactIds.size() > 0)
+          (request.resource.data.messengerContactIds != null && request.resource.data.messengerContactIds.size() > 0 && request.resource.data.messengerContactIds.size() <= 10)
         );
 
       allow update: if isSignedIn() && (

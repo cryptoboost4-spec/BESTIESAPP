@@ -269,7 +269,7 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
       const expiresAt = contact.expiresAt?.toMillis();
       if (expiresAt && expiresAt > Date.now() && contact.messengerPSID) {
         try {
-          const { sendMessengerAlert } = require('../index');
+          const { sendMessengerAlert } = require('./checkInNotifications');
           sendMessengerAlert(contact.messengerPSID, {
             userName: cleanName,
             location: checkIn.location || 'Unknown',

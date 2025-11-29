@@ -179,6 +179,11 @@ const HomePage = () => {
 
       } catch (error) {
         console.error('Error loading analytics:', error);
+        // If permission error, it might be a race condition - set to 0 instead of crashing
+        if (error.code === 'permission-denied') {
+          console.warn('Permission denied loading analytics - may be race condition. Setting count to 0.');
+          setEmergencyContactCount(0);
+        }
       }
     };
 

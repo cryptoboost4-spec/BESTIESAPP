@@ -46,37 +46,18 @@ exports.onCheckInCreated = functions.firestore
       }, { merge: true });
 
       // Notify besties about new check-in (via free channels only)
-      if (checkIn.bestieIds && checkIn.bestieIds.length > 0) {
+      // Also handles messenger contacts if provided
+      if ((checkIn.bestieIds && checkIn.bestieIds.length > 0) || (checkIn.messengerContactIds && checkIn.messengerContactIds.length > 0)) {
         try {
           await notifyBestiesAboutCheckIn(
             checkIn.userId,
-            checkIn.bestieIds,
+            checkIn.bestieIds || [],
             'checkInCreated',
-            checkIn
+            checkIn,
+            checkIn.messengerContactIds || []
           );
         } catch (error) {
           functions.logger.error('Error notifying besties about check-in creation:', error);
-          // Don't fail the whole function if notifications fail
-        }
-      }
-
-      // Notify selected messenger contacts about new check-in
-      if (checkIn.messengerContactIds && checkIn.messengerContactIds.length > 0) {
-        try {
-          const { sendMessengerContactNotifications } = require('../../utils/checkInNotifications');
-          const userDoc = await db.collection('users').doc(checkIn.userId).get();
-          const userData = userDoc.data();
-          const userName = userData?.displayName || 'Your bestie';
-          const message = `👀 ${userName} just started a check-in - they're at ${checkIn.location || 'a location'} for the next ${checkIn.duration} mins`;
-          
-          // Send to only the selected messenger contacts
-          await sendMessengerContactNotifications(
-            checkIn.userId,
-            message,
-            checkIn.messengerContactIds
-          );
-        } catch (error) {
-          functions.logger.error('Error notifying messenger contacts about check-in creation:', error);
           // Don't fail the whole function if notifications fail
         }
       }

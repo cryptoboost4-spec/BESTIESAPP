@@ -14,9 +14,13 @@ exports.extendCheckIn = functions.https.onCall(async (data, context) => {
   // Validate checkInId
   validateId(checkInId, 'check-in ID');
 
-  // Validate additionalMinutes - only allow the button values
-  const validExtensions = [15, 30, 60];
-  validateEnum(additionalMinutes, validExtensions, 'Extension duration');
+  // Validate additionalMinutes - allow custom values within reasonable range
+  if (typeof additionalMinutes !== 'number' || additionalMinutes < -60 || additionalMinutes > 120) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Extension must be between -60 and +120 minutes'
+    );
+  }
 
   // Rate limiting: 10 extensions per hour
   const rateLimit = await checkUserRateLimit(
@@ -49,50 +53,41 @@ exports.extendCheckIn = functions.https.onCall(async (data, context) => {
 
   const checkInData = checkIn.data();
   const currentAlertTime = checkInData.alertTime.toDate();
+  const newDuration = checkInData.duration + additionalMinutes;
+  
+  // Validate total duration stays within bounds (10-180 minutes)
+  if (newDuration < 10 || newDuration > 180) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      `Total check-in duration must be between 10 and 180 minutes. Current: ${checkInData.duration} minutes, extension would result in ${newDuration} minutes.`
+    );
+  }
+  
   const newAlertTime = new Date(currentAlertTime.getTime() + additionalMinutes * 60000);
 
   await checkInRef.update({
     alertTime: admin.firestore.Timestamp.fromDate(newAlertTime),
-    duration: checkInData.duration + additionalMinutes,
+    duration: newDuration,
     lastUpdate: admin.firestore.Timestamp.now(),
   });
 
   // Notify besties about extension (via free channels only)
-  if (checkInData.bestieIds && checkInData.bestieIds.length > 0) {
+  // Also handles messenger contacts if provided
+  if ((checkInData.bestieIds && checkInData.bestieIds.length > 0) || (checkInData.messengerContactIds && checkInData.messengerContactIds.length > 0)) {
     try {
       await notifyBestiesAboutCheckIn(
         checkInData.userId,
-        checkInData.bestieIds,
+        checkInData.bestieIds || [],
         'checkInExtended',
         {
           ...checkInData,
           extension: additionalMinutes,
           alertTime: admin.firestore.Timestamp.fromDate(newAlertTime)
-        }
+        },
+        checkInData.messengerContactIds || []
       );
     } catch (error) {
       functions.logger.error('Error notifying besties about check-in extension:', error);
-      // Don't fail the whole function if notifications fail
-    }
-  }
-
-  // Notify selected messenger contacts about check-in extension
-  if (checkInData.messengerContactIds && checkInData.messengerContactIds.length > 0) {
-    try {
-      const { sendMessengerContactNotifications } = require('../../utils/checkInNotifications');
-      const userDoc = await db.collection('users').doc(checkInData.userId).get();
-      const userData = userDoc.data();
-      const userName = userData?.displayName || 'Your bestie';
-      const message = `⏰ ${userName} extended their check-in by ${additionalMinutes} minutes`;
-      
-      // Send to only the selected messenger contacts
-      await sendMessengerContactNotifications(
-        checkInData.userId,
-        message,
-        checkInData.messengerContactIds
-      );
-    } catch (error) {
-      functions.logger.error('Error notifying messenger contacts about check-in extension:', error);
       // Don't fail the whole function if notifications fail
     }
   }

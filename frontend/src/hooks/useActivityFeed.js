@@ -27,6 +27,8 @@ export function useActivityFeed(currentUser, besties, userData) {
       if (document.hidden) return;
 
       setActivityLoading(true);
+      
+      try {
 
       const activities = [];
       const missed = [];
@@ -253,6 +255,17 @@ export function useActivityFeed(currentUser, besties, userData) {
       setMissedCheckIns(filteredMissed);
       setRequestsForAttention(filteredAttention);
       setActivityLoading(false);
+      } catch (error) {
+        console.error('Error loading activity feed:', error);
+        // If permission error, it might be a race condition - show empty feed instead of crashing
+        if (error.code === 'permission-denied') {
+          console.warn('Permission denied loading activity feed - may be race condition. Showing empty feed.');
+          setActivityFeed([]);
+          setMissedCheckIns([]);
+          setRequestsForAttention([]);
+        }
+        setActivityLoading(false);
+      }
     };
 
     loadActivityFeed();

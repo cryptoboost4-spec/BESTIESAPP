@@ -123,12 +123,6 @@ async function sendMessengerMessageWithQuickReplies(psid, text, quickReplies) {
   );
 }
 
-// Send Messenger Alert
-async function sendMessengerAlert(psid, alertData) {
-  const message = `🚨 SAFETY ALERT 🚨\n\n${alertData.userName} needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
-  await sendMessengerMessage(psid, message);
-}
-
 // Facebook Messenger Webhook
 exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
   // Verification
@@ -260,7 +254,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
   }
 });
 
-exports.sendMessengerAlert = sendMessengerAlert;
+// sendMessengerAlert moved to utils/checkInNotifications.js to fix circular dependency
 
 // ========================================
 // TELEGRAM INTEGRATION

@@ -192,6 +192,13 @@ const LivingCircle = ({ userId, onAddClick }) => {
       loadConnectionData(finalCircle);
     } catch (error) {
       console.error('Error loading besties:', error);
+      // If it's a permission error, it might be a race condition - bestieUserIds not synced yet
+      // Show empty circle instead of crashing
+      if (error.code === 'permission-denied') {
+        console.warn('Permission denied loading besties - may be race condition. Showing empty circle.');
+        setCircleBesties([]);
+        setAllBesties([]);
+      }
       setLoading(false);
     }
   };
