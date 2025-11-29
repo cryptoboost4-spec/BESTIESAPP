@@ -167,9 +167,9 @@ const BestieSelector = ({
         <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
       )}
 
-      {/* SMS Besties Section */}
+      {/* Circle Besties Section */}
       <div className="mb-2">
-        <span className="text-sm font-semibold text-text-secondary">📱 SMS Besties (max 5)</span>
+        <span className="text-sm font-semibold text-text-secondary">👥 Circle Besties (max 5)</span>
       </div>
 
       {besties.length === 0 ? (

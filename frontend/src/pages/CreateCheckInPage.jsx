@@ -202,10 +202,17 @@ const CreateCheckInPage = () => {
 
         setBesties(bestiesWithUserData);
 
-        // Auto-select only besties who have phone numbers AND SMS enabled (required for emergency alerts)
+        // Auto-select besties who have any contact method (phone+SMS, telegram, or push)
+        // Allow messenger-only check-ins - no SMS requirement
         if (!location.state?.template && bestiesWithUserData.length > 0) {
-          const bestiesWithPhoneAndSMS = bestiesWithUserData.filter(b => b.phone && b.smsEnabled);
-          setSelectedBesties(bestiesWithPhoneAndSMS.map(b => b.id));
+          // Prefer besties with phone+SMS, but also include those with telegram or push
+          const bestiesWithContact = bestiesWithUserData.filter(b => 
+            (b.phone && b.smsEnabled) || 
+            b.telegramChatId || 
+            b.notificationPreferences?.telegram ||
+            b.notificationPreferences?.push
+          );
+          setSelectedBesties(bestiesWithContact.map(b => b.id));
 
           // Warn if some besties can't receive alerts
           const cantReceiveAlerts = bestiesWithUserData.filter(b => !b.phone || !b.smsEnabled);
@@ -276,21 +283,38 @@ const CreateCheckInPage = () => {
 
   // Auto-submit quick check-ins after besties are loaded
   useEffect(() => {
-    if (shouldAutoSubmit && selectedBesties.length > 0 && !loading) {
-      // Besties are loaded and auto-selected, now trigger submit IMMEDIATELY
-      console.log('Auto-submitting quick check-in with besties:', selectedBesties);
+    if (shouldAutoSubmit && !loading) {
+      // Check if we have at least one contact method (regular besties OR messenger contacts)
+      const hasRegularBesties = selectedBesties.length > 0;
+      const hasMessengerContacts = selectedMessengerContacts.length > 0;
+      
+      if (hasRegularBesties || hasMessengerContacts) {
+        // Besties are loaded and auto-selected, now trigger submit IMMEDIATELY
+        console.log('Auto-submitting quick check-in with besties:', selectedBesties, 'messenger:', selectedMessengerContacts);
 
-      // Trigger submit immediately without delay
-      const submitBtn = document.querySelector('#create-checkin-submit-btn');
-      if (submitBtn && !submitBtn.disabled) {
-        console.log('Clicking submit button');
-        submitBtn.click();
-        setShouldAutoSubmit(false); // Reset flag
+        // Trigger submit immediately without delay
+        const submitBtn = document.querySelector('#create-checkin-submit-btn');
+        if (submitBtn && !submitBtn.disabled) {
+          console.log('Clicking submit button');
+          submitBtn.click();
+          setShouldAutoSubmit(false); // Reset flag
+        } else {
+          console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
+        }
       } else {
-        console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
+        // No besties or messenger contacts available - show error and stop auto-submit
+        console.warn('No besties or messenger contacts available for quick check-in');
+        toast.error('You need at least one bestie or messenger contact to create a check-in. Please add besties first.', {
+          duration: 6000
+        });
+        setShouldAutoSubmit(false);
+        // Navigate back to home
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
       }
     }
-  }, [shouldAutoSubmit, selectedBesties, loading]);
+  }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading, navigate]);
 
   // Load Google Places API
   useEffect(() => {
@@ -408,29 +432,39 @@ const CreateCheckInPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedBesties.length === 0) {
+    // Check if at least one contact method is selected (either regular bestie OR messenger contact)
+    const hasRegularBesties = selectedBesties.length > 0;
+    const hasMessengerContacts = selectedMessengerContacts.length > 0;
+    
+    if (!hasRegularBesties && !hasMessengerContacts) {
       errorTracker.trackFunnelStep('checkin', 'error_no_besties');
-      toast.error('Please select at least one bestie from your circle to notify', { duration: 4000 });
+      toast.error('Please select at least one bestie or messenger contact to notify', { duration: 4000 });
       return;
     }
 
-    // Check if selected besties have phone numbers
-    const bestiesWithoutPhone = selectedBesties.filter(bestieId => {
-      const bestie = besties.find(b => b.id === bestieId);
-      return !bestie?.phone;
-    }).map(bestieId => {
-      const bestie = besties.find(b => b.id === bestieId);
-      return bestie?.name || 'Unknown';
-    });
-
-    if (bestiesWithoutPhone.length > 0) {
-      toast.error(`These besties need to add their phone number: ${bestiesWithoutPhone.join(', ')}`, {
-        duration: 6000
+    // For regular besties, check if they have contact methods (phone+SMS, telegram, or push)
+    // But allow check-in even if they only have messenger contacts
+    if (hasRegularBesties) {
+      const bestiesWithoutContact = selectedBesties.filter(bestieId => {
+        const bestie = besties.find(b => b.id === bestieId);
+        // Check if bestie has any contact method
+        return !bestie?.phone && !bestie?.telegramChatId && !bestie?.notificationPreferences?.telegram && !bestie?.notificationPreferences?.push;
+      }).map(bestieId => {
+        const bestie = besties.find(b => b.id === bestieId);
+        return bestie?.name || 'Unknown';
       });
-      return;
+
+      if (bestiesWithoutContact.length > 0) {
+        toast.error(`These besties need to enable notifications: ${bestiesWithoutContact.join(', ')}`, {
+          duration: 6000
+        });
+        return;
+      }
     }
 
-    if (!locationInput.trim()) {
+    // Location is only required for custom check-ins (not quick check-ins)
+    const isQuickCheckIn = location.state?.skipLocation || location.state?.quickType;
+    if (!isQuickCheckIn && !locationInput.trim()) {
       errorTracker.trackFunnelStep('checkin', 'error_no_location');
       toast.error('Please enter a location');
       return;

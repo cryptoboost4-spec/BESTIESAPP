@@ -66,12 +66,12 @@ Why use this?
     <div className="card p-6 mb-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-display text-text-primary flex items-center gap-2">
+        <h2 className="text-xl font-display text-text-primary flex items-center gap-1">
           <svg className="w-6 h-6 text-[#0084FF]" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 0C5.373 0 0 4.975 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.09.301 2.246.464 3.442.464 6.627 0 12-4.974 12-11.111C24 4.975 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/>
           </svg>
           Facebook Messenger
-          <InfoButton message={infoMessage} />
+          <span className="ml-1"><InfoButton message={infoMessage} /></span>
         </h2>
         <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full font-semibold">
           Free & Unlimited

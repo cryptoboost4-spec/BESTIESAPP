@@ -10,7 +10,7 @@ import notificationService from '../services/notifications';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import MessengerLinkDisplay from '../components/settings/MessengerLinkDisplay';
 import TestAlertModal from '../components/settings/TestAlertModal';
-import PremiumSMSSection from '../components/settings/PremiumSMSSection';
+import DonationCard from '../components/DonationCard';
 import PrivacySettings from '../components/settings/PrivacySettings';
 import SecurityPasscodes from '../components/settings/SecurityPasscodes';
 import PreferencesAndQuickAccess from '../components/settings/PreferencesAndQuickAccess';
@@ -343,38 +343,80 @@ const SettingsPage = () => {
   const handleSendTestAlert = async (selectedChannels) => {
     setLoading(true);
     try {
-      // Check if push notifications are properly set up
-      if (selectedChannels.push && pushNotificationsEnabled) {
-        if (!userData?.fcmToken) {
-          toast.error('Push notifications are enabled but no FCM token found. Please refresh the page and try again.', { duration: 6000 });
-          setLoading(false);
-          return;
-        }
+      // Only send to channels that are selected AND enabled
+      const channelsToTest = {};
+      
+      if (selectedChannels.push && pushNotificationsEnabled && userData?.fcmToken) {
+        channelsToTest.push = true;
+      }
+      
+      if (selectedChannels.telegram && userData?.notificationPreferences?.telegram && userData?.telegramChatId) {
+        channelsToTest.telegram = true;
+      }
+      
+      if (selectedChannels.sms && userData?.notificationPreferences?.sms && userData?.phoneNumber) {
+        channelsToTest.sms = true;
       }
 
-      const result = await apiService.sendTestAlert(selectedChannels);
+      if (Object.keys(channelsToTest).length === 0) {
+        toast.error('No enabled channels selected. Please enable the channels you want to test in notification settings first.', { duration: 5000 });
+        setLoading(false);
+        return;
+      }
+
+      // Backend expects channels wrapped in a 'channels' object
+      const result = await apiService.sendTestAlert({ channels: channelsToTest });
 
       if (result.data && result.data.success) {
         const channels = result.data.channels;
         const testedChannels = [];
-        if (channels.email) testedChannels.push('Email');
-        if (channels.push) testedChannels.push('Push');
-        if (channels.sms) testedChannels.push('SMS');
-        if (channels.whatsapp) testedChannels.push('WhatsApp');
-        if (channels.telegram) testedChannels.push('Telegram');
+        const failedChannels = [];
+        
+        // Check which channels were requested vs which succeeded
+        if (channelsToTest.push) {
+          if (channels.push) {
+            testedChannels.push('Push');
+          } else {
+            failedChannels.push('Push');
+          }
+        }
+        if (channelsToTest.sms) {
+          if (channels.sms) {
+            testedChannels.push('SMS');
+          } else {
+            failedChannels.push('SMS');
+          }
+        }
+        if (channelsToTest.telegram) {
+          if (channels.telegram) {
+            testedChannels.push('Telegram');
+          } else {
+            failedChannels.push('Telegram');
+          }
+        }
 
         if (testedChannels.length > 0) {
-          toast.success(`✅ Test alerts sent successfully to: ${testedChannels.join(', ')}! Check your notifications.`, { duration: 6000 });
+          let message = `✅ Test alerts sent successfully to: ${testedChannels.join(', ')}!`;
+          if (failedChannels.length > 0) {
+            message += ` Failed: ${failedChannels.join(', ')}. Check configuration.`;
+          }
+          toast.success(message, { duration: 6000 });
           setShowTestAlertModal(false);
         } else {
-          toast.error('No channels were tested. Make sure channels are enabled and configured.', { duration: 5000 });
+          toast.error(`All test alerts failed. Check your configuration for: ${Object.keys(channelsToTest).join(', ')}.`, { duration: 5000 });
         }
       } else {
         toast.error(result.data?.error || 'Failed to send test alert');
       }
     } catch (error) {
       console.error('Test alert error:', error);
-      toast.error(error.message || 'Failed to send test alert. Make sure you have enabled notifications and have a valid FCM token.');
+      // Extract more detailed error message
+      const errorMessage = error.message || error.details || 'Failed to send test alert';
+      if (errorMessage.includes('failed-precondition')) {
+        toast.error('No notification channels enabled. Please enable the channels you want to test in settings first.', { duration: 5000 });
+      } else {
+        toast.error(errorMessage, { duration: 5000 });
+      }
     } finally {
       setLoading(false);
     }
@@ -423,14 +465,8 @@ const SettingsPage = () => {
         {/* Pricing Tiers */}
         <PricingTiers />
 
-        {/* SMS Subscription */}
-        <PremiumSMSSection
-          userData={userData}
-          handleSMSSubscription={handleSMSSubscription}
-          loading={loading}
-          setLoading={setLoading}
-          navigate={navigate}
-        />
+        {/* Donation Card */}
+        <DonationCard />
 
 
         {/* Privacy Settings */}

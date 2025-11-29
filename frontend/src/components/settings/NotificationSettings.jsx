@@ -50,9 +50,6 @@ const NotificationSettings = ({
                 <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Free & Unlimited</span>
                 <InfoButton message="Connect YOUR Telegram account to receive safety alerts when your besties need help. When you toggle this on, it will automatically open Telegram to connect. Send /start to the bot to complete the connection!" />
               </div>
-              <div className="text-sm text-text-secondary mt-1">
-                {userData?.telegramChatId ? '✅ Connected' : '⚠️ Not connected'}
-              </div>
             </div>
             <button
               onClick={async () => {

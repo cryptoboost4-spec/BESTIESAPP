@@ -5,7 +5,7 @@ const PricingTiers = () => {
     <div className="card p-6 mb-6">
       <h2 className="text-xl font-display text-text-primary mb-4">Pricing Plans</h2>
       
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
         {/* Free Tier */}
         <div className="border-2 border-purple-200 dark:border-purple-700 rounded-xl p-5 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
           <div className="flex items-center justify-between mb-3">
@@ -92,10 +92,13 @@ const PricingTiers = () => {
         </div>
 
         {/* $7.99 Tier */}
-        <div className="border-2 border-amber-300 dark:border-amber-600 rounded-xl p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+        <div className="border-2 border-amber-300 dark:border-amber-600 rounded-xl p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 opacity-75">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-display text-text-primary">Premium</h3>
-            <span className="text-2xl font-display text-amber-600">$7.99<span className="text-sm">/mo</span></span>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-display text-amber-600">$7.99<span className="text-sm">/mo</span></span>
+              <span className="text-xs bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 px-2 py-1 rounded-full font-semibold">Coming Soon</span>
+            </div>
           </div>
           <p className="text-xs text-text-secondary mb-3">Everything in Essential, plus:</p>
           <ul className="text-sm text-text-secondary space-y-2">

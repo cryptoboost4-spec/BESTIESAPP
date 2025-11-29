@@ -46,6 +46,12 @@ async function checkExpiredCheckIns(config) {
             return;
           }
           
+          // Check if already alerted (prevent duplicate processing)
+          if (checkinData.status === 'alerted') {
+            functions.logger.info(`Check-in ${checkinId} already alerted, skipping`);
+            return;
+          }
+          
           const userId = checkinData.userId;
         // Get user data
         const userDoc = await db.collection('users').doc(userId).get();
@@ -96,32 +102,8 @@ async function checkExpiredCheckIns(config) {
         }
         // ===== END FACEBOOK MESSENGER ALERTS =====
 
-        // ===== TELEGRAM ALERTS =====
-        // Send Telegram alerts to besties who have Telegram connected
-        try {
-          for (const bestieId of checkinData.bestieIds) {
-            const bestieDoc = await db.collection('users').doc(bestieId).get();
-            const bestieData = bestieDoc.data();
-
-            if (bestieData && bestieData.notificationPreferences?.telegram && bestieData.telegramChatId) {
-              const { sendTelegramAlert } = require('../../index');
-              await sendTelegramAlert(bestieData.telegramChatId, {
-                userName: userData.displayName,
-                location: checkinData.location?.address || checkinData.location || 'Unknown',
-                startTime: checkinData.createdAt.toDate().toLocaleString()
-              });
-              const functions = require('firebase-functions');
-              functions.logger.info(`✅ Sent Telegram alert to ${bestieData.displayName} (${bestieData.telegramChatId})`);
-            }
-          }
-        } catch (telegramError) {
-          const functions = require('firebase-functions');
-          functions.logger.error('Error sending Telegram alerts:', telegramError);
-          // Don't fail the whole function if Telegram fails
-        }
-        // ===== END TELEGRAM ALERTS =====
-
-        // Send alerts to all besties
+        // Send alerts to all besties (this handles Telegram, SMS, WhatsApp, etc. - no duplicates)
+        // NOTE: sendBulkNotifications already handles Telegram, so we don't send it separately here
         await sendBulkNotifications(
           checkinData.bestieIds,
           message,

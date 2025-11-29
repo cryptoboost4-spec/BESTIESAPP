@@ -7,11 +7,26 @@ const { RATE_LIMITS, checkUserRateLimit } = require('../../utils/rateLimiting');
 const db = admin.firestore();
 
 exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
-  const userId = requireAuth(context);
-  const { location, isReversePIN } = data;
+  try {
+    const userId = requireAuth(context);
+    const { location, isReversePIN } = data;
 
-  // Validate location
-  validateLocation(location, 500);
+    // Normalize location - allow "Location unavailable" or undefined/null
+    let normalizedLocation = location || 'Unknown';
+    if (normalizedLocation === 'Location unavailable') {
+      normalizedLocation = 'Unknown';
+    }
+
+    // Validate location only if it's a real location string
+    if (normalizedLocation !== 'Unknown' && typeof normalizedLocation === 'string') {
+      try {
+        validateLocation(normalizedLocation, 500);
+      } catch (error) {
+        // If validation fails, use a default value instead of failing the entire SOS
+        functions.logger.warn('Location validation failed, using default:', error.message);
+        normalizedLocation = 'Unknown';
+      }
+    }
 
   // Validate isReversePIN if provided
   if (isReversePIN !== undefined) {
@@ -46,6 +61,9 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
   }
 
   const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) {
+    throw new functions.https.HttpsError('not-found', 'User not found');
+  }
   const userData = userDoc.data();
 
   // Get bestie circle (favorites) with notifications enabled
@@ -70,31 +88,31 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     }
   });
 
-  const sosRef = await db.collection('emergency_sos').add({
-    userId: userId,
-    location: location || 'Unknown',
-    isReversePIN: isReversePIN || false,
-    notifiedBesties: bestieIds,
-    status: 'active',
-    createdAt: admin.firestore.Timestamp.now(),
-  });
+    const sosRef = await db.collection('emergency_sos').add({
+      userId: userId,
+      location: normalizedLocation,
+      isReversePIN: isReversePIN || false,
+      notifiedBesties: bestieIds,
+      status: 'active',
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
-  // Sanitize display name to prevent spam flags
-  const cleanName = ((userData && userData.displayName) || 'Your friend')
-    .toString()
-    .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
-    .trim()
-    .substring(0, 30); // Max 30 chars for name
+    // Sanitize display name to prevent spam flags
+    const cleanName = ((userData && userData.displayName) || 'Your friend')
+      .toString()
+      .replace(/(.)\1{2,}/g, '$1$1') // Max 2 repeated chars
+      .trim()
+      .substring(0, 30); // Max 30 chars for name
 
-  // Full message for WhatsApp/Email
-  const fullAlertMessage = isReversePIN
-    ? `🚨 SILENT EMERGENCY: ${cleanName} triggered reverse PIN. Location: ${location || 'Unknown'}. Covert distress signal.`
-    : `🆘 EMERGENCY: ${cleanName} triggered SOS! Location: ${location || 'Unknown'}. Help immediately!`;
+    // Full message for WhatsApp/Email
+    const fullAlertMessage = isReversePIN
+      ? `🚨 SILENT EMERGENCY: ${cleanName} triggered reverse PIN. Location: ${normalizedLocation}. Covert distress signal.`
+      : `🆘 EMERGENCY: ${cleanName} triggered SOS! Location: ${normalizedLocation}. Help immediately!`;
 
-  // Short message for SMS (NO URLS - they trigger spam filters)
-  const shortAlertMessage = isReversePIN
-    ? `URGENT: ${cleanName} sent a silent alert. Check Besties app immediately.`
-    : `EMERGENCY: ${cleanName} needs help NOW! Location: ${location || 'Unknown'}. Check Besties app!`;
+    // Short message for SMS (NO URLS - they trigger spam filters)
+    const shortAlertMessage = isReversePIN
+      ? `URGENT: ${cleanName} sent a silent alert. Check Besties app immediately.`
+      : `EMERGENCY: ${cleanName} needs help NOW! Location: ${normalizedLocation}. Check Besties app!`;
 
   // Send to bestie circle with notifications enabled
   const notifications = bestieIds.map(async (bestieId) => {
@@ -119,7 +137,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
           const pushTitle = isReversePIN ? '🚨 Silent Emergency Alert' : '🆘 EMERGENCY SOS';
           const pushBody = isReversePIN
             ? `${cleanName} triggered reverse PIN. Check app immediately.`
-            : `${cleanName} needs help NOW! Location: ${location || 'Unknown'}`;
+            : `${cleanName} needs help NOW! Location: ${normalizedLocation}`;
 
           await sendPushNotification(
             bestieData.fcmToken,
@@ -145,7 +163,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
           const { sendTelegramAlert } = require('../../index');
           await sendTelegramAlert(bestieData.telegramChatId, {
             userName: cleanName,
-            location: location || 'Unknown',
+            location: normalizedLocation,
             startTime: new Date().toLocaleString(),
             isEmergency: true,
             message: fullAlertMessage
@@ -157,32 +175,9 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
         }
       }
 
-      // 3. Facebook Messenger (free) - check if user has active messenger contacts
+      // 3. Facebook Messenger (free) - Messenger contacts are handled separately below
+      // (We send to all active messenger contacts at once, not per-bestie)
       let messengerSent = false;
-      const messengerContactsSnapshot = await db.collection('messengerContacts')
-        .where('userId', '==', userId)
-        .where('messengerPSID', '==', bestieData.messengerPSID || '')
-        .get();
-      
-      if (!messengerContactsSnapshot.empty) {
-        const contact = messengerContactsSnapshot.docs[0].data();
-        const expiresAt = contact.expiresAt?.toMillis();
-        if (expiresAt && expiresAt > Date.now()) {
-          try {
-            const { sendMessengerAlert } = require('../../index');
-            await sendMessengerAlert(contact.messengerPSID, {
-              userName: cleanName,
-              location: location || 'Unknown',
-              startTime: new Date().toLocaleString(),
-              isEmergency: true
-            });
-            notificationsSent.push('Messenger');
-            messengerSent = true;
-          } catch (messengerError) {
-            functions.logger.warn('Messenger failed for SOS:', messengerError.message);
-          }
-        }
-      }
 
       // 4. WhatsApp (free) - only if Telegram and Messenger didn't work
       if (!telegramSent && !messengerSent && bestieData.phoneNumber) {
@@ -198,7 +193,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       if (bestieData.email && bestieData.notificationPreferences?.email) {
         try {
           await sendEmailAlert(bestieData.email, fullAlertMessage, {
-            location: location || 'Unknown',
+            location: normalizedLocation,
             alertTime: admin.firestore.Timestamp.now(),
           });
           notificationsSent.push('Email');
@@ -244,7 +239,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       try {
         await sendMessengerAlert(psid, {
           userName: cleanName,
-          location: location || 'Unknown',
+          location: normalizedLocation,
           startTime: new Date().toLocaleString(),
           isEmergency: true
         });
@@ -256,5 +251,14 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
     await Promise.all(messengerPromises);
   }
 
-  return { success: true, sosId: sosRef.id };
+    return { success: true, sosId: sosRef.id };
+  } catch (error) {
+    functions.logger.error('Error in triggerEmergencySOS:', error);
+    // Re-throw HttpsErrors as-is
+    if (error.code && error.message) {
+      throw error;
+    }
+    // Wrap other errors
+    throw new functions.https.HttpsError('internal', `Failed to trigger emergency SOS: ${error.message}`);
+  }
 });

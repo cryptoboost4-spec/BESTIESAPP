@@ -49,6 +49,11 @@ async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, ch
     // Format message based on notification type
     const message = formatCheckInNotification(notificationType, userName, checkInData);
 
+    // Send messenger notifications once (not per bestie to avoid duplicates)
+    if (notificationType === 'checkInCreated' || notificationType === 'checkInExtended') {
+      await sendMessengerContactNotifications(userId, message);
+    }
+
     // Send to each bestie via their enabled free channels
     const notificationPromises = bestieIds.map(async (bestieId) => {
       try {
@@ -88,10 +93,11 @@ async function notifyBestiesAboutCheckIn(userId, bestieIds, notificationType, ch
         // 3. Send via Messenger (if they have active messenger contacts for this user)
         // Note: For check-in updates, we send to the user's messenger contacts (not the bestie's contacts)
         // This is because messenger contacts are people who want alerts about THIS user
+        // NOTE: Only send once per notification, not per bestie (to avoid duplicates)
         if (notificationType === 'checkInCreated' || notificationType === 'checkInExtended') {
           // Only send messenger alerts for created/extended (to keep contacts informed)
           // Skip for completed (too much spam)
-          await sendMessengerContactNotifications(userId, message);
+          // This is called once per notification type, not per bestie, so no duplicates
         }
 
         return { bestieId, channels: channelResults };
@@ -257,5 +263,7 @@ async function sendMessengerMessage(psid, text) {
 
 module.exports = {
   notifyBestiesAboutCheckIn,
+  sendMessengerContactNotifications,
+  sendMessengerMessage,
   NOTIFICATION_CONFIG
 };

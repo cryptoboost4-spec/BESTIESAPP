@@ -79,6 +79,27 @@ const ShareProfileModal = ({ onClose }) => {
           </button>
 
           <button
+            onClick={() => {
+              const encoded = encodeURIComponent(shareUrl);
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+              if (isMobile) {
+                window.location.href = `fb-messenger://share?link=${encoded}`;
+                setTimeout(() => {
+                  window.open(`https://www.facebook.com/dialog/send?link=${encoded}&app_id=&redirect_uri=${encoded}`, '_blank');
+                }, 1500);
+              } else {
+                window.open(`https://www.facebook.com/dialog/send?link=${encoded}&app_id=&redirect_uri=${encoded}`, '_blank', 'width=600,height=400');
+              }
+            }}
+            className="btn bg-gradient-to-br from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.477 2 2 6.145 2 11.235c0 2.894 1.447 5.48 3.71 7.155V22l3.477-1.906c.929.257 1.915.394 2.813.394 5.523 0 10-4.145 10-9.235C22 6.145 17.523 2 12 2z"/>
+            </svg>
+            Messenger
+          </button>
+
+          <button
             onClick={handleTwitter}
             className="btn bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2"
           >

@@ -35,7 +35,6 @@ const HomePage = () => {
 
   // Analytics stats
   const [emergencyContactCount, setEmergencyContactCount] = useState(0);
-  const [daysActive, setDaysActive] = useState(0);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -176,7 +175,6 @@ const HomePage = () => {
           const now = new Date();
           const diffTime = Math.abs(now - firstCheckIn);
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          setDaysActive(diffDays);
         }
 
       } catch (error) {
@@ -285,18 +283,6 @@ const HomePage = () => {
                     {userData?.stats?.longestStreak || 0}
                   </div>
                   <div className="text-sm text-text-secondary">Longest Streak</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-display text-blue-500">
-                    {emergencyContactCount}
-                  </div>
-                  <div className="text-sm text-text-secondary">Times Selected</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-display text-green-500">
-                    {daysActive}
-                  </div>
-                  <div className="text-sm text-text-secondary">Days Active</div>
                 </div>
               </div>
             </div>

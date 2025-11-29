@@ -54,5 +54,43 @@ exports.completeCheckIn = functions.https.onCall(async (data, context) => {
     }
   }
 
+  // Also notify messenger contacts about check-in completion
+  // Only notify the contacts that were selected for this specific check-in
+  if (checkInData.messengerContactIds && checkInData.messengerContactIds.length > 0) {
+    try {
+      const { sendMessengerMessage } = require('../../utils/checkInNotifications');
+      const userDoc = await db.collection('users').doc(checkInData.userId).get();
+      const userData = userDoc.data();
+      const userName = userData?.displayName || 'Your bestie';
+      const message = `✅ ${userName} checked in safely! All good 💜`;
+      
+      // Get the specific messenger contacts for this check-in
+      const messengerContactsSnapshot = await db.collection('messengerContacts')
+        .where(admin.firestore.FieldPath.documentId(), 'in', checkInData.messengerContactIds)
+        .get();
+      
+      const now = Date.now();
+      const sendPromises = messengerContactsSnapshot.docs
+        .filter(doc => {
+          const expiresAt = doc.data().expiresAt?.toMillis();
+          return expiresAt && expiresAt > now; // Only active contacts
+        })
+        .map(async (doc) => {
+          const contact = doc.data();
+          try {
+            await sendMessengerMessage(contact.messengerPSID, message);
+            functions.logger.info(`✅ Messenger completion sent to contact ${contact.name}`);
+          } catch (error) {
+            functions.logger.error(`❌ Messenger failed for contact ${contact.name}:`, error.message);
+          }
+        });
+      
+      await Promise.all(sendPromises);
+    } catch (error) {
+      functions.logger.error('Error notifying messenger contacts about check-in completion:', error);
+      // Don't throw - notification failure shouldn't prevent completion
+    }
+  }
+
   return { success: true };
 });

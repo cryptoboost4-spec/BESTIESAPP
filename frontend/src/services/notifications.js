@@ -92,7 +92,7 @@ class NotificationService {
     try {
       if (!VAPID_KEY) {
         console.warn('VAPID key not configured');
-        toast.error('Push notifications require additional setup. Please use email or WhatsApp notifications instead.', { duration: 6000 });
+        toast.error('Push notifications require VAPID key setup. Please check your .env file.', { duration: 6000 });
         return null;
       }
 
@@ -100,6 +100,7 @@ class NotificationService {
       const registration = await this.initializeServiceWorker();
       if (!registration) {
         console.error('Could not register service worker');
+        toast.error('Service worker registration failed. Check browser console for details.', { duration: 6000 });
         return null;
       }
 
@@ -107,24 +108,38 @@ class NotificationService {
       await navigator.serviceWorker.ready;
       
       // Give service worker time to initialize Firebase
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Get FCM token with VAPID key
-      const token = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: registration
-      });
+      try {
+        const token = await getToken(messaging, {
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: registration
+        });
 
-      if (token) {
-        console.log('FCM Token obtained:', token);
-        this.token = token;
-        return token;
-      } else {
-        console.warn('No FCM token available. Request permission to generate one.');
+        if (token) {
+          console.log('FCM Token obtained:', token);
+          this.token = token;
+          return token;
+        } else {
+          console.warn('No FCM token available. This might be a permission or configuration issue.');
+          toast.error('Could not get FCM token. Check browser console and ensure notifications are allowed.', { duration: 6000 });
+          return null;
+        }
+      } catch (tokenError) {
+        console.error('Error getting FCM token:', tokenError);
+        if (tokenError.code === 'messaging/permission-blocked') {
+          toast.error('Notification permission is blocked. Please enable in browser settings.', { duration: 6000 });
+        } else if (tokenError.code === 'messaging/registration-token-not-found') {
+          toast.error('Service worker not ready. Please refresh the page and try again.', { duration: 6000 });
+        } else {
+          toast.error(`Push notification error: ${tokenError.message}`, { duration: 6000 });
+        }
         return null;
       }
     } catch (error) {
       console.error('Error getting FCM token:', error);
+      toast.error(`Failed to get push notification token: ${error.message}`, { duration: 6000 });
       return null;
     }
   }

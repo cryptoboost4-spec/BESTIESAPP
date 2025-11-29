@@ -118,13 +118,19 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
     if (requestedChannels.sms && userData.phoneNumber && userData.notificationPreferences?.sms) {
       try {
         const twilio = require('twilio');
-        const twilioClient = twilio(
-          functions.config().twilio?.account_sid,
-          functions.config().twilio?.auth_token
-        );
+        const accountSid = functions.config().twilio?.account_sid;
+        const authToken = functions.config().twilio?.auth_token;
+        const phoneNumber = functions.config().twilio?.phone_number;
+        
+        if (!accountSid || !authToken || !phoneNumber) {
+          functions.logger.error('Twilio not configured');
+          throw new Error('Twilio not configured');
+        }
+        
+        const twilioClient = twilio(accountSid, authToken);
 
         await twilioClient.messages.create({
-          from: functions.config().twilio?.phone_number,
+          from: phoneNumber,
           to: userData.phoneNumber,
           body: '✅ Test Alert - Your SMS notifications are working! You\'ll receive safety alerts via text message. - Besties App 💜'
         });
@@ -133,6 +139,7 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
         functions.logger.info('Test SMS sent successfully');
       } catch (smsError) {
         functions.logger.error('SMS notification failed:', smsError.message);
+        // Don't throw - let other channels still work
       }
     }
 
@@ -163,6 +170,11 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
       try {
         const axios = require('axios');
         const botToken = functions.config().telegram?.bot_token;
+        
+        if (!botToken) {
+          functions.logger.error('Telegram bot token not configured');
+          throw new Error('Telegram bot token not configured');
+        }
 
         await axios.post(
           `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -177,15 +189,21 @@ exports.sendTestAlert = functions.https.onCall(async (data, context) => {
         functions.logger.info('Test Telegram sent successfully');
       } catch (telegramError) {
         functions.logger.error('Telegram notification failed:', telegramError.message);
+        // Don't throw - let other channels still work
       }
     }
 
     // Check if at least one channel was tested
     const anyTested = Object.values(channelsTested).some(val => val === true);
     if (!anyTested) {
+      const enabledChannels = [];
+      if (userData.fcmToken && userData.notificationsEnabled) enabledChannels.push('push');
+      if (userData.telegramChatId && userData.notificationPreferences?.telegram) enabledChannels.push('telegram');
+      if (userData.phoneNumber && userData.notificationPreferences?.sms) enabledChannels.push('sms');
+      
       throw new functions.https.HttpsError(
         'failed-precondition',
-        'No notification channels enabled. Please enable push notifications or email notifications in settings.'
+        `No notification channels enabled. Please enable push notifications, telegram, or SMS in settings.${enabledChannels.length > 0 ? ` You have ${enabledChannels.join(', ')} enabled but didn't select them for testing.` : ''}`
       );
     }
 

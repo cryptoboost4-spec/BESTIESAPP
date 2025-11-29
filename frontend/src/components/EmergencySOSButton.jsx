@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../services/firebase';
+import { db, functions } from '../services/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
@@ -112,15 +113,11 @@ const EmergencySOSButton = ({ hasActiveAlert = false }) => {
           }
         }
 
-        // Create emergency alert (matches backend collection name)
-        const docRef = await addDoc(collection(db, 'emergency_sos'), {
-          userId: currentUser.uid,
-          userName: userData?.displayName || 'User',
+        // Call the triggerEmergencySOS function to send alerts to all besties and messenger contacts
+        const triggerSOS = httpsCallable(functions, 'triggerEmergencySOS');
+        const result = await triggerSOS({
           location,
-          timestamp: Timestamp.now(),
-          status: 'active',
-          type: 'sos',
-          message: '🚨 EMERGENCY - User needs immediate help!'
+          isReversePIN: false
         });
 
         // Track analytics
@@ -130,7 +127,7 @@ const EmergencySOSButton = ({ hasActiveAlert = false }) => {
           has_location: !!location
         });
 
-        return docRef;
+        return result;
       },
       rollback: () => {
         // Hide alert screen if backend fails
