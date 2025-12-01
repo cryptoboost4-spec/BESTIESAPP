@@ -364,13 +364,11 @@ const DevAnalyticsPage = () => {
       // Calculate users who were active in the last 7/30 days
       // Reuse sevenDaysAgo and thirtyDaysAgo already declared above
       let active7Days = 0;
-      let active30Days = 0;
       usersSnap.forEach(doc => {
         const data = doc.data();
         const lastActive = data.lastActive?.toDate();
         if (lastActive) {
           if (lastActive > sevenDaysAgo) active7Days++;
-          if (lastActive > thirtyDaysAgo) active30Days++;
         }
       });
       

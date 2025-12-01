@@ -36,7 +36,7 @@ const CheckInCard = ({ checkIn }) => {
   const [optimisticAlertTime, setOptimisticAlertTime] = useState(null);
   const { executeOptimistic } = useOptimisticUpdate();
   const { completeCheckIn, loading, showSafeLoader, setShowSafeLoader } = useCheckInCompletion(checkIn.id, currentUser);
-  const { currentLocation, setCurrentLocation, updatingLocation, updateLocation } = useCheckInLocation(checkIn.id);
+  const { currentLocation, setCurrentLocation, updateLocation } = useCheckInLocation(checkIn.id);
 
   // Passcode verification states
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -321,10 +321,6 @@ const CheckInCard = ({ checkIn }) => {
     });
   };
 
-  const handleUpdateLocation = () => {
-    haptic.medium();
-    updateLocation();
-  };
 
   const removePhoto = async (index) => {
     haptic.light();
