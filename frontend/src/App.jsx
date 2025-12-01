@@ -105,6 +105,46 @@ function App() {
     return unsubscribe;
   }, []);
 
+  // Prevent page zoom via keyboard shortcuts (Ctrl/Cmd + scroll)
+  useEffect(() => {
+    const handleWheel = (e) => {
+      // Prevent zoom when Ctrl (Windows/Linux) or Cmd (Mac) is pressed
+      if (e.ctrlKey || e.metaKey) {
+        // Allow zoom on map containers
+        const target = e.target;
+        const isMapContainer = target.closest('[role="application"]') || 
+                               target.closest('.gm-style') ||
+                               target.closest('[class*="map"]');
+        
+        if (!isMapContainer) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    // Also prevent zoom via keyboard shortcuts (Ctrl/Cmd + Plus/Minus)
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.keyCode === 187 || e.keyCode === 189)) {
+        const target = e.target;
+        const isMapContainer = target.closest('[role="application"]') || 
+                               target.closest('.gm-style') ||
+                               target.closest('[class*="map"]');
+        
+        if (!isMapContainer) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern flex items-center justify-center">
