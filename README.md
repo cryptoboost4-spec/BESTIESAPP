@@ -127,19 +127,23 @@ firebase deploy
 
 ## 📖 Documentation
 
+**Essential Documentation:**
+- `CODEBASE_STRUCTURE.md` - How the code is organized
+- `DEVELOPMENT_GUIDE.md` - How to develop and test
+- `TESTING_STATUS.md` - Test coverage and status
+- `PRE_LAUNCH_CHECKLIST.md` - What's left before launch
+- `PERFORMANCE_NOTES.md` - Known performance considerations
+- `CHANGELOG.md` - Summary of major changes
+
 **Setup Guides:**
 - `START_HERE.md` - Start here!
 - `SETUP_CHECKLIST.md` - Quick checkbox list
 - `VISUAL_SETUP_GUIDE.md` - Detailed walkthrough
 - `FIREBASE_SETUP_GUIDE.md` - Full technical docs
 
-**Deployment:**
-- `DEPLOY_GUIDE.md` - How to deploy (coming with code)
-- `TESTING_GUIDE.md` - How to test (coming with code)
-
-**Development:**
-- `DEVELOPER_GUIDE.md` - Code structure (coming with code)
-- `FEATURE_FLAGS.md` - How to enable/disable features
+**Reference:**
+- `COMPREHENSIVE_CODE_REVIEW.md` - Code review findings
+- `COMPLETE_IMPROVEMENTS_FINAL.md` - What was completed
 
 ---
 
