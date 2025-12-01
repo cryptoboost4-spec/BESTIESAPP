@@ -147,6 +147,7 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleShareProfileCard = async () => {
     const profileCard = document.getElementById('profile-card-shareable');
     if (!profileCard) {

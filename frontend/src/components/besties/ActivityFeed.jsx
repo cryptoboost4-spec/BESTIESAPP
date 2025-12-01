@@ -22,7 +22,7 @@ const ActivityFeed = ({
     if (initialPostId && !showPostComments) {
       setShowPostComments(initialPostId);
     }
-  }, [initialPostId]);
+  }, [initialPostId, showPostComments]);
 
   // Calculate pagination
   const totalPages = Math.ceil(activityFeed.length / itemsPerPage);

@@ -11,7 +11,6 @@ import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
 import EmergencySOSButton from '../components/EmergencySOSButton';
 import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
-import GetMeOutButton from '../components/GetMeOutButton';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
@@ -34,6 +33,7 @@ const HomePage = () => {
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
 
   // Analytics stats
+  // eslint-disable-next-line no-unused-vars
   const [emergencyContactCount, setEmergencyContactCount] = useState(0);
 
   // Auto-redirect to onboarding if user hasn't completed it
@@ -178,6 +178,7 @@ const HomePage = () => {
         if (firstCheckIn) {
           const now = new Date();
           const diffTime = Math.abs(now - firstCheckIn);
+          // eslint-disable-next-line no-unused-vars
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
 

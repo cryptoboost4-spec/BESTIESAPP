@@ -36,6 +36,7 @@ const BestieSelector = ({
         setSelectedMessengerContacts([...selectedMessengerContacts, ...newSelections]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMessengerContacts.length]); // Only run when count changes
 
   const toggleBestie = (bestieId) => {

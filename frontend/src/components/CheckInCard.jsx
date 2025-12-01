@@ -46,7 +46,6 @@ const CheckInCard = ({ checkIn }) => {
   
   // Edit time modal state
   const [showEditTimeModal, setShowEditTimeModal] = useState(false);
-  const [newAlertTime, setNewAlertTime] = useState('');
 
   // Sync photo URLs when checkIn prop changes
   useEffect(() => {

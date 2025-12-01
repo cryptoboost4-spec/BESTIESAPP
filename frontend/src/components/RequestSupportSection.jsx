@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { sanitizeUserInput } from '../utils/sanitize';
 

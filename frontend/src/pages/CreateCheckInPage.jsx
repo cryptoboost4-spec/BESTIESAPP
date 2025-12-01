@@ -12,7 +12,6 @@ import CheckInMap from '../components/checkin/CheckInMap';
 import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
 import DurationSelector from '../components/checkin/DurationSelector';
 import BestieSelector from '../components/checkin/BestieSelector';
-import MessengerContactSelector from '../components/checkin/MessengerContactSelector';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
 import { FEATURES } from '../config/features';
 

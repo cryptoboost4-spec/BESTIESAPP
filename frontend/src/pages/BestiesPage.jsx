@@ -12,7 +12,6 @@ import {
   getDoc,
   addDoc,
   orderBy,
-  limit,
   Timestamp
 } from 'firebase/firestore';
 import AddBestieModal from '../components/AddBestieModal';

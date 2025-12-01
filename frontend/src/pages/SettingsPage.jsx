@@ -263,6 +263,7 @@ const SettingsPage = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleSMSSubscription = async () => {
     setLoading(true);
     try {
