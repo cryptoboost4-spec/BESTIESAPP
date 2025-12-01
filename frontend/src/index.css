@@ -459,6 +459,29 @@ input[type="range"]::-moz-range-thumb:active {
   color: transparent;
 }
 
+/* Google Maps Zoom Controls - Pink Styling */
+.gm-style .gm-control-active,
+.gm-style .gm-zoom-control button {
+  background-color: rgba(255, 105, 180, 0.9) !important;
+  border-color: rgba(255, 20, 147, 0.5) !important;
+  color: white !important;
+}
+
+.gm-style .gm-control-active:hover,
+.gm-style .gm-zoom-control button:hover {
+  background-color: rgba(255, 20, 147, 0.95) !important;
+  border-color: rgba(255, 20, 147, 0.8) !important;
+}
+
+.gm-style .gm-control-active:active,
+.gm-style .gm-zoom-control button:active {
+  background-color: rgba(255, 20, 147, 1) !important;
+}
+
+.gm-style .gm-zoom-control {
+  box-shadow: 0 10px 25px -5px rgba(255, 182, 193, 0.3), 0 8px 10px -6px rgba(255, 182, 193, 0.2) !important;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .fab {

@@ -457,6 +457,9 @@ const CheckInMap = ({
           gestureHandling: 'cooperative', // Cooperative mode prevents page zoom on pinch
           disableDoubleClickZoom: false,
           scrollwheel: true,
+          // Performance optimizations
+          optimized: true,
+          clickableIcons: false,
           styles: MAP_STYLES,
           restriction: {
             latLngBounds: MAP_BOUNDS,
@@ -518,25 +521,43 @@ const CheckInMap = ({
           isDraggingRef.current = true;
           setIsDragging(true);
           setGeocodingError(false);
+          // Cancel any pending geocoding during drag
+          if (geocodeTimeoutRef.current) {
+            clearTimeout(geocodeTimeoutRef.current);
+            geocodeTimeoutRef.current = null;
+          }
         });
         mapListenersRef.current.push(dragStartListener);
         
-        // Drag end handler
+        // Drag end handler - update location immediately
         const dragEndListener = mapInstanceRef.current.addListener('dragend', () => {
           isDraggingRef.current = false;
           setIsDragging(false);
           
-          if (mapInstanceRef.current) {
-            const mapCenter = mapInstanceRef.current.getCenter();
-            const coords = {
-              lat: mapCenter.lat(),
-              lng: mapCenter.lng()
-            };
-            
-            if (validateCoordinates(coords) && geocodeLocationRef.current) {
-              geocodeLocationRef.current(coords, 'dragged');
+          // Small delay to ensure map center is stable
+          setTimeout(() => {
+            if (mapInstanceRef.current && !isDraggingRef.current) {
+              const mapCenter = mapInstanceRef.current.getCenter();
+              if (mapCenter) {
+                const coords = {
+                  lat: mapCenter.lat(),
+                  lng: mapCenter.lng()
+                };
+                
+                if (validateCoordinates(coords)) {
+                  // Update immediately with coordinates
+                  const coordsString = `${coords.lat.toFixed(COORDINATE_PRECISION)}, ${coords.lng.toFixed(COORDINATE_PRECISION)}`;
+                  setLocationInput(coordsString);
+                  setGpsCoords(coords);
+                  
+                  // Then geocode
+                  if (geocodeLocationRef.current) {
+                    geocodeLocationRef.current(coords, 'dragged');
+                  }
+                }
+              }
             }
-          }
+          }, 50); // Small delay to ensure map is stable
         });
         mapListenersRef.current.push(dragEndListener);
         
@@ -1002,10 +1023,25 @@ const CheckInMap = ({
           <div
             ref={mapRefCallback}
             className="w-full h-80 md:h-96"
-            style={{ minHeight: '320px' }}
+            style={{ 
+              minHeight: '320px',
+              touchAction: 'none' // Prevent page zoom/scroll when interacting with map
+            }}
             role="application"
             aria-label="Interactive map for location selection"
             aria-busy={!mapInitialized}
+            onTouchStart={(e) => {
+              // Prevent page scroll when touching map
+              if (e.touches.length > 1) {
+                e.preventDefault();
+              }
+            }}
+            onTouchMove={(e) => {
+              // Prevent page scroll during map interaction
+              if (e.touches.length > 1) {
+                e.preventDefault();
+              }
+            }}
           ></div>
 
           {/* Search bar overlay */}
