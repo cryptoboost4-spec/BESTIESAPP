@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, orderBy, limit, getDocs, where, Timestamp } from 'firebase/firestore';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const MonitoringDashboard = () => {
   const [timeRange, setTimeRange] = useState('24h');
@@ -129,9 +130,7 @@ const MonitoringDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={5} message="Loading monitoring data... 🔍" />
       </div>
     );
   }

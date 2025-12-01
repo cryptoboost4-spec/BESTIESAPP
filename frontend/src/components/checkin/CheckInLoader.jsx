@@ -48,30 +48,19 @@ const CheckInLoader = () => {
           {message}
         </p>
 
-        {/* Cute loading animation */}
-        <div className="flex justify-center gap-2 mb-8">
-          {[0, 1, 2].map((i) => (
+        {/* Elegant loading animation */}
+        <div className="flex justify-center items-center gap-2 mb-8">
+          {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="w-4 h-4 bg-gradient-primary rounded-full animate-bounce"
-              style={{ animationDelay: `${i * 0.15}s` }}
+              className="w-2.5 h-2.5 bg-gradient-to-r from-pink-400 via-purple-400 to-fuchsia-400 rounded-full animate-bounce-elegant"
+              style={{
+                animationDelay: `${i * 0.15}s`,
+                animationDuration: '1.2s'
+              }}
             ></div>
           ))}
         </div>
-
-          {/* Elegant loading animation */}
-          <div className="flex justify-center items-center gap-2 mb-8">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full animate-wave"
-                style={{
-                  animationDelay: `${i * 0.15}s`,
-                  animationDuration: '1.5s'
-                }}
-              ></div>
-            ))}
-          </div>
 
           {/* Silk ribbon progress bar */}
           <div className="relative w-full h-2 bg-gradient-to-r from-pink-100 via-purple-100 to-fuchsia-100 dark:from-pink-900/50 dark:via-purple-900/50 dark:to-fuchsia-900/50 rounded-full overflow-hidden shadow-inner">
@@ -106,9 +95,15 @@ const CheckInLoader = () => {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.05); }
         }
-        @keyframes wave {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+        @keyframes bounce-elegant {
+          0%, 100% { 
+            transform: translateY(0) scale(1); 
+            opacity: 0.6;
+          }
+          50% { 
+            transform: translateY(-10px) scale(1.1); 
+            opacity: 1;
+          }
         }
         @keyframes silk-shimmer {
           0% { background-position: 0% center; }
@@ -132,8 +127,8 @@ const CheckInLoader = () => {
         .animate-pulse-gentle {
           animation: pulse-gentle 2s ease-in-out infinite;
         }
-        .animate-wave {
-          animation: wave 1.5s ease-in-out infinite;
+        .animate-bounce-elegant {
+          animation: bounce-elegant 1.2s ease-in-out infinite;
         }
         .animate-silk-shimmer {
           animation: silk-shimmer 3s linear infinite;

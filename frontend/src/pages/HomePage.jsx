@@ -14,8 +14,10 @@ import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
+import toast from 'react-hot-toast';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -79,6 +81,10 @@ const HomePage = () => {
       },
       (error) => {
         console.error('Error loading check-ins:', error);
+        // Don't show toast for permission errors (might be race condition)
+        if (error.code !== 'permission-denied') {
+          toast.error('Unable to load your check-ins. Please refresh the page.', { duration: 4000 });
+        }
         setActiveCheckIns([]);
         setLoading(false);
       }
@@ -87,7 +93,7 @@ const HomePage = () => {
     // ALSO listen to alerted check-ins where current user is a selected bestie
     const alertedBestieQuery = query(
       collection(db, 'checkins'),
-      where('bestieIds', 'array-contains', currentUser.uid),
+      where('bestieUserIds', 'array-contains', currentUser.uid),
       where('status', '==', 'alerted'),
       limit(20) // Reasonable limit for alerted check-ins
     );
@@ -173,14 +179,8 @@ const HomePage = () => {
         const emergencySnapshot = await getDocs(emergencyQuery);
         setEmergencyContactCount(emergencySnapshot.size);
 
-        // Calculate days active
-        const firstCheckIn = userData?.stats?.firstCheckInDate?.toDate?.() || userData?.stats?.firstCheckInDate;
-        if (firstCheckIn) {
-          const now = new Date();
-          const diffTime = Math.abs(now - firstCheckIn);
-          // eslint-disable-next-line no-unused-vars
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
+        // Days active calculation removed - not used in HomePage
+        // (ProfilePage handles this calculation for user stats display)
 
       } catch (error) {
         console.error('Error loading analytics:', error);
@@ -246,9 +246,7 @@ const HomePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={3} message="Loading your safety network... 💜" />
       </div>
     );
   }

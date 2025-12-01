@@ -12,16 +12,16 @@ exports.onCheckInCreated = functions.firestore
     const checkInId = context.params.checkInId;
 
     try {
+      // Get user document once (needed for both bestieUserIds and firstCheckInDate)
+      const userRef = db.collection('users').doc(checkIn.userId);
+      const userDoc = await userRef.get();
+      const userData = userDoc.exists ? userDoc.data() : null;
+
       // Denormalize bestieUserIds for security rules optimization
       // Get user's bestieUserIds array to include in check-in document
       let bestieUserIds = [];
-      if (checkIn.bestieIds && checkIn.bestieIds.length > 0) {
-        // Get user document to fetch bestieUserIds
-        const userDoc = await db.collection('users').doc(checkIn.userId).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          bestieUserIds = userData.bestieUserIds || [];
-        }
+      if (checkIn.bestieIds && checkIn.bestieIds.length > 0 && userData) {
+        bestieUserIds = userData.bestieUserIds || [];
       }
 
       // Update check-in with denormalized bestieUserIds (if not already present)
@@ -36,11 +36,19 @@ exports.onCheckInCreated = functions.firestore
       if (checkIn.isTest === true) {
         return;
       }
-
-      // Increment total check-in count in user stats
-      await db.collection('users').doc(checkIn.userId).update({
+      
+      // Prepare update object
+      const statsUpdate = {
         'stats.totalCheckIns': admin.firestore.FieldValue.increment(1)
-      });
+      };
+      
+      // Set firstCheckInDate if this is the user's first check-in
+      if (!userData?.stats?.firstCheckInDate) {
+        statsUpdate['stats.firstCheckInDate'] = checkIn.createdAt || admin.firestore.Timestamp.now();
+      }
+
+      // Increment total check-in count in user stats (and set firstCheckInDate if needed)
+      await userRef.update(statsUpdate);
 
       // Update analytics cache (real-time global stats)
       const cacheRef = db.collection('analytics_cache').doc('realtime');

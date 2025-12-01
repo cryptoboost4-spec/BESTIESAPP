@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth } from '../services/firebase';
 import { doc, getDoc, addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const AlertViewPage = () => {
   const { alertId } = useParams();
@@ -141,7 +142,7 @@ const AlertViewPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern flex items-center justify-center">
-        <div className="spinner"></div>
+        <LoadingSkeleton type="card" message="Loading alert details... 🚨" />
       </div>
     );
   }

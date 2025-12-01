@@ -196,8 +196,8 @@ const FloatingNotificationBell = () => {
     return date.toLocaleDateString();
   };
 
-  // Only show when there are notifications
-  if (notifications.length === 0) {
+  // Only show when there are unread notifications
+  if (unreadCount === 0) {
     return null;
   }
 

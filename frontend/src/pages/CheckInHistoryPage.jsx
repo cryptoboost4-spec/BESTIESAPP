@@ -5,6 +5,8 @@ import { db } from '../services/firebase';
 import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, getDoc } from 'firebase/firestore';
 import { formatDistanceToNow, format } from 'date-fns';
 import { FixedSizeList as List } from 'react-window';
+import LoadingSkeleton from '../components/LoadingSkeleton';
+import OfflineBanner from '../components/OfflineBanner';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -186,16 +188,14 @@ const CheckInHistoryPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern dark:bg-dark-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={5} message="Loading your check-in history... 📋" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-pattern dark:bg-dark-pattern">
-
+      <OfflineBanner />
       <div className="max-w-4xl mx-auto p-4 pb-20">
         {/* Back Button - Top */}
         <button

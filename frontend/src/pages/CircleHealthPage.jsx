@@ -12,6 +12,7 @@ import ConnectionBreakdown from '../components/health/ConnectionBreakdown';
 import ConnectionsList from '../components/health/ConnectionsList';
 import LevelUpTips from '../components/health/LevelUpTips';
 import PerfectCircleDemo from '../components/health/PerfectCircleDemo';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const CircleHealthPage = () => {
   const navigate = useNavigate();
@@ -71,9 +72,7 @@ const CircleHealthPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={5} message="Loading circle health... 💜" />
       </div>
     );
   }

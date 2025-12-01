@@ -14,6 +14,7 @@ import FunnelAnalytics from '../components/analytics/FunnelAnalytics';
 import UserBehavior from '../components/analytics/UserBehavior';
 import TopLocations from '../components/analytics/TopLocations';
 import RecentAlerts from '../components/analytics/RecentAlerts';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const DevAnalyticsPage = () => {
   const [analytics, setAnalytics] = useState({
@@ -113,6 +114,7 @@ const DevAnalyticsPage = () => {
       let active7days = 0;
       let active30days = 0;
       let totalDaysActive = 0;
+      let usersWithCheckIns = 0;
 
       usersSnap.forEach(doc => {
         const data = doc.data();
@@ -127,14 +129,17 @@ const DevAnalyticsPage = () => {
         if (lastActive && lastActive > thirtyDaysAgo) active30days++;
 
         // Calculate days active (from first check-in to now)
+        // Only count users who have created at least one check-in
         const firstCheckIn = data.stats?.firstCheckInDate?.toDate();
         if (firstCheckIn) {
           const daysDiff = Math.ceil((now - firstCheckIn) / (1000 * 60 * 60 * 24));
           totalDaysActive += daysDiff;
+          usersWithCheckIns++;
         }
       });
 
-      const avgDaysActive = totalUsers > 0 ? Math.round(totalDaysActive / totalUsers) : 0;
+      // Average days active should only count users who have check-ins
+      const avgDaysActive = usersWithCheckIns > 0 ? Math.round(totalDaysActive / usersWithCheckIns) : 0;
 
       // Check-ins Analytics (filtered by time range)
       let checkInsQuery = collection(db, 'checkins');
@@ -355,14 +360,22 @@ const DevAnalyticsPage = () => {
         ? (((totalCheckIns - prevWeekCheckIns) / prevWeekCheckIns) * 100).toFixed(1)
         : totalCheckIns > 0 ? '∞' : 'N/A';
 
-      // Retention: users who created multiple check-ins
-      const userCheckInCounts = {};
-      checkInsSnap.forEach(doc => {
-        const userId = doc.data().userId;
-        userCheckInCounts[userId] = (userCheckInCounts[userId] || 0) + 1;
+      // Retention: users active after 7/30 days (based on lastActive timestamp)
+      // Calculate users who were active in the last 7/30 days
+      // Reuse sevenDaysAgo and thirtyDaysAgo already declared above
+      let active7Days = 0;
+      let active30Days = 0;
+      usersSnap.forEach(doc => {
+        const data = doc.data();
+        const lastActive = data.lastActive?.toDate();
+        if (lastActive) {
+          if (lastActive > sevenDaysAgo) active7Days++;
+          if (lastActive > thirtyDaysAgo) active30Days++;
+        }
       });
-      const returningUsers = Object.values(userCheckInCounts).filter(count => count > 1).length;
-      const retentionRate = totalUsers > 0 ? ((returningUsers / totalUsers) * 100).toFixed(1) : 0;
+      
+      // Retention rate = users active in last 7 days / total users
+      const retentionRate = totalUsers > 0 ? ((active7Days / totalUsers) * 100).toFixed(1) : 0;
 
       // Funnel Analytics
       console.log('[Analytics] Calculating funnel metrics...');
@@ -517,9 +530,7 @@ const DevAnalyticsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={5} message="Loading analytics... 📊" />
       </div>
     );
   }

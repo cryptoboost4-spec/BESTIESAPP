@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const TemplatesPage = () => {
   const { currentUser } = useAuth();
@@ -57,9 +58,7 @@ const TemplatesPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={3} message="Loading templates... 📝" />
       </div>
     );
   }

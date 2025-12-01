@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { db, storage } from '../services/firebase';
 import { doc, updateDoc, Timestamp, addDoc, collection, getDoc } from 'firebase/firestore';
@@ -13,8 +13,6 @@ import { useCheckInLocation } from '../hooks/useCheckInLocation';
 import apiService from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import SafeLoader from './checkin/SafeLoader';
-import CheckInTimer from './checkin/CheckInTimer';
-import CheckInPhotos from './checkin/CheckInPhotos';
 import CheckInNotes from './checkin/CheckInNotes';
 import PasscodeModal from './checkin/PasscodeModal';
 import EditTimeModal from './checkin/EditTimeModal';
@@ -46,6 +44,9 @@ const CheckInCard = ({ checkIn }) => {
   
   // Edit time modal state
   const [showEditTimeModal, setShowEditTimeModal] = useState(false);
+  
+  // File input ref for photo upload
+  const fileInputRef = useRef(null);
 
   // Sync photo URLs when checkIn prop changes
   useEffect(() => {
@@ -354,130 +355,276 @@ const CheckInCard = ({ checkIn }) => {
     return <SafeLoader />;
   }
 
+  // Format time for display (MM:SS or HH:MM:SS)
+  const formatTimeDisplay = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  // Calculate progress percentage
+  const getProgressPercentage = () => {
+    const totalDuration = checkIn.duration * 60 * 1000;
+    const elapsed = totalDuration - timeLeft;
+    return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  };
+
+  // Get check-in title based on type
+  const getCheckInTitle = () => {
+    // Check for rideshare (notes format: "🚗 Rideshare - Vehicle: {rego}")
+    if (checkIn.notes?.includes('🚗 Rideshare - Vehicle:')) {
+      const regoMatch = checkIn.notes.match(/Vehicle: (.+)/);
+      const rego = regoMatch ? regoMatch[1].trim() : '';
+      return rego ? `Rideshare - ${rego}` : 'Rideshare';
+    }
+    
+    // Check for walking (notes format: "🚶‍♀️ Walking alone")
+    if (checkIn.notes?.includes('🚶‍♀️ Walking alone') || checkIn.notes?.includes('Walking alone')) {
+      return 'Walking';
+    }
+    
+    // Check for quick meet - if meetingWith exists and location is empty/not set, it's likely quick meet
+    if (checkIn.meetingWith) {
+      // If location is not set or is "No location set", it's likely a quick meet
+      if (!currentLocation || currentLocation === 'No location set' || !checkIn.location) {
+        return `Quick Meet - ${checkIn.meetingWith}`;
+      }
+      // Otherwise it's a custom check-in with meetingWith, so just show the name
+      return checkIn.meetingWith;
+    }
+    
+    // Custom check-in: use location if available
+    if (currentLocation && currentLocation !== 'No location set') {
+      return currentLocation;
+    }
+    
+    // Fallback to default
+    return 'Active Check-in';
+  };
+
+  // Handle photo upload button click
+  const handlePhotoUploadClick = () => {
+    if (!isAlerted && photoURLs.length < 5) {
+      haptic.light();
+      fileInputRef.current?.click();
+    }
+  };
+
+  // Check if ending soon (less than 20% time remaining)
+  const isEndingSoon = () => {
+    const totalDuration = checkIn.duration * 60 * 1000;
+    return timeLeft > 0 && (timeLeft / totalDuration) < 0.2;
+  };
+
   return (
-    <div className={`card p-6 ${isAlerted ? 'border-2 border-danger' : ''}`}>
-      {/* Timer */}
-      <CheckInTimer
-        timeLeft={timeLeft}
-        duration={checkIn.duration}
-        isAlerted={isAlerted}
-        onExtend={handleExtend}
-        extendingButton={extendingButton}
-        onEditTime={() => setShowEditTimeModal(true)}
-      />
-
-      {/* I'm Safe Button */}
-      {!isAlerted && (
-        <button
-          onClick={handleComplete}
-          disabled={loading}
-          className="w-full btn btn-success text-lg mb-6"
-        >
-          ✅ I'm Safe!
-        </button>
-      )}
-
-      {isAlerted && (
-        <div className="bg-danger/10 border border-danger rounded-xl p-4 text-center mb-6">
-          <p className="font-semibold text-danger mb-2">
-            🚨 Your besties have been alerted!
-          </p>
-          <p className="text-sm text-text-secondary mb-4">
-            They know you haven't checked in
-          </p>
-          <button
-            onClick={() => {
-              haptic.warning();
-              handleComplete(true);
-            }}
-            disabled={loading}
-            className="btn btn-success w-full"
-          >
-            ✅ I'm Safe! (False Alarm)
-          </button>
-        </div>
-      )}
-
-      {/* Header - Address */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="font-display text-lg text-text-primary">
-              {currentLocation || 'No location set'}
-            </h3>
+    <div className={`flex flex-col overflow-hidden rounded-xl bg-surface-light/80 dark:bg-gray-800/80 shadow-soft backdrop-blur-sm ${isAlerted ? 'border-2 border-danger' : ''}`}>
+      <div className="flex w-full grow flex-col items-stretch justify-center gap-4 p-5">
+        {/* Header with title and timer */}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-2xl leading-tight text-text-primary dark:text-gray-100">
+              {getCheckInTitle()}
+            </p>
+            {isEndingSoon() && !isAlerted && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-yellow-300 to-orange-300 dark:from-yellow-500/50 dark:to-orange-500/50 px-3 py-1 text-xs font-bold text-yellow-900 dark:text-yellow-100 shadow-inner-soft">
+                <span className="material-symbols-outlined !text-base">hourglass_top</span>
+                Ending Soon
+              </span>
+            )}
+            {!isEndingSoon() && !isAlerted && !checkIn.isTest && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 dark:from-primary/30 dark:to-secondary/30 px-3 py-1 text-xs font-bold text-text-primary dark:text-gray-200 shadow-inner-soft">
+                <span className="material-symbols-outlined !text-base">schedule</span>
+                Active
+              </span>
+            )}
             {checkIn.isTest && (
-              <span className="badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">🧪 Test</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-3 py-1 text-xs font-bold">
+                🧪 Test
+              </span>
             )}
             {isAlerted && (
-              <span className="badge badge-warning text-xs">ALERTED</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-3 py-1 text-xs font-bold">
+                🚨 ALERTED
+              </span>
             )}
           </div>
+          <div className="text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400">
+            {timeLeft === 0 ? '00:00:00' : formatTimeDisplay(timeLeft)}
+          </div>
         </div>
+
+        {/* Progress bar */}
+        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-gray-700 shadow-inner">
+          <div 
+            className={`h-full rounded-full transition-all duration-300 ${
+              isAlerted 
+                ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                : isEndingSoon()
+                ? 'bg-gradient-to-r from-accent to-orange-400'
+                : 'bg-gradient-to-r from-primary to-secondary'
+            }`}
+            style={{ width: `${getProgressPercentage()}%` }}
+          />
+        </div>
+
+        {/* Status message */}
+        {!isAlerted && (
+          <p className="text-sm font-semibold text-text-secondary dark:text-gray-400">
+            {isEndingSoon() 
+              ? "Just a little longer! Let your guardians know you're safe."
+              : "Your besties are watching over you. Check in when you're safe!"}
+          </p>
+        )}
+
+        {isAlerted && (
+          <p className="text-sm font-semibold text-danger dark:text-red-400">
+            Your besties have been alerted! They know you haven't checked in.
+          </p>
+        )}
+
+        {/* Extend time buttons */}
+        {!isAlerted && (
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => handleExtend(15)}
+              disabled={extendingButton !== null}
+              className="flex h-12 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700 text-sm font-bold leading-normal text-text-secondary dark:text-gray-300 transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              +15m
+            </button>
+            <button
+              onClick={() => handleExtend(30)}
+              disabled={extendingButton !== null}
+              className="flex h-12 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700 text-sm font-bold leading-normal text-text-secondary dark:text-gray-300 transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              +30m
+            </button>
+            <button
+              onClick={() => handleExtend(60)}
+              disabled={extendingButton !== null}
+              className="flex h-12 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700 text-sm font-bold leading-normal text-text-secondary dark:text-gray-300 transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              +60m
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Photos Section */}
-      {(photoURLs.length > 0 || !isAlerted) && (
-        <CheckInPhotos
-          photoURLs={photoURLs}
-          isAlerted={isAlerted}
-          uploadingPhoto={uploadingPhoto}
-          onPhotoUpload={handlePhotoUpload}
-          onRemovePhoto={removePhoto}
-        />
-      )}
-
-      {/* Notes Section */}
-      <CheckInNotes
-        notes={notes}
-        setNotes={setNotes}
-        editingNotes={editingNotes}
-        setEditingNotes={setEditingNotes}
-        onSaveNotes={handleSaveNotes}
-        isAlerted={isAlerted}
-        checkInNotes={checkIn.notes}
-      />
-
-      {/* Location Update Button */}
-      {!isAlerted && (
-        <div className="mb-4">
+      {/* Action buttons */}
+      <div className="flex items-center justify-between gap-3 bg-white/50 dark:bg-gray-800/50 p-3">
+        <div className="flex flex-1 gap-3">
           <button
-            onClick={handleUpdateLocation}
-            disabled={updatingLocation}
-            className={`w-full border-2 border-dashed ${isDark ? 'border-gray-600 text-gray-300 hover:bg-primary/10' : 'border-gray-300 text-gray-600 hover:bg-primary/5'} rounded-xl p-3 text-sm font-semibold hover:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+            onClick={() => setShowEditTimeModal(true)}
+            className="flex h-12 min-w-[48px] max-w-[480px] flex-1 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700 text-sm font-bold leading-normal text-text-secondary dark:text-gray-300 transition-transform hover:scale-105 active:scale-95"
           >
-            📍 {updatingLocation ? 'Updating Location...' : 'Note Current Location'}
+            <span className="material-symbols-outlined text-xl">more_time</span>
           </button>
+          <label
+            onClick={handlePhotoUploadClick}
+            className="flex h-12 min-w-[48px] max-w-[480px] flex-1 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700 text-sm font-bold leading-normal text-text-secondary dark:text-gray-300 transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotoUpload}
+              className="hidden"
+              disabled={isAlerted || uploadingPhoto || photoURLs.length >= 5}
+            />
+            <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
+          </label>
         </div>
-      )}
-
-      {/* Meeting With & Social Media */}
-      {(checkIn.meetingWith || checkIn.socialMediaLinks) && (
-        <div className="mb-4">
-          {checkIn.meetingWith && (
-            <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-50'} p-3 rounded-xl mb-2`}>
-              <div className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-1`}>MEETING WITH:</div>
-              <p className="text-sm text-text-primary font-semibold">{checkIn.meetingWith}</p>
-            </div>
-          )}
-          {checkIn.socialMediaLinks && (
-            <div className={`${isDark ? 'bg-purple-900/30' : 'bg-purple-50'} p-3 rounded-xl border-2 ${isDark ? 'border-purple-800' : 'border-purple-200'}`}>
-              <div className={`text-xs font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'} mb-1`}>THEIR SOCIAL MEDIA:</div>
-              <p className="text-sm text-text-primary">{checkIn.socialMediaLinks}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Besties */}
-      <div className="mb-4">
-        <div className="text-sm text-text-secondary mb-2">
-          Watching over you: {checkIn.bestieIds?.length || 0} besties
-        </div>
+        <button
+          onClick={isAlerted ? () => {
+            haptic.warning();
+            handleComplete(true);
+          } : handleComplete}
+          disabled={loading}
+          className="flex min-w-[84px] max-w-[480px] flex-1 cursor-pointer items-center justify-center gap-2.5 overflow-hidden rounded-lg h-12 px-4 bg-gradient-to-br from-green-300 to-cyan-300 dark:from-green-500 dark:to-cyan-500 text-green-900 dark:text-green-100 text-base font-bold leading-normal shadow-md transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className="material-symbols-outlined text-xl">verified</span>
+          <span className="truncate">I'm Safe!</span>
+        </button>
       </div>
 
-      {/* Created Time */}
-      <div className="mt-4 text-xs text-text-secondary text-center">
-        Started {formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
+      {/* Extended details section - collapsible or always visible */}
+      <div className="px-5 pb-4 space-y-4">
+        {/* Display photos if any */}
+        {photoURLs.length > 0 && (
+          <div className="mb-4">
+            <div className="text-sm font-semibold text-text-secondary dark:text-gray-400 mb-2">
+              Photos ({photoURLs.length}/5)
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {photoURLs.map((url, index) => (
+                <div key={index} className="relative aspect-square">
+                  <img
+                    src={url}
+                    alt={`Check-in ${index + 1}`}
+                    className="w-full h-full object-cover rounded-xl bg-gray-200 dark:bg-gray-700"
+                    loading="lazy"
+                  />
+                  {!isAlerted && (
+                    <button
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-sm font-bold hover:bg-red-600 flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes Section */}
+        <CheckInNotes
+          notes={notes}
+          setNotes={setNotes}
+          editingNotes={editingNotes}
+          setEditingNotes={setEditingNotes}
+          onSaveNotes={handleSaveNotes}
+          isAlerted={isAlerted}
+          checkInNotes={checkIn.notes}
+        />
+
+        {/* Meeting With & Social Media */}
+        {(checkIn.meetingWith || checkIn.socialMediaLinks) && (
+          <div>
+            {checkIn.meetingWith && (
+              <div className={`${isDark ? 'bg-gray-800/50' : 'bg-gray-50/80'} p-3 rounded-xl mb-2 backdrop-blur-sm`}>
+                <div className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-1`}>MEETING WITH:</div>
+                <p className="text-sm text-text-primary dark:text-gray-200 font-semibold">{checkIn.meetingWith}</p>
+              </div>
+            )}
+            {checkIn.socialMediaLinks && (
+              <div className={`${isDark ? 'bg-purple-900/30' : 'bg-purple-50/80'} p-3 rounded-xl border-2 ${isDark ? 'border-purple-800/50' : 'border-purple-200/50'} backdrop-blur-sm`}>
+                <div className={`text-xs font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'} mb-1`}>THEIR SOCIAL MEDIA:</div>
+                <p className="text-sm text-text-primary dark:text-gray-200">{checkIn.socialMediaLinks}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Besties count */}
+        <div>
+          <div className="text-sm text-text-secondary dark:text-gray-400 mb-2">
+            Watching over you: {checkIn.bestieIds?.length || 0} besties
+          </div>
+        </div>
+
+        {/* Created Time */}
+        <div className="text-xs text-text-secondary dark:text-gray-500 text-center">
+          Started {formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true })}
+        </div>
       </div>
 
       {/* Passcode Verification Modal */}

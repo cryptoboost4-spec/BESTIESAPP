@@ -91,12 +91,30 @@ export const useOptimisticUpdate = () => {
         onError(error);
       }
 
-      // Show error message
-      const errorMsg = error.message || errorMessage;
+      // Translate technical errors to user-friendly messages
+      let errorMsg = errorMessage;
+      if (error.message) {
+        // Check for common Firebase errors
+        if (error.code === 'permission-denied' || error.message.includes('permission')) {
+          errorMsg = 'You don\'t have permission to do this. Please check your account settings.';
+        } else if (error.code === 'unavailable' || error.message.includes('network') || error.message.includes('offline')) {
+          errorMsg = 'You\'re offline. Please check your connection and try again.';
+        } else if (error.code === 'deadline-exceeded' || error.message.includes('timeout')) {
+          errorMsg = 'This is taking too long. Please try again.';
+        } else if (error.message.includes('Error updating document') || error.message.includes('Error writing document')) {
+          errorMsg = 'Failed to save. Please try again.';
+        } else if (error.message.includes('quota') || error.message.includes('limit')) {
+          errorMsg = 'You\'ve reached a limit. Please try again later.';
+        } else if (!errorMessage || errorMessage === 'Something went wrong. Please try again.') {
+          // Only use raw error message if no custom message provided
+          errorMsg = error.message;
+        }
+      }
+
       if (loadingToast) {
-        toast.error(errorMsg, { id: loadingToast });
+        toast.error(errorMsg, { id: loadingToast, duration: 5000 });
       } else {
-        toast.error(errorMsg);
+        toast.error(errorMsg, { duration: 5000 });
       }
 
       setIsProcessing(false);

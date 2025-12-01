@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
-import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, where, Timestamp } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const ErrorDashboard = () => {
   const [errors, setErrors] = useState([]);
+  const [notificationErrors, setNotificationErrors] = useState([]);
   const [filter, setFilter] = useState('all'); // all, uncaught_error, custom_error, unhandled_promise
   const [timeFilter, setTimeFilter] = useState('24h'); // 24h, 7d, 30d, all
   const [loading, setLoading] = useState(true);
@@ -21,11 +23,12 @@ const ErrorDashboard = () => {
         '30d': 30 * 24 * 60 * 60 * 1000,
       };
       const cutoff = new Date(now.getTime() - timeMap[timeFilter]);
+      // errors collection uses timestamp as number (milliseconds)
       q = query(q, where('timestamp', '>=', cutoff.getTime()));
     }
 
-    // Apply type filter
-    if (filter !== 'all') {
+    // Apply type filter (skip for notification_error - handled separately)
+    if (filter !== 'all' && filter !== 'notification_error') {
       q = query(q, where('type', '==', filter));
     }
 
@@ -47,6 +50,47 @@ const ErrorDashboard = () => {
     return () => unsubscribe();
   }, [filter, timeFilter]);
 
+  // Load notification errors
+  useEffect(() => {
+    let q = collection(db, 'notification_status');
+
+    // Only show failed or partial notifications, order by timestamp
+    // Note: Filtering by time in memory to avoid composite index requirement
+    q = query(q, where('status', 'in', ['failed', 'partial']), orderBy('timestamp', 'desc'), limit(100));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifErrors = [];
+      const now = new Date();
+      const timeMap = {
+        '24h': 24 * 60 * 60 * 1000,
+        '7d': 7 * 24 * 60 * 60 * 1000,
+        '30d': 30 * 24 * 60 * 60 * 1000,
+      };
+      const cutoff = timeFilter !== 'all' ? new Date(now.getTime() - timeMap[timeFilter]) : null;
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const errorTimestamp = data.timestamp?.toDate ? data.timestamp.toDate() : null;
+        
+        // Filter by time if needed
+        if (!cutoff || (errorTimestamp && errorTimestamp >= cutoff)) {
+          notifErrors.push({ id: doc.id, ...data, type: 'notification_error' });
+        }
+      });
+      
+      // Limit to 50 after filtering
+      setNotificationErrors(notifErrors.slice(0, 50));
+    }, (error) => {
+      console.error('Error loading notification errors:', error);
+      // If index error, show helpful message
+      if (error.code === 'failed-precondition') {
+        console.warn('Firestore index may be needed for notification_status query');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [timeFilter]);
+
   const getErrorSeverity = (error) => {
     if (error.type === 'uncaught_error') return 'critical';
     if (error.type === 'unhandled_promise') return 'high';
@@ -66,19 +110,17 @@ const ErrorDashboard = () => {
   };
 
   const errorStats = {
-    total: errors.length,
+    total: errors.length + notificationErrors.length,
     critical: errors.filter(e => getErrorSeverity(e) === 'critical').length,
-    high: errors.filter(e => getErrorSeverity(e) === 'high').length,
-    medium: errors.filter(e => getErrorSeverity(e) === 'medium').length,
+    high: errors.filter(e => getErrorSeverity(e) === 'high').length + notificationErrors.filter(e => e.status === 'failed').length,
+    medium: errors.filter(e => getErrorSeverity(e) === 'medium').length + notificationErrors.filter(e => e.status === 'partial').length,
     low: errors.filter(e => getErrorSeverity(e) === 'low').length,
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={5} message="Loading error dashboard... 🔍" />
       </div>
     );
   }
@@ -131,6 +173,7 @@ const ErrorDashboard = () => {
                 <option value="uncaught_error">Uncaught Errors</option>
                 <option value="custom_error">Custom Errors</option>
                 <option value="unhandled_promise">Promise Rejections</option>
+                <option value="notification_error">Notification Errors</option>
               </select>
             </div>
             <div>
@@ -151,14 +194,61 @@ const ErrorDashboard = () => {
 
         {/* Error List */}
         <div className="space-y-4">
-          {errors.length === 0 ? (
+          {(filter === 'all' || filter === 'notification_error') && notificationErrors.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xl font-display text-text-primary mb-4">📱 Notification Errors ({notificationErrors.length})</h2>
+              {notificationErrors.map((error) => (
+                <div key={error.id} className="card p-4 border-2 border-orange-300 mb-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-bold uppercase">
+                          {error.status}
+                        </span>
+                        <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-semibold text-gray-700">
+                          Notification
+                        </span>
+                        <span className="text-sm text-text-secondary">
+                          {error.timestamp?.toDate ? formatDistanceToNow(error.timestamp.toDate()) : 'Unknown'} ago
+                        </span>
+                      </div>
+                      <div className="font-semibold text-text-primary mb-1">
+                        {error.reason || 'Notification delivery failed'}
+                      </div>
+                      {error.checkInId && (
+                        <div className="text-sm text-text-secondary">
+                          Check-in: {error.checkInId}
+                        </div>
+                      )}
+                      {error.bestieId && (
+                        <div className="text-sm text-text-secondary">
+                          Bestie: {error.bestieId}
+                        </div>
+                      )}
+                      {error.channelsSucceeded && error.channelsSucceeded.length > 0 && (
+                        <div className="text-sm text-success mt-1">
+                          ✅ Succeeded: {error.channelsSucceeded.join(', ')}
+                        </div>
+                      )}
+                      {error.channelsFailed && error.channelsFailed.length > 0 && (
+                        <div className="text-sm text-danger mt-1">
+                          ❌ Failed: {error.channelsFailed.map(c => c.channel || c).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {errors.length === 0 && notificationErrors.length === 0 ? (
             <div className="card p-8 text-center">
               <div className="text-4xl mb-4">✨</div>
               <div className="text-xl font-semibold text-text-primary mb-2">No Errors Found</div>
               <div className="text-text-secondary">Everything is running smoothly!</div>
             </div>
           ) : (
-            errors.map((error) => {
+            (filter === 'notification_error' ? [] : errors).map((error) => {
               const severity = getErrorSeverity(error);
               const severityColor = getSeverityColor(severity);
 

@@ -296,8 +296,41 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       notificationsSent.push('In-app');
 
       functions.logger.info(`SOS sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
+      
+      // Track notification status for user feedback
+      if (notificationsSent.length === 0) {
+        await db.collection('notification_status').add({
+          userId: userId,
+          bestieId: bestieId,
+          type: 'emergency_sos',
+          status: 'failed',
+          reason: 'No notification channels available',
+          timestamp: admin.firestore.Timestamp.now(),
+          sosId: sosRef.id
+        });
+      } else {
+        await db.collection('notification_status').add({
+          userId: userId,
+          bestieId: bestieId,
+          type: 'emergency_sos',
+          status: 'partial',
+          channels: notificationsSent,
+          timestamp: admin.firestore.Timestamp.now(),
+          sosId: sosRef.id
+        });
+      }
     } catch (error) {
       functions.logger.error(`Failed SOS to ${bestieId}:`, error);
+      // Track failure
+      await db.collection('notification_status').add({
+        userId: userId,
+        bestieId: bestieId,
+        type: 'emergency_sos',
+        status: 'failed',
+        reason: error.message,
+        timestamp: admin.firestore.Timestamp.now(),
+        sosId: sosRef.id
+      });
     }
   });
 

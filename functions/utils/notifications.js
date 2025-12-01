@@ -215,10 +215,20 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
   const shortMessage = `Hey, ${cleanName} hasn't checked in yet. Please check Besties app - they might need help.`;
 
   const notificationsSent = [];
+  const notificationStatus = {
+    checkInId,
+    bestieId,
+    userId: checkIn.userId,
+    timestamp: admin.firestore.Timestamp.now(),
+    channelsAttempted: [],
+    channelsSucceeded: [],
+    channelsFailed: []
+  };
 
   try {
     // Send push notification if user has FCM token (ALWAYS try first)
     if (bestieData.fcmToken && bestieData.notificationsEnabled) {
+      notificationStatus.channelsAttempted.push('Push');
       try {
         await sendPushNotification(
           bestieData.fcmToken,
@@ -231,8 +241,14 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
           }
         );
         notificationsSent.push('Push');
+        notificationStatus.channelsSucceeded.push('Push');
       } catch (pushError) {
         functions.logger.warn('Push notification failed:', pushError.message);
+        notificationStatus.channelsFailed.push({ 
+          channel: 'Push', 
+          error: pushError.message,
+          code: pushError.code || 'unknown'
+        });
         // Continue with other notification methods
       }
     }
@@ -303,27 +319,76 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
       notificationsSent.push('SMS');
     }
 
+    // Track notification attempts
+    const notificationStatus = {
+      checkInId,
+      bestieId,
+      userId: checkIn.userId,
+      timestamp: admin.firestore.Timestamp.now(),
+      channelsAttempted: [],
+      channelsSucceeded: [],
+      channelsFailed: []
+    };
+
     // Send email if enabled (cheap - use full message)
     if (bestieData.email && bestieData.notificationPreferences?.email) {
-      await sendEmailAlert(bestieData.email, fullMessage, checkIn);
-      notificationsSent.push('Email');
+      notificationStatus.channelsAttempted.push('Email');
+      try {
+        await sendEmailAlert(bestieData.email, fullMessage, checkIn);
+        notificationsSent.push('Email');
+        notificationStatus.channelsSucceeded.push('Email');
+      } catch (emailError) {
+        functions.logger.warn('Email failed for check-in alert:', emailError.message);
+        notificationStatus.channelsFailed.push({ channel: 'Email', error: emailError.message });
+      }
     }
 
     // Create in-app notification (ALWAYS - regardless of other settings)
-    await db.collection('notifications').add({
-      userId: bestieId,
-      type: 'check_in_alert',
-      title: '🚨 Check-in Alert',
-      message: `${userData.displayName} hasn't checked in yet. They might need help.`,
-      checkInId,
-      createdAt: admin.firestore.Timestamp.now(),
-      read: false,
-    });
-    notificationsSent.push('In-app');
+    try {
+      await db.collection('notifications').add({
+        userId: bestieId,
+        type: 'check_in_alert',
+        title: '🚨 Check-in Alert',
+        message: `${userData.displayName} hasn't checked in yet. They might need help.`,
+        checkInId,
+        createdAt: admin.firestore.Timestamp.now(),
+        read: false,
+      });
+      notificationsSent.push('In-app');
+      notificationStatus.channelsSucceeded.push('In-app');
+    } catch (notifError) {
+      functions.logger.warn('In-app notification failed:', notifError.message);
+      notificationStatus.channelsFailed.push({ channel: 'In-app', error: notifError.message });
+    }
+
+    // Log notification status for user feedback
+    if (notificationStatus.channelsFailed.length > 0 || notificationsSent.length === 0) {
+      await db.collection('notification_status').add({
+        ...notificationStatus,
+        status: notificationsSent.length === 0 ? 'failed' : 'partial',
+        channelsSucceeded: notificationsSent
+      });
+    }
 
     functions.logger.info(`Alert sent to ${bestieId} via: ${notificationsSent.join(', ')}`);
   } catch (error) {
     functions.logger.error(`Failed to notify bestie ${bestieId}:`, error);
+    // Track complete failure
+    try {
+      await db.collection('notification_status').add({
+        checkInId,
+        bestieId,
+        userId: checkIn.userId,
+        timestamp: admin.firestore.Timestamp.now(),
+        status: 'failed',
+        reason: error.message,
+        channelsAttempted: [],
+        channelsSucceeded: [],
+        channelsFailed: []
+      });
+    } catch (trackError) {
+      functions.logger.error('Failed to track notification status:', trackError);
+    }
   }
 }
 

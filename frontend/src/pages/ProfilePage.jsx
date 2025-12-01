@@ -14,6 +14,8 @@ import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
 import ProfileAuraStyles from '../components/profile/ProfileAuraStyles';
 import RequestSupportSection from '../components/RequestSupportSection';
+import LoadingSkeleton from '../components/LoadingSkeleton';
+import OfflineBanner from '../components/OfflineBanner';
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
@@ -137,16 +139,22 @@ const ProfilePage = () => {
       setBestiesCount(snapshot1.size + snapshot2.size);
 
       // Count how many times user is an emergency contact
-      // Use bestieIds (selected besties) for this query
+      // Use bestieUserIds for consistency with security rules and other queries
       const emergencyContactQuery = query(
         collection(db, 'checkins'),
-        where('bestieIds', 'array-contains', currentUser.uid),
+        where('bestieUserIds', 'array-contains', currentUser.uid),
         limit(1000) // Reasonable limit for analytics count
       );
       const emergencySnapshot = await getDocs(emergencyContactQuery);
       setEmergencyContactCount(emergencySnapshot.size);
 
-      // Get first check-in date
+      // Get first check-in date from stats (set by trigger) or calculate from check-ins
+      const firstCheckInFromStats = userData?.stats?.firstCheckInDate?.toDate?.() || userData?.stats?.firstCheckInDate;
+      if (firstCheckInFromStats) {
+        setFirstCheckInDate(firstCheckInFromStats);
+      }
+
+      // Calculate nighttime and weekend check-ins
       const checkInsQuery = query(
         collection(db, 'checkins'),
         where('userId', '==', currentUser.uid),
@@ -154,7 +162,7 @@ const ProfilePage = () => {
       );
       const checkInsSnapshot = await getDocs(checkInsQuery);
       if (!checkInsSnapshot.empty) {
-        let earliestDate = null;
+        let earliestDate = firstCheckInFromStats || null;
         let nightCount = 0;
         let weekendCount = 0;
 
@@ -163,7 +171,8 @@ const ProfilePage = () => {
           const date = data.createdAt?.toDate();
 
           if (date) {
-            if (!earliestDate || date < earliestDate) {
+            // Only update earliestDate if we don't have it from stats
+            if (!firstCheckInFromStats && (!earliestDate || date < earliestDate)) {
               earliestDate = date;
             }
 
@@ -179,7 +188,10 @@ const ProfilePage = () => {
           }
         });
 
-        setFirstCheckInDate(earliestDate);
+        // Only set if we calculated it (not from stats)
+        if (!firstCheckInFromStats && earliestDate) {
+          setFirstCheckInDate(earliestDate);
+        }
         setNighttimeCheckIns(nightCount);
         setWeekendCheckIns(weekendCount);
       }
@@ -358,15 +370,14 @@ const ProfilePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="profile" message="Loading your profile... 💜" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-pattern">
+      <OfflineBanner />
       <ConfettiCelebration trigger={confettiTrigger} type="badge" />
       <ProfileAuraStyles />
 

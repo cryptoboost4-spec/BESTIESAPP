@@ -5,6 +5,7 @@ import { db, storage } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const OnboardingPage = () => {
   const { currentUser, userData } = useAuth();
@@ -408,7 +409,7 @@ const OnboardingPage = () => {
     if (checkingBesties) {
       return (
         <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center">
-          <div className="spinner"></div>
+          <LoadingSkeleton type="list" count={3} message="Loading onboarding... ✨" />
         </div>
       );
     }

@@ -48,9 +48,9 @@ const OfflineBanner = () => {
       }}
     >
       {isOnline ? (
-        <span>✨ You're back online! 💜</span>
+        <span>✨ You're back online! Syncing your data... 💜</span>
       ) : (
-        <span>📵 You're offline - Some features won't work</span>
+        <span>📵 You're offline - Some features won't work. Your data will sync when you're back online.</span>
       )}
 
       <style>{`

@@ -39,7 +39,6 @@ const CreateCheckInPage = () => {
   const { executeOptimistic } = useOptimisticUpdate();
   const [gpsCoords, setGpsCoords] = useState(null);
   const [mapInitialized, setMapInitialized] = useState(false);
-  const [mapLocked, setMapLocked] = useState(true);
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [photosExpanded, setPhotosExpanded] = useState(false);
   const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false);
@@ -250,13 +249,13 @@ const CreateCheckInPage = () => {
         }
       } catch (error) {
         console.error('Error loading besties:', error);
-        toast.error('Failed to load besties');
+        toast.error('Unable to load your besties. Please refresh the page and try again.', { duration: 5000 });
         setBesties([]);
         setBestiesLoading(false); // Set to false even on error
       }
     }, (error) => {
       console.error('Error in featuredCircle listener:', error);
-      toast.error('Failed to load besties');
+      toast.error('Unable to load your besties. Please refresh the page and try again.', { duration: 5000 });
       setBesties([]);
       setBestiesLoading(false); // Set to false even on error
     });
@@ -431,6 +430,8 @@ const CreateCheckInPage = () => {
             clearInterval(checkInterval);
             checkInterval = null;
           }
+          // Ensure autocompleteLoaded is set
+          setAutocompleteLoaded(true);
         }
       }, 100);
 
@@ -438,6 +439,7 @@ const CreateCheckInPage = () => {
       readyTimeout = setTimeout(() => {
         if (checkGoogleLoaded()) {
           console.log('Google Maps API loaded successfully');
+          setAutocompleteLoaded(true);
         }
       }, 500);
     };
@@ -604,24 +606,24 @@ const CreateCheckInPage = () => {
           const docSnap = await getDoc(doc(db, 'checkins', docRef.id));
 
           if (!docSnap.exists()) {
-            throw new Error('Check-in was not saved properly. Please try again.');
+            throw new Error('Your check-in wasn\'t saved. Please try creating it again.');
           }
 
           // Verify critical data
           const savedData = docSnap.data();
           if (savedData.userId !== currentUser.uid || savedData.status !== 'active') {
-            throw new Error('Check-in data verification failed. Please try again.');
+            throw new Error('There was a problem saving your check-in. Please try again.');
           }
 
           // Verify besties were saved correctly
           if (!savedData.bestieIds || savedData.bestieIds.length !== selectedBesties.length) {
-            throw new Error('Bestie list was not saved correctly. Please try again.');
+            throw new Error('Your besties weren\'t saved correctly. Please try again.');
           }
 
           // Verify all bestie IDs match exactly
           const bestiesMatch = selectedBesties.every(id => savedData.bestieIds.includes(id));
           if (!bestiesMatch) {
-            throw new Error('Bestie list verification failed. Please try again.');
+            throw new Error('There was a problem saving your bestie list. Please try again.');
           }
 
           errorTracker.trackFunnelStep('checkin', 'complete_checkin');
@@ -656,7 +658,7 @@ const CreateCheckInPage = () => {
         setShowingLoader(false);
       },
       successMessage: 'Check-in created! Stay safe! 💜',
-      errorMessage: 'Failed to create check-in. Please try creating it again.',
+      errorMessage: 'Unable to create your check-in. Please check your connection and try again.',
       showLoadingToast: false,
       loadingMessage: 'Creating your check-in...'
     });
@@ -692,8 +694,6 @@ const CreateCheckInPage = () => {
             setGpsCoords={setGpsCoords}
             mapInitialized={mapInitialized}
             setMapInitialized={setMapInitialized}
-            mapLocked={mapLocked}
-            setMapLocked={setMapLocked}
             autocompleteLoaded={autocompleteLoaded}
             showLocationDropdown={showLocationDropdown}
             setShowLocationDropdown={setShowLocationDropdown}

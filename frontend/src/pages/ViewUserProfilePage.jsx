@@ -5,6 +5,7 @@ import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import CountUp from '../components/CountUp';
 import toast from 'react-hot-toast';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const ViewUserProfilePage = () => {
   const { userId } = useParams();
@@ -128,9 +129,7 @@ const ViewUserProfilePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="profile" message="Loading profile... 👤" />
       </div>
     );
   }

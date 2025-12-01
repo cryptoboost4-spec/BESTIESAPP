@@ -1,167 +1,166 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * Cute girly loading skeleton with rotating supportive messages
- * Shows while data is loading to make app feel faster
+ * Minimal elegant loading skeleton with no content hints
+ * Luxury branded animations only
  */
 
-const SUPPORTIVE_MESSAGES = [
-  "Your safety squad is loading... 💜",
-  "Getting your besties ready... 👯‍♀️",
-  "Almost there, queen! 👑",
-  "Loading your safety net... 🛡️",
-  "Besties incoming! ✨",
-  "Setting up your protection... 💪",
-  "Your crew is on the way... 🌟",
-  "Making sure you're covered... 💕",
-  "Safety first, always! 🎀",
-  "We got you, babe! 🫶",
-  "Your backup is loading... 🚀",
-  "Preparing your safe space... 🌸",
-  "Getting the squad together... 💝",
-  "Your safety network loading... 🔐",
-  "Besties are assembling... 🦋"
+const LUXURY_MESSAGES = [
+  "Preparing something beautiful... ✨",
+  "Crafting your experience... 💎",
+  "Almost ready, darling... 🌸",
+  "Creating magic for you... 💫",
+  "Just a moment, please... 🦋",
+  "We're preparing perfection... 🌺",
+  "Your moment is coming... 💕",
+  "Elegance in progress... 🎀",
+  "Refining every detail... ✨",
+  "Almost there, beautiful... 💜"
 ];
 
 const LoadingSkeleton = ({ type = 'list', count = 3, message }) => {
   const [currentMessage, setCurrentMessage] = useState(
-    message || SUPPORTIVE_MESSAGES[Math.floor(Math.random() * SUPPORTIVE_MESSAGES.length)]
+    message || LUXURY_MESSAGES[Math.floor(Math.random() * LUXURY_MESSAGES.length)]
   );
 
   // Rotate message every 3 seconds
   useEffect(() => {
     if (!message) {
       const interval = setInterval(() => {
-        setCurrentMessage(SUPPORTIVE_MESSAGES[Math.floor(Math.random() * SUPPORTIVE_MESSAGES.length)]);
+        setCurrentMessage(LUXURY_MESSAGES[Math.floor(Math.random() * LUXURY_MESSAGES.length)]);
       }, 3000);
       return () => clearInterval(interval);
     }
   }, [message]);
 
-  // Different skeleton types
-  if (type === 'profile') {
-    return (
-      <div className="animate-fade-in">
-        {/* Message */}
-        <div className="text-center mb-6 animate-pulse">
-          <p className="text-primary font-semibold">{currentMessage}</p>
-        </div>
-
-        {/* Profile card skeleton */}
-        <div className="card p-8 mb-6">
-          <div className="flex flex-col items-center">
-            {/* Profile photo */}
-            <div className="w-32 h-32 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full mb-4 animate-shimmer"></div>
-
-            {/* Name */}
-            <div className="h-8 bg-gradient-to-r from-pink-200 to-purple-200 rounded-full w-48 mb-2 animate-shimmer"></div>
-
-            {/* Bio */}
-            <div className="h-4 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full w-64 mb-4 animate-shimmer"></div>
-
-            {/* Stats */}
-            <div className="flex gap-4 mt-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="text-center">
-                  <div className="h-6 w-12 bg-gradient-to-r from-pink-200 to-purple-200 rounded mb-1 animate-shimmer"></div>
-                  <div className="h-3 w-16 bg-gradient-to-r from-pink-100 to-purple-100 rounded animate-shimmer"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (type === 'card') {
-    return (
-      <div className="animate-fade-in">
-        {/* Message */}
-        <div className="text-center mb-6 animate-pulse">
-          <p className="text-primary font-semibold">{currentMessage}</p>
-        </div>
-
-        {/* Single card skeleton */}
-        <div className="card p-6">
-          <div className="flex items-start gap-4">
-            {/* Avatar */}
-            <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full flex-shrink-0 animate-shimmer"></div>
-
-            {/* Content */}
-            <div className="flex-1 space-y-3">
-              <div className="h-5 bg-gradient-to-r from-pink-200 to-purple-200 rounded w-3/4 animate-shimmer"></div>
-              <div className="h-4 bg-gradient-to-r from-pink-100 to-purple-100 rounded w-full animate-shimmer"></div>
-              <div className="h-4 bg-gradient-to-r from-pink-100 to-purple-100 rounded w-5/6 animate-shimmer"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Default: list of items
   return (
-    <div className="animate-fade-in space-y-4">
-      {/* Message */}
-      <div className="text-center mb-6 animate-pulse">
-        <p className="text-primary font-semibold">{currentMessage}</p>
+    <div className="min-h-[400px] flex items-center justify-center p-8 relative overflow-hidden">
+      {/* Abstract gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-pink-50/50 via-purple-50/50 to-fuchsia-50/50 dark:from-pink-900/10 dark:via-purple-900/10 dark:to-fuchsia-900/10 animate-gradient-shift"></div>
+
+      {/* Floating abstract particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full animate-float-particle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              width: `${20 + Math.random() * 40}px`,
+              height: `${20 + Math.random() * 40}px`,
+              background: `linear-gradient(135deg, 
+                rgba(236, 72, 153, ${0.1 + Math.random() * 0.2}), 
+                rgba(168, 85, 247, ${0.1 + Math.random() * 0.2}))`,
+              animationDelay: `${Math.random() * 4}s`,
+              animationDuration: `${8 + Math.random() * 4}s`,
+            }}
+          />
+        ))}
       </div>
 
-      {/* List items */}
-      {[...Array(count)].map((_, i) => (
-        <div key={i} className="card p-4" style={{ animationDelay: `${i * 100}ms` }}>
-          <div className="flex items-center gap-4">
-            {/* Avatar/Icon */}
-            <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full flex-shrink-0 animate-shimmer"></div>
-
-            {/* Text content */}
-            <div className="flex-1 space-y-2">
-              <div className="h-5 bg-gradient-to-r from-pink-200 to-purple-200 rounded w-3/4 animate-shimmer"></div>
-              <div className="h-3 bg-gradient-to-r from-pink-100 to-purple-100 rounded w-1/2 animate-shimmer"></div>
-            </div>
-
-            {/* Action area */}
-            <div className="w-20 h-8 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full animate-shimmer"></div>
-          </div>
+      {/* Central content */}
+      <div className="relative z-10 text-center max-w-md">
+        {/* Elegant message */}
+        <div className="mb-8">
+          <p className="text-lg md:text-xl font-display bg-gradient-to-r from-pink-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent animate-pulse-slow">
+            {currentMessage}
+          </p>
         </div>
-      ))}
+
+        {/* Abstract loading animation */}
+        <div className="flex justify-center items-center gap-3 mb-6">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="w-3 h-3 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-fuchsia-400 animate-bounce-elegant"
+              style={{
+                animationDelay: `${i * 0.15}s`,
+                animationDuration: '1.2s'
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Elegant progress bar */}
+        <div className="relative w-full max-w-xs mx-auto h-1 bg-gradient-to-r from-pink-100 via-purple-100 to-fuchsia-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-fuchsia-900/30 rounded-full overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 via-fuchsia-400 to-pink-400 animate-silk-flow bg-[length:200%_100%]"></div>
+        </div>
+      </div>
 
       <style>{`
-        @keyframes shimmer {
-          0% {
-            background-position: -1000px 0;
+        @keyframes gradient-shift {
+          0%, 100% {
+            background-position: 0% 50%;
           }
-          100% {
-            background-position: 1000px 0;
+          50% {
+            background-position: 100% 50%;
           }
         }
 
-        @keyframes fade-in {
-          from {
-            opacity: 0;
+        @keyframes float-particle {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px) scale(1);
+            opacity: 0.3;
           }
-          to {
+          33% {
+            transform: translateY(-20px) translateX(10px) scale(1.1);
+            opacity: 0.5;
+          }
+          66% {
+            transform: translateY(-10px) translateX(-10px) scale(0.9);
+            opacity: 0.4;
+          }
+        }
+
+        @keyframes bounce-elegant {
+          0%, 100% {
+            transform: translateY(0) scale(1);
+            opacity: 0.6;
+          }
+          50% {
+            transform: translateY(-12px) scale(1.1);
             opacity: 1;
           }
         }
 
-        .animate-shimmer {
-          background: linear-gradient(
-            90deg,
-            #fce7f3 0%,
-            #fbcfe8 20%,
-            #f9a8d4 40%,
-            #e9d5ff 60%,
-            #fbcfe8 80%,
-            #fce7f3 100%
-          );
-          background-size: 1000px 100%;
-          animation: shimmer 2s infinite linear;
+        @keyframes pulse-slow {
+          0%, 100% {
+            opacity: 0.8;
+          }
+          50% {
+            opacity: 1;
+          }
         }
 
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-in;
+        @keyframes silk-flow {
+          0% {
+            background-position: 0% center;
+          }
+          100% {
+            background-position: 200% center;
+          }
+        }
+
+        .animate-gradient-shift {
+          background-size: 200% 200%;
+          animation: gradient-shift 8s ease infinite;
+        }
+
+        .animate-float-particle {
+          animation: float-particle 10s ease-in-out infinite;
+        }
+
+        .animate-bounce-elegant {
+          animation: bounce-elegant 1.2s ease-in-out infinite;
+        }
+
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+
+        .animate-silk-flow {
+          animation: silk-flow 2s linear infinite;
         }
       `}</style>
     </div>

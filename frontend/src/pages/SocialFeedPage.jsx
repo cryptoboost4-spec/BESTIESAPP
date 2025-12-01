@@ -4,6 +4,7 @@ import { db } from '../services/firebase';
 import { collection, query, where, orderBy, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const SocialFeedPage = () => {
   const { currentUser } = useAuth();
@@ -169,9 +170,7 @@ const SocialFeedPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={5} message="Loading social feed... 📱" />
       </div>
     );
   }

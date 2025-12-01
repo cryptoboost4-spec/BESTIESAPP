@@ -17,7 +17,13 @@ const MobileBottomNav = () => {
         width: '100%'
       }}
     >
-      <div className="flex items-center justify-around py-3 safe-area-inset-bottom">
+      <div 
+        className="flex items-center justify-around py-3"
+        style={{
+          paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+          paddingTop: '12px'
+        }}
+      >
         <Link
           to="/"
           className={`flex flex-col items-center gap-1 transition-colors ${

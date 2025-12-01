@@ -130,7 +130,7 @@ function App() {
               <>
                 {/* Desktop Header - visible on md+ screens, hidden on mobile */}
                 <Header />
-                <div className="fixed top-16 right-4 z-50">
+                <div className="fixed top-24 right-4 z-50">
                   <FloatingNotificationBell />
                 </div>
               </>
@@ -258,27 +258,42 @@ function App() {
                 </Routes>
               </Suspense>
 
-              {/* Toast notifications */}
+              {/* Toast notifications - bottom-right, less intrusive */}
               <Toaster
-                position="top-right"
+                position="bottom-right"
                 toastOptions={{
                   duration: 4000,
                   style: {
                     background: '#fff',
                     color: '#2D3748',
                     fontFamily: 'Quicksand, sans-serif',
-                    fontWeight: '600',
+                    fontWeight: '500',
+                    fontSize: '14px',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    maxWidth: '320px',
                   },
                   success: {
                     iconTheme: {
-                      primary: '#4CAF50',
+                      primary: '#10b981',
                       secondary: '#fff',
+                    },
+                    style: {
+                      background: '#f0fdf4',
+                      color: '#166534',
+                      border: '1px solid #bbf7d0',
                     },
                   },
                   error: {
                     iconTheme: {
-                      primary: '#FF6B35',
+                      primary: '#ef4444',
                       secondary: '#fff',
+                    },
+                    style: {
+                      background: '#fef2f2',
+                      color: '#991b1b',
+                      border: '1px solid #fecaca',
                     },
                   },
                 }}

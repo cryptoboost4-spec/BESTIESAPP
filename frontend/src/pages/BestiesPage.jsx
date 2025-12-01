@@ -21,6 +21,7 @@ import ActivityFeed from '../components/besties/ActivityFeed';
 import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import BestiesLeaderboard from '../components/besties/BestiesLeaderboard';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
@@ -405,9 +406,7 @@ const BestiesPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern">
-        <div className="flex items-center justify-center py-20">
-          <div className="spinner"></div>
-        </div>
+        <LoadingSkeleton type="list" count={5} message="Loading your besties... 👯‍♀️" />
       </div>
     );
   }
