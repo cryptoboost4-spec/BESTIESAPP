@@ -14,10 +14,48 @@
  */
 
 const admin = require('firebase-admin');
+const path = require('path');
+const fs = require('fs');
+
+// Get project ID from .firebaserc or environment variable
+function getProjectId() {
+  // Try environment variable first
+  if (process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT_ID) {
+    return process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT_ID;
+  }
+  
+  // Try reading from .firebaserc in project root
+  const firebasercPath = path.join(__dirname, '../../.firebaserc');
+  if (fs.existsSync(firebasercPath)) {
+    const firebaserc = JSON.parse(fs.readFileSync(firebasercPath, 'utf8'));
+    return firebaserc.projects?.default || firebaserc.projects?.bestiescursor;
+  }
+  
+  // Default fallback
+  return 'bestiesapp';
+}
 
 // Initialize Firebase Admin (if not already initialized)
 if (!admin.apps.length) {
-  admin.initializeApp();
+  const projectId = getProjectId();
+  
+  // Check for service account key file
+  const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
+    path.join(__dirname, '../../serviceAccountKey.json');
+  
+  let config = { projectId: projectId };
+  
+  if (fs.existsSync(serviceAccountPath)) {
+    const serviceAccount = require(serviceAccountPath);
+    config.credential = admin.credential.cert(serviceAccount);
+    console.log(`🔧 Using service account key: ${serviceAccountPath}`);
+  } else {
+    console.log(`⚠️  No service account key found. Using Application Default Credentials.`);
+    console.log(`   If this fails, set GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json in project root.`);
+  }
+  
+  admin.initializeApp(config);
+  console.log(`🔧 Initialized Firebase Admin with project: ${projectId}\n`);
 }
 
 const db = admin.firestore();
