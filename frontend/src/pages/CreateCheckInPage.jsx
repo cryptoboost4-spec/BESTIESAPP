@@ -13,6 +13,8 @@ import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
 import DurationSelector from '../components/checkin/DurationSelector';
 import BestieSelector from '../components/checkin/BestieSelector';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
+import InlineError from '../components/errors/InlineError';
+import ContextualError from '../components/errors/ContextualError';
 import { FEATURES } from '../config/features';
 
 const CreateCheckInPage = () => {
@@ -44,6 +46,17 @@ const CreateCheckInPage = () => {
   const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [socialMediaExpanded, setSocialMediaExpanded] = useState(false);
+  
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState({
+    besties: '',
+    location: '',
+    duration: '',
+    bestiesWithoutContact: ''
+  });
+  
+  // Component-level errors
+  const [bestiesLoadError, setBestiesLoadError] = useState(null);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -249,13 +262,13 @@ const CreateCheckInPage = () => {
         }
       } catch (error) {
         console.error('Error loading besties:', error);
-        toast.error('Unable to load your besties. Please refresh the page and try again.', { duration: 5000 });
+        setBestiesLoadError('Unable to load your besties. Please refresh the page and try again.');
         setBesties([]);
         setBestiesLoading(false); // Set to false even on error
       }
     }, (error) => {
       console.error('Error in featuredCircle listener:', error);
-      toast.error('Unable to load your besties. Please refresh the page and try again.', { duration: 5000 });
+      setBestiesLoadError('Unable to load your besties. Please refresh the page and try again.');
       setBesties([]);
       setBestiesLoading(false); // Set to false even on error
     });
@@ -476,8 +489,10 @@ const CreateCheckInPage = () => {
     
     if (!hasRegularBesties && !hasMessengerContacts) {
       errorTracker.trackFunnelStep('checkin', 'error_no_besties');
-      toast.error('Please select at least one bestie or messenger contact to notify', { duration: 4000 });
+      setFormErrors(prev => ({ ...prev, besties: 'Please select at least one bestie or messenger contact to notify' }));
       return;
+    } else {
+      setFormErrors(prev => ({ ...prev, besties: '' }));
     }
 
     // For regular besties, check if they have contact methods (phone+SMS, telegram, or push)
@@ -493,10 +508,13 @@ const CreateCheckInPage = () => {
       });
 
       if (bestiesWithoutContact.length > 0) {
-        toast.error(`These besties need to enable notifications: ${bestiesWithoutContact.join(', ')}`, {
-          duration: 6000
-        });
+        setFormErrors(prev => ({ 
+          ...prev, 
+          bestiesWithoutContact: `These besties need to enable notifications: ${bestiesWithoutContact.join(', ')}` 
+        }));
         return;
+      } else {
+        setFormErrors(prev => ({ ...prev, bestiesWithoutContact: '' }));
       }
     }
 
@@ -504,13 +522,17 @@ const CreateCheckInPage = () => {
     const isQuickCheckIn = location.state?.skipLocation || location.state?.quickType;
     if (!isQuickCheckIn && !locationInput.trim()) {
       errorTracker.trackFunnelStep('checkin', 'error_no_location');
-      toast.error('Please enter a location');
+      setFormErrors(prev => ({ ...prev, location: 'Please enter a location' }));
       return;
+    } else {
+      setFormErrors(prev => ({ ...prev, location: '' }));
     }
 
     if (duration < 10 || duration > 180) {
-      toast.error('Duration must be between 10 and 180 minutes');
+      setFormErrors(prev => ({ ...prev, duration: 'Duration must be between 10 and 180 minutes' }));
       return;
+    } else {
+      setFormErrors(prev => ({ ...prev, duration: '' }));
     }
 
     errorTracker.trackFunnelStep('checkin', 'submit_checkin', {
@@ -689,7 +711,12 @@ const CreateCheckInPage = () => {
           {/* Location with Map */}
           <CheckInMap
             locationInput={locationInput}
-            setLocationInput={setLocationInput}
+            setLocationInput={(value) => {
+              setLocationInput(value);
+              if (value.trim()) {
+                setFormErrors(prev => ({ ...prev, location: '' }));
+              }
+            }}
             gpsCoords={gpsCoords}
             setGpsCoords={setGpsCoords}
             mapInitialized={mapInitialized}
@@ -700,6 +727,7 @@ const CreateCheckInPage = () => {
             loading={loading}
             setLoading={setLoading}
           />
+          {formErrors.location && <InlineError message={formErrors.location} className="px-6 -mt-4" />}
 
           {/* Who Meeting & Duration Combined */}
           <div className="card p-6">
@@ -714,21 +742,53 @@ const CreateCheckInPage = () => {
 
             <DurationSelector
               duration={duration}
-              setDuration={setDuration}
+              setDuration={(value) => {
+                setDuration(value);
+                if (value >= 10 && value <= 180) {
+                  setFormErrors(prev => ({ ...prev, duration: '' }));
+                }
+              }}
             />
+            {formErrors.duration && <InlineError message={formErrors.duration} className="mt-2" />}
           </div>
 
           {/* Who Should We Alert - Combined Section */}
+          {bestiesLoadError && (
+            <ContextualError 
+              message={bestiesLoadError}
+              title="Unable to Load Besties"
+              onRetry={() => window.location.reload()}
+              className="mb-6"
+            />
+          )}
           <BestieSelector
             besties={besties}
             selectedBesties={selectedBesties}
-            setSelectedBesties={setSelectedBesties}
+            setSelectedBesties={(besties) => {
+              setSelectedBesties(besties);
+              if (besties.length > 0 || selectedMessengerContacts.length > 0) {
+                setFormErrors(prev => ({ ...prev, besties: '' }));
+              }
+            }}
             messengerContacts={messengerContacts}
             selectedMessengerContacts={selectedMessengerContacts}
-            setSelectedMessengerContacts={setSelectedMessengerContacts}
+            setSelectedMessengerContacts={(contacts) => {
+              setSelectedMessengerContacts(contacts);
+              if (contacts.length > 0 || selectedBesties.length > 0) {
+                setFormErrors(prev => ({ ...prev, besties: '' }));
+              }
+            }}
             userId={currentUser?.uid}
             showMessenger={FEATURES.messengerAlerts}
           />
+          {formErrors.besties && <InlineError message={formErrors.besties} className="px-6 -mt-4" />}
+          {formErrors.bestiesWithoutContact && (
+            <ContextualError 
+              message={formErrors.bestiesWithoutContact}
+              title="Notification Settings Required"
+              className="mt-4"
+            />
+          )}
 
           {/* Notes and Photos */}
           <NotesPhotosSection

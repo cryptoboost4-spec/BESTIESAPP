@@ -130,7 +130,7 @@ function App() {
               <>
                 {/* Desktop Header - visible on md+ screens, hidden on mobile */}
                 <Header />
-                <div className="fixed top-24 right-4 z-50">
+                <div className="fixed top-28 right-4 z-50">
                   <FloatingNotificationBell />
                 </div>
               </>

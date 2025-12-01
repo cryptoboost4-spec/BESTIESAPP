@@ -4,6 +4,7 @@ import { isEnabled } from '../../config/features';
 import { useAuth } from '../../contexts/AuthContext';
 import errorTracker from '../../services/errorTracking';
 import { logAnalyticsEvent } from '../../services/firebase';
+import SubtleNotification from '../errors/SubtleNotification';
 import {
   GEOCODE_DEBOUNCE_MS,
   GEOCODE_TIMEOUT_MS,
@@ -67,6 +68,7 @@ const CheckInMap = ({
   const [recentSearches, setRecentSearches] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [subtleError, setSubtleError] = useState(null);
   
   // Auth
   const { userData } = useAuth();
@@ -76,8 +78,48 @@ const CheckInMap = ({
     if (userData?.favoriteLocations) {
       setFavorites(userData.favoriteLocations);
     }
-    setRecentSearches(getRecentSearches());
-  }, [userData]);
+    const recent = getRecentSearches();
+    setRecentSearches(recent);
+    
+    // Try to use last location from recent searches if no GPS coords
+    if (!gpsCoords && recent.length > 0 && recent[0].coords) {
+      const lastCoords = recent[0].coords;
+      if (validateCoordinates(lastCoords)) {
+        setGpsCoords(lastCoords);
+        setLocationInput(recent[0].location);
+      }
+    }
+  }, [userData, gpsCoords, setGpsCoords, setLocationInput]);
+  
+  // Try to get location automatically on mount if GPS is enabled and no location set
+  useEffect(() => {
+    if (!mapInitialized || gpsCoords || !isEnabled('gpsLocation') || !navigator.geolocation) return;
+    
+    // Try to get location silently (non-blocking)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        
+        if (validateCoordinates(coords) && mapInstanceRef.current) {
+          mapInstanceRef.current.panTo(coords);
+          mapInstanceRef.current.setZoom(GPS_ZOOM);
+          setGpsCoords(coords);
+          geocodeLocation(coords, 'auto');
+        }
+      },
+      () => {
+        // Silent fail - user can manually get location
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  }, [mapInitialized, gpsCoords, geocodeLocation, setGpsCoords]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -342,9 +384,7 @@ const CheckInMap = ({
             message: error.message,
             stack: error.stack
           });
-          toast.error('Error selecting location. Please try again.', {
-            duration: 3000
-          });
+          setSubtleError('Error selecting location. Please try again.');
         }
       });
       
@@ -359,22 +399,20 @@ const CheckInMap = ({
         message: error.message,
         stack: error.stack
       });
-      toast.error('Could not initialize address search. Please type your location manually.', {
-        duration: 4000,
-        id: 'autocomplete-init-error'
-      });
+      // Subtle error - autocomplete is optional, user can type manually
+      setSubtleError('Could not initialize address search. Please type your location manually.');
     }
   }, [autocompleteLoaded, setLocationInput, setGpsCoords, setShowLocationDropdown]);
   
   // Simple GPS handler - just get location once
   const handleGetLocation = useCallback(() => {
     if (!isEnabled('gpsLocation')) {
-      toast.error('GPS location is not enabled');
+      setSubtleError('GPS location is not enabled');
       return;
     }
     
     if (!navigator.geolocation) {
-      toast.error('Geolocation not supported. Please search for your location manually.');
+      setSubtleError('Geolocation not supported. Please search for your location manually.');
       return;
     }
     
@@ -392,7 +430,7 @@ const CheckInMap = ({
         if (!validateCoordinates(coords)) {
           toast.dismiss('gps-loading');
           setLoading(false);
-          toast.error('Invalid location received. Please try again.');
+          setSubtleError('Invalid location received. Please try again.');
           return;
         }
         
@@ -413,9 +451,7 @@ const CheckInMap = ({
       (error) => {
         toast.dismiss('gps-loading');
         setLoading(false);
-        toast.error('Could not get your location. Please search manually.', {
-          duration: 4000
-        });
+        setSubtleError('Could not get your location. Please search manually.');
         errorTracker.logCustomError('GPS error', { code: error.code, message: error.message });
       },
       {
@@ -492,17 +528,19 @@ const CheckInMap = ({
           className="w-full h-80 md:h-96"
           style={{ 
             minHeight: '320px',
-            touchAction: 'none'
+            touchAction: 'pan-y pinch-zoom' // Allow vertical scrolling with one finger, prevent with two
           }}
           role="application"
           aria-label="Interactive map for location selection"
           aria-busy={!mapInitialized}
           onTouchStart={(e) => {
+            // Only prevent default for multi-touch (pinch/zoom)
             if (e.touches.length > 1) {
               e.preventDefault();
             }
           }}
           onTouchMove={(e) => {
+            // Only prevent default for multi-touch (pinch/zoom)
             if (e.touches.length > 1) {
               e.preventDefault();
             }
@@ -688,16 +726,19 @@ const CheckInMap = ({
           </button>
         )}
         
-        {/* Drag indicator */}
-        {isDragging && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-sm font-medium z-20 pointer-events-none">
-            Release to update location
-          </div>
+        {/* Subtle error notification */}
+        {subtleError && (
+          <SubtleNotification
+            message={subtleError}
+            type="warning"
+            duration={5000}
+            onDismiss={() => setSubtleError(null)}
+          />
         )}
       </div>
 
       <p className="text-xs text-text-secondary p-3 px-6">
-        💜 <strong className="text-primary">Your safety matters.</strong> Add as much location detail as you'd like to share
+        💜 <strong className="text-primary">You are never alone.</strong> Your besties have your back
       </p>
 
       <style>{`

@@ -459,23 +459,61 @@ input[type="range"]::-moz-range-thumb:active {
   color: transparent;
 }
 
-/* Google Maps Zoom Controls - Pink Styling */
+/* Google Maps Zoom Controls - White buttons with pink icons (like locate button) */
 .gm-style .gm-control-active,
 .gm-style .gm-zoom-control button {
-  background-color: rgba(255, 105, 180, 0.9) !important;
-  border-color: rgba(255, 20, 147, 0.5) !important;
-  color: white !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 105, 180, 0.5) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 6px rgba(255, 105, 180, 0.2) !important;
+  transition: all 0.2s ease-in-out !important;
 }
 
 .gm-style .gm-control-active:hover,
 .gm-style .gm-zoom-control button:hover {
-  background-color: rgba(255, 20, 147, 0.95) !important;
-  border-color: rgba(255, 20, 147, 0.8) !important;
+  background-color: #fff !important;
+  border-color: #FF69B4 !important;
+  box-shadow: 0 4px 12px rgba(255, 105, 180, 0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
 .gm-style .gm-control-active:active,
 .gm-style .gm-zoom-control button:active {
-  background-color: rgba(255, 20, 147, 1) !important;
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(255, 105, 180, 0.2) !important;
+}
+
+/* Style the + and - text with pink gradient (keep white background) */
+.gm-style .gm-zoom-control button {
+  background-image: linear-gradient(to right, #FF69B4, #FF1493) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  background-color: rgba(255, 255, 255, 0.9) !important; /* Keep white background */
+  color: transparent !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Style Google Maps attribution to match app theme */
+.gm-style .gm-style-cc {
+  opacity: 0.7 !important;
+}
+
+.gm-style a {
+  color: #FF69B4 !important;
+}
+
+.gm-style-cc a {
+  font-size: 10px !important;
+}
+
+/* Make attribution less prominent but still visible */
+.gm-style .gm-style-cc {
+  margin-bottom: 4px !important;
 }
 
 .gm-style .gm-zoom-control {
