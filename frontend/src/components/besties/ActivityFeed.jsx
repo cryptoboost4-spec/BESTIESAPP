@@ -44,8 +44,7 @@ const ActivityFeed = ({
 
   // Render a single activity item (used in both virtualized and non-virtualized lists)
   const renderActivityItem = (activity) => (
-          <div key={activity.id} className="card p-3 md:p-4">
-          <div key={activity.id} className="card p-3 md:p-4">
+    <div key={activity.id} className="card p-3 md:p-4">
             {activity.type === 'checkin' && (
               <div>
                 <div className="flex items-start gap-2 md:gap-3">
