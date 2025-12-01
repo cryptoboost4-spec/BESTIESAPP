@@ -90,36 +90,6 @@ const CheckInMap = ({
     }
   }, [userData, gpsCoords, setGpsCoords, setLocationInput]);
   
-  // Try to get location automatically on mount if GPS is enabled and no location set
-  useEffect(() => {
-    if (!mapInitialized || gpsCoords || !isEnabled('gpsLocation') || !navigator.geolocation) return;
-    
-    // Try to get location silently (non-blocking)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        
-        if (validateCoordinates(coords) && mapInstanceRef.current) {
-          mapInstanceRef.current.panTo(coords);
-          mapInstanceRef.current.setZoom(GPS_ZOOM);
-          setGpsCoords(coords);
-          geocodeLocation(coords, 'auto');
-        }
-      },
-      () => {
-        // Silent fail - user can manually get location
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 5000,
-        maximumAge: 300000 // 5 minutes
-      }
-    );
-  }, [mapInitialized, gpsCoords, geocodeLocation, setGpsCoords]);
-  
   // Cleanup on unmount
   useEffect(() => {
     return () => {
