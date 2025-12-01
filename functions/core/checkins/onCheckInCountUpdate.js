@@ -12,6 +12,11 @@ exports.onCheckInCountUpdate = functions.firestore
     const userRef = db.collection('users').doc(newData.userId);
     const cacheRef = db.collection('analytics_cache').doc('realtime');
 
+    // Skip stats updates for test check-ins
+    if (newData.isTest === true) {
+      return;
+    }
+
     // Update stats when status changes to 'completed'
     if (newData.status === 'completed' && oldData.status !== 'completed') {
       // Increment completed count in user stats
@@ -29,10 +34,12 @@ exports.onCheckInCountUpdate = functions.firestore
       const count = await db.collection('checkins')
         .where('userId', '==', newData.userId)
         .where('status', '==', 'completed')
-        .count()
         .get();
+      
+      // Filter out test check-ins for badge calculation
+      const nonTestCheckIns = count.docs.filter(doc => !doc.data().isTest);
 
-      const total = count.data()?.count || 0;
+      const total = nonTestCheckIns.length;
       const badgesRef = db.collection('badges').doc(newData.userId);
       const badgesDoc = await badgesRef.get();
       const badges = badgesDoc.exists ? badgesDoc.data().badges || [] : [];
@@ -54,14 +61,17 @@ exports.onCheckInCountUpdate = functions.firestore
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
       // Get all completed check-ins from today
-      const todayCheckIns = await db.collection('checkins')
+      const todayCheckInsSnapshot = await db.collection('checkins')
         .where('userId', '==', newData.userId)
         .where('status', '==', 'completed')
         .where('completedAt', '>=', admin.firestore.Timestamp.fromDate(today))
         .get();
+      
+      // Filter out test check-ins for streak calculation
+      const todayCheckIns = todayCheckInsSnapshot.docs.filter(doc => !doc.data().isTest);
 
       // Only update streak if this is the first completion today
-      if (todayCheckIns.size === 1) {
+      if (todayCheckIns.length === 1) {
         // Get yesterday's date range
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
@@ -69,15 +79,18 @@ exports.onCheckInCountUpdate = functions.firestore
         yesterdayEnd.setDate(yesterdayEnd.getDate() + 1);
 
         // Check if user completed a check-in yesterday
-        const yesterdayCheckIns = await db.collection('checkins')
+        const yesterdayCheckInsSnapshot = await db.collection('checkins')
           .where('userId', '==', newData.userId)
           .where('status', '==', 'completed')
           .where('completedAt', '>=', admin.firestore.Timestamp.fromDate(yesterday))
           .where('completedAt', '<', admin.firestore.Timestamp.fromDate(yesterdayEnd))
           .get();
+        
+        // Filter out test check-ins for streak calculation
+        const yesterdayCheckIns = yesterdayCheckInsSnapshot.docs.filter(doc => !doc.data().isTest);
 
         let newStreak = 1;
-        if (yesterdayCheckIns.size > 0) {
+        if (yesterdayCheckIns.length > 0) {
           // Consecutive day - increment streak
           newStreak = (userData.stats?.currentStreak || 0) + 1;
         }
@@ -104,6 +117,7 @@ exports.onCheckInCountUpdate = functions.firestore
     }
 
     // Update stats when status changes to 'alerted'
+    // Note: isTest check already done at top of function
     if (newData.status === 'alerted' && oldData.status !== 'alerted') {
       await userRef.update({
         'stats.alertedCheckIns': admin.firestore.FieldValue.increment(1)

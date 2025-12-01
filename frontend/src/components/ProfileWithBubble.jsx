@@ -41,7 +41,8 @@ const ProfileWithBubble = ({
         <img
           src={photoURL}
           alt={name}
-          className={`${sizeClass} rounded-full object-cover ring-2 ring-white shadow-md`}
+          className={`${sizeClass} rounded-full object-cover ring-2 ring-white shadow-md bg-gray-200 dark:bg-gray-700`}
+          loading="lazy"
           onError={(e) => {
             // Fallback to gradient circle if image fails
             e.target.style.display = 'none';

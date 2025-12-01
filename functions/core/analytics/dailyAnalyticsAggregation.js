@@ -19,14 +19,17 @@ exports.dailyAnalyticsAggregation = functions.pubsub
       .limit(10000) // Limit to prevent unbounded reads (10k check-ins per day is reasonable)
       .get();
 
+    // Filter out test check-ins
+    const nonTestCheckIns = checkInsSnapshot.docs.filter(doc => !doc.data().isTest);
+
     const stats = {
       date: admin.firestore.Timestamp.fromDate(yesterday),
-      totalCheckIns: checkInsSnapshot.size,
+      totalCheckIns: nonTestCheckIns.length,
       completedCheckIns: 0,
       alertedCheckIns: 0,
     };
 
-    checkInsSnapshot.forEach(doc => {
+    nonTestCheckIns.forEach(doc => {
       const data = doc.data();
       if (data.status === 'completed') stats.completedCheckIns++;
       if (data.status === 'alerted') stats.alertedCheckIns++;

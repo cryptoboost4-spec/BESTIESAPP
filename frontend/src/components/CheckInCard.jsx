@@ -401,10 +401,13 @@ const CheckInCard = ({ checkIn }) => {
       {/* Header - Address */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-display text-lg text-text-primary">
               {currentLocation || 'No location set'}
             </h3>
+            {checkIn.isTest && (
+              <span className="badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">🧪 Test</span>
+            )}
             {isAlerted && (
               <span className="badge badge-warning text-xs">ALERTED</span>
             )}

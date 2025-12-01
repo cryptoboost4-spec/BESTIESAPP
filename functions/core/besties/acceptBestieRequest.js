@@ -49,14 +49,13 @@ exports.acceptBestieRequest = functions.https.onCall(async (data, context) => {
     
     // CRITICAL: Update bestieUserIds synchronously in transaction to prevent race condition
     // This ensures permissions work immediately when frontend tries to read user documents
+    // Note: stats.totalBesties is updated by onBestieCountUpdate trigger (single source of truth)
     transaction.update(requesterRef, {
-      bestieUserIds: admin.firestore.FieldValue.arrayUnion(currentBestieData.recipientId),
-      'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      bestieUserIds: admin.firestore.FieldValue.arrayUnion(currentBestieData.recipientId)
     });
     
     transaction.update(recipientRef, {
-      bestieUserIds: admin.firestore.FieldValue.arrayUnion(currentBestieData.requesterId),
-      'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      bestieUserIds: admin.firestore.FieldValue.arrayUnion(currentBestieData.requesterId)
     });
   });
 

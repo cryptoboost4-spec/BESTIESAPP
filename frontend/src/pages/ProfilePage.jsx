@@ -119,12 +119,14 @@ const ProfilePage = () => {
       const bestiesQuery = query(
         collection(db, 'besties'),
         where('requesterId', '==', currentUser.uid),
-        where('status', '==', 'accepted')
+        where('status', '==', 'accepted'),
+        limit(100) // Reasonable limit for besties count
       );
       const bestiesQuery2 = query(
         collection(db, 'besties'),
         where('recipientId', '==', currentUser.uid),
-        where('status', '==', 'accepted')
+        where('status', '==', 'accepted'),
+        limit(100) // Reasonable limit for besties count
       );
 
       const [snapshot1, snapshot2] = await Promise.all([
@@ -138,7 +140,8 @@ const ProfilePage = () => {
       // Use bestieIds (selected besties) for this query
       const emergencyContactQuery = query(
         collection(db, 'checkins'),
-        where('bestieIds', 'array-contains', currentUser.uid)
+        where('bestieIds', 'array-contains', currentUser.uid),
+        limit(1000) // Reasonable limit for analytics count
       );
       const emergencySnapshot = await getDocs(emergencyContactQuery);
       setEmergencyContactCount(emergencySnapshot.size);
@@ -146,7 +149,8 @@ const ProfilePage = () => {
       // Get first check-in date
       const checkInsQuery = query(
         collection(db, 'checkins'),
-        where('userId', '==', currentUser.uid)
+        where('userId', '==', currentUser.uid),
+        limit(50) // Reasonable limit for recent check-ins analysis
       );
       const checkInsSnapshot = await getDocs(checkInsQuery);
       if (!checkInsSnapshot.empty) {

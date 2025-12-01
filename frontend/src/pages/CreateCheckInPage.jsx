@@ -574,6 +574,7 @@ const CreateCheckInPage = () => {
             circleSnapshot: circleSnapshot,
             createdAt: Timestamp.now(),
             lastUpdate: Timestamp.now(),
+            isTest: userData?.testMode || false,
           };
 
           // Add Messenger contact IDs if any are selected
@@ -669,6 +670,19 @@ const CreateCheckInPage = () => {
   return (
     <div className="min-h-screen bg-pattern">
       <div className={`max-w-2xl mx-auto p-4 pb-20 ${shouldAutoSubmit ? 'opacity-0 pointer-events-none' : ''}`}>
+        {/* Test Mode Banner */}
+        {userData?.testMode && (
+          <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🧪</span>
+              <div>
+                <p className="font-semibold text-yellow-800 dark:text-yellow-300">Test Mode Active</p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-400">Your check-ins won't affect stats or analytics</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Location with Map */}
           <CheckInMap

@@ -32,7 +32,7 @@ const CheckInPhotos = ({
               <img
                 src={url}
                 alt={`Check-in ${index + 1}`}
-                className="w-full h-full object-cover rounded-xl"
+                className="w-full h-full object-cover rounded-xl bg-gray-200 dark:bg-gray-700"
                 loading="lazy"
               />
               {!isAlerted && (

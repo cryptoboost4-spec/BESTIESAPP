@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FixedSizeList as List } from 'react-window';
 import PostReactions from './PostReactions';
 import PostComments from './PostComments';
 
@@ -41,10 +42,9 @@ const ActivityFeed = ({
     );
   }
 
-  return (
-    <>
-      <div className="space-y-3">
-        {paginatedFeed.map((activity) => (
+  // Render a single activity item (used in both virtualized and non-virtualized lists)
+  const renderActivityItem = (activity) => (
+          <div key={activity.id} className="card p-3 md:p-4">
           <div key={activity.id} className="card p-3 md:p-4">
             {activity.type === 'checkin' && (
               <div>
@@ -168,7 +168,7 @@ const ActivityFeed = ({
                         <img
                           src={activity.postData.userPhoto}
                           alt={activity.userName}
-                          className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-pink-300 dark:ring-pink-600"
+                          className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-pink-300 dark:ring-pink-600 bg-gray-200 dark:bg-gray-700"
                           loading="lazy"
                         />
                       ) : (
@@ -221,7 +221,7 @@ const ActivityFeed = ({
                         <img
                           src={activity.postData.userPhoto}
                           alt={activity.userName}
-                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                          className="w-10 h-10 rounded-full object-cover flex-shrink-0 bg-gray-200 dark:bg-gray-700"
                           loading="lazy"
                         />
                       ) : (
@@ -257,7 +257,7 @@ const ActivityFeed = ({
                       <img
                         src={activity.postData.photoURL}
                         alt="Post"
-                        className="w-full rounded-xl mb-2 max-h-96 object-cover"
+                        className="w-full rounded-xl mb-2 max-h-96 object-cover bg-gray-200 dark:bg-gray-700"
                         loading="lazy"
                       />
                     )}
@@ -288,8 +288,38 @@ const ActivityFeed = ({
               </div>
             )}
           </div>
-        ))}
-      </div>
+  );
+
+  return (
+    <>
+      {activityFeed.length >= 20 ? (
+        // Virtualized list for 20+ items
+        <div style={{ height: Math.min(1200, activityFeed.length * 120) }}>
+          <List
+            height={Math.min(1200, activityFeed.length * 120)}
+            itemCount={activityFeed.length}
+            itemSize={120}
+            width="100%"
+          >
+            {({ index, style }) => (
+              <div style={style}>
+                <div className="px-0 pb-3">
+                  {renderActivityItem(activityFeed[index])}
+                </div>
+              </div>
+            )}
+          </List>
+        </div>
+      ) : (
+        // Regular list for < 20 items (with pagination)
+        <div className="space-y-3">
+          {paginatedFeed.map((activity) => (
+            <div key={activity.id}>
+              {renderActivityItem(activity)}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

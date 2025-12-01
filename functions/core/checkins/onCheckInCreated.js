@@ -32,6 +32,11 @@ exports.onCheckInCreated = functions.firestore
         });
       }
 
+      // Skip stats updates for test check-ins
+      if (checkIn.isTest === true) {
+        return;
+      }
+
       // Increment total check-in count in user stats
       await db.collection('users').doc(checkIn.userId).update({
         'stats.totalCheckIns': admin.firestore.FieldValue.increment(1)

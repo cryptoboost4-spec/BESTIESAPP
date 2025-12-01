@@ -41,14 +41,16 @@ const LivingCircle = ({ userId, onAddClick }) => {
           query(
             collection(db, 'besties'),
             where('requesterId', '==', userId),
-            where('status', '==', 'accepted')
+            where('status', '==', 'accepted'),
+            limit(100) // Reasonable limit for besties list
           )
         ),
         getDocs(
           query(
             collection(db, 'besties'),
             where('recipientId', '==', userId),
-            where('status', '==', 'accepted')
+            where('status', '==', 'accepted'),
+            limit(100) // Reasonable limit for besties list
           )
         ),
       ]);

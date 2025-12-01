@@ -91,7 +91,8 @@ const calculateAlertResponseScore = async (userId, bestieId) => {
     const responsesQuery = query(
       collection(db, 'alert_responses'),
       where('userId', '==', userId),
-      where('responderId', '==', bestieId)
+      where('responderId', '==', bestieId),
+      limit(50) // Reasonable limit for alert response history
     );
     const responsesSnap = await getDocs(responsesQuery);
 

@@ -195,6 +195,28 @@ const SettingsPage = () => {
     }
   };
 
+  const toggleTestMode = async () => {
+    if (!currentUser) return;
+
+    try {
+      const newValue = !userData?.testMode;
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        testMode: newValue,
+      });
+
+      // Track analytics
+      const { logAnalyticsEvent } = require('../services/firebase');
+      logAnalyticsEvent('test_mode_changed', {
+        enabled: newValue
+      });
+
+      toast.success(newValue ? 'Test mode enabled' : 'Test mode disabled');
+    } catch (error) {
+      console.error('Error updating test mode:', error);
+      toast.error('Failed to update test mode');
+    }
+  };
+
   const handleSavePasscode = async () => {
     if (!passcode) {
       toast.error('Please enter a passcode');
@@ -517,6 +539,30 @@ const SettingsPage = () => {
             handleRemovePasscode={handleRemovePasscode}
             loading={loading}
           />
+        </div>
+
+        {/* Test Mode */}
+        <div className="card p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-xl font-display text-text-primary">Test Mode</h2>
+                <span className="text-lg">⚠️</span>
+              </div>
+              <p className="text-sm text-text-secondary mb-4">
+                Test check-ins won't affect your stats or analytics
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={userData?.testMode || false}
+                onChange={toggleTestMode}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+            </label>
+          </div>
         </div>
 
         {/* Preferences */}

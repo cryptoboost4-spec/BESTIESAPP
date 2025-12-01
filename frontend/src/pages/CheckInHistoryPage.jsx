@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, getDoc } from 'firebase/firestore';
 import { formatDistanceToNow, format } from 'date-fns';
+import { FixedSizeList as List } from 'react-window';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -284,25 +285,36 @@ const CheckInHistoryPage = () => {
               Your check-in history will appear here
             </p>
           </div>
-        ) : (
-          <>
-            <div className="space-y-4">
-              {history.map((checkIn) => {
+        ) : history.length >= 20 ? (
+          // Virtualized list for 20+ items
+          <div style={{ height: Math.min(1000, history.length * 100) }}>
+            <List
+              height={Math.min(1000, history.length * 100)}
+              itemCount={history.length}
+              itemSize={100}
+              width="100%"
+            >
+              {({ index, style }) => {
+                const checkIn = history[index];
                 const isExpanded = expandedItems.has(checkIn.id);
                 const canExpand = hasExpandableContent(checkIn);
 
                 return (
-                  <div
-                    key={checkIn.id}
-                    className={`card dark:bg-dark-card p-4 md:p-6 transition-all ${canExpand ? 'cursor-pointer hover:shadow-lg' : ''}`}
-                    onClick={() => canExpand && toggleExpanded(checkIn.id)}
-                  >
+                  <div style={style}>
+                    <div className="px-0 pb-4">
+                      <div
+                        className={`card dark:bg-dark-card p-4 md:p-6 transition-all ${canExpand ? 'cursor-pointer hover:shadow-lg' : ''}`}
+                        onClick={() => canExpand && toggleExpanded(checkIn.id)}
+                      >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-display text-lg text-text-primary dark:text-dark-text-primary">
                             {checkIn.location || 'No location'}
                           </h3>
+                          {checkIn.isTest && (
+                            <span className="badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">🧪 Test</span>
+                          )}
                           {getStatusBadge(checkIn.status)}
                         </div>
                         <div className="text-sm text-text-secondary dark:text-dark-text-secondary">
@@ -483,7 +495,252 @@ const CheckInHistoryPage = () => {
                                   <img
                                     src={url}
                                     alt={`Check-in ${idx + 1}`}
-                                    className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                                    className="w-full h-full object-cover hover:opacity-80 transition-opacity bg-gray-200 dark:bg-gray-700"
+                                    loading="lazy"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                    </div>
+                  </div>
+                );
+              }}
+            </List>
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="btn btn-secondary px-8"
+                >
+                  {loadingMore ? (
+                    <>
+                      <span className="spinner-small mr-2"></span>
+                      Loading...
+                    </>
+                  ) : (
+                    `Load More (${ITEMS_PER_PAGE} at a time)`
+                  )}
+                </button>
+              </div>
+            )}
+
+            {!hasMore && history.length > 0 && (
+              <div className="mt-6 text-center text-text-secondary dark:text-dark-text-secondary text-sm">
+                You've reached the end of your check-in history
+              </div>
+            )}
+          </div>
+        ) : (
+          // Regular list for < 20 items
+          <>
+            <div className="space-y-4">
+              {history.map((checkIn) => {
+                const isExpanded = expandedItems.has(checkIn.id);
+                const canExpand = hasExpandableContent(checkIn);
+
+                return (
+                  <div
+                    key={checkIn.id}
+                    className={`card dark:bg-dark-card p-4 md:p-6 transition-all ${canExpand ? 'cursor-pointer hover:shadow-lg' : ''}`}
+                    onClick={() => canExpand && toggleExpanded(checkIn.id)}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-display text-lg text-text-primary dark:text-dark-text-primary">
+                            {checkIn.location || 'No location'}
+                          </h3>
+                          {checkIn.isTest && (
+                            <span className="badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">🧪 Test</span>
+                          )}
+                          {getStatusBadge(checkIn.status)}
+                        </div>
+                        <div className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                          {checkIn.createdAt?.toDate ? formatDistanceToNow(checkIn.createdAt.toDate(), { addSuffix: true }) : 'Unknown time'}
+                        </div>
+                      </div>
+                      {canExpand && (
+                        <button
+                          className="text-primary dark:text-dark-primary ml-2 flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpanded(checkIn.id);
+                          }}
+                        >
+                          <svg
+                            className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                      <div>
+                        <div className="text-text-secondary dark:text-dark-text-secondary">Duration</div>
+                        <div className="font-semibold text-text-primary dark:text-dark-text-primary">
+                          {checkIn.duration ? formatDuration(checkIn.duration) : 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-text-secondary dark:text-dark-text-secondary">Besties Notified</div>
+                        <div className="font-semibold text-text-primary dark:text-dark-text-primary">
+                          {checkIn.bestieIds?.length || 0}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expandable Details */}
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border space-y-3 animate-fade-in">
+                        {/* Exact Timestamps */}
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                          <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                            Timestamps
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            {checkIn.createdAt?.toDate && (
+                              <div className="flex justify-between">
+                                <span className="text-text-secondary dark:text-dark-text-secondary">Created:</span>
+                                <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                                  {format(checkIn.createdAt.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                            {checkIn.alertTime?.toDate && (
+                              <div className="flex justify-between">
+                                <span className="text-text-secondary dark:text-dark-text-secondary">Alert Time:</span>
+                                <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                                  {format(checkIn.alertTime.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                            {checkIn.completedAt?.toDate && (
+                              <div className="flex justify-between">
+                                <span className="text-success dark:text-dark-success">✅ Completed:</span>
+                                <span className="font-medium text-success dark:text-dark-success">
+                                  {format(checkIn.completedAt.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                            {checkIn.alertedAt?.toDate && (
+                              <div className="flex justify-between">
+                                <span className="text-warning dark:text-dark-warning">🚨 Alerted:</span>
+                                <span className="font-medium text-warning dark:text-dark-warning">
+                                  {format(checkIn.alertedAt.toDate(), 'MMM d, yyyy h:mm a')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Besties List */}
+                        {checkIn.bestieIds && checkIn.bestieIds.length > 0 && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Notified Besties
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {checkIn.bestieIds.map((bestieId) => (
+                                <span
+                                  key={bestieId}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary dark:bg-primary/20 dark:text-dark-primary rounded-full text-sm"
+                                >
+                                  👤 {bestieNames[bestieId] || 'Loading...'}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        {checkIn.notes && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Notes
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary italic">
+                              "{checkIn.notes}"
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Meeting With */}
+                        {checkIn.meetingWith && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Meeting With
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary">
+                              {checkIn.meetingWith}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Social Media Links */}
+                        {checkIn.socialMediaLinks && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Social Media Links
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary break-all">
+                              {checkIn.socialMediaLinks}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* GPS Coordinates */}
+                        {checkIn.gpsCoords && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              GPS Location
+                            </div>
+                            <div className="text-sm text-text-primary dark:text-dark-text-primary">
+                              📍 {checkIn.gpsCoords.lat.toFixed(6)}, {checkIn.gpsCoords.lng.toFixed(6)}
+                            </div>
+                            <a
+                              href={`https://www.google.com/maps?q=${checkIn.gpsCoords.lat},${checkIn.gpsCoords.lng}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary dark:text-dark-primary hover:underline mt-1 inline-block"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              View on Google Maps →
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Photos */}
+                        {checkIn.photoURLs && checkIn.photoURLs.length > 0 && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-text-secondary dark:text-dark-text-secondary mb-2">
+                              Photos ({checkIn.photoURLs.length})
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {checkIn.photoURLs.map((url, idx) => (
+                                <a
+                                  key={idx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block aspect-square rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`Check-in ${idx + 1}`}
+                                    className="w-full h-full object-cover hover:opacity-80 transition-opacity bg-gray-200 dark:bg-gray-700"
                                     loading="lazy"
                                   />
                                 </a>

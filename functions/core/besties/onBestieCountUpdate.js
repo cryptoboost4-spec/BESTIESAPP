@@ -41,8 +41,13 @@ exports.onBestieCountUpdate = functions.firestore
     const cacheRef = db.collection('analytics_cache').doc('realtime');
 
     if (newData.status === 'accepted' && oldData.status !== 'accepted') {
-      // NOTE: bestieUserIds and stats.totalBesties are now updated synchronously in acceptBestieRequest
-      // to prevent race conditions. Only update featuredCircle here to avoid duplicate updates.
+      // Update stats.totalBesties for both users (single source of truth - trigger handles all stat updates)
+      await db.collection('users').doc(newData.requesterId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
+      await db.collection('users').doc(newData.recipientId).update({
+        'stats.totalBesties': admin.firestore.FieldValue.increment(1)
+      });
       
       // Add to featuredCircle arrays for both users (bestieUserIds already updated in acceptBestieRequest)
       await db.collection('users').doc(newData.requesterId).update({
