@@ -15,7 +15,6 @@ import {
   COORDINATE_PRECISION,
   DEFAULT_LOCATION,
   MAP_BOUNDS,
-  STORAGE_KEYS,
   MAP_STYLES,
   MIN_TOUCH_TARGET_SIZE,
 } from './mapConstants';
@@ -27,8 +26,7 @@ import {
   getRecentSearches,
   addRecentSearch,
   formatDistance,
-  triggerHaptic,
-  isWithinBounds
+  triggerHaptic
 } from './mapUtils';
 
 /**
@@ -278,7 +276,7 @@ const CheckInMap = ({
         id: 'map-init-error'
       });
     }
-  }, [mapInitialized, gpsCoords, geocodeLocation, setMapInitialized, setShowLocationDropdown]);
+  }, [mapInitialized, gpsCoords, geocodeLocation, setMapInitialized, setShowLocationDropdown, setGpsCoords, setLocationInput]);
   
   // Initialize autocomplete
   useEffect(() => {
