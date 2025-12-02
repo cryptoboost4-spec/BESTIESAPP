@@ -107,9 +107,10 @@ export const authService = {
       const result = await createUserWithEmailAndPassword(auth, email, password);
 
       // Update the Firebase Auth user profile with displayName
-      // This ensures AuthContext will see the correct displayName when it creates the Firestore doc
+      // Use provided name, or email prefix, or fallback to 'User'
+      const finalDisplayName = displayName || email?.split('@')[0] || 'User';
       await updateProfile(result.user, {
-        displayName: displayName || 'New User'
+        displayName: finalDisplayName
       });
 
       // The AuthContext listener will create the Firestore document with the correct displayName

@@ -17,7 +17,7 @@ const LoginPage = () => {
     handleBlur,
     validateAll
   } = useFormValidation(
-    { email: '', password: '', displayName: '' },
+    { email: '', password: '' },
     {
       email: {
         required: true,
@@ -30,12 +30,6 @@ const LoginPage = () => {
         minLength: 6,
         requiredMessage: 'Password is required 🔒',
         minLengthMessage: 'Password must be at least 6 characters 🔐'
-      },
-      displayName: {
-        required: isSignUp,
-        minLength: 2,
-        requiredMessage: 'Name is required ✨',
-        minLengthMessage: 'Name must be at least 2 characters 💜'
       }
     }
   );
@@ -117,7 +111,7 @@ const LoginPage = () => {
 
     let result;
     if (isSignUp) {
-      result = await authService.signUpWithEmail(values.email, values.password, values.displayName);
+      result = await authService.signUpWithEmail(values.email, values.password, null);
     } else {
       result = await authService.signInWithEmail(values.email, values.password);
     }
@@ -404,25 +398,6 @@ const LoginPage = () => {
 
           {/* Email Form */}
           <form onSubmit={handleEmailAuth} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <label className="block text-sm font-semibold text-text-primary mb-2">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={values.displayName}
-                  onChange={(e) => handleChange('displayName', e.target.value)}
-                  onBlur={() => handleBlur('displayName')}
-                  className={`input ${errors.displayName ? 'border-red-500 dark:border-red-400' : ''}`}
-                  placeholder="Your name"
-                />
-                {errors.displayName && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.displayName}</p>
-                )}
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-semibold text-text-primary mb-2">
                 Email
