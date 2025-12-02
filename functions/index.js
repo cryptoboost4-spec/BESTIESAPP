@@ -593,144 +593,153 @@ exports.sendCheckInReminders = functions.pubsub
 exports.sendScheduledSMS = functions.pubsub
   .schedule('every 1 minutes')
   .onRun(async (context) => {
-    const db = admin.firestore();
-    const now = admin.firestore.Timestamp.now();
-    
-    // Query pending SMS that are due
-    const dueSnapshot = await db.collection('scheduledSMS')
-      .where('status', '==', 'pending')
-      .where('scheduledFor', '<=', now)
-      .limit(50)
-      .get();
-    
-    if (dueSnapshot.empty) {
-      return null;
-    }
-    
-    const { sendSMSAlert } = require('./utils/notifications');
-    
-    for (const doc of dueSnapshot.docs) {
-      const smsData = doc.data();
-      const { checkinId, bestieIds } = smsData;
+    try {
+      const db = admin.firestore();
+      const now = admin.firestore.Timestamp.now();
       
-      try {
-        // Get check-in current state
-        const checkinDoc = await db.collection('checkins').doc(checkinId).get();
+      // Query pending SMS that are due
+      const dueSnapshot = await db.collection('scheduledSMS')
+        .where('status', '==', 'pending')
+        .where('scheduledFor', '<=', now)
+        .limit(50)
+        .get();
+      
+      if (dueSnapshot.empty) {
+        return null;
+      }
+      
+      const { sendSMSAlert } = require('./utils/notifications');
+      
+      for (const doc of dueSnapshot.docs) {
+        const smsData = doc.data();
+        const { checkinId, bestieIds } = smsData;
         
-        if (!checkinDoc.exists) {
-          // Check-in deleted, mark SMS as cancelled
-          await doc.ref.update({ status: 'cancelled' });
-          continue;
-        }
-        
-        const checkinData = checkinDoc.data();
-        
-        // Check if alert is still active
-        if (checkinData.status !== 'alerted') {
-          // User marked safe or completed, cancel SMS
-          await doc.ref.update({ status: 'cancelled' });
-          functions.logger.info('SMS cancelled - check-in no longer alerted', { checkinId });
-          continue;
-        }
-        
-        // Check if any bestie has viewed the alert
-        const viewedBy = checkinData.viewedBy || [];
-        if (viewedBy.length > 0) {
-          // At least one bestie viewed it, cancel SMS
-          await doc.ref.update({ status: 'cancelled' });
-          functions.logger.info('SMS cancelled - alert viewed by besties', { 
-            checkinId, 
-            viewedCount: viewedBy.length 
+        try {
+          // Get check-in current state
+          const checkinDoc = await db.collection('checkins').doc(checkinId).get();
+          
+          if (!checkinDoc.exists) {
+            // Check-in deleted, mark SMS as cancelled
+            await doc.ref.update({ status: 'cancelled' });
+            continue;
+          }
+          
+          const checkinData = checkinDoc.data();
+          
+          // Check if alert is still active
+          if (checkinData.status !== 'alerted') {
+            // User marked safe or completed, cancel SMS
+            await doc.ref.update({ status: 'cancelled' });
+            functions.logger.info('SMS cancelled - check-in no longer alerted', { checkinId });
+            continue;
+          }
+          
+          // Check if any bestie has viewed the alert
+          const viewedBy = checkinData.viewedBy || [];
+          if (viewedBy.length > 0) {
+            // At least one bestie viewed it, cancel SMS
+            await doc.ref.update({ status: 'cancelled' });
+            functions.logger.info('SMS cancelled - alert viewed by besties', { 
+              checkinId, 
+              viewedCount: viewedBy.length 
+            });
+            continue;
+          }
+          
+          // Get user data for message
+          const userDoc = await db.collection('users').doc(checkinData.userId).get();
+          const userData = userDoc.data();
+          const userName = userData?.displayName || 'User';
+          const location = checkinData.location?.address || checkinData.location || 'Unknown';
+          const notes = checkinData.notes || '';
+          
+          const timeString = new Date().toLocaleTimeString('en-AU', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
           });
-          continue;
-        }
-        
-        // Get user data for message
-        const userDoc = await db.collection('users').doc(checkinData.userId).get();
-        const userData = userDoc.data();
-        const userName = userData?.displayName || 'User';
-        const location = checkinData.location?.address || checkinData.location || 'Unknown';
-        const notes = checkinData.notes || '';
-        
-        const timeString = new Date().toLocaleTimeString('en-AU', { 
-          hour: 'numeric', 
-          minute: '2-digit',
-          hour12: true 
-        });
-        
-        // Construct SMS message (keep under 160 chars)
-        let smsMessage = `🚨 ${userName} needs help! ${timeString}`;
-        
-        if (location && location !== 'No location set') {
-          const shortLocation = location.substring(0, 30); // Truncate if too long
-          smsMessage += ` @ ${shortLocation}`;
-        }
-        
-        if (notes) {
-          const shortNotes = notes.substring(0, 40); // Truncate if too long
-          smsMessage += `. "${shortNotes}"`;
-        }
-        
-        smsMessage += `. Check Besties app now!`;
-        
-        // Send to each bestie with SMS enabled
-        let smsSent = 0;
-        for (const bestieId of bestieIds) {
-          const bestieDoc = await db.collection('users').doc(bestieId).get();
-          if (!bestieDoc.exists) continue;
           
-          const bestieData = bestieDoc.data();
+          // Construct SMS message (keep under 160 chars)
+          let smsMessage = `🚨 ${userName} needs help! ${timeString}`;
           
-          // Check if bestie has SMS enabled and phone number
-          if (bestieData?.phoneNumber && 
-              bestieData?.notificationPreferences?.sms && 
-              bestieData?.smsSubscription?.active) {
+          if (location && location !== 'No location set') {
+            const shortLocation = location.substring(0, 30); // Truncate if too long
+            smsMessage += ` @ ${shortLocation}`;
+          }
+          
+          if (notes) {
+            const shortNotes = notes.substring(0, 40); // Truncate if too long
+            smsMessage += `. "${shortNotes}"`;
+          }
+          
+          smsMessage += `. Check Besties app now!`;
+          
+          // Send to each bestie with SMS enabled
+          let smsSent = 0;
+          for (const bestieId of bestieIds) {
+            const bestieDoc = await db.collection('users').doc(bestieId).get();
+            if (!bestieDoc.exists) continue;
             
-            try {
-              await sendSMSAlert(bestieData.phoneNumber, smsMessage);
-              smsSent++;
-              functions.logger.info('SMS sent', { 
-                checkinId, 
-                bestieId,
-                phone: bestieData.phoneNumber 
-              });
-            } catch (error) {
-              functions.logger.error('Failed to send SMS', {
-                checkinId,
-                bestieId,
-                error: error.message
-              });
+            const bestieData = bestieDoc.data();
+            
+            // Check if bestie has SMS enabled and phone number
+            if (bestieData?.phoneNumber && 
+                bestieData?.notificationPreferences?.sms && 
+                bestieData?.smsSubscription?.active) {
+              
+              try {
+                await sendSMSAlert(bestieData.phoneNumber, smsMessage);
+                smsSent++;
+                functions.logger.info('SMS sent', { 
+                  checkinId, 
+                  bestieId,
+                  phone: bestieData.phoneNumber 
+                });
+              } catch (error) {
+                functions.logger.error('Failed to send SMS', {
+                  checkinId,
+                  bestieId,
+                  error: error.message
+                });
+              }
             }
           }
+          
+          // Mark as sent
+          await doc.ref.update({ 
+            status: 'sent',
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            recipientCount: smsSent
+          });
+          
+          functions.logger.info('Scheduled SMS completed', { 
+            checkinId, 
+            smsSent 
+          });
+          
+        } catch (error) {
+          functions.logger.error('Error processing scheduled SMS', {
+            checkinId,
+            error: error.message
+          });
+          
+          // Mark as failed
+          await doc.ref.update({ 
+            status: 'failed',
+            error: error.message 
+          });
         }
-        
-        // Mark as sent
-        await doc.ref.update({ 
-          status: 'sent',
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          recipientCount: smsSent
-        });
-        
-        functions.logger.info('Scheduled SMS completed', { 
-          checkinId, 
-          smsSent 
-        });
-        
-      } catch (error) {
-        functions.logger.error('Error processing scheduled SMS', {
-          checkinId,
-          error: error.message
-        });
-        
-        // Mark as failed
-        await doc.ref.update({ 
-          status: 'failed',
-          error: error.message 
-        });
       }
+      
+      return null;
+    } catch (error) {
+      functions.logger.error('sendScheduledSMS error:', {
+        error: error.message,
+        stack: error.stack,
+        code: error.code
+      });
+      return null;
     }
-    
-    return null;
   });
 
 exports.trackCheckInReaction = trackCheckInReaction;
