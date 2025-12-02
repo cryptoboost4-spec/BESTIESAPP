@@ -1,0 +1,19 @@
+{
+  "projects": {
+    "default": "bestiesapp",
+    "bestiescursor": "bestiesapp"
+  },
+  "targets": {
+    "bestiesapp": {
+      "hosting": {
+        "app": [
+          "app-bestiesapp"
+        ],
+        "main": [
+          "bestiesapp"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
