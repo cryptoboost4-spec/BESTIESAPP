@@ -262,10 +262,12 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
         const { sendTelegramAlert } = require('../index');
         await sendTelegramAlert(bestieData.telegramChatId, {
           userName: cleanName,
-          location: checkIn.location || 'Unknown',
+          location: checkIn.location?.address || checkIn.location || 'Unknown',
           startTime: checkIn.createdAt?.toDate().toLocaleString() || new Date().toLocaleString(),
           isEmergency: true,
-          message: fullMessage
+          message: fullMessage,
+          notes: checkIn.notes,
+          photoURLs: checkIn.photoURLs || []
         });
         notificationsSent.push('Telegram');
         telegramSent = true;
@@ -288,9 +290,11 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
           const { sendMessengerAlert } = require('./checkInNotifications');
           sendMessengerAlert(contact.messengerPSID, {
             userName: cleanName,
-            location: checkIn.location || 'Unknown',
+            location: checkIn.location?.address || checkIn.location || 'Unknown',
             startTime: checkIn.createdAt?.toDate().toLocaleString() || new Date().toLocaleString(),
-            isEmergency: true
+            isEmergency: true,
+            notes: checkIn.notes,
+            photoURLs: checkIn.photoURLs || []
           });
           messengerSent = true;
           notificationsSent.push('Messenger');

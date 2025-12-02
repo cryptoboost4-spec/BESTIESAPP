@@ -61,6 +61,9 @@ async function checkExpiredCheckIns(config) {
           functions.logger.error('User not found for check-in:', checkinId);
           return;
         }
+        
+        // Store userDocData for later use (avoid duplicate fetch)
+        const userDocData = userData;
 
         // Format alert message
         const message = formatCheckInAlert(
@@ -70,13 +73,16 @@ async function checkExpiredCheckIns(config) {
         );
 
         // ===== FACEBOOK MESSENGER ALERTS =====
-        // Load messenger contacts for this check-in
-        if (checkinData.messengerContactIds && checkinData.messengerContactIds.length > 0) {
+        // Check if messenger alerts were already sent (prevent duplicates)
+        if (checkinData.messengerAlertSent) {
+          functions.logger.info(`Messenger alerts already sent for check-in ${checkinId}, skipping`);
+        } else if (checkinData.messengerContactIds && checkinData.messengerContactIds.length > 0) {
           try {
             const messengerContactsSnapshot = await db.collection('messengerContacts')
               .where(admin.firestore.FieldPath.documentId(), 'in', checkinData.messengerContactIds)
               .get();
             
+            let allSendsSucceeded = true;
             for (const contactDoc of messengerContactsSnapshot.docs) {
               const contact = contactDoc.data();
               const now = Date.now();
@@ -87,39 +93,165 @@ async function checkExpiredCheckIns(config) {
                 // Import sendMessengerAlert from utils (fixes circular dependency)
                 const { sendMessengerAlert } = require('../../utils/checkInNotifications');
                 const { retryApiCall } = require('../../utils/retry');
-                await retryApiCall(
-                  () => sendMessengerAlert(contact.messengerPSID, {
-                    userName: userData.displayName,
-                    location: checkinData.location?.address || checkinData.location || 'Unknown',
-                    startTime: checkinData.createdAt.toDate().toLocaleString()
-                  }),
-                  { maxRetries: 3, operationName: `Messenger alert to ${contact.name}` }
-                );
-                functions.logger.info(`✅ Sent messenger alert to ${contact.name} (${contact.messengerPSID})`);
+                try {
+                  await retryApiCall(
+                    () => sendMessengerAlert(contact.messengerPSID, {
+                      userName: userData.displayName,
+                      location: checkinData.location?.address || checkinData.location || 'Unknown',
+                      startTime: checkinData.createdAt.toDate().toLocaleString(),
+                      notes: checkinData.notes,
+                      photoURLs: checkinData.photoURLs || []
+                    }),
+                    { maxRetries: 3, operationName: `Messenger alert to ${contact.name}` }
+                  );
+                  functions.logger.info(`✅ Sent messenger alert to ${contact.name} (${contact.messengerPSID})`);
+                } catch (contactError) {
+                  functions.logger.error(`Failed to send messenger alert to ${contact.name}:`, contactError);
+                  allSendsSucceeded = false;
+                }
               } else {
                 functions.logger.debug(`⏰ Messenger contact ${contact.name} expired, skipping`);
               }
             }
+            
+            // Only set flag if all sends succeeded
+            if (allSendsSucceeded) {
+              await db.collection('checkins').doc(checkinId).update({
+                messengerAlertSent: true,
+                messengerAlertSentAt: admin.firestore.FieldValue.serverTimestamp()
+              });
+            }
           } catch (messengerError) {
             functions.logger.error('Error sending messenger alerts:', messengerError);
+            // Don't set flag if failed - allows retry on next run
             // Don't fail the whole function if messenger fails
           }
         }
         // ===== END FACEBOOK MESSENGER ALERTS =====
 
-        // Send alerts to all besties (this handles Telegram, SMS, WhatsApp, etc. - no duplicates)
-        // NOTE: sendBulkNotifications already handles Telegram, so we don't send it separately here
+        // Filter out the user from bestie list (user shouldn't receive bestie alert message)
+        const bestiesToNotify = (checkinData.bestieIds || []).filter(bestieId => bestieId !== userId);
+        
+        // Send push notifications and other alerts
+        const { sendPushNotification } = require('../../utils/notifications');
+        
+        // 1. Send push notification to USER (check-in creator)
+        // userDocData already fetched above
+        if (userDocData?.fcmToken && userDocData?.notificationsEnabled) {
+          try {
+            await sendPushNotification(
+              userDocData.fcmToken,
+              '⚠️ You Missed Your Check-In!',
+              'Your timer expired! Mark yourself as safe to let your besties know you\'re okay.',
+              {
+                type: 'missed_checkin',
+                checkinId: checkinId,
+                isUserAlert: true,
+                timestamp: Date.now().toString()
+              }
+            );
+            functions.logger.info(`✅ Push notification sent to user ${userId}`);
+          } catch (pushError) {
+            functions.logger.error(`Failed to send push notification to user:`, pushError);
+          }
+        }
+        
+        // 2. Send push notifications to BESTIES
+        let bestieDocs = null;
+        if (bestiesToNotify.length > 0) {
+          bestieDocs = await db.getAll(...bestiesToNotify.map(id => db.collection('users').doc(id)));
+          for (const bestieDoc of bestieDocs) {
+            if (!bestieDoc.exists) continue;
+            const bestieData = bestieDoc.data();
+            if (bestieData?.fcmToken && bestieData?.notificationsEnabled) {
+              try {
+                await sendPushNotification(
+                  bestieData.fcmToken,
+                  '🚨 SAFETY ALERT',
+                  `${userData.displayName} needs help! They didn't check in on time.`,
+                  {
+                    type: 'bestie_alert',
+                    checkinId: checkinId,
+                    alertedUserId: userId,
+                    userName: userData.displayName,
+                    timestamp: Date.now().toString()
+                  }
+                );
+                functions.logger.info(`✅ Push notification sent to bestie ${bestieDoc.id}`);
+              } catch (pushError) {
+                functions.logger.error(`Failed to send push notification to bestie ${bestieDoc.id}:`, pushError);
+              }
+            }
+          }
+        }
+        
+        // 3. Send other notifications (Telegram, SMS, WhatsApp, etc.) to besties
+        if (bestiesToNotify.length > 0) {
+          functions.logger.info('Processing Telegram alerts', {
+            checkinId,
+            bestieIds: bestiesToNotify,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Debug: Check each bestie's Telegram status before sending (reuse bestieDocs if already fetched)
+          if (!bestieDocs) {
+            bestieDocs = await db.getAll(...bestiesToNotify.map(id => db.collection('users').doc(id)));
+          }
+          for (const bestieDoc of bestieDocs) {
+            if (!bestieDoc.exists) continue;
+            const bestieData = bestieDoc.data();
+            functions.logger.info('Checking bestie Telegram', {
+              bestieId: bestieDoc.id,
+              hasTelegramChatId: !!bestieData?.telegramChatId,
+              telegramChatId: bestieData?.telegramChatId || null,
+              telegramPreference: bestieData?.notificationPreferences?.telegram,
+              fullPreferences: bestieData?.notificationPreferences || {}
+            });
+            
+            if (bestieData?.telegramChatId && bestieData?.notificationPreferences?.telegram) {
+              functions.logger.info('Bestie has Telegram enabled - will attempt send via sendBulkNotifications', {
+                bestieId: bestieDoc.id,
+                chatId: bestieData.telegramChatId
+              });
+            } else {
+              functions.logger.info('Telegram alert will be skipped', {
+                bestieId: bestieDoc.id,
+                reason: !bestieData?.telegramChatId ? 'No chat ID' : 'Telegram disabled in preferences'
+              });
+            }
+          }
+          
+          await sendBulkNotifications(
+            bestiesToNotify,
+            message,
+            config,
+            {
+              type: 'checkin_alert',
+              checkinId,
+              userId,
+              location: checkinData.location,
+              notes: checkinData.notes,
+              photoURLs: checkinData.photoURLs || [],
+              lastUpdate: checkinData.lastUpdate,
+              userName: userData.displayName,
+              startTime: checkinData.createdAt.toDate().toLocaleString()
+            }
+          );
+        }
+        
+        // 4. Send other notifications to user (Telegram, SMS, WhatsApp if enabled)
+        const userMessage = "You missed your check-in! Go and check in immediately to let your besties know you're safe.";
         await sendBulkNotifications(
-          checkinData.bestieIds,
-          message,
+          [userId],
+          userMessage,
           config,
           {
-            type: 'checkin_alert',
+            type: 'checkin_alert_user',
             checkinId,
             userId,
             location: checkinData.location,
             notes: checkinData.notes,
-            lastUpdate: checkinData.lastUpdate,
+            photoURLs: checkinData.photoURLs || [],
             userName: userData.displayName,
             startTime: checkinData.createdAt.toDate().toLocaleString()
           }
@@ -129,8 +261,27 @@ async function checkExpiredCheckIns(config) {
         await db.collection('checkins').doc(checkinId).update({
           status: 'alerted',
           alertedAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          viewedBy: [] // Initialize viewedBy array
         });
+        
+        // Schedule SMS for 5 minutes later (only if there are besties to notify)
+        if (bestiesToNotify.length > 0) {
+          const smsScheduleTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+          await db.collection('scheduledSMS').add({
+            checkinId: checkinId,
+            userId: userId,
+            bestieIds: bestiesToNotify,
+            scheduledFor: admin.firestore.Timestamp.fromDate(smsScheduleTime),
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          functions.logger.info('SMS scheduled', {
+            checkinId,
+            scheduledFor: smsScheduleTime.toISOString(),
+            bestieCount: bestiesToNotify.length
+          });
+        }
 
         // Log analytics
         await db.collection('analytics').add({

@@ -308,7 +308,35 @@ async function sendMessengerMessage(psid, text) {
  * Send Messenger Alert (for expired check-ins)
  */
 async function sendMessengerAlert(psid, alertData) {
-  const message = `🚨 SAFETY ALERT 🚨\n\n${alertData.userName} needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
+  let message = `🚨 SAFETY ALERT 🚨\n${alertData.userName} needs help!\n\n`;
+  
+  // Add time (no date)
+  const now = new Date();
+  const timeString = now.toLocaleTimeString('en-AU', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+  message += `⏰ Alert triggered: ${timeString}\n`;
+  
+  // Add location
+  if (alertData.location && alertData.location !== 'No location set') {
+    const locationText = typeof alertData.location === 'object' ? alertData.location.address : alertData.location;
+    message += `📍 Location: ${locationText}\n`;
+  }
+  
+  // Add notes
+  if (alertData.notes) {
+    message += `📝 Notes: "${alertData.notes}"\n`;
+  }
+  
+  // Mention photos but DON'T send them
+  if (alertData.photoURLs && alertData.photoURLs.length > 0) {
+    message += `\n📷 ${alertData.userName} included ${alertData.photoURLs.length} photo(s) - view in the Besties app for important context.\n`;
+  }
+  
+  message += `\nIf you can help, respond immediately or check the Besties app!`;
+  
   await sendMessengerMessage(psid, message);
 }
 

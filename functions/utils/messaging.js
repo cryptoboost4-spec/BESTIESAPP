@@ -79,20 +79,45 @@ async function sendNotification(userId, message, config, options = {}) {
     // Telegram (Free - Priority 4)
     if (userData.notificationPreferences?.telegram && userData.telegramChatId) {
       try {
+        const functions = require('firebase-functions');
+        functions.logger.info('Attempting Telegram alert send', {
+          userId,
+          chatId: userData.telegramChatId,
+          notificationType: options.type,
+          checkinId: options.checkinId
+        });
+        
         const { sendTelegramAlert } = require('../index');
         await sendTelegramAlert(userData.telegramChatId, {
           userName: options.userName || 'Your bestie',
-          location: options.location || 'Unknown',
-          startTime: options.startTime || new Date().toLocaleString()
+          location: options.location?.address || options.location || 'Unknown',
+          startTime: options.startTime || new Date().toLocaleString(),
+          notes: options.notes,
+          photoURLs: options.photoURLs || []
         });
         results.push({ method: 'telegram', success: true, chatId: userData.telegramChatId });
-        const functions = require('firebase-functions');
-        functions.logger.info('Telegram sent to chat:', userData.telegramChatId);
+        functions.logger.info('Telegram alert sent successfully', { 
+          userId, 
+          chatId: userData.telegramChatId 
+        });
       } catch (error) {
         const functions = require('firebase-functions');
-        functions.logger.error('Telegram failed:', error.message);
+        functions.logger.error('Telegram alert failed', {
+          userId,
+          chatId: userData.telegramChatId,
+          error: error.message,
+          stack: error.stack
+        });
         results.push({ method: 'telegram', success: false, error: error.message });
       }
+    } else {
+      const functions = require('firebase-functions');
+      functions.logger.info('Telegram alert skipped', {
+        userId,
+        reason: !userData.telegramChatId ? 'No chat ID' : 'Telegram disabled in preferences',
+        hasChatId: !!userData.telegramChatId,
+        telegramPreference: userData.notificationPreferences?.telegram
+      });
     }
 
     // Log notification

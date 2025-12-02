@@ -15,6 +15,7 @@ import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
@@ -295,6 +296,9 @@ const HomePage = () => {
               </div>
             </div>
         )}
+
+        {/* Active Alert Banner */}
+        <ActiveAlertBanner />
 
         {/* =================================================================
             ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️

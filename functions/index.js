@@ -277,7 +277,36 @@ async function sendTelegramMessage(chatId, text, options = {}) {
 
 // Send Telegram Alert
 async function sendTelegramAlert(chatId, alertData) {
-  const message = `🚨 <b>SAFETY ALERT</b> 🚨\n\n<b>${alertData.userName}</b> needs help!\n\n📍 Location: ${alertData.location}\n⏰ Started: ${alertData.startTime}\n\nThey haven't checked in safely. Please reach out!`;
+  let message = `🚨 <b>SAFETY ALERT</b> 🚨\n<b>${alertData.userName}</b> needs help!\n\n`;
+  
+  // Add time (no date)
+  const now = new Date();
+  const timeString = now.toLocaleTimeString('en-AU', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+  message += `⏰ Alert triggered: ${timeString}\n`;
+  
+  // Add location
+  if (alertData.location && alertData.location !== 'No location set') {
+    const locationText = typeof alertData.location === 'object' ? alertData.location.address : alertData.location;
+    message += `📍 Location: ${locationText}\n`;
+  }
+  
+  // Add notes
+  if (alertData.notes) {
+    message += `📝 Notes: "${alertData.notes}"\n`;
+  }
+  
+  // Mention photos but DON'T send them
+  if (alertData.photoURLs && alertData.photoURLs.length > 0) {
+    message += `\n📷 ${alertData.userName} included ${alertData.photoURLs.length} photo(s) - view in the Besties app for important context.\n`;
+  }
+  
+  message += `\nIf you can help, respond immediately or check the Besties app!`;
+  
+  // Send text-only message (no photos)
   await sendTelegramMessage(chatId, message);
 }
 
@@ -409,12 +438,299 @@ exports.acknowledgeAlert = acknowledgeAlert;
 exports.extendCheckIn = extendCheckIn;
 exports.completeCheckIn = completeCheckIn;
 exports.onCheckInCreated = onCheckInCreated;
+
+// Mark check-in as safe (for expired check-ins)
+exports.markCheckInSafe = functions.https.onCall(async (data, context) => {
+  // Verify authentication
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+  
+  const { checkinId } = data;
+  const userId = context.auth.uid;
+  const db = admin.firestore();
+  
+  try {
+    const checkinRef = db.collection('checkins').doc(checkinId);
+    const checkinDoc = await checkinRef.get();
+    
+    if (!checkinDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Check-in not found');
+    }
+    
+    const checkinData = checkinDoc.data();
+    
+    // Verify this user created the check-in
+    if (checkinData.userId !== userId) {
+      throw new functions.https.HttpsError('permission-denied', 'Not your check-in');
+    }
+    
+    // Verify check-in is actually alerted
+    if (checkinData.status !== 'alerted') {
+      throw new functions.https.HttpsError('failed-precondition', 'Check-in is not in alerted state');
+    }
+    
+    // Update to completed (marked safe after alert)
+    await checkinRef.update({
+      status: 'completed',
+      markedSafeAt: admin.firestore.FieldValue.serverTimestamp(),
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdate: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Get user name
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userName = userDoc.data()?.displayName || 'User';
+    
+    // Notify besties that user is safe
+    const { sendPushNotification } = require('./utils/notifications');
+    const { sendBulkNotifications } = require('./utils/messaging');
+    const config = functions.config();
+    
+    // Send push notifications
+    if (checkinData.bestieIds && checkinData.bestieIds.length > 0) {
+      const bestieDocs = await db.getAll(...checkinData.bestieIds.map(id => db.collection('users').doc(id)));
+      for (const bestieDoc of bestieDocs) {
+        if (!bestieDoc.exists) continue;
+        const bestieData = bestieDoc.data();
+        if (bestieData?.fcmToken && bestieData?.notificationsEnabled) {
+          try {
+            await sendPushNotification(
+              bestieData.fcmToken,
+              '✅ All Clear',
+              `${userName} marked themselves as safe!`,
+              {
+                type: 'marked_safe',
+                checkinId: checkinId,
+                userId: userId,
+                timestamp: Date.now().toString()
+              }
+            );
+          } catch (pushError) {
+            functions.logger.error(`Failed to send push notification to bestie ${bestieDoc.id}:`, pushError);
+          }
+        }
+      }
+      
+      // Send other notifications (Telegram, SMS, etc.)
+      const safeMessage = `✅ ${userName} marked themselves as safe! All clear.`;
+      await sendBulkNotifications(
+        checkinData.bestieIds,
+        safeMessage,
+        config,
+        {
+          type: 'marked_safe',
+          checkinId: checkinId,
+          userId: userId,
+          userName: userName
+        }
+      );
+    }
+    
+    functions.logger.info('Check-in marked safe', { checkinId, userId });
+    
+    return { success: true };
+  } catch (error) {
+    functions.logger.error('Error marking check-in safe:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to mark safe');
+  }
+});
+
+// Mark alert as viewed by bestie
+exports.markAlertViewed = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+  
+  const { checkinId } = data;
+  const userId = context.auth.uid;
+  const db = admin.firestore();
+  
+  try {
+    const checkinRef = db.collection('checkins').doc(checkinId);
+    const checkinDoc = await checkinRef.get();
+    
+    if (!checkinDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Check-in not found');
+    }
+    
+    const checkinData = checkinDoc.data();
+    
+    // Verify user is a bestie for this check-in
+    if (!checkinData.bestieIds || !checkinData.bestieIds.includes(userId)) {
+      throw new functions.https.HttpsError('permission-denied', 'Not a selected bestie');
+    }
+    
+    // Add user to viewedBy array if not already there
+    await checkinRef.update({
+      viewedBy: admin.firestore.FieldValue.arrayUnion(userId),
+      lastUpdate: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    functions.logger.info('Alert marked as viewed', { checkinId, userId });
+    
+    return { success: true };
+  } catch (error) {
+    functions.logger.error('Error marking alert viewed:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to mark viewed');
+  }
+});
 exports.onCheckInCountUpdate = onCheckInCountUpdate;
 
 exports.sendCheckInReminders = functions.pubsub
   .schedule('every 1 minutes')
   .onRun(async (context) => {
-    return await sendCheckInRemindersLogic();
+    return await sendCheckInRemindersLogic(functions.config());
+  });
+
+// Send scheduled SMS (5-minute delay for alerts)
+exports.sendScheduledSMS = functions.pubsub
+  .schedule('every 1 minutes')
+  .onRun(async (context) => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+    
+    // Query pending SMS that are due
+    const dueSnapshot = await db.collection('scheduledSMS')
+      .where('status', '==', 'pending')
+      .where('scheduledFor', '<=', now)
+      .limit(50)
+      .get();
+    
+    if (dueSnapshot.empty) {
+      return null;
+    }
+    
+    const { sendSMSAlert } = require('./utils/notifications');
+    
+    for (const doc of dueSnapshot.docs) {
+      const smsData = doc.data();
+      const { checkinId, bestieIds } = smsData;
+      
+      try {
+        // Get check-in current state
+        const checkinDoc = await db.collection('checkins').doc(checkinId).get();
+        
+        if (!checkinDoc.exists) {
+          // Check-in deleted, mark SMS as cancelled
+          await doc.ref.update({ status: 'cancelled' });
+          continue;
+        }
+        
+        const checkinData = checkinDoc.data();
+        
+        // Check if alert is still active
+        if (checkinData.status !== 'alerted') {
+          // User marked safe or completed, cancel SMS
+          await doc.ref.update({ status: 'cancelled' });
+          functions.logger.info('SMS cancelled - check-in no longer alerted', { checkinId });
+          continue;
+        }
+        
+        // Check if any bestie has viewed the alert
+        const viewedBy = checkinData.viewedBy || [];
+        if (viewedBy.length > 0) {
+          // At least one bestie viewed it, cancel SMS
+          await doc.ref.update({ status: 'cancelled' });
+          functions.logger.info('SMS cancelled - alert viewed by besties', { 
+            checkinId, 
+            viewedCount: viewedBy.length 
+          });
+          continue;
+        }
+        
+        // Get user data for message
+        const userDoc = await db.collection('users').doc(checkinData.userId).get();
+        const userData = userDoc.data();
+        const userName = userData?.displayName || 'User';
+        const location = checkinData.location?.address || checkinData.location || 'Unknown';
+        const notes = checkinData.notes || '';
+        
+        const timeString = new Date().toLocaleTimeString('en-AU', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        
+        // Construct SMS message (keep under 160 chars)
+        let smsMessage = `🚨 ${userName} needs help! ${timeString}`;
+        
+        if (location && location !== 'No location set') {
+          const shortLocation = location.substring(0, 30); // Truncate if too long
+          smsMessage += ` @ ${shortLocation}`;
+        }
+        
+        if (notes) {
+          const shortNotes = notes.substring(0, 40); // Truncate if too long
+          smsMessage += `. "${shortNotes}"`;
+        }
+        
+        smsMessage += `. Check Besties app now!`;
+        
+        // Send to each bestie with SMS enabled
+        let smsSent = 0;
+        for (const bestieId of bestieIds) {
+          const bestieDoc = await db.collection('users').doc(bestieId).get();
+          if (!bestieDoc.exists) continue;
+          
+          const bestieData = bestieDoc.data();
+          
+          // Check if bestie has SMS enabled and phone number
+          if (bestieData?.phoneNumber && 
+              bestieData?.notificationPreferences?.sms && 
+              bestieData?.smsSubscription?.active) {
+            
+            try {
+              await sendSMSAlert(bestieData.phoneNumber, smsMessage);
+              smsSent++;
+              functions.logger.info('SMS sent', { 
+                checkinId, 
+                bestieId,
+                phone: bestieData.phoneNumber 
+              });
+            } catch (error) {
+              functions.logger.error('Failed to send SMS', {
+                checkinId,
+                bestieId,
+                error: error.message
+              });
+            }
+          }
+        }
+        
+        // Mark as sent
+        await doc.ref.update({ 
+          status: 'sent',
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          recipientCount: smsSent
+        });
+        
+        functions.logger.info('Scheduled SMS completed', { 
+          checkinId, 
+          smsSent 
+        });
+        
+      } catch (error) {
+        functions.logger.error('Error processing scheduled SMS', {
+          checkinId,
+          error: error.message
+        });
+        
+        // Mark as failed
+        await doc.ref.update({ 
+          status: 'failed',
+          error: error.message 
+        });
+      }
+    }
+    
+    return null;
   });
 
 exports.trackCheckInReaction = trackCheckInReaction;

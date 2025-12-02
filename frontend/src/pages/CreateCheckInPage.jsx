@@ -192,7 +192,7 @@ const CreateCheckInPage = () => {
         // Filter to only show besties in the featured circle
         const circleBesties = allBestiesList.filter(b => featuredIds.includes(b.id));
 
-        // Fetch full user data for each bestie to get displayName, photoURL, requestAttention, and SMS settings
+        // Fetch full user data for each bestie to get displayName, photoURL, requestAttention, SMS settings, and Telegram settings
         const bestiesWithUserData = await Promise.all(
           circleBesties.map(async (bestie) => {
             try {
@@ -206,6 +206,8 @@ const CreateCheckInPage = () => {
                   email: userData.email || bestie.email,
                   phone: userData.phoneNumber || bestie.phone,
                   smsEnabled: userData.notificationPreferences?.sms || false,
+                  telegramChatId: userData.telegramChatId || null,
+                  notificationPreferences: userData.notificationPreferences || {},
                   requestAttention: userData.requestAttention || null,
                 };
               }
