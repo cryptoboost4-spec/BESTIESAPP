@@ -93,25 +93,66 @@ const { backfillBestieUserIds } = require('./core/maintenance/backfillBestieUser
 
 // Helper: Get Facebook Profile
 async function getFacebookProfile(psid) {
+  const pageToken = functions.config().facebook?.page_token;
+  if (!pageToken) {
+    functions.logger.warn('Facebook page token not configured');
+    return { name: 'Friend', profile_pic: null };
+  }
+
+  // Try multiple approaches to get profile data
+  // Approach 1: Try with name and profile_pic (standard fields)
   try {
     const response = await axios.get(
-      `https://graph.facebook.com/v24.0/${psid}?fields=name,profile_pic&access_token=${functions.config().facebook?.page_token}`
+      `https://graph.facebook.com/v24.0/${psid}?fields=name,profile_pic&access_token=${pageToken}`
     );
-    return response.data;
+    if (response.data && response.data.name) {
+      return response.data;
+    }
   } catch (error) {
-    // Log error but don't throw - return fallback values for live accounts
-    // that may not have permission to access profile data
-    functions.logger.warn(`Failed to fetch Facebook profile for PSID ${psid}:`, {
-      error: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText
-    });
-    // Return fallback values to allow the flow to continue
-    return {
-      name: 'Friend',
-      profile_pic: null
-    };
+    functions.logger.debug(`Standard profile fetch failed for PSID ${psid}, trying alternatives`);
   }
+
+  // Approach 2: Try with first_name and last_name separately
+  try {
+    const response = await axios.get(
+      `https://graph.facebook.com/v24.0/${psid}?fields=first_name,last_name,profile_pic&access_token=${pageToken}`
+    );
+    if (response.data && (response.data.first_name || response.data.last_name)) {
+      const fullName = [response.data.first_name, response.data.last_name].filter(Boolean).join(' ') || 'Friend';
+      return {
+        name: fullName,
+        profile_pic: response.data.profile_pic || null
+      };
+    }
+  } catch (error) {
+    functions.logger.debug(`Alternative profile fetch failed for PSID ${psid}`);
+  }
+
+  // Approach 3: Try with just first_name (sometimes more permissive)
+  try {
+    const response = await axios.get(
+      `https://graph.facebook.com/v24.0/${psid}?fields=first_name&access_token=${pageToken}`
+    );
+    if (response.data && response.data.first_name) {
+      return {
+        name: response.data.first_name,
+        profile_pic: null
+      };
+    }
+  } catch (error) {
+    functions.logger.debug(`First name only fetch failed for PSID ${psid}`);
+  }
+
+  // All approaches failed - log warning and return fallback
+  functions.logger.warn(`Failed to fetch Facebook profile for PSID ${psid} with all methods. This may indicate missing permissions for live accounts.`, {
+    psid,
+    note: 'App may need to be in Live Mode or go through App Review for pages_messaging permission'
+  });
+  
+  return {
+    name: 'Friend',
+    profile_pic: null
+  };
 }
 
 // Helper: Send Messenger Message
@@ -230,10 +271,22 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 
             if (existingQuery.empty) {
               await contactsRef.add(contactData);
+              functions.logger.info(`Created new messenger contact for user ${userId}`, {
+                psid: senderPSID,
+                name: contactName
+              });
             } else {
+              // Update existing contact with all fields (including name and photo in case we got better data)
               await contactsRef.doc(existingQuery.docs[0].id).update({
+                name: contactName,
+                photoURL: contactPhotoURL,
                 connectedAt: now,
                 expiresAt: expiresAt
+              });
+              functions.logger.info(`Updated existing messenger contact for user ${userId}`, {
+                psid: senderPSID,
+                name: contactName,
+                contactId: existingQuery.docs[0].id
               });
             }
 
