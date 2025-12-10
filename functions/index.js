@@ -93,16 +93,31 @@ const { backfillBestieUserIds } = require('./core/maintenance/backfillBestieUser
 
 // Helper: Get Facebook Profile
 async function getFacebookProfile(psid) {
-  const response = await axios.get(
-    `https://graph.facebook.com/v18.0/${psid}?fields=name,profile_pic&access_token=${functions.config().facebook?.page_token}`
-  );
-  return response.data;
+  try {
+    const response = await axios.get(
+      `https://graph.facebook.com/v24.0/${psid}?fields=name,profile_pic&access_token=${functions.config().facebook?.page_token}`
+    );
+    return response.data;
+  } catch (error) {
+    // Log error but don't throw - return fallback values for live accounts
+    // that may not have permission to access profile data
+    functions.logger.warn(`Failed to fetch Facebook profile for PSID ${psid}:`, {
+      error: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText
+    });
+    // Return fallback values to allow the flow to continue
+    return {
+      name: 'Friend',
+      profile_pic: null
+    };
+  }
 }
 
 // Helper: Send Messenger Message
 async function sendMessengerMessage(psid, text) {
   await axios.post(
-    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
+    `https://graph.facebook.com/v24.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
     {
       recipient: { id: psid },
       message: { text: text }
@@ -113,7 +128,7 @@ async function sendMessengerMessage(psid, text) {
 // Helper: Send Messenger Message with Quick Replies
 async function sendMessengerMessageWithQuickReplies(psid, text, quickReplies) {
   await axios.post(
-    `https://graph.facebook.com/v18.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
+    `https://graph.facebook.com/v24.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
     {
       recipient: { id: psid },
       message: {
@@ -181,8 +196,12 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
           const userId = refParam;
 
           try {
-            // Get sender's FB profile
+            // Get sender's FB profile (with fallback handling for live accounts)
             const profile = await getFacebookProfile(senderPSID);
+            
+            // Use profile data or fallback values
+            const contactName = profile.name || 'Friend';
+            const contactPhotoURL = profile.profile_pic || null;
 
             // Get user's data
             const userDoc = await admin.firestore().collection('users').doc(userId).get();
@@ -203,8 +222,8 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
             const contactData = {
               userId: userId,
               messengerPSID: senderPSID,
-              name: profile.name,
-              photoURL: profile.profile_pic,
+              name: contactName,
+              photoURL: contactPhotoURL,
               connectedAt: now,
               expiresAt: expiresAt
             };
@@ -221,7 +240,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
             // Send first message: greeting
             await sendMessengerMessage(
               senderPSID,
-              `Hi ${profile.name}! ${userName} said you'd reach out.`
+              `Hi ${contactName}! ${userName} said you'd reach out.`
             );
 
             // Wait a moment for natural conversation flow

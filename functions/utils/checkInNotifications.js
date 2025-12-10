@@ -296,7 +296,7 @@ async function sendMessengerMessage(psid, text) {
   }
 
   await axios.post(
-    `https://graph.facebook.com/v18.0/me/messages?access_token=${pageToken}`,
+    `https://graph.facebook.com/v24.0/me/messages?access_token=${pageToken}`,
     {
       recipient: { id: psid },
       message: { text: text }
