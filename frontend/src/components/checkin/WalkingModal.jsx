@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
+import TutorialTooltip from '../TutorialTooltip';
 
-const WalkingModal = ({ onClose }) => {
+const WalkingModal = ({ onClose, isTutorialMode = false }) => {
   const navigate = useNavigate();
   const [duration, setDuration] = useState(15); // Default 15 minutes
   const [isClosing, setIsClosing] = useState(false);
+  const [showTutorialTooltip, setShowTutorialTooltip] = useState(false);
   const modalRef = useRef(null);
   const firstButtonRef = useRef(null);
+  const durationRef = useRef(null);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -18,9 +21,14 @@ const WalkingModal = ({ onClose }) => {
 
   // Focus management and keyboard trap
   useEffect(() => {
-    // Focus first button when modal opens
-    if (firstButtonRef.current) {
+    // Focus first button when modal opens (only if not in tutorial mode)
+    if (!isTutorialMode && firstButtonRef.current) {
       setTimeout(() => firstButtonRef.current?.focus(), 100);
+    }
+    
+    // Show tutorial tooltip after modal opens
+    if (isTutorialMode) {
+      setTimeout(() => setShowTutorialTooltip(true), 300);
     }
 
     // Trap focus within modal
@@ -69,6 +77,12 @@ const WalkingModal = ({ onClose }) => {
   }, [handleClose]);
 
   const handleStart = () => {
+    if (isTutorialMode) {
+      // In tutorial mode, just close after showing tooltip
+      handleClose();
+      return;
+    }
+
     haptic.light();
 
     // Navigate to create page with walking data - NO LOCATION NEEDED
@@ -80,6 +94,10 @@ const WalkingModal = ({ onClose }) => {
         activity: { name: '🚶‍♀️ Walking Alone', emoji: '🚶‍♀️' }
       }
     });
+  };
+
+  const handleTutorialNext = () => {
+    handleClose();
   };
 
   return (
@@ -108,7 +126,7 @@ const WalkingModal = ({ onClose }) => {
         </p>
 
         {/* Duration Selection */}
-        <div className="mb-6">
+        <div className="mb-6" ref={durationRef}>
           <label className="block text-sm font-semibold text-text-primary mb-2">
             Duration: {duration} minutes
           </label>
@@ -151,6 +169,14 @@ const WalkingModal = ({ onClose }) => {
             <span>10 min</span>
             <span>90 min</span>
           </div>
+          {isTutorialMode && showTutorialTooltip && durationRef.current && (
+            <TutorialTooltip
+              body="Choose how long you'll be walking. Your bestie gets notified if you don't return on time."
+              buttonText="Next"
+              onNext={handleTutorialNext}
+              targetElement={durationRef.current}
+            />
+          )}
         </div>
 
         {/* Buttons */}
@@ -165,9 +191,9 @@ const WalkingModal = ({ onClose }) => {
           <button
             onClick={handleStart}
             className="flex-1 btn btn-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            aria-label="Start walking check-in"
+            aria-label={isTutorialMode ? "Close tutorial" : "Start walking check-in"}
           >
-            Start Check-In
+            {isTutorialMode ? 'Got it!' : 'Start Check-In'}
           </button>
         </div>
       </div>

@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
+import TutorialTooltip from '../TutorialTooltip';
 
-const QuickMeetModal = ({ onClose }) => {
+const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [duration, setDuration] = useState(30); // Default 30 minutes
   const [isClosing, setIsClosing] = useState(false);
+  const [showTutorialTooltip, setShowTutorialTooltip] = useState(false);
   const modalRef = useRef(null);
   const firstInputRef = useRef(null);
+  const locationInfoRef = useRef(null);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -19,9 +22,14 @@ const QuickMeetModal = ({ onClose }) => {
 
   // Focus management and keyboard trap
   useEffect(() => {
-    // Focus first input when modal opens
-    if (firstInputRef.current) {
+    // Focus first input when modal opens (only if not in tutorial mode)
+    if (!isTutorialMode && firstInputRef.current) {
       setTimeout(() => firstInputRef.current?.focus(), 100);
+    }
+    
+    // Show tutorial tooltip after modal opens
+    if (isTutorialMode) {
+      setTimeout(() => setShowTutorialTooltip(true), 300);
     }
 
     // Trap focus within modal
@@ -70,6 +78,12 @@ const QuickMeetModal = ({ onClose }) => {
   }, [handleClose]);
 
   const handleStart = () => {
+    if (isTutorialMode) {
+      // In tutorial mode, just close after showing tooltip
+      handleClose();
+      return;
+    }
+
     if (!name.trim()) {
       return;
     }
@@ -85,6 +99,10 @@ const QuickMeetModal = ({ onClose }) => {
         activity: { name: '👤 Meeting Someone', emoji: '👤' }
       }
     });
+  };
+
+  const handleTutorialNext = () => {
+    handleClose();
   };
 
   return (
@@ -112,6 +130,15 @@ const QuickMeetModal = ({ onClose }) => {
           Enter who you're meeting and select duration
         </p>
 
+        {/* Location info for tutorial */}
+        {isTutorialMode && (
+          <div ref={locationInfoRef} className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+            <p className="text-sm text-text-secondary">
+              <strong>📍 Location Sharing:</strong> When you create this check-in, your current location will be shared with your bestie automatically.
+            </p>
+          </div>
+        )}
+
         {/* Name Input */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
@@ -136,8 +163,18 @@ const QuickMeetModal = ({ onClose }) => {
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all"
             aria-label="Name of person you're meeting"
             aria-required="true"
+            disabled={isTutorialMode}
           />
         </div>
+        
+        {isTutorialMode && showTutorialTooltip && locationInfoRef.current && (
+          <TutorialTooltip
+            body="Your current location is shared with your bestie. They'll know exactly where to find you if needed."
+            buttonText="Next"
+            onNext={handleTutorialNext}
+            targetElement={locationInfoRef.current}
+          />
+        )}
 
         {/* Duration Selection */}
         <div className="mb-6">
@@ -195,11 +232,11 @@ const QuickMeetModal = ({ onClose }) => {
           </button>
           <button
             onClick={handleStart}
-            disabled={!name.trim()}
+            disabled={!isTutorialMode && !name.trim()}
             className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            aria-label="Start quick meet check-in"
+            aria-label={isTutorialMode ? "Close tutorial" : "Start quick meet check-in"}
           >
-            Start Check-In
+            {isTutorialMode ? 'Got it!' : 'Start Check-In'}
           </button>
         </div>
       </div>

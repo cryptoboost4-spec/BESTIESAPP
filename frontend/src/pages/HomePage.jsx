@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
@@ -6,6 +6,9 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs, limit } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
+import RideshareModal from '../components/checkin/RideshareModal';
+import WalkingModal from '../components/checkin/WalkingModal';
+import QuickMeetModal from '../components/checkin/QuickMeetModal';
 import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
@@ -15,6 +18,10 @@ import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
 import TestCheckInWalkthrough from '../components/TestCheckInWalkthrough';
+import AddBestieCard from '../components/AddBestieCard';
+import TutorialPromptCard from '../components/TutorialPromptCard';
+import TutorialOverlay from '../components/TutorialOverlay';
+import { useTutorialState } from '../hooks/useTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
@@ -31,6 +38,12 @@ const HomePage = () => {
   // Test Check-In Walkthrough state
   const [showTestWalkthrough, setShowTestWalkthrough] = useState(false);
   const [hasSeenTestWalkthrough, setHasSeenTestWalkthrough] = useState(false);
+
+  // Tutorial state
+  const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
+  const quickCheckInButtonsRef = useRef(null);
+  const [tutorialModalOpen, setTutorialModalOpen] = useState(false);
+  const [tutorialFormStep, setTutorialFormStep] = useState(null);
 
   // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
@@ -304,6 +317,113 @@ const HomePage = () => {
 
   const weeklySummary = getWeeklySummary();
 
+  // Derived state for tutorial visibility
+  const hasAnyBestie = (userData?.stats?.totalBesties || 0) > 0;
+  const hasCompletedFirstCheckIn = (userData?.stats?.completedCheckIns || 0) > 0;
+
+  // Tutorial handlers
+  const handleStartTutorial = () => {
+    setTutorialStep('rideshare');
+  };
+
+  const handleSkipTutorial = () => {
+    markTutorialComplete();
+  };
+
+  const handleTutorialStepComplete = () => {
+    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const currentIndex = steps.indexOf(currentTutorialStep);
+    
+    if (currentIndex < steps.length - 1) {
+      setTutorialStep(steps[currentIndex + 1]);
+    } else {
+      markTutorialComplete();
+      toast.success("You're all set! Your besties are ready to keep you safe. 💜");
+    }
+  };
+
+  const handleTutorialAction = (action) => {
+    if (action === 'rideshare') {
+      // Open rideshare modal in tutorial mode
+      const buttonsRef = quickCheckInButtonsRef.current;
+      if (buttonsRef) {
+        // Trigger the modal to open
+        setTutorialModalOpen(true);
+        setTutorialFormStep('rideshare');
+      }
+    } else if (action === 'walking') {
+      setTutorialModalOpen(true);
+      setTutorialFormStep('walking');
+    } else if (action === 'quickmeet') {
+      setTutorialModalOpen(true);
+      setTutorialFormStep('quickmeet');
+    } else if (action === 'custom') {
+      // Step 4 - allow real check-in creation
+      markTutorialComplete();
+      navigate('/create');
+    }
+  };
+
+  const handleTutorialFormClose = () => {
+    setTutorialModalOpen(false);
+    setTutorialFormStep(null);
+    handleTutorialStepComplete();
+  };
+
+  // Get highlighted element ref based on current step
+  const getHighlightedElementRef = () => {
+    if (!quickCheckInButtonsRef.current) return null;
+    
+    switch (currentTutorialStep) {
+      case 'rideshare':
+        return { current: quickCheckInButtonsRef.current.rideshareButton };
+      case 'walking':
+        return { current: quickCheckInButtonsRef.current.walkingButton };
+      case 'quickmeet':
+        return { current: quickCheckInButtonsRef.current.quickMeetButton };
+      case 'custom':
+        return { current: quickCheckInButtonsRef.current.customButton };
+      default:
+        return null;
+    }
+  };
+
+  // Get tooltip config based on current step
+  const getTooltipConfig = () => {
+    switch (currentTutorialStep) {
+      case 'rideshare':
+        return {
+          title: 'Rideshare Check-Ins',
+          body: "Use these when getting a ride from Uber, Lyft, or a friend. Share the license plate and arrival time - your bestie will be notified if you don't check in safe.",
+          buttonText: 'Next',
+          onNext: () => handleTutorialAction('rideshare')
+        };
+      case 'walking':
+        return {
+          title: 'Walking Check-Ins',
+          body: "Perfect for walks, runs, or anytime you're out on foot. Set how long you'll be gone.",
+          buttonText: 'Next',
+          onNext: () => handleTutorialAction('walking')
+        };
+      case 'quickmeet':
+        return {
+          title: 'Quick Meet Check-Ins',
+          body: "Meeting someone new or at a specific location? Share your location so your bestie knows where you are. Great for first dates!",
+          buttonText: 'Next',
+          onNext: () => handleTutorialAction('quickmeet')
+        };
+      case 'custom':
+        return {
+          title: 'Custom Check-Ins',
+          body: "Create your own check-in for any situation! You're all set - ready to create your first real check-in? 💜",
+          buttonText: 'Create My First Check-In',
+          onNext: () => handleTutorialAction('custom')
+        };
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
@@ -332,40 +452,61 @@ const HomePage = () => {
             ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
             Safety Stats Section - Do not modify unless explicitly told by the user
             ================================================================= */}
-        {/* Stats Card - Moved above Quick Check-In */}
+        {/* Stats Card / Add Bestie Card / Tutorial Prompt Card */}
         {activeCheckIns.length === 0 && (
-          <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50">
-              <div className="mb-4 flex items-center">
-                <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
-                <InfoButton message="Track your safety journey! These stats show your completed check-ins, bestie connections, and streaks. Keep building those safety habits! 💜" />
+          <>
+            {/* Show Add Bestie Card when user has no besties */}
+            {!hasAnyBestie && (
+              <AddBestieCard onBestieAdded={() => {
+                // BestieCelebrationModal will play automatically
+                toast.success('Bestie added! 💜');
+              }} />
+            )}
+
+            {/* Show Tutorial Prompt Card when user has besties but hasn't completed tutorial */}
+            {hasAnyBestie && !tutorialComplete && !hasCompletedFirstCheckIn && (
+              <TutorialPromptCard
+                onStartTutorial={handleStartTutorial}
+                onSkip={handleSkipTutorial}
+              />
+            )}
+
+            {/* Show Stats Card when user has besties and has completed first check-in */}
+            {hasAnyBestie && hasCompletedFirstCheckIn && (
+              <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50 animate-fade-in">
+                <div className="mb-4 flex items-center">
+                  <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
+                  <InfoButton message="Track your safety journey! These stats show your completed check-ins, bestie connections, and streaks. Keep building those safety habits! 💜" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-display text-primary">
+                      {userData?.stats?.completedCheckIns || 0}
+                    </div>
+                    <div className="text-sm text-text-secondary">Check-ins</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-display text-secondary">
+                      {userData?.stats?.totalBesties || 0}
+                    </div>
+                    <div className="text-sm text-text-secondary">Besties</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-display text-orange-500">
+                      {userData?.stats?.currentStreak || 0}
+                    </div>
+                    <div className="text-sm text-text-secondary">Current Streak</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-display text-accent">
+                      {userData?.stats?.longestStreak || 0}
+                    </div>
+                    <div className="text-sm text-text-secondary">Longest Streak</div>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-display text-primary">
-                    {userData?.stats?.completedCheckIns || 0}
-                  </div>
-                  <div className="text-sm text-text-secondary">Check-ins</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-display text-secondary">
-                    {userData?.stats?.totalBesties || 0}
-                  </div>
-                  <div className="text-sm text-text-secondary">Besties</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-display text-orange-500">
-                    {userData?.stats?.currentStreak || 0}
-                  </div>
-                  <div className="text-sm text-text-secondary">Current Streak</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-display text-accent">
-                    {userData?.stats?.longestStreak || 0}
-                  </div>
-                  <div className="text-sm text-text-secondary">Longest Streak</div>
-                </div>
-              </div>
-            </div>
+            )}
+          </>
         )}
 
         {/* Active Alert Banner */}
@@ -378,93 +519,31 @@ const HomePage = () => {
         {/* Quick Check-In Buttons - Moved to middle */}
         {activeCheckIns.length === 0 && (
           <>
-            {/* First-Time User Instructions - Show if no besties */}
-            {(!userData?.stats?.totalBesties || userData?.stats?.totalBesties === 0) && (
-              <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-700 shadow-lg">
-                <div className="text-center">
-                  <div className="text-5xl mb-4">💜</div>
-                  <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200 mb-3">
-                    Welcome to Besties!
-                  </h2>
-                  <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
-                    To create your first safety check-in, you'll need to add at least one bestie to your circle.
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Your besties will get notified if you miss a check-in, so they can make sure you're safe.
-                  </p>
-                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 mb-6">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      💡 <strong>How it works:</strong> Add besties → Create check-in → If you don't check back in time, they get an alert with your location
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      haptic.light();
-                      navigate('/besties');
-                    }}
-                    className="btn btn-primary text-lg py-4 px-10 mb-4 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-                  >
-                    ➕ Add Your First Bestie →
-                  </button>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Once you add a bestie, you can create check-ins using the buttons below!
-                  </p>
-                </div>
-              </div>
-            )}
+            <QuickCheckInButtons 
+              ref={quickCheckInButtonsRef}
+              isTutorialMode={!!currentTutorialStep && !tutorialModalOpen}
+              onTutorialAction={handleTutorialAction}
+            />
 
-            {/* Instructions for users with besties but no check-ins */}
-            {userData?.stats?.totalBesties > 0 && (!userData?.stats?.completedCheckIns || userData?.stats?.completedCheckIns === 0) && (
-              <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-2 border-blue-200 dark:border-blue-700">
-                <div className="text-center">
-                  <div className="text-4xl mb-3">✨</div>
-                  <h3 className="text-xl font-display text-gray-800 dark:text-gray-200 mb-2">
-                    Ready to create your first check-in?
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Tap one of the buttons below to start a safety check-in. Your besties will be notified if you don't check back in on time.
-                  </p>
-                  {!hasSeenTestWalkthrough && (
-                    <div className="mb-4">
-                      <button
-                        onClick={() => {
-                          haptic.light();
-                          setShowTestWalkthrough(true);
-                        }}
-                        className="btn btn-primary text-base py-3 px-6 mb-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-                      >
-                        🎓 Try Test Walkthrough First
-                      </button>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Learn how check-ins work in a safe practice mode (2 minutes)
-                      </p>
-                    </div>
-                  )}
-                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 mt-4">
-                    <div className="text-xs text-gray-600 dark:text-gray-300 space-y-2 text-left">
-                      <div className="flex items-start gap-2">
-                        <span className="text-base">🚗</span>
-                        <div><strong>Rideshare:</strong> For Uber, Lyft, or taxi rides</div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-base">🚶‍♀️</span>
-                        <div><strong>Walking:</strong> When walking alone</div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-base">👤</span>
-                        <div><strong>Quick Meet:</strong> Meeting someone new</div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-base">✨</span>
-                        <div><strong>Custom:</strong> Create your own check-in</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Tutorial Modals */}
+            {tutorialModalOpen && tutorialFormStep === 'rideshare' && (
+              <RideshareModal 
+                onClose={handleTutorialFormClose}
+                isTutorialMode={true}
+              />
             )}
-
-            <QuickCheckInButtons />
+            {tutorialModalOpen && tutorialFormStep === 'walking' && (
+              <WalkingModal 
+                onClose={handleTutorialFormClose}
+                isTutorialMode={true}
+              />
+            )}
+            {tutorialModalOpen && tutorialFormStep === 'quickmeet' && (
+              <QuickMeetModal 
+                onClose={handleTutorialFormClose}
+                isTutorialMode={true}
+              />
+            )}
 
             {/* Living Circle - DO NOT REMOVE */}
             <LivingCircle userId={currentUser?.uid} />
@@ -667,6 +746,17 @@ const HomePage = () => {
             setHasSeenTestWalkthrough(true);
             setShowTestWalkthrough(false);
           }}
+        />
+      )}
+
+      {/* Tutorial Overlay - Only show when modal is not open */}
+      {currentTutorialStep && !tutorialModalOpen && (
+        <TutorialOverlay
+          currentStep={currentTutorialStep}
+          onStepComplete={handleTutorialStepComplete}
+          onTutorialComplete={handleSkipTutorial}
+          highlightedElementRef={getHighlightedElementRef()}
+          tooltipConfig={getTooltipConfig()}
         />
       )}
     </div>

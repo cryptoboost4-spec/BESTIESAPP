@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../utils/hapticFeedback';
 import InfoButton from './InfoButton';
@@ -6,11 +6,25 @@ import RideshareModal from './checkin/RideshareModal';
 import WalkingModal from './checkin/WalkingModal';
 import QuickMeetModal from './checkin/QuickMeetModal';
 
-const QuickCheckInButtons = () => {
+const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction }, ref) => {
   const navigate = useNavigate();
   const [showRideshareModal, setShowRideshareModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
   const [showQuickMeetModal, setShowQuickMeetModal] = useState(false);
+  
+  // Refs for tutorial highlighting
+  const rideshareButtonRef = useRef(null);
+  const walkingButtonRef = useRef(null);
+  const quickMeetButtonRef = useRef(null);
+  const customButtonRef = useRef(null);
+
+  // Expose refs to parent component
+  useImperativeHandle(ref, () => ({
+    rideshareButton: rideshareButtonRef.current,
+    walkingButton: walkingButtonRef.current,
+    quickMeetButton: quickMeetButtonRef.current,
+    customButton: customButtonRef.current,
+  }));
 
   return (
     <>
@@ -24,9 +38,14 @@ const QuickCheckInButtons = () => {
         <div className="grid grid-cols-3 gap-3 mb-3">
           {/* Rideshare Button */}
           <button
+            ref={rideshareButtonRef}
             onClick={() => {
               haptic.light();
-              setShowRideshareModal(true);
+              if (isTutorialMode && onTutorialAction) {
+                onTutorialAction('rideshare');
+              } else {
+                setShowRideshareModal(true);
+              }
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -45,9 +64,14 @@ const QuickCheckInButtons = () => {
 
           {/* Walking Alone Button */}
           <button
+            ref={walkingButtonRef}
             onClick={() => {
               haptic.light();
-              setShowWalkingModal(true);
+              if (isTutorialMode && onTutorialAction) {
+                onTutorialAction('walking');
+              } else {
+                setShowWalkingModal(true);
+              }
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -66,9 +90,14 @@ const QuickCheckInButtons = () => {
 
           {/* Quick Meet Button */}
           <button
+            ref={quickMeetButtonRef}
             onClick={() => {
               haptic.light();
-              setShowQuickMeetModal(true);
+              if (isTutorialMode && onTutorialAction) {
+                onTutorialAction('quickmeet');
+              } else {
+                setShowQuickMeetModal(true);
+              }
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -88,9 +117,14 @@ const QuickCheckInButtons = () => {
 
         {/* Bottom row - Custom button full width */}
         <button
+          ref={customButtonRef}
           onClick={() => {
             haptic.light();
-            navigate('/create');
+            if (isTutorialMode && onTutorialAction) {
+              onTutorialAction('custom');
+            } else {
+              navigate('/create');
+            }
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -110,16 +144,27 @@ const QuickCheckInButtons = () => {
 
       {/* Modals */}
       {showRideshareModal && (
-        <RideshareModal onClose={() => setShowRideshareModal(false)} />
+        <RideshareModal 
+          onClose={() => setShowRideshareModal(false)} 
+          isTutorialMode={isTutorialMode}
+        />
       )}
       {showWalkingModal && (
-        <WalkingModal onClose={() => setShowWalkingModal(false)} />
+        <WalkingModal 
+          onClose={() => setShowWalkingModal(false)} 
+          isTutorialMode={isTutorialMode}
+        />
       )}
       {showQuickMeetModal && (
-        <QuickMeetModal onClose={() => setShowQuickMeetModal(false)} />
+        <QuickMeetModal 
+          onClose={() => setShowQuickMeetModal(false)} 
+          isTutorialMode={isTutorialMode}
+        />
       )}
     </>
   );
-};
+});
+
+QuickCheckInButtons.displayName = 'QuickCheckInButtons';
 
 export default QuickCheckInButtons;

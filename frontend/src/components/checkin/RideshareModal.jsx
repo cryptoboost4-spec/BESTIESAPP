@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
+import TutorialTooltip from '../TutorialTooltip';
 
-const RideshareModal = ({ onClose }) => {
+const RideshareModal = ({ onClose, isTutorialMode = false }) => {
   const navigate = useNavigate();
   const [rego, setRego] = useState('');
   const [duration, setDuration] = useState(30); // Default 30 minutes
   const [isClosing, setIsClosing] = useState(false);
+  const [tutorialTooltipStep, setTutorialTooltipStep] = useState(0); // 0: rego, 1: duration
   const modalRef = useRef(null);
-  const firstInputRef = useRef(null);
+  const regoInputRef = useRef(null);
+  const durationRef = useRef(null);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -19,9 +22,9 @@ const RideshareModal = ({ onClose }) => {
 
   // Focus management and keyboard trap
   useEffect(() => {
-    // Focus first input when modal opens
-    if (firstInputRef.current) {
-      setTimeout(() => firstInputRef.current?.focus(), 100);
+    // Focus first input when modal opens (only if not in tutorial mode)
+    if (!isTutorialMode && regoInputRef.current) {
+      setTimeout(() => regoInputRef.current?.focus(), 100);
     }
 
     // Trap focus within modal
@@ -70,6 +73,12 @@ const RideshareModal = ({ onClose }) => {
   }, [handleClose]);
 
   const handleStart = () => {
+    if (isTutorialMode) {
+      // In tutorial mode, just close after showing tooltips
+      handleClose();
+      return;
+    }
+
     if (!rego.trim()) {
       return;
     }
@@ -85,6 +94,15 @@ const RideshareModal = ({ onClose }) => {
         activity: { name: '🚗 Rideshare', emoji: '🚗' }
       }
     });
+  };
+
+  const handleTutorialNext = () => {
+    if (tutorialTooltipStep === 0) {
+      setTutorialTooltipStep(1);
+    } else {
+      // Done with tutorial tooltips, close modal
+      handleClose();
+    }
   };
 
   return (
@@ -117,30 +135,40 @@ const RideshareModal = ({ onClose }) => {
           <label className="block text-sm font-semibold text-text-primary mb-2">
             Registration / License Plate
           </label>
-          <input
-            ref={firstInputRef}
-            type="text"
-            value={rego}
-            onChange={(e) => setRego(e.target.value.toUpperCase())}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (rego.trim()) {
-                  handleStart();
-                } else {
-                  e.target.blur(); // Close keyboard if invalid
+          <div ref={regoInputRef}>
+            <input
+              type="text"
+              value={rego}
+              onChange={(e) => setRego(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (rego.trim()) {
+                    handleStart();
+                  } else {
+                    e.target.blur(); // Close keyboard if invalid
+                  }
                 }
-              }
-            }}
-            placeholder="ABC123"
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-lg font-semibold text-center transition-all"
-            aria-label="Vehicle registration or license plate"
-            aria-required="true"
-          />
+              }}
+              placeholder="ABC123"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-lg font-semibold text-center transition-all"
+              aria-label="Vehicle registration or license plate"
+              aria-required="true"
+              disabled={isTutorialMode}
+            />
+          </div>
+          {isTutorialMode && tutorialTooltipStep === 0 && regoInputRef.current && (
+            <TutorialTooltip
+              body="Enter the vehicle's license plate so your bestie knows who's picking you up"
+              buttonText="Next"
+              onNext={handleTutorialNext}
+              targetElement={regoInputRef.current}
+            />
+          )}
         </div>
 
         {/* Duration Selection */}
-        <div className="mb-6">
+        <div className="mb-6" ref={durationRef}>
           <label className="block text-sm font-semibold text-text-primary mb-2">
             Duration: {duration} minutes
           </label>
@@ -177,6 +205,14 @@ const RideshareModal = ({ onClose }) => {
             <span>10 min</span>
             <span>90 min</span>
           </div>
+          {isTutorialMode && tutorialTooltipStep === 1 && (
+            <TutorialTooltip
+              body="Set when you expect to arrive. We'll notify your bestie if you don't check in safe on time"
+              buttonText="Next"
+              onNext={handleTutorialNext}
+              targetElement={durationRef.current}
+            />
+          )}
         </div>
 
         {/* Buttons */}
@@ -190,11 +226,11 @@ const RideshareModal = ({ onClose }) => {
           </button>
           <button
             onClick={handleStart}
-            disabled={!rego.trim()}
+            disabled={!isTutorialMode && !rego.trim()}
             className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            aria-label="Start rideshare check-in"
+            aria-label={isTutorialMode ? "Close tutorial" : "Start rideshare check-in"}
           >
-            Start Check-In
+            {isTutorialMode ? 'Got it!' : 'Start Check-In'}
           </button>
         </div>
       </div>
