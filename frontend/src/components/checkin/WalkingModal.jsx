@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
 
@@ -8,6 +8,13 @@ const WalkingModal = ({ onClose }) => {
   const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef(null);
   const firstButtonRef = useRef(null);
+
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 200); // Match animation duration
+  }, [onClose]);
 
   // Focus management and keyboard trap
   useEffect(() => {
@@ -59,14 +66,7 @@ const WalkingModal = ({ onClose }) => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
     };
-  }, []);
-
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 200); // Match animation duration
-  };
+  }, [handleClose]);
 
   const handleStart = () => {
     haptic.light();

@@ -56,8 +56,17 @@ const TestCheckInWalkthrough = ({ onComplete, onSkip }) => {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && location.trim()) {
+                  e.preventDefault();
+                  handleNext();
+                }
+              }}
               placeholder="e.g., Coffee shop downtown"
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl focus:border-primary focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              autoFocus
+              aria-label="Location for check-in"
+              aria-required="true"
             />
             <button
               onClick={() => {
@@ -321,6 +330,7 @@ const TestCheckInWalkthrough = ({ onComplete, onSkip }) => {
             disabled={!canProceed}
             className={`flex-1 btn btn-primary ${!canProceed ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={!canProceed ? 'Please complete this step to continue' : ''}
+            aria-label={isLastStep ? 'Complete tutorial' : canProceed ? 'Go to next step' : 'Complete this step first'}
           >
             {isLastStep ? 'Complete Tutorial ✓' : canProceed ? 'Next →' : 'Complete this step →'}
           </button>

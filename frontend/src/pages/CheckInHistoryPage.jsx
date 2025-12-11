@@ -276,14 +276,31 @@ const CheckInHistoryPage = () => {
 
         {/* History List */}
         {history.length === 0 ? (
-          <div className="card dark:bg-dark-card p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h2 className="text-2xl font-display text-text-primary dark:text-dark-text-primary mb-2">
+          <div className="card dark:bg-dark-card p-12 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-700">
+            <div className="text-6xl mb-4 animate-bounce-slow">📋</div>
+            <h2 className="text-2xl font-display text-text-primary dark:text-dark-text-primary mb-3">
               No check-ins yet
             </h2>
-            <p className="text-text-secondary dark:text-dark-text-secondary">
-              Your check-in history will appear here
+            <p className="text-text-secondary dark:text-dark-text-secondary mb-6">
+              Your check-in history will appear here once you start creating check-ins
             </p>
+            <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 mb-6 max-w-md mx-auto">
+              <p className="text-sm font-semibold text-text-primary dark:text-gray-200 mb-2">
+                💡 How to create your first check-in:
+              </p>
+              <ol className="text-xs text-text-secondary dark:text-gray-400 space-y-1 text-left list-decimal list-inside">
+                <li>Go to the home page</li>
+                <li>Tap one of the quick check-in buttons (🚗 Rideshare, 🚶‍♀️ Walking, etc.)</li>
+                <li>Or tap "✨ Create Custom Check-In"</li>
+                <li>Complete your check-in and it will appear here!</li>
+              </ol>
+            </div>
+            <button
+              onClick={() => navigate('/')}
+              className="btn btn-primary"
+            >
+              Go to Home Page →
+            </button>
           </div>
         ) : history.length >= 20 ? (
           // Virtualized list for 20+ items

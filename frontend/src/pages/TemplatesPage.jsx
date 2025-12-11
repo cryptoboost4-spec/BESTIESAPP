@@ -5,12 +5,15 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import haptic from '../utils/hapticFeedback';
 
 const TemplatesPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -39,16 +42,31 @@ const TemplatesPage = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  const handleDelete = async (templateId) => {
-    if (!window.confirm('Delete this template?')) return;
+  const handleDeleteClick = (template) => {
+    haptic.light();
+    setTemplateToDelete(template);
+    setShowDeleteModal(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    if (!templateToDelete) return;
+
+    haptic.medium();
     try {
-      await deleteDoc(doc(db, 'templates', templateId));
+      await deleteDoc(doc(db, 'templates', templateToDelete.id));
       toast.success('Template deleted');
+      setShowDeleteModal(false);
+      setTemplateToDelete(null);
     } catch (error) {
       console.error('Error deleting template:', error);
       toast.error('Failed to delete template');
     }
+  };
+
+  const handleDeleteCancel = () => {
+    haptic.light();
+    setShowDeleteModal(false);
+    setTemplateToDelete(null);
   };
 
   const handleUse = (template) => {
@@ -75,19 +93,29 @@ const TemplatesPage = () => {
         </div>
 
         {templates.length === 0 ? (
-          <div className="card p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h2 className="text-2xl font-display text-text-primary mb-2">
+          <div className="card p-12 text-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-2 border-blue-200 dark:border-blue-700">
+            <div className="text-6xl mb-4 animate-bounce-slow">📋</div>
+            <h2 className="text-2xl font-display text-text-primary mb-3">
               No templates yet
             </h2>
-            <p className="text-text-secondary mb-6">
-              Save templates when completing check-ins for quick access
+            <p className="text-text-secondary mb-4">
+              Templates let you quickly recreate check-ins you use often
             </p>
+            <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 mb-6 max-w-md mx-auto">
+              <p className="text-sm font-semibold text-text-primary mb-2">
+                💡 How to create templates:
+              </p>
+              <ol className="text-xs text-text-secondary space-y-1 text-left list-decimal list-inside">
+                <li>Create a check-in with your usual settings</li>
+                <li>When you mark yourself safe, you'll see an option to save it as a template</li>
+                <li>Your saved templates will appear here for quick access</li>
+              </ol>
+            </div>
             <button
               onClick={() => navigate('/create')}
               className="btn btn-primary"
             >
-              Create Check-In
+              Create Your First Check-In →
             </button>
           </div>
         ) : (
@@ -118,8 +146,9 @@ const TemplatesPage = () => {
                     Use Template
                   </button>
                   <button
-                    onClick={() => handleDelete(template.id)}
-                    className="btn bg-danger text-white hover:bg-red-600"
+                    onClick={() => handleDeleteClick(template)}
+                    className="btn bg-danger text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                    aria-label="Delete template"
                   >
                     🗑️
                   </button>
@@ -137,6 +166,40 @@ const TemplatesPage = () => {
             ➕ Create New Check-In
           </button>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && templateToDelete && (
+          <div 
+            className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={handleDeleteCancel}
+          >
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-2xl font-display text-text-primary dark:text-gray-200 mb-3">
+                Delete Template?
+              </h2>
+              <p className="text-text-secondary dark:text-gray-400 mb-6">
+                Are you sure you want to delete <strong>"{templateToDelete.name}"</strong>? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="flex-1 btn btn-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 btn bg-danger text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

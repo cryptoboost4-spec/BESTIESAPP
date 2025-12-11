@@ -4,6 +4,7 @@ import { db } from '../services/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import haptic from '../utils/hapticFeedback';
 
 const LocationFavoritesPage = () => {
   const { currentUser } = useAuth();
@@ -121,12 +122,17 @@ const LocationFavoritesPage = () => {
                 {emojiOptions.map(emoji => (
                   <button
                     key={emoji}
-                    onClick={() => setNewEmoji(emoji)}
-                    className={`w-12 h-12 rounded-xl text-2xl flex items-center justify-center transition-all ${
+                    onClick={() => {
+                      haptic.light();
+                      setNewEmoji(emoji);
+                    }}
+                    className={`w-12 h-12 rounded-xl text-2xl flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                       newEmoji === emoji
-                        ? 'bg-primary text-white scale-110'
-                        : 'bg-gray-100 hover:bg-gray-200'
+                        ? 'bg-primary text-white scale-110 shadow-lg'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105 active:scale-95'
                     }`}
+                    aria-label={`Select ${emoji} icon`}
+                    aria-pressed={newEmoji === emoji}
                   >
                     {emoji}
                   </button>
@@ -142,18 +148,38 @@ const LocationFavoritesPage = () => {
                 type="text"
                 value={newLocation}
                 onChange={(e) => setNewLocation(e.target.value)}
-                className="input"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newLocation.trim() && favorites.length < 20) {
+                    e.preventDefault();
+                    handleAdd();
+                  }
+                }}
+                className="input focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 placeholder="e.g., Local Coffee Shop"
                 maxLength={50}
+                aria-label="Location name"
+                aria-required="true"
               />
+              {newLocation.length >= 45 && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                  ⚠️ Name is getting long ({newLocation.length}/50 characters)
+                </p>
+              )}
             </div>
 
             <button
               onClick={handleAdd}
-              className="w-full btn btn-primary"
+              disabled={!newLocation.trim() || favorites.length >= 20}
+              className="w-full btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              aria-label="Add location to favorites"
             >
               ➕ Add to Favorites
             </button>
+            {favorites.length >= 20 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                ⚠️ Maximum 20 favorite locations reached
+              </p>
+            )}
           </div>
         </div>
 
@@ -192,8 +218,13 @@ const LocationFavoritesPage = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleDelete(favorite.id)}
-                      className="text-danger hover:bg-danger/10 p-2 rounded-lg transition-colors"
+                      onClick={() => {
+                        haptic.light();
+                        handleDelete(favorite.id);
+                      }}
+                      className="text-danger hover:bg-danger/10 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                      aria-label={`Delete ${favorite.name}`}
+                      title="Delete favorite location"
                     >
                       🗑️
                     </button>

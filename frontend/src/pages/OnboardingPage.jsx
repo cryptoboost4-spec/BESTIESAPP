@@ -7,7 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 
 const OnboardingPage = () => {
-  const { currentUser, userData, loading: authLoading } = useAuth();
+  const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState('welcome'); // welcome, slides, name, photo, invite-welcome, bestie-circle
   const [slideIndex, setSlideIndex] = useState(0);
@@ -139,8 +139,15 @@ const OnboardingPage = () => {
       return;
     }
 
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file (JPG, PNG, etc.)');
+      return;
+    }
+
+    // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Photo must be less than 5MB');
+      toast.error('Photo must be less than 5MB. Please choose a smaller image.');
       return;
     }
 
@@ -273,8 +280,9 @@ const OnboardingPage = () => {
                   onClick={() => setStep('name')}
                   className="flex-1 btn btn-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                   aria-label="Skip slides and go to profile setup"
+                  title="Skip the introduction and go straight to setting up your profile"
                 >
-                  Skip
+                  Skip Intro
                 </button>
                 <button
                   onClick={() => setSlideIndex(slideIndex + 1)}
@@ -324,6 +332,13 @@ const OnboardingPage = () => {
               setDisplayName(e.target.value);
               setNameHasBeenEdited(true);
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && displayName.trim()) {
+                e.preventDefault();
+                handleSaveName();
+              }
+            }}
+            maxLength={50}
             className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-lg mb-4"
             placeholder="Enter your name"
             autoFocus
@@ -337,11 +352,18 @@ const OnboardingPage = () => {
             </p>
           )}
 
+          {displayName.length >= 45 && (
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mb-2 text-center">
+              ⚠️ Name is getting long ({displayName.length}/50 characters)
+            </p>
+          )}
+
           <button
             onClick={handleSaveName}
             className="w-full btn btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!displayName.trim()}
             aria-label={hasName ? "Confirm name and continue" : "Save name and continue"}
+            title={!displayName.trim() ? "Please enter your name to continue" : ""}
           >
             {hasName ? 'Looks Good! ✓' : 'Continue →'}
           </button>
@@ -394,7 +416,7 @@ const OnboardingPage = () => {
               </button>
 
               <label className="block w-full mb-3">
-                <div className="btn btn-secondary text-lg py-4 text-center cursor-pointer">
+                <div className="btn btn-secondary text-lg py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   {uploading ? 'Uploading...' : '📤 Upload Different Photo'}
                 </div>
                 <input
@@ -408,11 +430,12 @@ const OnboardingPage = () => {
 
               <button
                 onClick={handleSkipPhoto}
-                className="w-full btn btn-secondary text-sm py-3 opacity-75"
+                className="w-full btn btn-secondary text-sm py-3 opacity-75 hover:opacity-100 transition-opacity"
                 disabled={uploading}
                 aria-label="Skip photo and continue to setup"
+                title="You can add a photo later in your profile settings"
               >
-                Skip Photo →
+                Skip Photo (Optional) →
               </button>
             </>
           ) : (
@@ -433,11 +456,12 @@ const OnboardingPage = () => {
 
               <button
                 onClick={handleSkipPhoto}
-                className="w-full btn btn-secondary text-lg py-4"
+                className="w-full btn btn-secondary text-lg py-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 disabled={uploading}
                 aria-label="Skip photo and continue to setup"
+                title="You can add a photo later in your profile settings"
               >
-                Skip Photo →
+                Skip Photo (Optional) →
               </button>
             </>
           )}
@@ -565,7 +589,7 @@ const OnboardingPage = () => {
                     <span className="text-2xl">1️⃣</span>
                     <div className="text-white/90">
                       <p className="font-semibold">Add Your Besties</p>
-                      <p className="text-sm text-white/70">Build your safety circle on the home page</p>
+                      <p className="text-sm text-white/70">Build your safety circle on the main page (where you are now)</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
