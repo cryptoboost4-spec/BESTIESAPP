@@ -78,6 +78,10 @@ const TutorialTooltip = ({
     const rect = targetElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    
+    // Get tooltip dimensions (use defaults if not yet rendered)
+    const tooltipHeight = tooltipRef.current?.offsetHeight || 200;
+    const tooltipWidth = tooltipRef.current?.offsetWidth || 300;
 
     // Ensure tooltip stays within viewport
     let left, top, bottom, right;
