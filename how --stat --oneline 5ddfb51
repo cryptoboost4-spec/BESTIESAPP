@@ -1,0 +1,32 @@
+[33m2abaaa2[m s
+ frontend/src/components/AddBestieModal.jsx         | 110 [32m++++[m
+ frontend/src/components/BestieCircle.jsx           |   4 [32m+[m[31m-[m
+ frontend/src/components/BestieCircleStatus.jsx     |   4 [32m+[m[31m-[m
+ frontend/src/components/InfoButton.jsx             |  30 [32m+[m[31m-[m
+ frontend/src/components/OnboardingFlow.jsx         | 381 [32m++++++++++[m[31m---[m
+ .../components/besties/ActivityFeedSkeleton.jsx    |  91 [31m---[m
+ .../src/components/circle/CircleCenterScore.jsx    |  14 [32m+[m[31m-[m
+ frontend/src/components/profile/StatsSection.jsx   |  16 [32m+[m[31m-[m
+ .../components/tutorials/BestieCircleTutorial.jsx  | 611 [32m+++++++++++++++++++++[m
+ .../components/tutorials/BestiesPageTutorial.jsx   | 498 [32m+++++++++++++++++[m
+ .../tutorials/InteractiveCheckInTutorial.jsx       | 577 [32m+++++++++++++++++++[m
+ .../components/tutorials/ProfilePageTutorial.jsx   | 581 [32m++++++++++++++++++++[m
+ .../components/tutorials/SettingsPageTutorial.jsx  | 592 [32m++++++++++++++++++++[m
+ .../src/components/tutorials/TutorialOverlay.jsx   | 290 [32m++++++++++[m
+ .../tutorials/TutorialsReplaySection.jsx           | 206 [32m+++++++[m
+ frontend/src/pages/AlertViewPage.jsx               |  10 [32m+[m[31m-[m
+ frontend/src/pages/BestiesPage.jsx                 |  53 [32m+[m[31m-[m
+ frontend/src/pages/CheckInHistoryPage.jsx          |  10 [32m+[m[31m-[m
+ frontend/src/pages/CircleHealthPage.jsx            |  10 [32m+[m[31m-[m
+ frontend/src/pages/DevAnalyticsPage.jsx            |  10 [32m+[m[31m-[m
+ frontend/src/pages/ErrorDashboard.jsx              |  10 [32m+[m[31m-[m
+ frontend/src/pages/HomePage.jsx                    |  81 [32m++[m[31m-[m
+ frontend/src/pages/LocationFavoritesPage.jsx       |  10 [32m+[m[31m-[m
+ frontend/src/pages/MonitoringDashboard.jsx         |  10 [32m+[m[31m-[m
+ frontend/src/pages/ProfilePage.jsx                 |  42 [32m+[m[31m-[m
+ frontend/src/pages/SettingsPage.jsx                |  39 [32m++[m
+ frontend/src/pages/SocialFeedPage.jsx              |  10 [32m+[m[31m-[m
+ frontend/src/pages/TemplatesPage.jsx               |  10 [32m+[m[31m-[m
+ frontend/src/pages/ViewUserProfilePage.jsx         |  10 [32m+[m[31m-[m
+ frontend/src/utils/tutorialManager.js              | 153 [32m++++++[m
+ 30 files changed, 4236 insertions(+), 237 deletions(-)

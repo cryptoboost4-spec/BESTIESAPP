@@ -1,0 +1,66 @@
+3562268 - cryptoboost4-spec, 7 hours ago : d
+A	frontend/src/components/tutorials/InlineTooltip.jsx
+M	frontend/src/components/tutorials/ProfilePageTutorial.jsx
+A	frontend/src/components/tutorials/WelcomeModal.jsx
+M	frontend/src/pages/ProfilePage.jsx
+
+a0e9bbd - cryptoboost4-spec, 7 hours ago : c
+M	frontend/src/components/tutorials/FloatingTutorialCard.jsx
+
+ab34df3 - cryptoboost4-spec, 7 hours ago : d
+M	frontend/src/components/tutorials/FloatingTutorialCard.jsx
+M	frontend/src/components/tutorials/TutorialOverlay.jsx
+
+d4d2fd7 - cryptoboost4-spec, 7 hours ago : 5
+M	frontend/src/components/profile/BadgesSection.jsx
+M	frontend/src/components/profile/ProfileCard.jsx
+M	frontend/src/components/profile/StatsSection.jsx
+A	frontend/src/components/tutorials/FloatingTutorialCard.jsx
+M	frontend/src/components/tutorials/TutorialOverlay.jsx
+
+76d28ea - cryptoboost4-spec, 8 hours ago : n
+M	frontend/src/components/tutorials/InteractiveCheckInTutorial.jsx
+M	frontend/src/hooks/useTutorialActionDetector.js
+
+ec7ba2b - cryptoboost4-spec, 8 hours ago : m
+M	frontend/src/components/checkin/CheckInMap.jsx
+M	frontend/src/components/tutorials/BestieCircleTutorial.jsx
+M	frontend/src/components/tutorials/BestiesPageTutorial.jsx
+M	frontend/src/components/tutorials/InteractiveCheckInTutorial.jsx
+M	frontend/src/components/tutorials/ProfilePageTutorial.jsx
+M	frontend/src/components/tutorials/SettingsPageTutorial.jsx
+M	frontend/src/components/tutorials/TutorialOverlay.jsx
+M	frontend/src/hooks/useTutorialActionDetector.js
+
+73c8068 - cryptoboost4-spec, 8 hours ago : s
+M	frontend/src/components/tutorials/InteractiveCheckInTutorial.jsx
+M	frontend/src/contexts/TutorialContext.jsx
+
+66e9383 - cryptoboost4-spec, 8 hours ago : bh
+M	frontend/src/App.jsx
+M	frontend/src/components/tutorials/BestieCircleTutorial.jsx
+M	frontend/src/components/tutorials/BestiesPageTutorial.jsx
+M	frontend/src/components/tutorials/InteractiveCheckInTutorial.jsx
+M	frontend/src/components/tutorials/ProfilePageTutorial.jsx
+M	frontend/src/components/tutorials/SettingsPageTutorial.jsx
+A	frontend/src/components/tutorials/TutorialHelpButton.jsx
+A	frontend/src/contexts/TutorialContext.jsx
+A	frontend/src/hooks/useTutorialActionDetector.js
+M	frontend/src/pages/CreateCheckInPage.jsx
+M	frontend/src/pages/HomePage.jsx
+
+5767678 - cryptoboost4-spec, 8 hours ago : s
+M	frontend/src/components/LivingCircle.jsx
+M	frontend/src/components/tutorials/BestieCircleTutorial.jsx
+M	frontend/src/components/tutorials/BestiesPageTutorial.jsx
+M	frontend/src/components/tutorials/InteractiveCheckInTutorial.jsx
+M	frontend/src/components/tutorials/ProfilePageTutorial.jsx
+M	frontend/src/components/tutorials/SettingsPageTutorial.jsx
+A	frontend/src/components/tutorials/SkipWarningModal.jsx
+M	frontend/src/components/tutorials/TutorialOverlay.jsx
+A	frontend/src/hooks/useTutorialActionWatcher.js
+M	frontend/src/pages/HomePage.jsx
+
+c86d955 - cryptoboost4-spec, 9 hours ago : c
+M	frontend/src/components/OnboardingFlow.jsx
+M	frontend/src/pages/HomePage.jsx
