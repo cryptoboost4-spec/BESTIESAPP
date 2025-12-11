@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import ProfileWithBubble from '../ProfileWithBubble';
 import SharePromptButtons from './SharePromptButtons';
 import { MESSENGER_CONFIG } from '../../config/messenger';
+import haptic from '../../utils/hapticFeedback';
 
 const BestieSelector = ({ 
   besties, 
@@ -22,13 +23,15 @@ const BestieSelector = ({
 
   // Filter active messenger contacts
   // Handle null case (not loaded yet) - treat as empty array
-  // Also filter out pending contacts (those without names - waiting for profile fetch)
+  // Filter out expired contacts, contacts awaiting confirmation, and declined contacts
   const now = Date.now();
   const activeMessengerContacts = (messengerContacts || []).filter(
     contact => {
       const isActive = contact.expiresAt?.toMillis() > now;
       const hasName = contact.name && contact.name.trim() !== '';
-      return isActive && hasName; // Only show contacts that are active AND have a real name
+      const isConfirmed = !contact.awaitingConfirmation; // Exclude contacts awaiting confirmation
+      const notDeclined = !contact.declined; // Exclude declined contacts
+      return isActive && hasName && isConfirmed && notDeclined; // Only show active, confirmed, non-declined contacts with names
     }
   );
 
@@ -46,13 +49,16 @@ const BestieSelector = ({
   }, [activeMessengerContacts.length]); // Only run when count changes
 
   const toggleBestie = (bestieId) => {
+    haptic.light();
     if (selectedBesties.includes(bestieId)) {
       setSelectedBesties(selectedBesties.filter(id => id !== bestieId));
     } else {
       if (selectedBesties.length >= 5) {
+        haptic.error();
         toast.error('Maximum 5 SMS besties per check-in');
         return;
       }
+      haptic.success();
       setSelectedBesties([...selectedBesties, bestieId]);
     }
   };
@@ -291,11 +297,13 @@ const BestieSelector = ({
                 key={bestie.id}
                 type="button"
                 onClick={() => toggleBestie(bestie.id)}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                className={`w-full p-4 rounded-xl border-2 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                   isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    ? 'border-primary bg-primary/10 shadow-md scale-[1.02]'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:scale-[1.01] active:scale-[0.99]'
                 }`}
+                aria-label={`${isSelected ? 'Deselect' : 'Select'} ${bestie.name || 'bestie'}`}
+                aria-pressed={isSelected}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">

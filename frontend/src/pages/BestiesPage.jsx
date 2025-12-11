@@ -515,9 +515,20 @@ const BestiesPage = () => {
         />
       )}
 
+      {/* Floating Action Button - Add Bestie */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        className="fixed bottom-6 right-6 md:bottom-8 md:right-8 w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-primary to-pink-500 text-white shadow-2xl hover:shadow-3xl transform hover:scale-110 active:scale-95 transition-all z-40 flex items-center justify-center text-3xl md:text-4xl font-bold animate-pulse-slow hover:animate-none"
+        title="Add a bestie"
+      >
+        <span className="drop-shadow-lg">+</span>
+      </button>
+
       {/* Add Bestie Modal */}
       {showAddModal && (
-        <AddBestieModal onClose={() => setShowAddModal(false)} />
+        <AddBestieModal 
+          onClose={() => setShowAddModal(false)}
+        />
       )}
 
       {/* Create Post Modal */}

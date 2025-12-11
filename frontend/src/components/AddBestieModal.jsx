@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import '../styles/AddBestieModal.css';
 
-const AddBestieModal = ({ onClose, onSuccess }) => {
+const AddBestieModal = ({ onClose, onSuccess = () => {} }) => {
   const { currentUser, userData } = useAuth();
   const [showCelebration, setShowCelebration] = useState(false);
 

@@ -1,18 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Luxury loader for "I'm Safe" confirmation
-const SafeLoader = () => {
+const SafeLoader = ({ isFirstCheckIn = false }) => {
   const navigate = useNavigate();
-  const messages = [
+  const { userData } = useAuth();
+  
+  const firstCheckInMessages = [
+    { text: "🎉 Your First Check-In Complete!", subtext: "You're building amazing safety habits! Your besties are proud of you 💜" },
+    { text: "🌟 You Did It!", subtext: "Your first check-in is complete! You're taking care of yourself like a pro ✨" },
+    { text: "💜 Welcome to Safety!", subtext: "You just completed your first check-in! This is the start of something great 🎊" },
+  ];
+  
+  const regularMessages = [
     { text: "Welcome home, beautiful! 💖", subtext: "We're so relieved you're safe" },
     { text: "You made it safely! ✨", subtext: "Your besties can rest easy now" },
     { text: "Safe and sound! 🌸", subtext: "Taking care of yourself like a queen" },
     { text: "You're safe! 💕", subtext: "That's all that matters" },
   ];
 
-  // Pick one random message
-  const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
+  // Check if this is first check-in
+  // Use prop if provided (most reliable), otherwise check stats
+  // Note: Stats update asynchronously, so prop from CheckInCard is more accurate
+  const isFirst = isFirstCheckIn !== undefined && isFirstCheckIn !== null
+    ? isFirstCheckIn 
+    : ((userData?.stats?.completedCheckIns || 0) === 0);
+  
+  // Lock in message pool and confetti count based on initial state
+  const messagePool = isFirst ? firstCheckInMessages : regularMessages;
+  const confettiCount = isFirst ? 20 : 12;
+  
+  // Pick one random message (locked in on mount)
+  const [message] = useState(() => messagePool[Math.floor(Math.random() * messagePool.length)]);
 
   // Redirect to home after 2 seconds
   useEffect(() => {
@@ -24,9 +44,9 @@ const SafeLoader = () => {
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 via-teal-50 to-cyan-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 flex items-center justify-center p-4 overflow-hidden z-50">
-      {/* Floating celebration elements - fewer on mobile */}
+      {/* Floating celebration elements - more for first check-in! */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(12)].map((_, i) => (
+        {[...Array(confettiCount)].map((_, i) => (
           <div
             key={i}
             className="absolute animate-celebration-float"
@@ -85,9 +105,12 @@ const SafeLoader = () => {
             <span className="text-2xl md:text-3xl animate-bounce-gentle" style={{animationDelay: '0.4s'}}>✨</span>
           </div>
 
-          {/* Gentle reminder */}
+          {/* Gentle reminder - special message for first check-in */}
           <p className="text-xs text-gray-400 dark:text-gray-500 italic">
-            Until next time, stay safe bestie! 💕
+            {isFirst 
+              ? "You're building amazing safety habits! Keep it up! 💜"
+              : "Until next time, stay safe bestie! 💕"
+            }
           </p>
         </div>
       </div>

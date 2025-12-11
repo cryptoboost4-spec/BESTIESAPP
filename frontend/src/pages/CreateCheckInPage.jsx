@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage } from '../services/firebase';
@@ -21,6 +21,7 @@ const CreateCheckInPage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const submitButtonRef = useRef(null);
 
   const [locationInput, setLocationInput] = useState('');
   const [duration, setDuration] = useState(30);
@@ -379,14 +380,16 @@ const CreateCheckInPage = () => {
         // Besties are loaded and auto-selected, now trigger submit IMMEDIATELY
         console.log('Auto-submitting quick check-in with besties:', selectedBesties, 'messenger:', selectedMessengerContacts);
 
-        // Trigger submit immediately without delay
-        const submitBtn = document.querySelector('#create-checkin-submit-btn');
-        if (submitBtn && !submitBtn.disabled) {
+        // Use ref instead of querySelector - more React-idiomatic and reliable
+        if (submitButtonRef.current && !submitButtonRef.current.disabled) {
           console.log('Clicking submit button');
-          submitBtn.click();
+          submitButtonRef.current.click();
           setShouldAutoSubmit(false); // Reset flag
         } else {
-          console.warn('Submit button not ready:', { submitBtn, disabled: submitBtn?.disabled });
+          console.warn('Submit button not ready:', { 
+            exists: !!submitButtonRef.current, 
+            disabled: submitButtonRef.current?.disabled 
+          });
         }
       } else {
         // No besties or messenger contacts available - show error and stop auto-submit
@@ -395,10 +398,13 @@ const CreateCheckInPage = () => {
           duration: 6000
         });
         setShouldAutoSubmit(false);
-        // Navigate back to home
-        setTimeout(() => {
+        // Navigate back to home with cleanup
+        const navigateTimer = setTimeout(() => {
           navigate('/');
         }, 2000);
+        
+        // Cleanup on unmount
+        return () => clearTimeout(navigateTimer);
       }
   }, [shouldAutoSubmit, selectedBesties, selectedMessengerContacts, loading, bestiesLoading, messengerLoading, messengerContacts, navigate]);
 
@@ -699,6 +705,8 @@ const CreateCheckInPage = () => {
           }
 
           // Navigate after successful creation
+          // Note: setTimeout is acceptable here as component will unmount on navigation
+          // The navigation itself will cancel any pending operations
           setTimeout(() => {
             navigate('/');
           }, 1000); // Small delay to show success message
@@ -844,12 +852,22 @@ const CreateCheckInPage = () => {
 
           {/* Submit */}
           <button
+            ref={submitButtonRef}
             type="submit"
             id="create-checkin-submit-btn"
             disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
-            className="w-full btn btn-primary text-lg py-4"
+            className="w-full btn btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98]"
+            aria-label="Start safety check-in"
+            aria-busy={loading}
           >
-            {loading ? 'Creating...' : '🛡️ Start Check-In'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Creating...
+              </span>
+            ) : (
+              '🛡️ Start Check-In'
+            )}
           </button>
         </form>
       </div>

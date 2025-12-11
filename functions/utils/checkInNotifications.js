@@ -288,20 +288,33 @@ async function sendMessengerContactNotifications(userId, message, selectedContac
 
 /**
  * Send Facebook Messenger message
+ * Uses v24.0 API (latest version as of December 2024)
  */
 async function sendMessengerMessage(psid, text) {
   const pageToken = functions.config().facebook?.page_token;
   if (!pageToken) {
+    functions.logger.error('❌ Cannot send Messenger message - page token not configured');
     throw new Error('Facebook page token not configured');
   }
 
-  await axios.post(
-    `https://graph.facebook.com/v24.0/me/messages?access_token=${pageToken}`,
-    {
-      recipient: { id: psid },
-      message: { text: text }
-    }
-  );
+  try {
+    await axios.post(
+      `https://graph.facebook.com/v24.0/me/messages?access_token=${pageToken}`,
+      {
+        recipient: { id: psid },
+        message: { text: text }
+      }
+    );
+    functions.logger.info(`✅ Messenger alert sent to PSID ${psid}`);
+  } catch (error) {
+    functions.logger.error(`❌ Failed to send Messenger alert to PSID ${psid}`, {
+      psid,
+      httpStatus: error.response?.status,
+      fbErrorCode: error.response?.data?.error?.code,
+      fbErrorMessage: error.response?.data?.error?.message
+    });
+    throw error;
+  }
 }
 
 /**

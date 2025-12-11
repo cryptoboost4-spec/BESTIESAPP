@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { db, storage } from '../services/firebase';
 import { doc, updateDoc, Timestamp, addDoc, collection, getDoc } from 'firebase/firestore';
@@ -348,7 +348,9 @@ const CheckInCard = ({ checkIn }) => {
   const isAlerted = checkIn.status === 'alerted';
 
   if (showSafeLoader) {
-    return <SafeLoader />;
+    // Check if this is user's first check-in completion
+    const isFirstCheckIn = (userData?.stats?.completedCheckIns || 0) === 0;
+    return <SafeLoader isFirstCheckIn={isFirstCheckIn} />;
   }
 
   // Format time for display (MM:SS or HH:MM:SS)
@@ -651,4 +653,11 @@ const CheckInCard = ({ checkIn }) => {
   );
 };
 
-export default CheckInCard;
+// Memoize to prevent unnecessary re-renders when parent updates
+export default memo(CheckInCard, (prevProps, nextProps) => {
+  // Only re-render if checkIn data actually changed
+  return prevProps.checkIn?.id === nextProps.checkIn?.id &&
+         prevProps.checkIn?.status === nextProps.checkIn?.status &&
+         prevProps.checkIn?.alertTime?.toMillis?.() === nextProps.checkIn?.alertTime?.toMillis?.() &&
+         JSON.stringify(prevProps.checkIn?.photoURLs) === JSON.stringify(nextProps.checkIn?.photoURLs);
+});

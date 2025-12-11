@@ -10,12 +10,11 @@ import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
 import EmergencySOSButton from '../components/EmergencySOSButton';
-import AddToHomeScreenPrompt from '../components/AddToHomeScreenPrompt';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
-import LoadingSkeleton from '../components/LoadingSkeleton';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
+import TestCheckInWalkthrough from '../components/TestCheckInWalkthrough';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
@@ -28,6 +27,10 @@ const HomePage = () => {
 
   // Invite Friends modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
+  
+  // Test Check-In Walkthrough state
+  const [showTestWalkthrough, setShowTestWalkthrough] = useState(false);
+  const [hasSeenTestWalkthrough, setHasSeenTestWalkthrough] = useState(false);
 
   // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
@@ -58,6 +61,30 @@ const HomePage = () => {
       navigate('/login');
     }
   }, [currentUser, authLoading, navigate]);
+
+  // Show test walkthrough for first-time users with besties but no check-ins
+  useEffect(() => {
+    if (authLoading || !userData || !currentUser) return;
+    
+    // Check if user has seen the walkthrough
+    const seen = localStorage.getItem('test_checkin_walkthrough_seen');
+    if (seen) {
+      setHasSeenTestWalkthrough(true);
+      return;
+    }
+
+    // Show if user has besties but no completed check-ins
+    const hasBesties = userData?.stats?.totalBesties > 0;
+    const hasNoCheckIns = !userData?.stats?.completedCheckIns || userData?.stats?.completedCheckIns === 0;
+    
+    if (hasBesties && hasNoCheckIns && !hasSeenTestWalkthrough) {
+      // Delay to let user see the page first - don't be too aggressive
+      const timer = setTimeout(() => {
+        setShowTestWalkthrough(true);
+      }, 3000); // 3 seconds - gives user time to see the page
+      return () => clearTimeout(timer);
+    }
+  }, [userData, currentUser, authLoading, hasSeenTestWalkthrough]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -103,18 +130,51 @@ const HomePage = () => {
       alertedBestieQuery,
       async (snapshot) => {
         const alertedCheckIns = [];
-        for (const docSnap of snapshot.docs) {
+        const userIds = new Set();
+        
+        // Collect all unique user IDs first
+        snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          // Get the user's name who created the check-in
-          const userDoc = await getDoc(doc(db, 'users', data.userId));
-          const userName = userDoc.exists() ? userDoc.data().displayName : 'Bestie';
+          if (data.userId) {
+            userIds.add(data.userId);
+          }
+        });
+
+        // Batch fetch all user documents at once (fixes N+1 query)
+        const userDocs = new Map();
+        if (userIds.size > 0) {
+          const userPromises = Array.from(userIds).map(async (userId) => {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', userId));
+              return { userId, userDoc };
+            } catch (error) {
+              console.error(`Error fetching user ${userId}:`, error);
+              return { userId, userDoc: null };
+            }
+          });
+          
+          const userResults = await Promise.all(userPromises);
+          userResults.forEach(({ userId, userDoc }) => {
+            if (userDoc?.exists()) {
+              userDocs.set(userId, userDoc.data().displayName || 'Bestie');
+            } else {
+              userDocs.set(userId, 'Bestie');
+            }
+          });
+        }
+
+        // Now build the alerted check-ins array with user names
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const userName = userDocs.get(data.userId) || 'Bestie';
 
           alertedCheckIns.push({
             id: docSnap.id,
             ...data,
             userName
           });
-        }
+        });
+        
         setAlertedBestieCheckIns(alertedCheckIns);
       },
       (error) => {
@@ -246,8 +306,19 @@ const HomePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern">
-        <LoadingSkeleton type="list" count={3} message="Loading your safety network... 💜" />
+      <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          {/* Elegant spinner */}
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin"></div>
+            <div className="absolute inset-2 rounded-full bg-gradient-primary opacity-20 animate-pulse-slow"></div>
+          </div>
+          <p className="text-lg font-display text-gradient mb-2 animate-pulse-slow">
+            Loading your safety network...
+          </p>
+          <p className="text-sm text-text-secondary">💜</p>
+        </div>
       </div>
     );
   }
@@ -307,6 +378,92 @@ const HomePage = () => {
         {/* Quick Check-In Buttons - Moved to middle */}
         {activeCheckIns.length === 0 && (
           <>
+            {/* First-Time User Instructions - Show if no besties */}
+            {(!userData?.stats?.totalBesties || userData?.stats?.totalBesties === 0) && (
+              <div className="card p-6 mb-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-700 shadow-lg">
+                <div className="text-center">
+                  <div className="text-5xl mb-4">💜</div>
+                  <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200 mb-3">
+                    Welcome to Besties!
+                  </h2>
+                  <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+                    To create your first safety check-in, you'll need to add at least one bestie to your circle.
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Your besties will get notified if you miss a check-in, so they can make sure you're safe.
+                  </p>
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 mb-6">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      💡 <strong>How it works:</strong> Add besties → Create check-in → If you don't check back in time, they get an alert with your location
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      haptic.light();
+                      navigate('/besties');
+                    }}
+                    className="btn btn-primary text-lg py-4 px-10 mb-4 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                  >
+                    ➕ Add Your First Bestie →
+                  </button>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Once you add a bestie, you can create check-ins using the buttons below!
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Instructions for users with besties but no check-ins */}
+            {userData?.stats?.totalBesties > 0 && (!userData?.stats?.completedCheckIns || userData?.stats?.completedCheckIns === 0) && (
+              <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-2 border-blue-200 dark:border-blue-700">
+                <div className="text-center">
+                  <div className="text-4xl mb-3">✨</div>
+                  <h3 className="text-xl font-display text-gray-800 dark:text-gray-200 mb-2">
+                    Ready to create your first check-in?
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Tap one of the buttons below to start a safety check-in. Your besties will be notified if you don't check back in on time.
+                  </p>
+                  {!hasSeenTestWalkthrough && (
+                    <div className="mb-4">
+                      <button
+                        onClick={() => {
+                          haptic.light();
+                          setShowTestWalkthrough(true);
+                        }}
+                        className="btn btn-primary text-base py-3 px-6 mb-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                      >
+                        🎓 Try Test Walkthrough First
+                      </button>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Learn how check-ins work in a safe practice mode (2 minutes)
+                      </p>
+                    </div>
+                  )}
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 mt-4">
+                    <div className="text-xs text-gray-600 dark:text-gray-300 space-y-2 text-left">
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">🚗</span>
+                        <div><strong>Rideshare:</strong> For Uber, Lyft, or taxi rides</div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">🚶‍♀️</span>
+                        <div><strong>Walking:</strong> When walking alone</div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">👤</span>
+                        <div><strong>Quick Meet:</strong> Meeting someone new</div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">✨</span>
+                        <div><strong>Custom:</strong> Create your own check-in</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <QuickCheckInButtons />
 
             {/* Living Circle - DO NOT REMOVE */}
@@ -488,12 +645,29 @@ const HomePage = () => {
       {/* Emergency SOS Button */}
       <EmergencySOSButton hasActiveAlert={activeCheckIns.some(checkIn => checkIn.status === 'alerted')} />
 
-      {/* Add to Home Screen Prompt */}
-      <AddToHomeScreenPrompt currentUser={currentUser} userData={userData} />
+      {/* Add to Home Screen Prompt - Disabled per user request */}
+      {/* <AddToHomeScreenPrompt currentUser={currentUser} userData={userData} /> */}
 
       {/* Invite Friends Modal */}
       {showInviteModal && (
         <InviteFriendsModal onClose={() => setShowInviteModal(false)} />
+      )}
+
+      {/* Test Check-In Walkthrough */}
+      {showTestWalkthrough && (
+        <TestCheckInWalkthrough
+          onComplete={() => {
+            localStorage.setItem('test_checkin_walkthrough_seen', 'true');
+            setHasSeenTestWalkthrough(true);
+            setShowTestWalkthrough(false);
+            toast.success('Great job! You\'re ready to create real check-ins now! 💜');
+          }}
+          onSkip={() => {
+            localStorage.setItem('test_checkin_walkthrough_seen', 'true');
+            setHasSeenTestWalkthrough(true);
+            setShowTestWalkthrough(false);
+          }}
+        />
       )}
     </div>
   );

@@ -91,147 +91,257 @@ const { backfillBestieUserIds } = require('./core/maintenance/backfillBestieUser
 // FACEBOOK MESSENGER INTEGRATION
 // ========================================
 
-// Helper: Get Facebook Profile
+// Facebook Graph API version - v24.0 is the latest version (December 2024)
+const FB_API_VERSION = 'v24.0';
+
+// Helper: Get Facebook Profile with detailed error logging
 async function getFacebookProfile(psid) {
   const pageToken = functions.config().facebook?.page_token;
+  
   if (!pageToken) {
-    functions.logger.warn('Facebook page token not configured');
-    return { name: 'Friend', profile_pic: null };
+    functions.logger.error('❌ FACEBOOK PAGE TOKEN NOT CONFIGURED - check firebase functions:config:get');
+    return null;
   }
 
-  // Try multiple approaches to get profile data
-  // Approach 1: Try with name and profile_pic (standard fields)
-  try {
-    const response = await axios.get(
-      `https://graph.facebook.com/v24.0/${psid}?fields=name,profile_pic&access_token=${pageToken}`
-    );
-    if (response.data && response.data.name) {
-      return response.data;
-    }
-  } catch (error) {
-    // Log detailed error information for diagnosis
-    functions.logger.warn(`Standard profile fetch failed for PSID ${psid}:`, {
-      psid,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      errorCode: error.response?.data?.error?.code,
-      errorType: error.response?.data?.error?.type,
-      errorMessage: error.response?.data?.error?.message,
-      errorSubcode: error.response?.data?.error?.error_subcode,
-      fullError: error.response?.data?.error,
-      url: `https://graph.facebook.com/v24.0/${psid}?fields=name,profile_pic&access_token=***`
-    });
-  }
+  // Try first_name,last_name,profile_pic FIRST (preferred format per Facebook User Profile API docs)
+  // All fields require Business Asset User Profile Access feature
+  let apiUrl = `https://graph.facebook.com/${FB_API_VERSION}/${psid}?fields=first_name,last_name,profile_pic&access_token=${pageToken}`;
+  
+  functions.logger.info(`📡 Fetching Facebook profile for PSID: ${psid}`, {
+    psid,
+    apiVersion: FB_API_VERSION,
+    url: apiUrl.replace(pageToken, '***TOKEN***'),
+    fields: 'first_name,last_name,profile_pic',
+    note: 'Using first_name,last_name,profile_pic (preferred format per Facebook docs)'
+  });
 
-  // Approach 2: Try with first_name and last_name separately
   try {
-    const response = await axios.get(
-      `https://graph.facebook.com/v24.0/${psid}?fields=first_name,last_name,profile_pic&access_token=${pageToken}`
-    );
+    const response = await axios.get(apiUrl);
+    
     if (response.data && (response.data.first_name || response.data.last_name)) {
+      // Combine first_name and last_name into full name
       const fullName = [response.data.first_name, response.data.last_name].filter(Boolean).join(' ') || 'Friend';
-      return {
+      const profileData = {
         name: fullName,
         profile_pic: response.data.profile_pic || null
       };
+      
+      functions.logger.info(`✅ Profile fetch SUCCESS for PSID ${psid}`, {
+        psid,
+        name: profileData.name,
+        hasProfilePic: !!profileData.profile_pic
+      });
+      return profileData;
+    } else {
+      // Fallback 1: Try name,picture (alternative format)
+      functions.logger.info(`🔄 Trying fallback 1: name,picture for PSID ${psid}`);
+      const fallback1Url = `https://graph.facebook.com/${FB_API_VERSION}/${psid}?fields=name,picture&access_token=${pageToken}`;
+      const fallback1Response = await axios.get(fallback1Url);
+      
+      if (fallback1Response.data && fallback1Response.data.name) {
+        // Business Asset User Profile Access returns 'name' and 'picture'
+        // 'picture' is an object with 'data.url', need to extract the URL
+        const profileData = {
+          name: fallback1Response.data.name,
+          profile_pic: fallback1Response.data.picture?.data?.url || fallback1Response.data.picture || null
+        };
+        functions.logger.info(`✅ Profile fetch SUCCESS (fallback 1 - name,picture) for PSID ${psid}`, {
+          psid,
+          name: profileData.name,
+          hasProfilePic: !!profileData.profile_pic
+        });
+        return profileData;
+      } else {
+        // Fallback 2: Try just 'name' and 'profile_pic' (alternative format)
+        functions.logger.info(`🔄 Trying fallback 2: name,profile_pic for PSID ${psid}`);
+        const fallback2Url = `https://graph.facebook.com/${FB_API_VERSION}/${psid}?fields=name,profile_pic&access_token=${pageToken}`;
+        const fallback2Response = await axios.get(fallback2Url);
+        
+        if (fallback2Response.data && fallback2Response.data.name) {
+          functions.logger.info(`✅ Profile fetch SUCCESS (fallback 2) for PSID ${psid}`, {
+            psid,
+            name: fallback2Response.data.name
+          });
+          return fallback2Response.data;
+        } else {
+          functions.logger.warn(`⚠️ Profile fetch returned empty data for PSID ${psid}`, {
+            psid,
+            firstLastResponse: response.data,
+            namePictureResponse: fallback1Response.data,
+            nameProfilePicResponse: fallback2Response.data
+          });
+          return null;
+        }
+      }
     }
   } catch (error) {
-    functions.logger.warn(`Alternative profile fetch (first_name/last_name) failed for PSID ${psid}:`, {
+    // Detailed error logging for diagnosis
+    const errorDetails = {
       psid,
-      status: error.response?.status,
-      errorCode: error.response?.data?.error?.code,
-      errorMessage: error.response?.data?.error?.message,
-      fullError: error.response?.data?.error
-    });
-  }
+      apiVersion: FB_API_VERSION,
+      httpStatus: error.response?.status,
+      httpStatusText: error.response?.statusText,
+      fbErrorCode: error.response?.data?.error?.code,
+      fbErrorSubcode: error.response?.data?.error?.error_subcode,
+      fbErrorType: error.response?.data?.error?.type,
+      fbErrorMessage: error.response?.data?.error?.message,
+      fbTraceId: error.response?.data?.error?.fbtrace_id
+    };
 
-  // Approach 3: Try with just first_name (sometimes more permissive)
-  try {
-    const response = await axios.get(
-      `https://graph.facebook.com/v24.0/${psid}?fields=first_name&access_token=${pageToken}`
-    );
-    if (response.data && response.data.first_name) {
-      return {
-        name: response.data.first_name,
-        profile_pic: null
-      };
+    // Specific error messages based on error code
+    if (error.response?.data?.error?.code === 100) {
+      if (error.response?.data?.error?.error_subcode === 33) {
+        functions.logger.error(`❌ PERMISSION ERROR (100/33) for PSID ${psid} - This usually means:
+          1. App needs Advanced Access for Business Asset User Profile Access (Standard Access only works for testers) OR
+          2. User hasn't opted in (hasn't sent a message/replied) OR
+          3. User has restricted profile access
+          Solution: Request Advanced Access for Business Asset User Profile Access in App Review`, errorDetails);
+      } else {
+        functions.logger.error(`❌ API ERROR (code 100) for PSID ${psid}`, errorDetails);
+      }
+    } else if (error.response?.data?.error?.code === 3) {
+      functions.logger.error(`❌ CAPABILITY ERROR (3) for PSID ${psid} - Application does not have the capability to make this API call.
+          This means: App needs Advanced Access for Business Asset User Profile Access.
+          Standard Access only works for developers/testers. Request Advanced Access in App Review.`, errorDetails);
+    } else if (error.response?.data?.error?.code === 190) {
+      functions.logger.error(`❌ TOKEN ERROR (190) for PSID ${psid} - Token is invalid or expired. Regenerate page token.`, errorDetails);
+    } else if (error.response?.data?.error?.code === 10) {
+      functions.logger.error(`❌ PERMISSION DENIED (10) for PSID ${psid} - App doesn't have required permissions`, errorDetails);
+    } else if (error.response?.data?.error?.code === 2018218) {
+      functions.logger.warn(`⚠️ PROFILE UNAVAILABLE (2018218) for PSID ${psid} - No profile available for this user (phone-number-only account)`, errorDetails);
+    } else {
+      functions.logger.error(`❌ UNKNOWN ERROR fetching profile for PSID ${psid}`, {
+        ...errorDetails,
+        fullError: error.response?.data?.error || error.message
+      });
     }
-  } catch (error) {
-    functions.logger.warn(`First name only fetch failed for PSID ${psid}:`, {
-      psid,
-      status: error.response?.status,
-      errorCode: error.response?.data?.error?.code,
-      errorMessage: error.response?.data?.error?.message,
-      fullError: error.response?.data?.error
-    });
-  }
 
-  // All approaches failed - log comprehensive warning with all error details
-  functions.logger.error(`Failed to fetch Facebook profile for PSID ${psid} with all methods. Check error details above.`, {
-    psid,
-    note: 'All three profile fetch methods failed. Review error logs above for specific Facebook API error details.',
-    troubleshooting: 'Check: 1) Token permissions, 2) PSID format, 3) User privacy settings, 4) App Review status'
-  });
-  
-  return {
-    name: 'Friend',
-    profile_pic: null
-  };
+    return null;
+  }
 }
 
-// Helper: Send Messenger Message
+// Helper: Send Messenger Message with error handling
 async function sendMessengerMessage(psid, text) {
-  await axios.post(
-    `https://graph.facebook.com/v24.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
-    {
-      recipient: { id: psid },
-      message: { text: text }
-    }
-  );
+  const pageToken = functions.config().facebook?.page_token;
+  
+  if (!pageToken) {
+    functions.logger.error('❌ Cannot send message - page token not configured');
+    throw new Error('Facebook page token not configured');
+  }
+
+  try {
+    await axios.post(
+      `https://graph.facebook.com/${FB_API_VERSION}/me/messages?access_token=${pageToken}`,
+      {
+        recipient: { id: psid },
+        message: { text: text }
+      }
+    );
+    functions.logger.info(`✅ Message sent to PSID ${psid}`, { psid, textLength: text.length });
+  } catch (error) {
+    functions.logger.error(`❌ Failed to send message to PSID ${psid}`, {
+      psid,
+      httpStatus: error.response?.status,
+      fbErrorCode: error.response?.data?.error?.code,
+      fbErrorMessage: error.response?.data?.error?.message
+    });
+    throw error;
+  }
 }
 
 // Helper: Send Messenger Message with Quick Replies
 async function sendMessengerMessageWithQuickReplies(psid, text, quickReplies) {
-  await axios.post(
-    `https://graph.facebook.com/v24.0/me/messages?access_token=${functions.config().facebook?.page_token}`,
-    {
-      recipient: { id: psid },
-      message: {
-        text: text,
-        quick_replies: quickReplies
+  const pageToken = functions.config().facebook?.page_token;
+  
+  if (!pageToken) {
+    functions.logger.error('❌ Cannot send message - page token not configured');
+    throw new Error('Facebook page token not configured');
+  }
+
+  try {
+    await axios.post(
+      `https://graph.facebook.com/${FB_API_VERSION}/me/messages?access_token=${pageToken}`,
+      {
+        recipient: { id: psid },
+        message: {
+          text: text,
+          quick_replies: quickReplies
+        }
       }
-    }
-  );
+    );
+    functions.logger.info(`✅ Quick reply message sent to PSID ${psid}`, { psid });
+  } catch (error) {
+    functions.logger.error(`❌ Failed to send quick reply message to PSID ${psid}`, {
+      psid,
+      httpStatus: error.response?.status,
+      fbErrorCode: error.response?.data?.error?.code,
+      fbErrorMessage: error.response?.data?.error?.message
+    });
+    throw error;
+  }
 }
 
 // Facebook Messenger Webhook
 exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
-  // Verification
+  // Verification (GET request from Facebook)
   if (req.method === 'GET') {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
     const verifyToken = functions.config().facebook?.verify_token;
     
+    functions.logger.info('🔐 Webhook verification request received', {
+      mode,
+      tokenReceived: !!token,
+      tokenConfigured: !!verifyToken,
+      challenge: challenge?.substring(0, 10) + '...'
+    });
+
     if (!verifyToken) {
-      functions.logger.error('Facebook verify_token not configured');
+      functions.logger.error('❌ Facebook verify_token not configured in Firebase');
       return res.sendStatus(500);
     }
     
     if (mode === 'subscribe' && token === verifyToken) {
+      functions.logger.info('✅ Webhook verification SUCCESS');
       return res.status(200).send(challenge);
     }
+    
+    functions.logger.warn('❌ Webhook verification FAILED - token mismatch');
     return res.sendStatus(403);
   }
   
-  // Handle incoming messages
+  // Handle incoming webhook events (POST request)
   if (req.method === 'POST') {
     const body = req.body;
 
+    functions.logger.info('📩 Webhook POST received', {
+      object: body.object,
+      entryCount: body.entry?.length
+    });
+
     if (body.object === 'page') {
       for (const entry of body.entry) {
+        // Safety check for messaging array
+        if (!entry.messaging || entry.messaging.length === 0) {
+          functions.logger.warn('⚠️ Entry has no messaging array', { entry });
+          continue;
+        }
+
         const webhookEvent = entry.messaging[0];
         const senderPSID = webhookEvent.sender.id;
+
+        // Determine event type for logging
+        const eventType = webhookEvent.message?.quick_reply ? 'quick_reply' :
+                         webhookEvent.referral ? 'referral' :
+                         webhookEvent.postback?.referral ? 'postback_referral' :
+                         webhookEvent.message ? 'message' : 'unknown';
+
+        functions.logger.info(`📨 Processing ${eventType} event`, {
+          senderPSID,
+          eventType,
+          hasReferral: !!(webhookEvent.referral?.ref || webhookEvent.postback?.referral?.ref)
+        });
 
         // Handle messages with referral (new user clicking m.me link)
         const refParam = webhookEvent.referral?.ref || webhookEvent.postback?.referral?.ref;
@@ -239,32 +349,145 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
         // Handle quick reply responses
         if (webhookEvent.message?.quick_reply) {
           const payload = webhookEvent.message.quick_reply.payload;
+          functions.logger.info(`🔘 Quick reply received: ${payload}`, { senderPSID, payload });
 
           try {
             if (payload === 'CONFIRM_YES') {
-              await sendMessengerMessage(
-                senderPSID,
-                `Awesome! You're all set up to get notifications for the next 20 hours. If you have any questions, feel free to ask. 💜`
-              );
+              // User confirmed - NOW fetch their profile (better permission context)
+              functions.logger.info(`✅ User confirmed! Fetching profile now...`, { senderPSID });
+              
+              // Find the contact that's awaiting confirmation
+              const contactsRef = admin.firestore().collection('messengerContacts');
+              const pendingContactQuery = await contactsRef
+                .where('messengerPSID', '==', senderPSID)
+                .where('awaitingConfirmation', '==', true)
+                .limit(1)
+                .get();
+
+              if (!pendingContactQuery.empty) {
+                const contactDoc = pendingContactQuery.docs[0];
+                const contactData = contactDoc.data();
+                const userId = contactData.userId;
+
+                // NOW fetch profile (should work with approved permissions)
+                const profile = await getFacebookProfile(senderPSID);
+
+                if (profile && profile.name) {
+                  // SUCCESS: Got profile data
+                  const contactName = profile.name;
+                  const contactPhotoURL = profile.profile_pic || null;
+
+                  // Get user's data for personalized message
+                  const userDoc = await admin.firestore().collection('users').doc(userId).get();
+                  const userName = userDoc.exists ? (userDoc.data().displayName || 'Your friend') : 'Your friend';
+
+                  // Update contact with real profile data
+                  await contactDoc.ref.update({
+                    name: contactName,
+                    photoURL: contactPhotoURL,
+                    awaitingConfirmation: false,
+                    pendingProfile: false
+                  });
+
+                  functions.logger.info(`✅ Profile fetched on confirmation!`, {
+                    docId: contactDoc.id,
+                    userId,
+                    senderPSID,
+                    name: contactName,
+                    hasPhoto: !!contactPhotoURL
+                  });
+
+                  // Send personalized confirmation
+                  await sendMessengerMessage(
+                    senderPSID,
+                    `Awesome ${contactName}! You're all set up to get notifications for the next 20 hours. If you have any questions, feel free to ask. 💜`
+                  );
+                } else {
+                  // Profile fetch still failed - use fallback
+                  functions.logger.warn(`⚠️ Profile fetch failed even on confirmation, using fallback name`, {
+                    userId,
+                    senderPSID,
+                    docId: contactDoc.id
+                  });
+                  
+                  // Update with generic name so contact still shows
+                  await contactDoc.ref.update({
+                    name: 'Emergency Contact',
+                    awaitingConfirmation: false,
+                    pendingProfile: false
+                  });
+
+                  await sendMessengerMessage(
+                    senderPSID,
+                    `Awesome! You're all set up to get notifications for the next 20 hours. If you have any questions, feel free to ask. 💜`
+                  );
+                }
+              } else {
+                // No pending contact found - just send confirmation
+                functions.logger.warn(`⚠️ CONFIRM_YES received but no pending contact found`, { senderPSID });
+                await sendMessengerMessage(
+                  senderPSID,
+                  `Awesome! You're all set up to get notifications for the next 20 hours. If you have any questions, feel free to ask. 💜`
+                );
+              }
             } else if (payload === 'CONFIRM_NO') {
+              // Check if this is from a contact awaiting confirmation
+              const contactsRef = admin.firestore().collection('messengerContacts');
+              const awaitingConfirmationQuery = await contactsRef
+                .where('messengerPSID', '==', senderPSID)
+                .where('awaitingConfirmation', '==', true)
+                .limit(1)
+                .get();
+
+              if (!awaitingConfirmationQuery.empty) {
+                const contactDoc = awaitingConfirmationQuery.docs[0];
+                
+                // DON'T delete - just mark as declined
+                await contactDoc.ref.update({
+                  awaitingConfirmation: false,
+                  declined: true
+                });
+                functions.logger.info(`❌ User declined setup`, {
+                  senderPSID,
+                  docId: contactDoc.id
+                });
+              }
+
               await sendMessengerMessage(
                 senderPSID,
                 `No worries! If you change your mind, just send us a message anytime. 👍`
               );
             }
           } catch (error) {
-            functions.logger.error('Error handling quick reply:', error);
+            functions.logger.error('❌ Error handling quick reply', {
+              senderPSID,
+              payload,
+              error: error.message,
+              stack: error.stack
+            });
+            // Try to send a fallback message
+            try {
+              await sendMessengerMessage(
+                senderPSID,
+                `Thanks for your response! We're setting things up. 💜`
+              );
+            } catch (msgError) {
+              functions.logger.error('❌ Failed to send fallback message', { error: msgError.message });
+            }
           }
         }
-        // Handle referral event (user clicked m.me link)
+        // Handle new contact registration via m.me link
+        // NEW FLOW: Don't fetch profile on referral, wait for user to click Yes
         else if (refParam) {
           const userId = refParam;
+          functions.logger.info(`🔗 Referral link clicked - userId: ${userId}`, { senderPSID, userId });
 
           try {
-            // On referral: User hasn't sent a message yet, so we can't get profile data
-            // Facebook API requires a message interaction before profile access
-            // Create a pending contact that will be completed when user sends first message
-            
+            // Get user's data for personalized message
+            const userDoc = await admin.firestore().collection('users').doc(userId).get();
+            const userName = userDoc.exists ? (userDoc.data().displayName || 'Your friend') : 'Your friend';
+
+            // Prepare contact data - NO profile fetch yet, wait for confirmation
             const contactsRef = admin.firestore().collection('messengerContacts');
             const existingQuery = await contactsRef
               .where('userId', '==', userId)
@@ -273,49 +496,91 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 
             const now = admin.firestore.Timestamp.now();
             const expiresAt = admin.firestore.Timestamp.fromMillis(
-              Date.now() + (20 * 60 * 60 * 1000)
+              Date.now() + (20 * 60 * 60 * 1000) // 20 hours
             );
 
-            // Create pending contact (name will be null until user sends message)
-            const pendingContactData = {
+            // Create contact with awaitingConfirmation flag (no name yet)
+            const contactData = {
               userId: userId,
               messengerPSID: senderPSID,
-              name: null, // Will be set when user sends first message
-              photoURL: null,
-              pendingProfile: true, // Flag to indicate we need to fetch profile
+              name: null, // Will be set when they confirm
+              photoURL: null, // Will be set when they confirm
+              awaitingConfirmation: true, // Flag to indicate waiting for Yes click
               connectedAt: now,
               expiresAt: expiresAt
             };
 
+            // Create or update contact
             if (existingQuery.empty) {
-              await contactsRef.add(pendingContactData);
-              functions.logger.info(`Created pending messenger contact for user ${userId}`, {
-                psid: senderPSID,
-                note: 'Profile will be fetched when user sends first message'
+              const docRef = await contactsRef.add(contactData);
+              functions.logger.info(`✅ Created new messenger contact (awaiting confirmation)`, {
+                docId: docRef.id,
+                userId,
+                senderPSID
               });
             } else {
-              // Update existing contact, mark as pending if name is missing
-              const existingContact = existingQuery.docs[0].data();
               await contactsRef.doc(existingQuery.docs[0].id).update({
-                pendingProfile: !existingContact.name, // Only pending if no name yet
+                awaitingConfirmation: true, // Reset to awaiting if they reconnect
                 connectedAt: now,
                 expiresAt: expiresAt
               });
+              functions.logger.info(`✅ Updated existing messenger contact (awaiting confirmation)`, {
+                docId: existingQuery.docs[0].id,
+                userId,
+                senderPSID
+              });
             }
 
-            // Send welcome message asking user to reply
+            // Send generic greeting with Yes/No buttons (no profile fetch yet)
             await sendMessengerMessage(
               senderPSID,
-              `Hi! Thanks for connecting. Please send any message to complete the setup and we'll be able to send you safety alerts. 💜`
+              `Hi there! ${userName} said you'd be in touch.`
+            );
+
+            // Wait a moment for natural conversation flow
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Send confirmation message with Yes/No options
+            await sendMessengerMessageWithQuickReplies(
+              senderPSID,
+              `We'll keep an eye out for them while they're out. If something doesn't look right, we'll get in touch with you straight away. Sound good?`,
+              [
+                {
+                  content_type: 'text',
+                  title: '👍 Yes',
+                  payload: 'CONFIRM_YES'
+                },
+                {
+                  content_type: 'text',
+                  title: '👎 No',
+                  payload: 'CONFIRM_NO'
+                }
+              ]
             );
           } catch (error) {
-            functions.logger.error('Error processing referral event:', error);
+            functions.logger.error('❌ Error processing referral event', {
+              userId,
+              senderPSID,
+              error: error.message,
+              stack: error.stack
+            });
+            // Try to send a generic error message
+            try {
+              await sendMessengerMessage(
+                senderPSID,
+                `Hi! Thanks for reaching out. We're setting things up for you. 💜`
+              );
+            } catch (msgError) {
+              functions.logger.error('❌ Failed to send fallback message', { error: msgError.message });
+            }
           }
         }
-        // Handle regular message events (user sent a message)
+        // Handle regular message events (user sent a message - for fallback flow)
         else if (webhookEvent.message && !webhookEvent.message.quick_reply) {
+          functions.logger.info(`💬 Regular message received from PSID ${senderPSID}`);
+          
           try {
-            // Check if this is a first message from a user with pending profile
+            // Check if this is from a user with pending profile (fallback flow)
             const contactsRef = admin.firestore().collection('messengerContacts');
             const pendingContactQuery = await contactsRef
               .where('messengerPSID', '==', senderPSID)
@@ -324,17 +589,22 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
               .get();
 
             if (!pendingContactQuery.empty) {
-              // This is a first message from a user who clicked m.me link
-              // Now we can get profile data because user has sent a message
+              // This is a message from a user who needs profile completion
               const contactDoc = pendingContactQuery.docs[0];
               const contactData = contactDoc.data();
               const userId = contactData.userId;
 
-              // Get sender's FB profile (will work now because user has messaged)
+              functions.logger.info(`🔄 Attempting profile fetch for pending contact`, {
+                userId,
+                senderPSID,
+                docId: contactDoc.id
+              });
+
+              // Try to get profile now that user has sent a message
               const profile = await getFacebookProfile(senderPSID);
               
-              if (profile && profile.name && profile.name !== 'Friend') {
-                // We got real profile data - update contact
+              if (profile && profile.name) {
+                // SUCCESS: We got profile data
                 const contactName = profile.name;
                 const contactPhotoURL = profile.profile_pic || null;
 
@@ -349,8 +619,10 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
                   pendingProfile: false
                 });
 
-                functions.logger.info(`Updated pending contact with profile for user ${userId}`, {
-                  psid: senderPSID,
+                functions.logger.info(`✅ Updated pending contact with profile`, {
+                  docId: contactDoc.id,
+                  userId,
+                  senderPSID,
                   name: contactName
                 });
 
@@ -381,28 +653,40 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
                   ]
                 );
               } else {
-                // Profile fetch still failed - log but don't update contact
-                functions.logger.warn(`Profile fetch failed for pending contact PSID ${senderPSID}, contact remains pending`, {
+                // Profile fetch still failed
+                functions.logger.warn(`⚠️ Profile fetch failed again for pending contact`, {
                   userId,
-                  psid: senderPSID
+                  senderPSID,
+                  docId: contactDoc.id
                 });
-                // Send generic message
                 await sendMessengerMessage(
                   senderPSID,
-                  `Thanks for your message! We're having trouble accessing your profile. Please make sure you've granted the necessary permissions.`
+                  `Hi! Thanks for connecting. If you have a link sent to you by someone, go and click it to try again!`
                 );
+                // Mark as not pending anymore to avoid repeated attempts
+                await contactDoc.ref.update({ pendingProfile: false });
               }
             }
             // If no pending contact found, this is just a regular message - no action needed
           } catch (error) {
-            functions.logger.error('Error processing message event:', error);
+            functions.logger.error('❌ Error processing message event', {
+              senderPSID,
+              error: error.message,
+              stack: error.stack
+            });
           }
         }
       }
       return res.status(200).send('EVENT_RECEIVED');
     }
+    
+    functions.logger.warn('⚠️ Received non-page webhook object', { object: body.object });
     return res.sendStatus(404);
   }
+
+  // Handle other HTTP methods
+  functions.logger.warn('⚠️ Received unexpected HTTP method', { method: req.method });
+  return res.sendStatus(405);
 });
 
 // sendMessengerAlert moved to utils/checkInNotifications.js to fix circular dependency

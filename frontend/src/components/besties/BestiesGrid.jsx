@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BestieCard from '../BestieCard';
 import toast from 'react-hot-toast';
@@ -274,4 +274,5 @@ const BestiesGrid = ({ besties, activityFeed, featuredCircle = [] }) => {
   );
 };
 
-export default BestiesGrid;
+// Memoize to prevent re-renders when props haven't changed
+export default memo(BestiesGrid);

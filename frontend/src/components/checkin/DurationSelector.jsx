@@ -1,4 +1,5 @@
 import React from 'react';
+import haptic from '../../utils/hapticFeedback';
 
 const DurationSelector = ({ duration, setDuration }) => {
   return (
@@ -12,12 +13,17 @@ const DurationSelector = ({ duration, setDuration }) => {
           <button
             key={mins}
             type="button"
-            onClick={() => setDuration(mins)}
-            className={`py-3 rounded-xl font-semibold transition-all ${
+            onClick={() => {
+              haptic.light();
+              setDuration(mins);
+            }}
+            className={`py-3 rounded-xl font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
               duration === mins
-                ? 'bg-gradient-primary text-white shadow-lg'
-                : 'bg-gray-100 dark:bg-gray-700 text-text-primary hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-gradient-primary text-white shadow-lg scale-105'
+                : 'bg-gray-100 dark:bg-gray-700 text-text-primary hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105 active:scale-95'
             }`}
+            aria-label={`Set duration to ${mins < 60 ? `${mins} minutes` : `${mins / 60} hour${mins / 60 > 1 ? 's' : ''}`}`}
+            aria-pressed={duration === mins}
           >
             {mins < 60 ? `${mins}m` : `${mins / 60}h`}
           </button>

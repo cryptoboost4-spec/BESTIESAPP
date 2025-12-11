@@ -28,7 +28,16 @@ const QuickCheckInButtons = () => {
               haptic.light();
               setShowRideshareModal(true);
             }}
-            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-amber-400 to-orange-500 text-white"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                haptic.light();
+                setShowRideshareModal(true);
+              }
+            }}
+            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white"
+            aria-label="Create rideshare check-in"
+            tabIndex={0}
           >
             <div className="text-3xl mb-2">🚗</div>
             <div className="font-display text-sm">Rideshare</div>
@@ -40,7 +49,16 @@ const QuickCheckInButtons = () => {
               haptic.light();
               setShowWalkingModal(true);
             }}
-            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-blue-400 to-cyan-500 text-white"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                haptic.light();
+                setShowWalkingModal(true);
+              }
+            }}
+            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white"
+            aria-label="Create walking check-in"
+            tabIndex={0}
           >
             <div className="text-3xl mb-2">🚶‍♀️</div>
             <div className="font-display text-sm">Walking</div>
@@ -52,7 +70,16 @@ const QuickCheckInButtons = () => {
               haptic.light();
               setShowQuickMeetModal(true);
             }}
-            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-purple-400 to-indigo-500 text-white"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                haptic.light();
+                setShowQuickMeetModal(true);
+              }
+            }}
+            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white"
+            aria-label="Create quick meet check-in"
+            tabIndex={0}
           >
             <div className="text-3xl mb-2">👤</div>
             <div className="font-display text-sm">Quick Meet</div>
@@ -65,7 +92,16 @@ const QuickCheckInButtons = () => {
             haptic.light();
             navigate('/create');
           }}
-          className="w-full card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 bg-gradient-to-br from-rose-400 to-pink-500 text-white"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              haptic.light();
+              navigate('/create');
+            }
+          }}
+          className="w-full card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-rose-400 to-pink-500 text-white"
+          aria-label="Create custom check-in"
+          tabIndex={0}
         >
           <div className="text-3xl mb-2">✨</div>
           <div className="font-display text-lg">Create Custom Check-In</div>

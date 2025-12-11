@@ -20,14 +20,17 @@ const MessengerContactsList = ({ userId }) => {
         ...doc.data()
       }));
 
-      // Filter out expired contacts and pending contacts (those without names)
+      // Filter out expired contacts and declined contacts
+      // Show confirmed contacts AND pending contacts (awaiting confirmation)
       // Sort by connection time
       const now = Date.now();
       const activeContacts = contactsData
         .filter(contact => {
           const isActive = contact.expiresAt?.toMillis() > now;
-          const hasName = contact.name && contact.name.trim() !== '';
-          return isActive && hasName; // Only show contacts that are active AND have a real name
+          const notDeclined = !contact.declined; // Exclude declined contacts
+          const isConfirmed = contact.name && contact.name.trim() !== '';
+          const isPending = contact.awaitingConfirmation === true;
+          return isActive && notDeclined && (isConfirmed || isPending); // Show confirmed OR pending, but not declined
         })
         .sort((a, b) => b.connectedAt?.toMillis() - a.connectedAt?.toMillis());
 
@@ -112,46 +115,63 @@ const MessengerContactsList = ({ userId }) => {
         </div>
       </div>
 
-      {contacts.map((contact) => (
-        <div
-          key={`${contact.id}-${refreshKey}`}
-          className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-        >
-          {/* Profile Photo */}
-          <div className="flex-shrink-0">
-            {contact.photoURL ? (
-              <img
-                src={contact.photoURL}
-                alt={contact.name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
-                {contact.name?.charAt(0) || '?'}
+      {contacts.map((contact) => {
+        const isPending = contact.awaitingConfirmation === true;
+        const displayName = isPending ? 'Awaiting Confirmation' : contact.name;
+        
+        return (
+          <div
+            key={`${contact.id}-${refreshKey}`}
+            className={`flex items-center gap-3 p-3 rounded-lg ${
+              isPending 
+                ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700' 
+                : 'bg-gray-50 dark:bg-gray-800'
+            }`}
+          >
+            {/* Profile Photo */}
+            <div className="flex-shrink-0">
+              {contact.photoURL ? (
+                <img
+                  src={contact.photoURL}
+                  alt={displayName}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${
+                  isPending ? 'bg-blue-500' : 'bg-primary'
+                }`}>
+                  {displayName?.charAt(0) || '?'}
+                </div>
+              )}
+            </div>
+
+            {/* Contact Info */}
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-text-primary truncate">
+                {displayName}
               </div>
-            )}
-          </div>
+              <div className="text-xs text-text-secondary">
+                {isPending ? (
+                  <span className="text-blue-600 dark:text-blue-400">Waiting for them to click 'Yes' on Messenger</span>
+                ) : (
+                  getTimeRemaining(contact.expiresAt)
+                )}
+              </div>
+            </div>
 
-          {/* Contact Info */}
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-text-primary truncate">
-              {contact.name}
-            </div>
-            <div className="text-xs text-text-secondary">
-              {getTimeRemaining(contact.expiresAt)}
-            </div>
-          </div>
-
-          {/* Messenger Icon */}
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.477 2 2 6.145 2 11.235c0 2.894 1.447 5.48 3.71 7.155V22l3.477-1.906c.929.257 1.915.394 2.813.394 5.523 0 10-4.145 10-9.235C22 6.145 17.523 2 12 2zm.972 12.413l-2.562-2.732-5.002 2.732 5.502-5.838 2.623 2.732 4.941-2.732-5.502 5.838z"/>
-              </svg>
+            {/* Messenger Icon */}
+            <div className="flex-shrink-0">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isPending ? 'bg-blue-500' : 'bg-blue-500'
+              }`}>
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.477 2 2 6.145 2 11.235c0 2.894 1.447 5.48 3.71 7.155V22l3.477-1.906c.929.257 1.915.394 2.813.394 5.523 0 10-4.145 10-9.235C22 6.145 17.523 2 12 2zm.972 12.413l-2.562-2.732-5.002 2.732 5.502-5.838 2.623 2.732 4.941-2.732-5.502 5.838z"/>
+                </svg>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <div className="text-xs text-text-secondary mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         💡 <strong>Tip:</strong> Contacts can reconnect anytime by sending you another message using your Messenger link.

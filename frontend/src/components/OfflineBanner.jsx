@@ -9,15 +9,22 @@ const OfflineBanner = () => {
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
+    let onlineTimer = null;
+
     const handleOnline = () => {
       setIsOnline(true);
       // Keep banner visible for 2 seconds to show "You're back!" message
-      setTimeout(() => setShowBanner(false), 2000);
+      onlineTimer = setTimeout(() => setShowBanner(false), 2000);
     };
 
     const handleOffline = () => {
       setIsOnline(false);
       setShowBanner(true);
+      // Clear any pending online timer
+      if (onlineTimer) {
+        clearTimeout(onlineTimer);
+        onlineTimer = null;
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -31,6 +38,10 @@ const OfflineBanner = () => {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      // Cleanup timer on unmount
+      if (onlineTimer) {
+        clearTimeout(onlineTimer);
+      }
     };
   }, []);
 

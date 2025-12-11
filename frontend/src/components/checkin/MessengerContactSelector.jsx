@@ -32,10 +32,16 @@ const MessengerContactSelector = ({
     return `${minutes}m left`;
   };
 
-  // Filter out expired contacts
+  // Filter out expired contacts, contacts awaiting confirmation, and declined contacts
   const now = Date.now();
   const activeContacts = messengerContacts.filter(
-    contact => contact.expiresAt?.toMillis() > now
+    contact => {
+      const isActive = contact.expiresAt?.toMillis() > now;
+      const isConfirmed = !contact.awaitingConfirmation; // Exclude contacts awaiting confirmation
+      const notDeclined = !contact.declined; // Exclude declined contacts
+      const hasName = contact.name && contact.name.trim() !== ''; // Must have a name
+      return isActive && isConfirmed && notDeclined && hasName;
+    }
   );
 
   const copyMessengerLink = () => {
