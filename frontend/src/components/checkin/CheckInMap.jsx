@@ -60,6 +60,7 @@ const CheckInMap = ({
   const geocodeTimeoutRef = useRef(null);
   const pinAnimationRef = useRef(null);
   const isDraggingRef = useRef(false);
+  const blurTimeoutRef = useRef(null);
   
   // State
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -90,11 +91,38 @@ const CheckInMap = ({
     }
   }, [userData, gpsCoords, setGpsCoords, setLocationInput]);
   
+  // Handle clicks on Google Places autocomplete suggestions
+  useEffect(() => {
+    const handleDocumentClick = (e) => {
+      // Check if click is on a Google Places autocomplete suggestion
+      const target = e.target;
+      const isPacItem = target?.closest?.('.pac-container') || 
+                       target?.classList?.contains?.('pac-item') ||
+                       target?.closest?.('.pac-item');
+      
+      if (isPacItem && blurTimeoutRef.current) {
+        // Cancel the blur timeout if clicking on a suggestion
+        clearTimeout(blurTimeoutRef.current);
+        blurTimeoutRef.current = null;
+      }
+    };
+
+    // Use capture phase to catch the click before blur fires
+    document.addEventListener('mousedown', handleDocumentClick, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick, true);
+    };
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (geocodeTimeoutRef.current) {
         clearTimeout(geocodeTimeoutRef.current);
+      }
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
       }
       if (geocoderRef.current) {
         // Geocoder doesn't need explicit cleanup
@@ -572,8 +600,41 @@ const CheckInMap = ({
                 }
                 setGeocodingError(false);
               }}
-              onFocus={() => setShowLocationDropdown(true)}
-              onBlur={() => setTimeout(() => setShowLocationDropdown(false), DROPDOWN_CLOSE_DELAY_MS)}
+              onFocus={() => {
+                // Clear any pending blur timeout
+                if (blurTimeoutRef.current) {
+                  clearTimeout(blurTimeoutRef.current);
+                  blurTimeoutRef.current = null;
+                }
+                setShowLocationDropdown(true);
+              }}
+              onBlur={(e) => {
+                // Check if focus is moving to Google's autocomplete dropdown
+                // Google Places renders suggestions in .pac-container
+                const relatedTarget = e.relatedTarget || document.activeElement;
+                const isClickingSuggestion = relatedTarget?.closest?.('.pac-container') || 
+                                             relatedTarget?.classList?.contains?.('pac-item');
+                
+                // Only close dropdown if not clicking on a Google autocomplete suggestion
+                // The mousedown handler will cancel the timeout if clicking on a suggestion
+                if (!isClickingSuggestion) {
+                  // Clear any existing timeout
+                  if (blurTimeoutRef.current) {
+                    clearTimeout(blurTimeoutRef.current);
+                  }
+                  // Set new timeout to close dropdown
+                  blurTimeoutRef.current = setTimeout(() => {
+                    setShowLocationDropdown(false);
+                    blurTimeoutRef.current = null;
+                  }, DROPDOWN_CLOSE_DELAY_MS);
+                } else {
+                  // Clear timeout if clicking on suggestion
+                  if (blurTimeoutRef.current) {
+                    clearTimeout(blurTimeoutRef.current);
+                    blurTimeoutRef.current = null;
+                  }
+                }
+              }}
               className={`input w-full shadow-soft-dreamy border-2 transition-all ${
                 isGeocoding 
                   ? 'border-primary/50 bg-pink-50/50 dark:bg-pink-900/10' 

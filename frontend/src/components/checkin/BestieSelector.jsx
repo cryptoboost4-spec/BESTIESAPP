@@ -22,9 +22,14 @@ const BestieSelector = ({
 
   // Filter active messenger contacts
   // Handle null case (not loaded yet) - treat as empty array
+  // Also filter out pending contacts (those without names - waiting for profile fetch)
   const now = Date.now();
   const activeMessengerContacts = (messengerContacts || []).filter(
-    contact => contact.expiresAt?.toMillis() > now
+    contact => {
+      const isActive = contact.expiresAt?.toMillis() > now;
+      const hasName = contact.name && contact.name.trim() !== '';
+      return isActive && hasName; // Only show contacts that are active AND have a real name
+    }
   );
 
   // Auto-select new messenger contacts

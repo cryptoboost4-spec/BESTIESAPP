@@ -297,11 +297,47 @@ const CreateCheckInPage = () => {
         ...doc.data()
       }));
 
-      // Filter out expired contacts
+      // Debug logging: Log all contacts loaded from Firestore
+      console.log('📥 Messenger contacts loaded from Firestore:', {
+        totalCount: contactsData.length,
+        contacts: contactsData.map(c => ({
+          id: c.id,
+          name: c.name,
+          psid: c.messengerPSID,
+          expiresAt: c.expiresAt?.toMillis(),
+          expiresAtDate: c.expiresAt?.toDate?.()?.toISOString(),
+          connectedAt: c.connectedAt?.toMillis(),
+          photoURL: c.photoURL ? 'has photo' : 'no photo'
+        }))
+      });
+
+      // Filter out expired contacts and pending contacts (those without names)
       const now = Date.now();
       const activeContacts = contactsData.filter(
-        contact => contact.expiresAt?.toMillis() > now
+        contact => {
+          const isActive = contact.expiresAt?.toMillis() > now;
+          const hasName = contact.name && contact.name.trim() !== '';
+          return isActive && hasName; // Only show contacts that are active AND have a real name
+        }
       );
+
+      // Debug logging: Log filtered active contacts
+      const pendingCount = contactsData.filter(c => {
+        const isActive = c.expiresAt?.toMillis() > now;
+        const hasName = c.name && c.name.trim() !== '';
+        return isActive && !hasName; // Active but no name = pending
+      }).length;
+      
+      console.log('✅ Active messenger contacts (after filtering):', {
+        activeCount: activeContacts.length,
+        expiredCount: contactsData.length - activeContacts.length - pendingCount,
+        pendingCount: pendingCount,
+        activeContacts: activeContacts.map(c => ({
+          id: c.id,
+          name: c.name,
+          timeRemaining: `${Math.floor((c.expiresAt?.toMillis() - now) / (1000 * 60 * 60))}h ${Math.floor(((c.expiresAt?.toMillis() - now) % (1000 * 60 * 60)) / (1000 * 60))}m`
+        }))
+      });
 
       setMessengerContacts(activeContacts);
       setMessengerLoading(false);
@@ -313,7 +349,7 @@ const CreateCheckInPage = () => {
         console.log('Quick check-in: Auto-selected messenger contacts:', allContactIds.length);
       }
     }, (error) => {
-      console.error('Error loading messenger contacts:', error);
+      console.error('❌ Error loading messenger contacts:', error);
       setMessengerContacts([]); // Set to empty array on error
       setMessengerLoading(false);
     });

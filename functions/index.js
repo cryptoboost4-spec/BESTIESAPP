@@ -109,7 +109,18 @@ async function getFacebookProfile(psid) {
       return response.data;
     }
   } catch (error) {
-    functions.logger.debug(`Standard profile fetch failed for PSID ${psid}, trying alternatives`);
+    // Log detailed error information for diagnosis
+    functions.logger.warn(`Standard profile fetch failed for PSID ${psid}:`, {
+      psid,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      errorCode: error.response?.data?.error?.code,
+      errorType: error.response?.data?.error?.type,
+      errorMessage: error.response?.data?.error?.message,
+      errorSubcode: error.response?.data?.error?.error_subcode,
+      fullError: error.response?.data?.error,
+      url: `https://graph.facebook.com/v24.0/${psid}?fields=name,profile_pic&access_token=***`
+    });
   }
 
   // Approach 2: Try with first_name and last_name separately
@@ -125,7 +136,13 @@ async function getFacebookProfile(psid) {
       };
     }
   } catch (error) {
-    functions.logger.debug(`Alternative profile fetch failed for PSID ${psid}`);
+    functions.logger.warn(`Alternative profile fetch (first_name/last_name) failed for PSID ${psid}:`, {
+      psid,
+      status: error.response?.status,
+      errorCode: error.response?.data?.error?.code,
+      errorMessage: error.response?.data?.error?.message,
+      fullError: error.response?.data?.error
+    });
   }
 
   // Approach 3: Try with just first_name (sometimes more permissive)
@@ -140,13 +157,20 @@ async function getFacebookProfile(psid) {
       };
     }
   } catch (error) {
-    functions.logger.debug(`First name only fetch failed for PSID ${psid}`);
+    functions.logger.warn(`First name only fetch failed for PSID ${psid}:`, {
+      psid,
+      status: error.response?.status,
+      errorCode: error.response?.data?.error?.code,
+      errorMessage: error.response?.data?.error?.message,
+      fullError: error.response?.data?.error
+    });
   }
 
-  // All approaches failed - log warning and return fallback
-  functions.logger.warn(`Failed to fetch Facebook profile for PSID ${psid} with all methods. This may indicate missing permissions for live accounts.`, {
+  // All approaches failed - log comprehensive warning with all error details
+  functions.logger.error(`Failed to fetch Facebook profile for PSID ${psid} with all methods. Check error details above.`, {
     psid,
-    note: 'App may need to be in Live Mode or go through App Review for pages_messaging permission'
+    note: 'All three profile fetch methods failed. Review error logs above for specific Facebook API error details.',
+    troubleshooting: 'Check: 1) Token permissions, 2) PSID format, 3) User privacy settings, 4) App Review status'
   });
   
   return {
@@ -232,23 +256,15 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
             functions.logger.error('Error handling quick reply:', error);
           }
         }
-        // Handle new contact registration via m.me link
+        // Handle referral event (user clicked m.me link)
         else if (refParam) {
           const userId = refParam;
 
           try {
-            // Get sender's FB profile (with fallback handling for live accounts)
-            const profile = await getFacebookProfile(senderPSID);
+            // On referral: User hasn't sent a message yet, so we can't get profile data
+            // Facebook API requires a message interaction before profile access
+            // Create a pending contact that will be completed when user sends first message
             
-            // Use profile data or fallback values
-            const contactName = profile.name || 'Friend';
-            const contactPhotoURL = profile.profile_pic || null;
-
-            // Get user's data
-            const userDoc = await admin.firestore().collection('users').doc(userId).get();
-            const userName = userDoc.exists ? (userDoc.data().displayName || 'Your friend') : 'Your friend';
-
-            // Create/update messenger contact
             const contactsRef = admin.firestore().collection('messengerContacts');
             const existingQuery = await contactsRef
               .where('userId', '==', userId)
@@ -260,64 +276,126 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
               Date.now() + (20 * 60 * 60 * 1000)
             );
 
-            const contactData = {
+            // Create pending contact (name will be null until user sends message)
+            const pendingContactData = {
               userId: userId,
               messengerPSID: senderPSID,
-              name: contactName,
-              photoURL: contactPhotoURL,
+              name: null, // Will be set when user sends first message
+              photoURL: null,
+              pendingProfile: true, // Flag to indicate we need to fetch profile
               connectedAt: now,
               expiresAt: expiresAt
             };
 
             if (existingQuery.empty) {
-              await contactsRef.add(contactData);
-              functions.logger.info(`Created new messenger contact for user ${userId}`, {
+              await contactsRef.add(pendingContactData);
+              functions.logger.info(`Created pending messenger contact for user ${userId}`, {
                 psid: senderPSID,
-                name: contactName
+                note: 'Profile will be fetched when user sends first message'
               });
             } else {
-              // Update existing contact with all fields (including name and photo in case we got better data)
+              // Update existing contact, mark as pending if name is missing
+              const existingContact = existingQuery.docs[0].data();
               await contactsRef.doc(existingQuery.docs[0].id).update({
-                name: contactName,
-                photoURL: contactPhotoURL,
+                pendingProfile: !existingContact.name, // Only pending if no name yet
                 connectedAt: now,
                 expiresAt: expiresAt
               });
-              functions.logger.info(`Updated existing messenger contact for user ${userId}`, {
-                psid: senderPSID,
-                name: contactName,
-                contactId: existingQuery.docs[0].id
-              });
             }
 
-            // Send first message: greeting
+            // Send welcome message asking user to reply
             await sendMessengerMessage(
               senderPSID,
-              `Hi ${contactName}! ${userName} said you'd reach out.`
-            );
-
-            // Wait a moment for natural conversation flow
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Send second message: confirmation with Yes/No options
-            await sendMessengerMessageWithQuickReplies(
-              senderPSID,
-              `We'll keep an eye out for them while they're out. If something doesn't look right, we'll get in touch with you straight away. Sound good?`,
-              [
-                {
-                  content_type: 'text',
-                  title: '👍 Yes',
-                  payload: 'CONFIRM_YES'
-                },
-                {
-                  content_type: 'text',
-                  title: '👎 No',
-                  payload: 'CONFIRM_NO'
-                }
-              ]
+              `Hi! Thanks for connecting. Please send any message to complete the setup and we'll be able to send you safety alerts. 💜`
             );
           } catch (error) {
-            functions.logger.error('Error processing messenger message:', error);
+            functions.logger.error('Error processing referral event:', error);
+          }
+        }
+        // Handle regular message events (user sent a message)
+        else if (webhookEvent.message && !webhookEvent.message.quick_reply) {
+          try {
+            // Check if this is a first message from a user with pending profile
+            const contactsRef = admin.firestore().collection('messengerContacts');
+            const pendingContactQuery = await contactsRef
+              .where('messengerPSID', '==', senderPSID)
+              .where('pendingProfile', '==', true)
+              .limit(1)
+              .get();
+
+            if (!pendingContactQuery.empty) {
+              // This is a first message from a user who clicked m.me link
+              // Now we can get profile data because user has sent a message
+              const contactDoc = pendingContactQuery.docs[0];
+              const contactData = contactDoc.data();
+              const userId = contactData.userId;
+
+              // Get sender's FB profile (will work now because user has messaged)
+              const profile = await getFacebookProfile(senderPSID);
+              
+              if (profile && profile.name && profile.name !== 'Friend') {
+                // We got real profile data - update contact
+                const contactName = profile.name;
+                const contactPhotoURL = profile.profile_pic || null;
+
+                // Get user's data for personalized message
+                const userDoc = await admin.firestore().collection('users').doc(userId).get();
+                const userName = userDoc.exists ? (userDoc.data().displayName || 'Your friend') : 'Your friend';
+
+                // Update contact with real profile data
+                await contactDoc.ref.update({
+                  name: contactName,
+                  photoURL: contactPhotoURL,
+                  pendingProfile: false
+                });
+
+                functions.logger.info(`Updated pending contact with profile for user ${userId}`, {
+                  psid: senderPSID,
+                  name: contactName
+                });
+
+                // Send personalized greeting
+                await sendMessengerMessage(
+                  senderPSID,
+                  `Hi ${contactName}! ${userName} said you'd reach out.`
+                );
+
+                // Wait a moment for natural conversation flow
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Send confirmation message with Yes/No options
+                await sendMessengerMessageWithQuickReplies(
+                  senderPSID,
+                  `We'll keep an eye out for them while they're out. If something doesn't look right, we'll get in touch with you straight away. Sound good?`,
+                  [
+                    {
+                      content_type: 'text',
+                      title: '👍 Yes',
+                      payload: 'CONFIRM_YES'
+                    },
+                    {
+                      content_type: 'text',
+                      title: '👎 No',
+                      payload: 'CONFIRM_NO'
+                    }
+                  ]
+                );
+              } else {
+                // Profile fetch still failed - log but don't update contact
+                functions.logger.warn(`Profile fetch failed for pending contact PSID ${senderPSID}, contact remains pending`, {
+                  userId,
+                  psid: senderPSID
+                });
+                // Send generic message
+                await sendMessengerMessage(
+                  senderPSID,
+                  `Thanks for your message! We're having trouble accessing your profile. Please make sure you've granted the necessary permissions.`
+                );
+              }
+            }
+            // If no pending contact found, this is just a regular message - no action needed
+          } catch (error) {
+            functions.logger.error('Error processing message event:', error);
           }
         }
       }

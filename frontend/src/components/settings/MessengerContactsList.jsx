@@ -20,10 +20,15 @@ const MessengerContactsList = ({ userId }) => {
         ...doc.data()
       }));
 
-      // Filter out expired contacts and sort by connection time
+      // Filter out expired contacts and pending contacts (those without names)
+      // Sort by connection time
       const now = Date.now();
       const activeContacts = contactsData
-        .filter(contact => contact.expiresAt?.toMillis() > now)
+        .filter(contact => {
+          const isActive = contact.expiresAt?.toMillis() > now;
+          const hasName = contact.name && contact.name.trim() !== '';
+          return isActive && hasName; // Only show contacts that are active AND have a real name
+        })
         .sort((a, b) => b.connectedAt?.toMillis() - a.connectedAt?.toMillis());
 
       setContacts(activeContacts);
