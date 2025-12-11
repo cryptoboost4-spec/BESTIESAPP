@@ -4,17 +4,24 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import AddBestieModal from './AddBestieModal';
 import MessengerContactSelector from './checkin/MessengerContactSelector';
-import { MESSENGER_CONFIG } from '../config/messenger';
 import haptic from '../utils/hapticFeedback';
 import toast from 'react-hot-toast';
 
 const AddBestieCard = ({ onBestieAdded }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showInAppModal, setShowInAppModal] = useState(false);
   const [showMessengerModal, setShowMessengerModal] = useState(false);
   const [messengerContacts, setMessengerContacts] = useState([]);
   const [selectedMessengerContacts, setSelectedMessengerContacts] = useState([]);
+
+  // Auto-collapse and hide when user gets a bestie (userData updates via real-time listener)
+  useEffect(() => {
+    if (userData?.stats?.totalBesties > 0) {
+      setIsExpanded(false);
+      // Card will be hidden by parent component based on hasAnyBestie
+    }
+  }, [userData?.stats?.totalBesties]);
 
   // Load Messenger contacts
   useEffect(() => {

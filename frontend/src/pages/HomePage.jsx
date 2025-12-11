@@ -335,10 +335,20 @@ const HomePage = () => {
     const currentIndex = steps.indexOf(currentTutorialStep);
     
     if (currentIndex < steps.length - 1) {
-      setTutorialStep(steps[currentIndex + 1]);
+      // Move to next step with smooth transition
+      haptic.success();
+      // Small delay for smoother transition
+      setTimeout(() => {
+        setTutorialStep(steps[currentIndex + 1]);
+      }, 300);
     } else {
+      // Tutorial complete - celebrate!
+      haptic.success();
       markTutorialComplete();
-      toast.success("You're all set! Your besties are ready to keep you safe. 💜");
+      toast.success("You're all set! Your besties are ready to keep you safe. 💜", {
+        duration: 4000,
+        icon: '🎉'
+      });
     }
   };
 
@@ -372,56 +382,90 @@ const HomePage = () => {
 
   // Get highlighted element ref based on current step
   const getHighlightedElementRef = () => {
-    if (!quickCheckInButtonsRef.current) return null;
+    if (!quickCheckInButtonsRef.current) {
+      return null;
+    }
     
-    switch (currentTutorialStep) {
-      case 'rideshare':
-        return { current: quickCheckInButtonsRef.current.rideshareButton };
-      case 'walking':
-        return { current: quickCheckInButtonsRef.current.walkingButton };
-      case 'quickmeet':
-        return { current: quickCheckInButtonsRef.current.quickMeetButton };
-      case 'custom':
-        return { current: quickCheckInButtonsRef.current.customButton };
-      default:
-        return null;
+    try {
+      switch (currentTutorialStep) {
+        case 'rideshare':
+          return quickCheckInButtonsRef.current.rideshareButton ? { current: quickCheckInButtonsRef.current.rideshareButton } : null;
+        case 'walking':
+          return quickCheckInButtonsRef.current.walkingButton ? { current: quickCheckInButtonsRef.current.walkingButton } : null;
+        case 'quickmeet':
+          return quickCheckInButtonsRef.current.quickMeetButton ? { current: quickCheckInButtonsRef.current.quickMeetButton } : null;
+        case 'custom':
+          return quickCheckInButtonsRef.current.customButton ? { current: quickCheckInButtonsRef.current.customButton } : null;
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error('Error getting highlighted element ref:', error);
+      return null;
     }
   };
 
   // Get tooltip config based on current step
   const getTooltipConfig = () => {
+    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const stepIndex = steps.indexOf(currentTutorialStep);
+    const stepNumber = stepIndex + 1;
+    const totalSteps = steps.length;
+
     switch (currentTutorialStep) {
       case 'rideshare':
         return {
           title: 'Rideshare Check-Ins',
           body: "Use these when getting a ride from Uber, Lyft, or a friend. Share the license plate and arrival time - your bestie will be notified if you don't check in safe.",
           buttonText: 'Next',
-          onNext: () => handleTutorialAction('rideshare')
+          onNext: () => handleTutorialAction('rideshare'),
+          stepNumber,
+          totalSteps
         };
       case 'walking':
         return {
           title: 'Walking Check-Ins',
           body: "Perfect for walks, runs, or anytime you're out on foot. Set how long you'll be gone.",
           buttonText: 'Next',
-          onNext: () => handleTutorialAction('walking')
+          onNext: () => handleTutorialAction('walking'),
+          stepNumber,
+          totalSteps
         };
       case 'quickmeet':
         return {
           title: 'Quick Meet Check-Ins',
           body: "Meeting someone new or at a specific location? Share your location so your bestie knows where you are. Great for first dates!",
           buttonText: 'Next',
-          onNext: () => handleTutorialAction('quickmeet')
+          onNext: () => handleTutorialAction('quickmeet'),
+          stepNumber,
+          totalSteps
         };
       case 'custom':
         return {
           title: 'Custom Check-Ins',
           body: "Create your own check-in for any situation! You're all set - ready to create your first real check-in? 💜",
           buttonText: 'Create My First Check-In',
-          onNext: () => handleTutorialAction('custom')
+          onNext: () => handleTutorialAction('custom'),
+          stepNumber,
+          totalSteps
         };
       default:
         return null;
     }
+  };
+
+  const handleTutorialBack = () => {
+    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const currentIndex = steps.indexOf(currentTutorialStep);
+    
+    if (currentIndex > 0) {
+      setTutorialStep(steps[currentIndex - 1]);
+    }
+  };
+
+  const getStepNumber = () => {
+    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    return steps.indexOf(currentTutorialStep) + 1;
   };
 
   if (loading) {
@@ -457,10 +501,13 @@ const HomePage = () => {
           <>
             {/* Show Add Bestie Card when user has no besties */}
             {!hasAnyBestie && (
-              <AddBestieCard onBestieAdded={() => {
-                // BestieCelebrationModal will play automatically
-                toast.success('Bestie added! 💜');
-              }} />
+              <AddBestieCard 
+                onBestieAdded={() => {
+                  // BestieCelebrationModal will play automatically via App.jsx
+                  // The card will automatically hide when userData updates via real-time listener
+                  toast.success('Bestie added! 💜');
+                }} 
+              />
             )}
 
             {/* Show Tutorial Prompt Card when user has besties but hasn't completed tutorial */}
@@ -755,8 +802,11 @@ const HomePage = () => {
           currentStep={currentTutorialStep}
           onStepComplete={handleTutorialStepComplete}
           onTutorialComplete={handleSkipTutorial}
+          onStepBack={handleTutorialBack}
           highlightedElementRef={getHighlightedElementRef()}
           tooltipConfig={getTooltipConfig()}
+          stepNumber={getStepNumber()}
+          totalSteps={4}
         />
       )}
     </div>

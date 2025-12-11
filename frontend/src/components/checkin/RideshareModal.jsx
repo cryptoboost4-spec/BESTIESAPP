@@ -26,6 +26,7 @@ const RideshareModal = ({ onClose, isTutorialMode = false }) => {
     if (!isTutorialMode && regoInputRef.current) {
       setTimeout(() => regoInputRef.current?.focus(), 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
 
     // Trap focus within modal
     const handleTabKey = (e) => {

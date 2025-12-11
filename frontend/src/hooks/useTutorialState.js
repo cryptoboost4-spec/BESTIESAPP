@@ -8,7 +8,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
  * Provides quick access via localStorage and syncs across devices via Firestore
  */
 export const useTutorialState = () => {
-  const { currentUser, userData } = useAuth();
+  const { currentUser } = useAuth();
   const [tutorialComplete, setTutorialComplete] = useState(false);
   const [currentTutorialStep, setCurrentTutorialStep] = useState(null);
 

@@ -556,6 +556,12 @@ input[type="range"]::-moz-range-thumb:active {
   z-index: 100;
 }
 
+/* Highlighted element during tutorial */
+.tutorial-highlighted-element {
+  z-index: 95 !important;
+  position: relative !important;
+}
+
 /* Fade in animation */
 @keyframes fade-in {
   from {

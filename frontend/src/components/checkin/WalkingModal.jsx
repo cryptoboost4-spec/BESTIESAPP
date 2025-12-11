@@ -30,6 +30,7 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
     if (isTutorialMode) {
       setTimeout(() => setShowTutorialTooltip(true), 300);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
 
     // Trap focus within modal
     const handleTabKey = (e) => {

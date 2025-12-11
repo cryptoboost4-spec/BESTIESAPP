@@ -5,7 +5,11 @@ const TutorialTooltip = ({
   title, 
   body, 
   buttonText = 'Next',
-  onNext, 
+  onNext,
+  onBack,
+  showBack = false,
+  stepNumber,
+  totalSteps,
   targetElement,
   position = 'auto' // 'auto', 'above', 'below', 'left', 'right'
 }) => {
@@ -72,40 +76,39 @@ const TutorialTooltip = ({
     if (!targetElement) return {};
 
     const rect = targetElement.getBoundingClientRect();
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 200;
-    const tooltipWidth = tooltipRef.current?.offsetWidth || 300;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Ensure tooltip stays within viewport
+    let left, top, bottom, right;
+    let transform = '';
 
     switch (calculatedPosition) {
       case 'above':
-        return {
-          bottom: `${window.innerHeight - rect.top + 10}px`,
-          left: `${rect.left + rect.width / 2}px`,
-          transform: 'translateX(-50%)'
-        };
+        left = Math.max(10, Math.min(rect.left + rect.width / 2, viewportWidth - 10));
+        bottom = Math.max(tooltipHeight + 20, viewportHeight - rect.top + 10);
+        transform = 'translateX(-50%)';
+        return { bottom: `${bottom}px`, left: `${left}px`, transform, maxWidth: '90vw' };
       case 'below':
-        return {
-          top: `${rect.bottom + 10}px`,
-          left: `${rect.left + rect.width / 2}px`,
-          transform: 'translateX(-50%)'
-        };
+        left = Math.max(10, Math.min(rect.left + rect.width / 2, viewportWidth - 10));
+        top = Math.min(rect.bottom + 10, viewportHeight - tooltipHeight - 20);
+        transform = 'translateX(-50%)';
+        return { top: `${top}px`, left: `${left}px`, transform, maxWidth: '90vw' };
       case 'left':
-        return {
-          top: `${rect.top + rect.height / 2}px`,
-          right: `${window.innerWidth - rect.left + 10}px`,
-          transform: 'translateY(-50%)'
-        };
+        right = Math.max(10, viewportWidth - rect.left + 10);
+        top = Math.max(10, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2));
+        transform = 'translateY(-50%)';
+        return { top: `${top}px`, right: `${right}px`, transform, maxWidth: '90vw' };
       case 'right':
-        return {
-          top: `${rect.top + rect.height / 2}px`,
-          left: `${rect.right + 10}px`,
-          transform: 'translateY(-50%)'
-        };
+        left = Math.min(rect.right + 10, viewportWidth - tooltipWidth - 10);
+        top = Math.max(10, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2));
+        transform = 'translateY(-50%)';
+        return { top: `${top}px`, left: `${left}px`, transform, maxWidth: '90vw' };
       default:
-        return {
-          top: `${rect.bottom + 10}px`,
-          left: `${rect.left + rect.width / 2}px`,
-          transform: 'translateX(-50%)'
-        };
+        left = Math.max(10, Math.min(rect.left + rect.width / 2, viewportWidth - 10));
+        top = Math.min(rect.bottom + 10, viewportHeight - tooltipHeight - 20);
+        transform = 'translateX(-50%)';
+        return { top: `${top}px`, left: `${left}px`, transform, maxWidth: '90vw' };
     }
   };
 
@@ -180,6 +183,13 @@ const TutorialTooltip = ({
 
       {/* Content */}
       <div className="space-y-3">
+        {/* Progress indicator */}
+        {stepNumber && totalSteps && (
+          <div className="text-xs text-text-secondary text-center mb-1">
+            Step {stepNumber} of {totalSteps}
+          </div>
+        )}
+        
         {title && (
           <h4 className="text-lg font-display text-text-primary">
             {title}
@@ -190,12 +200,26 @@ const TutorialTooltip = ({
             {body}
           </p>
         )}
-        <button
-          onClick={handleNext}
-          className="w-full btn btn-primary mt-2"
-        >
-          {buttonText}
-        </button>
+        
+        <div className="flex gap-2 mt-2">
+          {showBack && onBack && (
+            <button
+              onClick={() => {
+                haptic.light();
+                onBack();
+              }}
+              className="flex-1 btn btn-secondary text-sm"
+            >
+              Back
+            </button>
+          )}
+          <button
+            onClick={handleNext}
+            className={showBack && onBack ? "flex-1 btn btn-primary" : "w-full btn btn-primary"}
+          >
+            {buttonText}
+          </button>
+        </div>
       </div>
     </div>
   );
