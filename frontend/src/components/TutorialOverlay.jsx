@@ -149,7 +149,7 @@ const TutorialOverlay = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, onTutorialComplete, onStepComplete]);
+  }, [currentStep, onTutorialComplete, onStepComplete, onStepBack]);
 
   const handleNext = () => {
     if (tooltipConfig?.onNext) {

@@ -20,7 +20,6 @@ import ProfileTutorialWelcome from '../components/tutorials/profile/ProfileTutor
 import ProfileTutorialOverlay from '../components/tutorials/profile/ProfileTutorialOverlay';
 import MiniModeTooltip from '../components/tutorials/MiniModeTooltip';
 import CelebrationToast from '../components/tutorials/CelebrationToast';
-import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
@@ -57,7 +56,6 @@ const ProfilePage = () => {
   
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
-  const customizerButtonRef = useRef(null);
   const profileCompletionRef = useRef(null);
   const badgesSectionRef = useRef(null);
   const statsSectionRef = useRef(null);

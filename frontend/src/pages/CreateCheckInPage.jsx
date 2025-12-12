@@ -13,7 +13,7 @@ import CheckInMap from '../components/checkin/CheckInMap';
 import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
 import DurationSelector from '../components/checkin/DurationSelector';
 import BestieSelector from '../components/checkin/BestieSelector';
-import { MOCK_BESTIE, isMockBestie, filterMockBesties } from '../utils/mockBestie';
+import { MOCK_BESTIE, isMockBestie } from '../utils/mockBestie';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
 import InlineError from '../components/errors/InlineError';
 import ContextualError from '../components/errors/ContextualError';

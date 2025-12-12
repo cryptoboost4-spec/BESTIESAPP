@@ -83,7 +83,7 @@ const SettingsTutorialOverlay = ({
     setTimeout(() => {
       setTooltipConfig(adjustedConfigs[currentStep] || configs[currentStep]);
     }, 150);
-  }, [currentStep, refs, hasMessenger]);
+  }, [currentStep, refs, hasMessenger, onPause]);
 
   if (!currentStep || !tooltipConfig) return null;
 
