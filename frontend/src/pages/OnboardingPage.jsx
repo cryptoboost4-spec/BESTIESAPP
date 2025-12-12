@@ -16,6 +16,7 @@ const OnboardingPage = () => {
   const [hasBesties, setHasBesties] = useState(false);
   const [inviterInfo, setInviterInfo] = useState(null);
   const [nameHasBeenEdited, setNameHasBeenEdited] = useState(false);
+  const inputRef = useRef(null);
 
   // Check for inviter info on mount
   useEffect(() => {
