@@ -24,13 +24,7 @@ const TutorialsSection = () => {
     if (!currentUser) return;
 
     const loadStates = async () => {
-      const states = {
-        home: { completed: false, loading: true },
-        checkIn: { completed: false, loading: true },
-        besties: { completed: false, loading: true },
-        profile: { completed: false, loading: true },
-        settings: { completed: false, loading: true }
-      };
+      const states = { ...tutorialStates };
 
       // Home tutorial (uses useTutorialState)
       const homeComplete = localStorage.getItem('tutorial_complete') === 'true';
@@ -70,7 +64,6 @@ const TutorialsSection = () => {
     };
 
     loadStates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, location.state]);
 
   const handleRestartTutorial = async (tutorialName) => {
@@ -158,9 +151,6 @@ const TutorialsSection = () => {
           // Reload page to restart tutorial
           window.location.reload();
           toast.success('Settings tutorial restarted! ⚙️', { duration: 2000 });
-          break;
-        default:
-          // Unknown tutorial name
           break;
       }
     } catch (error) {
