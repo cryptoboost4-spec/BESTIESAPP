@@ -317,8 +317,58 @@ const HomePage = () => {
 
   const weeklySummary = getWeeklySummary();
 
-  // Derived state for tutorial visibility
-  const hasAnyBestie = (userData?.stats?.totalBesties || 0) > 0;
+  // Real-time bestie detection - check both stats and actual besties collection
+  const [hasAnyBestie, setHasAnyBestie] = useState((userData?.stats?.totalBesties || 0) > 0);
+  
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setHasAnyBestie(false);
+      return;
+    }
+
+    // First check stats (fast, updated via real-time listener in AuthContext)
+    const statsBesties = (userData?.stats?.totalBesties || 0) > 0;
+    if (statsBesties) {
+      setHasAnyBestie(true);
+    }
+
+    // Also set up real-time listener on besties collection for immediate updates
+    // This catches besties even if stats haven't updated yet
+    const bestiesQuery1 = query(
+      collection(db, 'besties'),
+      where('requesterId', '==', currentUser.uid),
+      where('status', '==', 'accepted'),
+      limit(1)
+    );
+    const bestiesQuery2 = query(
+      collection(db, 'besties'),
+      where('recipientId', '==', currentUser.uid),
+      where('status', '==', 'accepted'),
+      limit(1)
+    );
+
+    const unsubscribe1 = onSnapshot(bestiesQuery1, (snapshot) => {
+      const hasBesties = snapshot.size > 0 || statsBesties;
+      setHasAnyBestie(hasBesties);
+    }, (error) => {
+      console.error('Error in besties listener:', error);
+      setHasAnyBestie(statsBesties);
+    });
+
+    const unsubscribe2 = onSnapshot(bestiesQuery2, (snapshot) => {
+      const hasBesties = snapshot.size > 0 || statsBesties;
+      setHasAnyBestie(hasBesties);
+    }, (error) => {
+      console.error('Error in besties listener:', error);
+      setHasAnyBestie(statsBesties);
+    });
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
+  }, [currentUser?.uid, userData?.stats?.totalBesties]);
+
   const hasCompletedFirstCheckIn = (userData?.stats?.completedCheckIns || 0) > 0;
 
   // Tutorial handlers

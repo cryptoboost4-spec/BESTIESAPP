@@ -11,6 +11,7 @@
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease-out;
+  padding-bottom: max(80px, calc(env(safe-area-inset-bottom) + 80px));
 }
 
 .dark .modal-overlay {
@@ -32,10 +33,11 @@
   border-radius: 20px;
   max-width: 450px;
   width: 90%;
-  max-height: 90vh;
+  max-height: calc(100vh - 120px);
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
   position: relative;
+  margin-bottom: max(80px, env(safe-area-inset-bottom));
 }
 
 .dark .modal-content {

@@ -165,9 +165,10 @@ const AddBestieCard = ({ onBestieAdded }) => {
         <div 
           className="fixed inset-0 bg-black/60 dark:bg-black/75 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
           onClick={() => setShowMessengerModal(false)}
+          style={{ paddingBottom: 'max(80px, calc(env(safe-area-inset-bottom) + 80px))' }}
         >
           <div 
-            className="card max-w-lg w-full p-0 animate-scale-up overflow-hidden relative bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-600 shadow-2xl"
+            className="card max-w-lg w-full p-0 animate-scale-up overflow-hidden relative bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-2 border-pink-200 dark:border-pink-600 shadow-2xl max-h-[calc(100vh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
