@@ -737,12 +737,23 @@ const CreateCheckInPage = () => {
   useEffect(() => {
     if (!showTutorial || !currentCheckInTutorialStep) return;
 
-    const config = getTutorialConfig();
-    if (!config?.highlightedElementRef?.current) return;
+    // Map tutorial steps to their refs
+    const refMap = {
+      location: mapRef,
+      whoMeeting: whoMeetingRef,
+      socialMedia: socialMediaRef,
+      duration: durationRef,
+      bestieSelection: bestieSelectorRef,
+      notesPhotos: notesPhotosRef,
+      final: submitButtonRef,
+    };
+
+    const targetRef = refMap[currentCheckInTutorialStep];
+    if (!targetRef?.current) return;
 
     // Small delay to ensure layout is ready
     setTimeout(() => {
-      config.highlightedElementRef.current?.scrollIntoView({
+      targetRef.current?.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
         inline: 'nearest'

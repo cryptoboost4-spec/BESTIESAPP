@@ -47,7 +47,6 @@ const CheckInTutorialOverlay = ({
       const element = highlightedElementRef.current;
       const elementRect = element.getBoundingClientRect();
       const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
 
       // For map section, position tooltip just below the map
       if (tooltipConfig.overlayOnElement) {
