@@ -16,6 +16,7 @@ const OnboardingPage = () => {
   const [hasBesties, setHasBesties] = useState(false);
   const [inviterInfo, setInviterInfo] = useState(null);
   const [nameHasBeenEdited, setNameHasBeenEdited] = useState(false);
+  const inputRef = useRef(null);
 
   // Check for inviter info on mount
   useEffect(() => {
@@ -309,7 +310,6 @@ const OnboardingPage = () => {
   // Name Edit
   if (step === 'name') {
     const hasName = displayName.trim().length > 0;
-    const inputRef = useRef(null);
     
     return (
       <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
