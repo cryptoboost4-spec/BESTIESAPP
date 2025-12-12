@@ -43,13 +43,24 @@ const MilestoneCelebration = () => {
 
         // Mark as celebrated after a delay
         setTimeout(async () => {
-          await updateDoc(doc(db, 'circle_milestones', firstMilestone.id), {
-            celebrated: true,
-          });
+          try {
+            await updateDoc(doc(db, 'circle_milestones', firstMilestone.id), {
+              celebrated: true,
+            });
+          } catch (updateError) {
+            // Silently handle update errors - non-critical
+            console.warn('Could not mark milestone as celebrated:', updateError);
+          }
         }, 5000);
       }
     } catch (error) {
-      console.error('Error checking for milestones:', error);
+      // Handle permission errors gracefully - don't crash the app
+      if (error.code === 'permission-denied') {
+        console.warn('Permission denied accessing milestones - this is normal if you don\'t have any milestones yet');
+      } else {
+        console.error('Error checking for milestones:', error);
+      }
+      // Don't set milestone or show anything on error
     }
   };
 

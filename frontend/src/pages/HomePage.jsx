@@ -17,7 +17,6 @@ import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
-import TestCheckInWalkthrough from '../components/TestCheckInWalkthrough';
 import AddBestieCard from '../components/AddBestieCard';
 import TutorialPromptCard from '../components/TutorialPromptCard';
 import TutorialOverlay from '../components/TutorialOverlay';
@@ -35,9 +34,6 @@ const HomePage = () => {
   // Invite Friends modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
   
-  // Test Check-In Walkthrough state
-  const [showTestWalkthrough, setShowTestWalkthrough] = useState(false);
-  const [hasSeenTestWalkthrough, setHasSeenTestWalkthrough] = useState(false);
 
   // Tutorial state
   const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
@@ -83,29 +79,6 @@ const HomePage = () => {
     }
   }, [currentUser, authLoading, navigate]);
 
-  // Show test walkthrough for first-time users with besties but no check-ins
-  useEffect(() => {
-    if (authLoading || !userData || !currentUser) return;
-    
-    // Check if user has seen the walkthrough
-    const seen = localStorage.getItem('test_checkin_walkthrough_seen');
-    if (seen) {
-      setHasSeenTestWalkthrough(true);
-      return;
-    }
-
-    // Show if user has besties but no completed check-ins
-    const hasBesties = userData?.stats?.totalBesties > 0;
-    const hasNoCheckIns = !userData?.stats?.completedCheckIns || userData?.stats?.completedCheckIns === 0;
-    
-    if (hasBesties && hasNoCheckIns && !hasSeenTestWalkthrough) {
-      // Delay to let user see the page first - don't be too aggressive
-      const timer = setTimeout(() => {
-        setShowTestWalkthrough(true);
-      }, 3000); // 3 seconds - gives user time to see the page
-      return () => clearTimeout(timer);
-    }
-  }, [userData, currentUser, authLoading, hasSeenTestWalkthrough]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -382,12 +355,21 @@ const HomePage = () => {
   // Tutorial handlers
   const handleStartTutorial = () => {
     // Ensure refs are ready before starting
+    let retryCount = 0;
+    const maxRetries = 20; // Max 2 seconds of retries
+    
     const checkRefs = () => {
       if (quickCheckInButtonsRef.current?.rideshareButton) {
         setTutorialStep('rideshare');
-      } else {
+      } else if (retryCount < maxRetries) {
+        retryCount++;
         // Retry after short delay if refs aren't ready
         setTimeout(checkRefs, 100);
+      } else {
+        // If refs still not ready after max retries, set step anyway
+        // The overlay will handle missing refs gracefully
+        console.warn('Tutorial refs not ready after max retries, starting anyway');
+        setTutorialStep('rideshare');
       }
     };
     checkRefs();
@@ -545,7 +527,8 @@ const HomePage = () => {
 
   const getStepNumber = () => {
     const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
-    return steps.indexOf(currentTutorialStep) + 1;
+    const index = steps.indexOf(currentTutorialStep);
+    return index >= 0 ? index + 1 : 1; // Default to 1 if step not found
   };
 
   if (loading) {
@@ -859,36 +842,23 @@ const HomePage = () => {
         <InviteFriendsModal onClose={() => setShowInviteModal(false)} />
       )}
 
-      {/* Test Check-In Walkthrough */}
-      {showTestWalkthrough && (
-        <TestCheckInWalkthrough
-          onComplete={() => {
-            localStorage.setItem('test_checkin_walkthrough_seen', 'true');
-            setHasSeenTestWalkthrough(true);
-            setShowTestWalkthrough(false);
-            toast.success('Great job! You\'re ready to create real check-ins now! 💜');
-          }}
-          onSkip={() => {
-            localStorage.setItem('test_checkin_walkthrough_seen', 'true');
-            setHasSeenTestWalkthrough(true);
-            setShowTestWalkthrough(false);
-          }}
-        />
-      )}
 
       {/* Tutorial Overlay - Only show when modal is not open and we have valid config */}
-      {currentTutorialStep && !tutorialModalOpen && getTooltipConfig() && (
-        <TutorialOverlay
-          currentStep={currentTutorialStep}
-          onStepComplete={handleTutorialStepComplete}
-          onTutorialComplete={handleSkipTutorial}
-          onStepBack={handleTutorialBack}
-          highlightedElementRef={getHighlightedElementRef()}
-          tooltipConfig={getTooltipConfig()}
-          stepNumber={getStepNumber()}
-          totalSteps={4}
-        />
-      )}
+      {(() => {
+        const tooltipConfig = getTooltipConfig();
+        return currentTutorialStep && !tutorialModalOpen && tooltipConfig && (
+          <TutorialOverlay
+            currentStep={currentTutorialStep}
+            onStepComplete={handleTutorialStepComplete}
+            onTutorialComplete={handleSkipTutorial}
+            onStepBack={handleTutorialBack}
+            highlightedElementRef={getHighlightedElementRef()}
+            tooltipConfig={tooltipConfig}
+            stepNumber={getStepNumber()}
+            totalSteps={4}
+          />
+        );
+      })()}
     </div>
   );
 };

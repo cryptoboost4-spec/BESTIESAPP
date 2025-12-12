@@ -76,7 +76,7 @@ const TutorialTooltip = ({
     // Get tooltip dimensions (use defaults if not yet rendered)
     const tooltipHeight = tooltipRef.current?.offsetHeight || 200;
 
-    // If no target element (intro step), center in middle of screen
+    // If no target element, center in middle of screen
     if (!targetElement) {
       return {
         top: '50%',
@@ -173,7 +173,7 @@ const TutorialTooltip = ({
     onNext?.();
   };
 
-  // Allow rendering without targetElement for intro step
+  // Allow rendering without targetElement
 
   return (
     <div

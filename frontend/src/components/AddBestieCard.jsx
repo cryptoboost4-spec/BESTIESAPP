@@ -95,9 +95,24 @@ const AddBestieCard = ({ onBestieAdded }) => {
             <p className="text-text-secondary mb-4 leading-relaxed">
               Adding your first bestie means you'll always have someone looking out for you. It's a smart, protective choice that gives you peace of mind.
             </p>
-            <p className="text-sm text-text-secondary mb-6 leading-relaxed">
-              Your bestie will only see your location when you're on a check-in - your privacy is always protected. This is completely free and gives you confidence every time you're out.
-            </p>
+            
+            {/* Green highlight box */}
+            <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-200 dark:border-green-700 rounded-xl p-4 mb-4">
+              <p className="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">
+                ✅ Your privacy is protected
+              </p>
+              <p className="text-xs text-green-700 dark:text-green-300">
+                Your bestie will only see your location when you're on a check-in - your privacy is always protected.
+              </p>
+            </div>
+            
+            {/* Blue highlight box */}
+            <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 mb-6">
+              <p className="text-xs text-blue-800 dark:text-blue-200">
+                💜 This is completely free and gives you confidence every time you're out.
+              </p>
+            </div>
+            
             <button
               onClick={handleExpand}
               className="btn btn-primary text-lg py-3 px-8 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
@@ -111,9 +126,13 @@ const AddBestieCard = ({ onBestieAdded }) => {
             <h3 className="font-display text-lg text-text-primary mb-2 text-center">
               Choose How to Connect:
             </h3>
-            <p className="text-sm text-text-secondary mb-4 text-center">
-              Both options are secure and give you the same protection. Pick what works best for you!
-            </p>
+            
+            {/* Green highlight box */}
+            <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-200 dark:border-green-700 rounded-xl p-3 mb-4">
+              <p className="text-xs text-green-800 dark:text-green-200">
+                ✅ Both options are secure and give you the same protection. Pick what works best for you!
+              </p>
+            </div>
             
             {/* Messenger Bestie Card */}
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4">
