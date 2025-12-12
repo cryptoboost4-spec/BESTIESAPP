@@ -17,7 +17,11 @@ const TutorialTooltip = ({
   const [arrowPosition, setArrowPosition] = useState('top');
 
   useEffect(() => {
-    if (!targetElement || !tooltipRef.current) return;
+    if (!targetElement || !tooltipRef.current) {
+      // If no target element, set default arrow position
+      setArrowPosition('top');
+      return;
+    }
 
     const calculatePosition = () => {
       const rect = targetElement.getBoundingClientRect();
@@ -29,11 +33,20 @@ const TutorialTooltip = ({
       let arrowPos = 'top';
 
       if (position === 'auto') {
-        // Auto-calculate best position
+        // Auto-calculate best position based on available space
         const spaceAbove = rect.top;
         const spaceBelow = viewportHeight - rect.bottom;
         const spaceLeft = rect.left;
         const spaceRight = viewportWidth - rect.right;
+
+        // Determine arrow position based on where tooltip will be positioned
+        if (spaceAbove < tooltipRect.height + 20) {
+          // Not enough space above, position below
+          arrowPos = 'top'; // Arrow points up to button
+        } else {
+          // Enough space above, position above
+          arrowPos = 'bottom'; // Arrow points down to button
+        }
 
         if (spaceBelow >= tooltipRect.height + 20) {
           pos = 'below';
@@ -94,12 +107,10 @@ const TutorialTooltip = ({
     const spacing = 20; // Space between tooltip and button
     let top = rect.top - tooltipHeight - spacing;
     
+    // Note: Arrow position is set in useEffect, not here (to avoid setState during render)
     // If not enough space above, position below instead
     if (spaceAbove < tooltipHeight + spacing + 20) {
       top = rect.bottom + spacing;
-      setArrowPosition('top'); // Arrow points up to button
-    } else {
-      setArrowPosition('bottom'); // Arrow points down to button
     }
     
     // Ensure tooltip doesn't go off top or bottom of screen

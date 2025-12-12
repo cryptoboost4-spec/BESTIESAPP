@@ -447,26 +447,33 @@ const HomePage = () => {
 
   // Get highlighted element ref based on current step
   const getHighlightedElementRef = () => {
+    // Always return consistent structure: { current: element | null }
     if (!quickCheckInButtonsRef.current) {
-      return null;
+      return { current: null };
     }
     
     try {
+      let element = null;
       switch (currentTutorialStep) {
         case 'rideshare':
-          return quickCheckInButtonsRef.current.rideshareButton ? { current: quickCheckInButtonsRef.current.rideshareButton } : null;
+          element = quickCheckInButtonsRef.current.rideshareButton || null;
+          break;
         case 'walking':
-          return quickCheckInButtonsRef.current.walkingButton ? { current: quickCheckInButtonsRef.current.walkingButton } : null;
+          element = quickCheckInButtonsRef.current.walkingButton || null;
+          break;
         case 'quickmeet':
-          return quickCheckInButtonsRef.current.quickMeetButton ? { current: quickCheckInButtonsRef.current.quickMeetButton } : null;
+          element = quickCheckInButtonsRef.current.quickMeetButton || null;
+          break;
         case 'custom':
-          return quickCheckInButtonsRef.current.customButton ? { current: quickCheckInButtonsRef.current.customButton } : null;
+          element = quickCheckInButtonsRef.current.customButton || null;
+          break;
         default:
-          return null;
+          element = null;
       }
+      return { current: element };
     } catch (error) {
       console.error('Error getting highlighted element ref:', error);
-      return null;
+      return { current: null };
     }
   };
 
@@ -566,6 +573,12 @@ const HomePage = () => {
       </div>
     );
   }
+
+  // Calculate tutorial overlay visibility before return
+  const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+  const isValidStep = currentTutorialStep && validSteps.includes(currentTutorialStep);
+  const shouldShowTutorial = isValidStep && !tutorialComplete && !tutorialModalOpen;
+  const tooltipConfig = shouldShowTutorial ? getTooltipConfig() : null;
 
   return (
     <div className="min-h-screen bg-pattern">
@@ -861,34 +874,18 @@ const HomePage = () => {
 
 
       {/* Tutorial Overlay - Only show when modal is not open and we have valid config */}
-      {(() => {
-        // Validate step is one of the valid steps
-        const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
-        const isValidStep = currentTutorialStep && validSteps.includes(currentTutorialStep);
-        
-        // Don't show if tutorial is complete or step is invalid
-        if (!isValidStep || tutorialComplete || tutorialModalOpen) {
-          return null;
-        }
-        
-        const tooltipConfig = getTooltipConfig();
-        if (!tooltipConfig) {
-          return null;
-        }
-        
-        return (
-          <TutorialOverlay
-            currentStep={currentTutorialStep}
-            onStepComplete={handleTutorialStepComplete}
-            onTutorialComplete={handleSkipTutorial}
-            onStepBack={handleTutorialBack}
-            highlightedElementRef={getHighlightedElementRef()}
-            tooltipConfig={tooltipConfig}
-            stepNumber={getStepNumber()}
-            totalSteps={4}
-          />
-        );
-      })()}
+      {shouldShowTutorial && tooltipConfig && (
+        <TutorialOverlay
+          currentStep={currentTutorialStep}
+          onStepComplete={handleTutorialStepComplete}
+          onTutorialComplete={handleSkipTutorial}
+          onStepBack={handleTutorialBack}
+          highlightedElementRef={getHighlightedElementRef()}
+          tooltipConfig={tooltipConfig}
+          stepNumber={getStepNumber()}
+          totalSteps={4}
+        />
+      )}
     </div>
   );
 };
