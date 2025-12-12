@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
