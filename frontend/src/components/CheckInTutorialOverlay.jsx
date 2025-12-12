@@ -12,8 +12,6 @@ const CheckInTutorialOverlay = ({
   highlightedElementRef,
   tooltipConfig,
   isFirstStep = false,
-  stepNumber,
-  totalSteps,
 }) => {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0, rotation: 180 });
@@ -69,48 +67,34 @@ const CheckInTutorialOverlay = ({
         return;
       }
 
-      // For all other sections, smart positioning
-      const tooltipWidth = Math.min(screenWidth - 40, 320);
-      const tooltipHeight = 220; // Approximate height (increased for progress indicator)
+      // For all other sections, always position ABOVE (except map which can be centered)
+      const tooltipWidth = Math.min(screenWidth - 40, Math.min(320, screenWidth - 40));
+      const tooltipHeight = 180; // Approximate height
       const padding = 20;
       const minSpaceFromEdge = 20;
 
       // Always center horizontally
       const left = (screenWidth - tooltipWidth) / 2;
 
-      // Calculate space above and below element
-      const spaceAbove = elementRect.top;
-      const spaceBelow = screenHeight - elementRect.bottom;
-
-      // Position above the element with padding
+      // Always position above the element with padding
       let top = elementRect.top - tooltipHeight - padding;
-      let arrowRotation = 180; // Points down by default
+      const arrowRotation = 180; // Always points down
 
-      // If not enough space above, position below
-      if (spaceAbove < tooltipHeight + padding + minSpaceFromEdge && spaceBelow > tooltipHeight + padding + minSpaceFromEdge) {
-        top = elementRect.bottom + padding;
-        arrowRotation = 0; // Points up
-      }
-
-      // Ensure doesn't go off screen
+      // Ensure doesn't go off top of screen
       if (top < minSpaceFromEdge) {
         top = minSpaceFromEdge;
-      } else if (top + tooltipHeight > screenHeight - minSpaceFromEdge) {
-        top = screenHeight - tooltipHeight - minSpaceFromEdge;
       }
 
       setTooltipPosition({ top, left });
 
-      // Calculate arrow position (points to element)
+      // Calculate arrow position (always points down to element)
       const arrowLeft = screenWidth / 2;
-      const arrowTop = arrowRotation === 180
-        ? elementRect.top - padding / 2  // Points down to element
-        : elementRect.bottom + padding / 2; // Points up to element
+      const arrowTop = elementRect.top - padding / 2;
 
       setArrowPosition({
         top: arrowTop,
         left: arrowLeft,
-        rotation: arrowRotation,
+        rotation: 180, // Always points down
       });
     };
 
@@ -122,10 +106,10 @@ const CheckInTutorialOverlay = ({
     };
   }, [highlightedElementRef, tooltipConfig.overlayOnElement]);
 
-  // Handle tooltip dismiss (for map section)
+  // Handle tooltip dismiss/continue (for map section)
   const handleDismissTooltip = () => {
-    setShowTooltip(false);
     triggerHaptic();
+    onStepComplete('continue');
   };
 
   // Handle skip tutorial
@@ -199,10 +183,7 @@ const CheckInTutorialOverlay = ({
               height: 0,
               borderLeft: '12px solid transparent',
               borderRight: '12px solid transparent',
-              ...(arrowPosition.rotation === 180 
-                ? { borderTop: '12px solid white' } // Points down
-                : { borderBottom: '12px solid white' } // Points up
-              ),
+              borderTop: '12px solid white', // Always points down
             }}
           />
         </div>
@@ -211,7 +192,7 @@ const CheckInTutorialOverlay = ({
       {/* Tooltip */}
       {showTooltip && (
         <div
-          className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-[320px] animate-in fade-in zoom-in duration-200"
+          className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 animate-in fade-in zoom-in duration-200"
           style={{
             top: `${tooltipPosition.top}px`,
             left: `${tooltipPosition.left}px`,
@@ -224,13 +205,6 @@ const CheckInTutorialOverlay = ({
             }),
           }}
         >
-          {/* Progress indicator */}
-          {stepNumber && totalSteps && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-2">
-              Step {stepNumber} of {totalSteps}
-            </div>
-          )}
-
           {/* Skip button - available on all steps */}
           <button
             onClick={handleSkip}
@@ -290,7 +264,12 @@ const CheckInTutorialOverlay = ({
           {tooltipConfig.overlayOnElement && tooltipConfig.dismissible && (
             <button
               onClick={handleDismissTooltip}
-              className="mt-4 w-full px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-all transform active:scale-95"
+              disabled={tooltipConfig.canDismiss === false}
+              className={`mt-4 w-full px-4 py-2 rounded-lg font-medium transition-all transform active:scale-95 ${
+                tooltipConfig.canDismiss === false
+                  ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-primary text-white hover:bg-primary-dark'
+              }`}
             >
               Got it
             </button>

@@ -548,12 +548,26 @@ const CreateCheckInPage = () => {
   // Check if this is user's first check-in and show tutorial
   // Wait for besties to load before showing tutorial (so bestie selection step works)
   useEffect(() => {
-    if (!currentUser || authLoading || hasCheckedForFirstCheckIn || bestiesLoading) return;
+    if (!currentUser || authLoading || hasCheckedForFirstCheckIn || bestiesLoading) {
+      console.log('[Tutorial] Conditions not met:', {
+        currentUser: !!currentUser,
+        authLoading,
+        hasCheckedForFirstCheckIn,
+        bestiesLoading
+      });
+      return;
+    }
 
     const checkFirstCheckIn = async () => {
       try {
+        console.log('[Tutorial] Checking first check-in:', {
+          checkInTutorialComplete,
+          currentUser: currentUser.uid
+        });
+        
         // If tutorial is already complete, don't show it
         if (checkInTutorialComplete) {
+          console.log('[Tutorial] Tutorial already complete, skipping');
           setHasCheckedForFirstCheckIn(true);
           return;
         }
@@ -565,22 +579,29 @@ const CreateCheckInPage = () => {
         );
         const querySnapshot = await getDocs(checkInsQuery);
 
+        console.log('[Tutorial] Check-ins found:', querySnapshot.empty ? 'none' : querySnapshot.size);
+
         // If no previous check-ins and tutorial not complete, show tutorial
         if (querySnapshot.empty && !checkInTutorialComplete) {
+          console.log('[Tutorial] No check-ins found, showing tutorial');
           setShowTutorial(true);
           // Skip location step for quick check-ins (location already set)
           const isQuickCheckIn = location.state?.skipLocation || location.state?.quickType;
-          setCheckInTutorialStep(isQuickCheckIn ? 'whoMeeting' : 'location');
+          const initialStep = isQuickCheckIn ? 'whoMeeting' : 'location';
+          console.log('[Tutorial] Setting initial step:', initialStep);
+          setCheckInTutorialStep(initialStep);
+        } else {
+          console.log('[Tutorial] User has previous check-ins or tutorial complete, not showing');
         }
 
         setHasCheckedForFirstCheckIn(true);
       } catch (error) {
-        console.error('Error checking for first check-in:', error);
+        console.error('[Tutorial] Error checking for first check-in:', error);
         
         // If permission error, show tutorial anyway (assume first check-in)
         // This handles cases where Firestore rules prevent checking check-ins
         if (error.code === 'permission-denied' && !checkInTutorialComplete) {
-          console.warn('Permission denied checking check-ins - showing tutorial anyway');
+          console.warn('[Tutorial] Permission denied checking check-ins - showing tutorial anyway');
           setShowTutorial(true);
           setCheckInTutorialStep('location');
         }
@@ -620,6 +641,7 @@ const CreateCheckInPage = () => {
             body: `Tap the map or search for your location.\n\nThis is for your safety - your bestie will know where to find you if something feels off.`,
             overlayOnElement: true,
             dismissible: true,
+            canDismiss: locationInput.trim() !== '', // Only allow dismiss when address is entered
           },
         };
 
@@ -695,7 +717,10 @@ const CreateCheckInPage = () => {
           tooltipConfig: {
             icon: '💜',
             title: "You're Ready!",
-            body: `Everything looks good! Tap the '🛡️ Start Check-In' button below to begin.\n\nYour bestie will get a notification and your timer starts. You're in control. You're prepared. We've got your back.`,
+            body: `Everything looks good! Tap the '🛡️ Start Check-In' button below to create your check-in.\n\nYour bestie will get a notification and your timer starts. You're in control. You're prepared. We've got your back.`,
+            buttons: [
+              { text: 'Got it', action: 'continue', primary: true },
+            ],
           },
         };
 
@@ -722,25 +747,80 @@ const CreateCheckInPage = () => {
       // Let them adjust, then move to bestie selection
       setCheckInTutorialStep('bestieSelection');
     } else if (action === 'skip' && currentCheckInTutorialStep === 'notesPhotos') {
-      // Skip to final
-      setCheckInTutorialStep('final');
+      // Skip to final - but validate first
+      const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
+      const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
+      
+      if (hasAddress && hasBestie) {
+        setCheckInTutorialStep('final');
+      } else {
+        // Can't proceed to final without required fields
+        toast.error('Please add a location and select at least one bestie before continuing.', {
+          duration: 4000
+        });
+        return;
+      }
     } else if (action === 'addDetails' && currentCheckInTutorialStep === 'notesPhotos') {
-      // Expand notes/photos, then move to final
-      setNotesExpanded(true);
-      setCheckInTutorialStep('final');
+      // Expand notes/photos, then move to final - but validate first
+      const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
+      const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
+      
+      if (hasAddress && hasBestie) {
+        setNotesExpanded(true);
+        setCheckInTutorialStep('final');
+      } else {
+        toast.error('Please add a location and select at least one bestie before continuing.', {
+          duration: 4000
+        });
+        return;
+      }
     } else if (action === 'addSocial' && currentCheckInTutorialStep === 'socialMedia') {
       // Expand social media, then move to duration
       setSocialMediaExpanded(true);
       setCheckInTutorialStep('duration');
     } else if (action === 'continue') {
-      // Move to next step
+      // Move to next step, but validate before final
       if (currentIndex < stepOrder.length - 1) {
-        setCheckInTutorialStep(stepOrder[currentIndex + 1]);
+        const nextStep = stepOrder[currentIndex + 1];
+        
+        // Validate before allowing final step
+        if (nextStep === 'final') {
+          const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
+          const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
+          
+          if (!hasAddress || !hasBestie) {
+            toast.error('Please add a location and select at least one bestie before continuing.', {
+              duration: 4000
+            });
+            return;
+          }
+        }
+        
+        setCheckInTutorialStep(nextStep);
+      } else {
+        // Finished tutorial
+        await markCheckInTutorialComplete();
+        setShowTutorial(false);
       }
     } else {
-      // Default: move to next step
+      // Default: move to next step (shouldn't happen with continue buttons)
       if (currentIndex < stepOrder.length - 1) {
-        setCheckInTutorialStep(stepOrder[currentIndex + 1]);
+        const nextStep = stepOrder[currentIndex + 1];
+        
+        // Validate before allowing final step
+        if (nextStep === 'final') {
+          const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
+          const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
+          
+          if (!hasAddress || !hasBestie) {
+            toast.error('Please add a location and select at least one bestie before continuing.', {
+              duration: 4000
+            });
+            return;
+          }
+        }
+        
+        setCheckInTutorialStep(nextStep);
       } else {
         // Finished tutorial
         await markCheckInTutorialComplete();
@@ -755,36 +835,6 @@ const CreateCheckInPage = () => {
     setShowTutorial(false);
   };
 
-  // Handle location selected (auto-advance from location step)
-  useEffect(() => {
-    if (currentCheckInTutorialStep === 'location' && locationInput.trim() !== '') {
-      // Trigger haptic feedback
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-      // Auto-advance to next step with delay to let user see the change
-      const timeoutId = setTimeout(() => {
-        setCheckInTutorialStep('whoMeeting');
-      }, 800); // Increased from 500ms to 800ms for better UX
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [locationInput, currentCheckInTutorialStep, setCheckInTutorialStep]);
-
-  // Handle bestie selection (check for validation error)
-  useEffect(() => {
-    if (currentCheckInTutorialStep === 'bestieSelection') {
-      // If user has selected besties, allow them to continue
-      if (selectedBesties.length > 0 || selectedMessengerContacts.length > 0) {
-        // Auto-advance after selection with delay to let user review
-        const timeoutId = setTimeout(() => {
-          setCheckInTutorialStep('notesPhotos');
-        }, 1200); // Increased from 1000ms to 1200ms for better UX
-        
-        return () => clearTimeout(timeoutId);
-      }
-    }
-  }, [selectedBesties, selectedMessengerContacts, currentCheckInTutorialStep, setCheckInTutorialStep]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1153,11 +1203,6 @@ const CreateCheckInPage = () => {
           const config = getTutorialConfig();
           if (!config) return null;
 
-          const stepOrder = ['location', 'whoMeeting', 'socialMedia', 'duration', 'bestieSelection', 'notesPhotos', 'final'];
-          const currentStepIndex = stepOrder.indexOf(currentCheckInTutorialStep);
-          const stepNumber = currentStepIndex >= 0 ? currentStepIndex + 1 : 1;
-          const totalSteps = stepOrder.length;
-
           return (
             <CheckInTutorialOverlay
               currentStep={currentCheckInTutorialStep}
@@ -1166,8 +1211,6 @@ const CreateCheckInPage = () => {
               highlightedElementRef={config.highlightedElementRef}
               tooltipConfig={config.tooltipConfig}
               isFirstStep={currentCheckInTutorialStep === 'location'}
-              stepNumber={stepNumber}
-              totalSteps={totalSteps}
             />
           );
         })()}
