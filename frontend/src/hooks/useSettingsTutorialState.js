@@ -112,6 +112,33 @@ export const useSettingsTutorialState = () => {
   const pauseTutorial = () => setIsPaused(true);
   const resumeTutorial = () => setIsPaused(false);
 
+  const resetTutorial = async () => {
+    setTutorialActive(false);
+    setCurrentStep(null);
+    setIsCompleted(false);
+    setIsPaused(false);
+
+    // Clear localStorage
+    localStorage.removeItem('settings_tutorial_completed');
+    localStorage.removeItem('settings_tutorial_dismissed');
+    localStorage.removeItem('settings_tutorial_completed_at');
+
+    // Clear Firestore
+    if (currentUser) {
+      try {
+        const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
+        await updateDoc(tutorialsRef, {
+          'settings.completed': false,
+          'settings.completedAt': null,
+          'settings.dismissed': false,
+          'settings.dismissedAt': null
+        });
+      } catch (error) {
+        console.error('Error resetting Settings tutorial in Firestore:', error);
+      }
+    }
+  };
+
   return {
     tutorialActive,
     currentStep,
@@ -120,10 +147,12 @@ export const useSettingsTutorialState = () => {
     isLoading,
     startTutorial,
     nextStep,
+    setCurrentStep,
     skipTutorial,
     completeTutorial,
     pauseTutorial,
-    resumeTutorial
+    resumeTutorial,
+    resetTutorial
   };
 };
 

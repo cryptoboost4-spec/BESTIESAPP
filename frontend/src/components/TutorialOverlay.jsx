@@ -126,6 +126,10 @@ const TutorialOverlay = ({
         e.preventDefault();
         haptic.light();
         onStepComplete?.();
+      } else if (e.key === 'ArrowLeft' && onStepBack && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        haptic.light();
+        onStepBack?.();
       }
 
       // Enter to continue

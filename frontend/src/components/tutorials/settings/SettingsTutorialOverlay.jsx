@@ -8,6 +8,7 @@ import TutorialOverlay from '../../TutorialOverlay';
 const SettingsTutorialOverlay = ({
   currentStep,
   onNext,
+  onBack,
   onSkip,
   isPaused,
   refs,
@@ -84,6 +85,7 @@ const SettingsTutorialOverlay = ({
     <TutorialOverlay
       currentStep={currentStep}
       onStepComplete={onNext}
+      onStepBack={onBack}
       onTutorialComplete={onSkip}
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}

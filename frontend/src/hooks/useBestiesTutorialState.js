@@ -112,6 +112,33 @@ export const useBestiesTutorialState = () => {
   const pauseTutorial = () => setIsPaused(true);
   const resumeTutorial = () => setIsPaused(false);
 
+  const resetTutorial = async () => {
+    setTutorialActive(false);
+    setCurrentStep(null);
+    setIsCompleted(false);
+    setIsPaused(false);
+
+    // Clear localStorage
+    localStorage.removeItem('besties_tutorial_completed');
+    localStorage.removeItem('besties_tutorial_dismissed');
+    localStorage.removeItem('besties_tutorial_completed_at');
+
+    // Clear Firestore
+    if (currentUser) {
+      try {
+        const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
+        await updateDoc(tutorialsRef, {
+          'besties.completed': false,
+          'besties.completedAt': null,
+          'besties.dismissed': false,
+          'besties.dismissedAt': null
+        });
+      } catch (error) {
+        console.error('Error resetting Besties tutorial in Firestore:', error);
+      }
+    }
+  };
+
   return {
     tutorialActive,
     currentStep,
@@ -120,10 +147,12 @@ export const useBestiesTutorialState = () => {
     isLoading,
     startTutorial,
     nextStep,
+    setCurrentStep,
     skipTutorial,
     completeTutorial,
     pauseTutorial,
-    resumeTutorial
+    resumeTutorial,
+    resetTutorial
   };
 };
 

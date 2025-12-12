@@ -8,6 +8,7 @@ import TutorialOverlay from '../../TutorialOverlay';
 const BestiesTutorialOverlay = ({
   currentStep,
   onNext,
+  onBack,
   onSkip,
   isPaused,
   refs,
@@ -61,6 +62,7 @@ const BestiesTutorialOverlay = ({
     <TutorialOverlay
       currentStep={currentStep}
       onStepComplete={onNext}
+      onStepBack={onBack}
       onTutorialComplete={onSkip}
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}

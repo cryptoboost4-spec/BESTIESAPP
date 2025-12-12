@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs, onSnapshot, limit } from 'firebase/firestore';
@@ -41,6 +41,17 @@ const ProfilePage = () => {
 
   // Tutorial state
   const tutorial = useProfileTutorialState();
+  
+  // Handle tutorial restart from navigation state
+  useEffect(() => {
+    if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
+      tutorial.resetTutorial().then(() => {
+        tutorial.startTutorial();
+        // Clear the state
+        window.history.replaceState({}, document.title);
+      });
+    }
+  }, [location.state, tutorial]);
   
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
@@ -561,6 +572,11 @@ const ProfilePage = () => {
               });
             } else {
               tutorial.nextStep();
+            }
+          }}
+          onBack={() => {
+            if (tutorial.currentStep > 1) {
+              tutorial.setCurrentStep(tutorial.currentStep - 1);
             }
           }}
           onSkip={() => {
