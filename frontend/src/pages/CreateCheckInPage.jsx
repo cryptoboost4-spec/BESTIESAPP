@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
 import useOptimisticUpdate from '../hooks/useOptimisticUpdate';
+import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import CheckInLoader from '../components/checkin/CheckInLoader';
 import CheckInMap from '../components/checkin/CheckInMap';
 import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
@@ -15,6 +16,7 @@ import BestieSelector from '../components/checkin/BestieSelector';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
 import InlineError from '../components/errors/InlineError';
 import ContextualError from '../components/errors/ContextualError';
+import CheckInTutorialOverlay from '../components/CheckInTutorialOverlay';
 import { FEATURES } from '../config/features';
 
 const CreateCheckInPage = () => {
@@ -22,6 +24,14 @@ const CreateCheckInPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const submitButtonRef = useRef(null);
+
+  // Tutorial refs for each section
+  const mapRef = useRef(null);
+  const whoMeetingRef = useRef(null);
+  const socialMediaRef = useRef(null);
+  const durationRef = useRef(null);
+  const bestieSelectorRef = useRef(null);
+  const notesPhotosRef = useRef(null);
 
   const [locationInput, setLocationInput] = useState('');
   const [duration, setDuration] = useState(30);
@@ -47,7 +57,7 @@ const CreateCheckInPage = () => {
   const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [socialMediaExpanded, setSocialMediaExpanded] = useState(false);
-  
+
   // Form validation errors
   const [formErrors, setFormErrors] = useState({
     besties: '',
@@ -55,9 +65,20 @@ const CreateCheckInPage = () => {
     duration: '',
     bestiesWithoutContact: ''
   });
-  
+
   // Component-level errors
   const [bestiesLoadError, setBestiesLoadError] = useState(null);
+
+  // Tutorial state
+  const {
+    checkInTutorialComplete,
+    currentCheckInTutorialStep,
+    markCheckInTutorialComplete,
+    setCheckInTutorialStep,
+  } = useCheckInTutorialState();
+
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [hasCheckedForFirstCheckIn, setHasCheckedForFirstCheckIn] = useState(false);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -524,6 +545,216 @@ const CreateCheckInPage = () => {
     };
   }, []);
 
+  // Check if this is user's first check-in and show tutorial
+  useEffect(() => {
+    if (!currentUser || authLoading || hasCheckedForFirstCheckIn) return;
+
+    const checkFirstCheckIn = async () => {
+      try {
+        // If tutorial is already complete, don't show it
+        if (checkInTutorialComplete) {
+          setHasCheckedForFirstCheckIn(true);
+          return;
+        }
+
+        // Check if user has any previous check-ins
+        const checkInsQuery = query(
+          collection(db, 'checkins'),
+          where('userId', '==', currentUser.uid)
+        );
+        const querySnapshot = await getDocs(checkInsQuery);
+
+        // If no previous check-ins and tutorial not complete, show tutorial
+        if (querySnapshot.empty && !checkInTutorialComplete) {
+          setShowTutorial(true);
+          setCheckInTutorialStep('location'); // Start with location step
+        }
+
+        setHasCheckedForFirstCheckIn(true);
+      } catch (error) {
+        console.error('Error checking for first check-in:', error);
+        setHasCheckedForFirstCheckIn(true);
+      }
+    };
+
+    checkFirstCheckIn();
+  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep]);
+
+  // Get tutorial config for current step
+  const getTutorialConfig = () => {
+    if (!currentCheckInTutorialStep) return null;
+
+    switch (currentCheckInTutorialStep) {
+      case 'location':
+        return {
+          highlightedElementRef: mapRef,
+          overlayOnElement: true,
+          dismissible: true,
+          tooltipConfig: {
+            title: 'Where are you going?',
+            body: `Tap the map or search for your location.\n\nThis is for your safety - your bestie will know where to find you if something feels off.`,
+            overlayOnElement: true,
+            dismissible: true,
+          },
+        };
+
+      case 'whoMeeting':
+        return {
+          highlightedElementRef: whoMeetingRef,
+          overlayOnElement: false,
+          tooltipConfig: {
+            body: `Add a name if you'd like. Could be 'Sarah from Hinge' or 'Mike - new friend.'\n\nTotally optional - skip if you prefer privacy.`,
+            buttons: [
+              { text: 'Skip', action: 'skip', primary: false },
+              { text: 'Continue', action: 'continue', primary: true },
+            ],
+          },
+        };
+
+      case 'socialMedia':
+        return {
+          highlightedElementRef: socialMediaRef,
+          overlayOnElement: false,
+          tooltipConfig: {
+            body: `Want to add their Instagram or Facebook?\n\nThis gives your bestie more info if they need to verify who you're with.`,
+            buttons: [
+              { text: 'Skip', action: 'skip', primary: false },
+              { text: 'Add Social', action: 'addSocial', primary: true },
+            ],
+          },
+        };
+
+      case 'duration':
+        return {
+          highlightedElementRef: durationRef,
+          overlayOnElement: false,
+          tooltipConfig: {
+            body: `How long will you be gone?\n\nDefault is 30 minutes - adjust if you need more time.`,
+            buttons: [
+              { text: 'Use Default', action: 'useDefault', primary: false },
+              { text: 'Set Custom Time', action: 'setCustom', primary: true },
+            ],
+          },
+        };
+
+      case 'bestieSelection':
+        return {
+          highlightedElementRef: bestieSelectorRef,
+          overlayOnElement: false,
+          tooltipConfig: {
+            title: 'Who should know?',
+            body: `Select at least one bestie who'll get notifications about this check-in.\n\nChoose whoever you trust and who's most likely to notice if something's wrong.`,
+          },
+        };
+
+      case 'notesPhotos':
+        return {
+          highlightedElementRef: notesPhotosRef,
+          overlayOnElement: false,
+          tooltipConfig: {
+            title: 'Any extra details?',
+            body: `Want to add notes or photos? Completely optional.\n\nCould be helpful to note what they're wearing, car details, or meeting spot specifics.`,
+            buttons: [
+              { text: 'Skip to Finish', action: 'skip', primary: false },
+              { text: 'Add Details', action: 'addDetails', primary: true },
+            ],
+          },
+        };
+
+      case 'final':
+        return {
+          highlightedElementRef: submitButtonRef,
+          overlayOnElement: false,
+          tooltipConfig: {
+            icon: '💜',
+            title: "You're Ready!",
+            body: `Everything looks good. When you tap 'Start Check-In,' your bestie will get a notification and your timer begins.\n\nYou're in control. You're prepared. We've got your back.`,
+          },
+        };
+
+      default:
+        return null;
+    }
+  };
+
+  // Handle tutorial step completion
+  const handleTutorialStepComplete = async (action) => {
+    const stepOrder = ['location', 'whoMeeting', 'socialMedia', 'duration', 'bestieSelection', 'notesPhotos', 'final'];
+    const currentIndex = stepOrder.indexOf(currentCheckInTutorialStep);
+
+    if (action === 'skip' && currentCheckInTutorialStep === 'whoMeeting') {
+      // Skip to social media
+      setCheckInTutorialStep('socialMedia');
+    } else if (action === 'skip' && currentCheckInTutorialStep === 'socialMedia') {
+      // Skip to duration
+      setCheckInTutorialStep('duration');
+    } else if (action === 'useDefault' && currentCheckInTutorialStep === 'duration') {
+      // Use default duration, move to bestie selection
+      setCheckInTutorialStep('bestieSelection');
+    } else if (action === 'setCustom' && currentCheckInTutorialStep === 'duration') {
+      // Let them adjust, then move to bestie selection
+      setCheckInTutorialStep('bestieSelection');
+    } else if (action === 'skip' && currentCheckInTutorialStep === 'notesPhotos') {
+      // Skip to final
+      setCheckInTutorialStep('final');
+    } else if (action === 'addDetails' && currentCheckInTutorialStep === 'notesPhotos') {
+      // Expand notes/photos, then move to final
+      setNotesExpanded(true);
+      setCheckInTutorialStep('final');
+    } else if (action === 'addSocial' && currentCheckInTutorialStep === 'socialMedia') {
+      // Expand social media, then move to duration
+      setSocialMediaExpanded(true);
+      setCheckInTutorialStep('duration');
+    } else if (action === 'continue') {
+      // Move to next step
+      if (currentIndex < stepOrder.length - 1) {
+        setCheckInTutorialStep(stepOrder[currentIndex + 1]);
+      }
+    } else {
+      // Default: move to next step
+      if (currentIndex < stepOrder.length - 1) {
+        setCheckInTutorialStep(stepOrder[currentIndex + 1]);
+      } else {
+        // Finished tutorial
+        await markCheckInTutorialComplete();
+        setShowTutorial(false);
+      }
+    }
+  };
+
+  // Handle skip tutorial
+  const handleSkipTutorial = async () => {
+    await markCheckInTutorialComplete();
+    setShowTutorial(false);
+  };
+
+  // Handle location selected (auto-advance from location step)
+  useEffect(() => {
+    if (currentCheckInTutorialStep === 'location' && locationInput.trim() !== '') {
+      // Trigger haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      // Auto-advance to next step
+      setTimeout(() => {
+        setCheckInTutorialStep('whoMeeting');
+      }, 500);
+    }
+  }, [locationInput, currentCheckInTutorialStep, setCheckInTutorialStep]);
+
+  // Handle bestie selection (check for validation error)
+  useEffect(() => {
+    if (currentCheckInTutorialStep === 'bestieSelection') {
+      // If user has selected besties, allow them to continue
+      if (selectedBesties.length > 0 || selectedMessengerContacts.length > 0) {
+        // Auto-advance after selection
+        setTimeout(() => {
+          setCheckInTutorialStep('notesPhotos');
+        }, 1000);
+      }
+    }
+  }, [selectedBesties, selectedMessengerContacts, currentCheckInTutorialStep, setCheckInTutorialStep]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -755,81 +986,92 @@ const CreateCheckInPage = () => {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Location with Map */}
-          <CheckInMap
-            locationInput={locationInput}
-            setLocationInput={(value) => {
-              setLocationInput(value);
-              if (value.trim()) {
-                setFormErrors(prev => ({ ...prev, location: '' }));
-              }
-            }}
-            gpsCoords={gpsCoords}
-            setGpsCoords={setGpsCoords}
-            mapInitialized={mapInitialized}
-            setMapInitialized={setMapInitialized}
-            autocompleteLoaded={autocompleteLoaded}
-            showLocationDropdown={showLocationDropdown}
-            setShowLocationDropdown={setShowLocationDropdown}
-            loading={loading}
-            setLoading={setLoading}
-          />
+          <div ref={mapRef}>
+            <CheckInMap
+              locationInput={locationInput}
+              setLocationInput={(value) => {
+                setLocationInput(value);
+                if (value.trim()) {
+                  setFormErrors(prev => ({ ...prev, location: '' }));
+                }
+              }}
+              gpsCoords={gpsCoords}
+              setGpsCoords={setGpsCoords}
+              mapInitialized={mapInitialized}
+              setMapInitialized={setMapInitialized}
+              autocompleteLoaded={autocompleteLoaded}
+              showLocationDropdown={showLocationDropdown}
+              setShowLocationDropdown={setShowLocationDropdown}
+              loading={loading}
+              setLoading={setLoading}
+            />
+          </div>
           {formErrors.location && <InlineError message={formErrors.location} className="px-6 -mt-4" />}
 
           {/* Who Meeting & Duration Combined */}
           <div className="card p-6">
-            <MeetingInfoSection
-              meetingWith={meetingWith}
-              setMeetingWith={setMeetingWith}
-              socialMediaLinks={socialMediaLinks}
-              setSocialMediaLinks={setSocialMediaLinks}
-              socialMediaExpanded={socialMediaExpanded}
-              setSocialMediaExpanded={setSocialMediaExpanded}
-            />
+            <div ref={whoMeetingRef}>
+              <MeetingInfoSection
+                meetingWith={meetingWith}
+                setMeetingWith={setMeetingWith}
+                socialMediaLinks={socialMediaLinks}
+                setSocialMediaLinks={setSocialMediaLinks}
+                socialMediaExpanded={socialMediaExpanded}
+                setSocialMediaExpanded={setSocialMediaExpanded}
+              />
+            </div>
 
-            <DurationSelector
-              duration={duration}
-              setDuration={(value) => {
-                setDuration(value);
-                if (value >= 10 && value <= 180) {
-                  setFormErrors(prev => ({ ...prev, duration: '' }));
-                }
-              }}
-            />
+            {/* Social Media Section Ref */}
+            <div ref={socialMediaRef} className={socialMediaExpanded ? 'mt-4' : ''} />
+
+            <div ref={durationRef}>
+              <DurationSelector
+                duration={duration}
+                setDuration={(value) => {
+                  setDuration(value);
+                  if (value >= 10 && value <= 180) {
+                    setFormErrors(prev => ({ ...prev, duration: '' }));
+                  }
+                }}
+              />
+            </div>
             {formErrors.duration && <InlineError message={formErrors.duration} className="mt-2" />}
           </div>
 
           {/* Who Should We Alert - Combined Section */}
           {bestiesLoadError && (
-            <ContextualError 
+            <ContextualError
               message={bestiesLoadError}
               title="Unable to Load Besties"
               onRetry={() => window.location.reload()}
               className="mb-6"
             />
           )}
-          <BestieSelector
-            besties={besties}
-            selectedBesties={selectedBesties}
-            setSelectedBesties={(besties) => {
-              setSelectedBesties(besties);
-              if (besties.length > 0 || selectedMessengerContacts.length > 0) {
-                setFormErrors(prev => ({ ...prev, besties: '' }));
-              }
-            }}
-            messengerContacts={messengerContacts}
-            selectedMessengerContacts={selectedMessengerContacts}
-            setSelectedMessengerContacts={(contacts) => {
-              setSelectedMessengerContacts(contacts);
-              if (contacts.length > 0 || selectedBesties.length > 0) {
-                setFormErrors(prev => ({ ...prev, besties: '' }));
-              }
-            }}
-            userId={currentUser?.uid}
-            showMessenger={FEATURES.messengerAlerts}
-          />
+          <div ref={bestieSelectorRef}>
+            <BestieSelector
+              besties={besties}
+              selectedBesties={selectedBesties}
+              setSelectedBesties={(besties) => {
+                setSelectedBesties(besties);
+                if (besties.length > 0 || selectedMessengerContacts.length > 0) {
+                  setFormErrors(prev => ({ ...prev, besties: '' }));
+                }
+              }}
+              messengerContacts={messengerContacts}
+              selectedMessengerContacts={selectedMessengerContacts}
+              setSelectedMessengerContacts={(contacts) => {
+                setSelectedMessengerContacts(contacts);
+                if (contacts.length > 0 || selectedBesties.length > 0) {
+                  setFormErrors(prev => ({ ...prev, besties: '' }));
+                }
+              }}
+              userId={currentUser?.uid}
+              showMessenger={FEATURES.messengerAlerts}
+            />
+          </div>
           {formErrors.besties && <InlineError message={formErrors.besties} className="px-6 -mt-4" />}
           {formErrors.bestiesWithoutContact && (
-            <ContextualError 
+            <ContextualError
               message={formErrors.bestiesWithoutContact}
               title="Notification Settings Required"
               className="mt-4"
@@ -837,18 +1079,20 @@ const CreateCheckInPage = () => {
           )}
 
           {/* Notes and Photos */}
-          <NotesPhotosSection
-            notes={notes}
-            setNotes={setNotes}
-            photoFiles={photoFiles}
-            setPhotoFiles={setPhotoFiles}
-            photoPreviews={photoPreviews}
-            setPhotoPreviews={setPhotoPreviews}
-            notesExpanded={notesExpanded}
-            setNotesExpanded={setNotesExpanded}
-            photosExpanded={photosExpanded}
-            setPhotosExpanded={setPhotosExpanded}
-          />
+          <div ref={notesPhotosRef}>
+            <NotesPhotosSection
+              notes={notes}
+              setNotes={setNotes}
+              photoFiles={photoFiles}
+              setPhotoFiles={setPhotoFiles}
+              photoPreviews={photoPreviews}
+              setPhotoPreviews={setPhotoPreviews}
+              notesExpanded={notesExpanded}
+              setNotesExpanded={setNotesExpanded}
+              photosExpanded={photosExpanded}
+              setPhotosExpanded={setPhotosExpanded}
+            />
+          </div>
 
           {/* Submit */}
           <button
@@ -870,6 +1114,23 @@ const CreateCheckInPage = () => {
             )}
           </button>
         </form>
+
+        {/* Tutorial Overlay */}
+        {showTutorial && currentCheckInTutorialStep && (() => {
+          const config = getTutorialConfig();
+          if (!config) return null;
+
+          return (
+            <CheckInTutorialOverlay
+              currentStep={currentCheckInTutorialStep}
+              onStepComplete={handleTutorialStepComplete}
+              onSkipTutorial={handleSkipTutorial}
+              highlightedElementRef={config.highlightedElementRef}
+              tooltipConfig={config.tooltipConfig}
+              isFirstStep={currentCheckInTutorialStep === 'location'}
+            />
+          );
+        })()}
       </div>
     </div>
   );
