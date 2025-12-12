@@ -54,14 +54,18 @@ export const useTutorialState = () => {
           }
 
           // Firestore takes precedence if it exists
-          if (firestoreComplete !== localComplete || firestoreStep !== localStep) {
-            setTutorialComplete(firestoreComplete);
-            setCurrentTutorialStep(firestoreStep);
+          // Ensure we never set 'intro' as a step (clean it up if it exists)
+          const finalStep = firestoreStep === 'intro' ? null : firestoreStep;
+          const finalComplete = firestoreComplete;
+          
+          if (finalComplete !== localComplete || finalStep !== localStep) {
+            setTutorialComplete(finalComplete);
+            setCurrentTutorialStep(finalStep);
             
             // Update localStorage to match Firestore
-            localStorage.setItem('tutorial_complete', firestoreComplete.toString());
-            if (firestoreStep) {
-              localStorage.setItem('current_tutorial_step', firestoreStep);
+            localStorage.setItem('tutorial_complete', finalComplete.toString());
+            if (finalStep) {
+              localStorage.setItem('current_tutorial_step', finalStep);
             } else {
               localStorage.removeItem('current_tutorial_step');
             }
@@ -75,6 +79,23 @@ export const useTutorialState = () => {
 
     syncWithFirestore();
   }, [currentUser]);
+
+  // Safety net: Clean up 'intro' step if it somehow gets into state
+  useEffect(() => {
+    if (currentTutorialStep === 'intro') {
+      console.warn('Detected invalid "intro" step in state, cleaning up...');
+      setCurrentTutorialStep(null);
+      localStorage.removeItem('current_tutorial_step');
+      
+      // Also clean up in Firestore if user is logged in
+      if (currentUser) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        updateDoc(userRef, { currentTutorialStep: null }).catch(error => {
+          console.error('Error cleaning up intro step in Firestore:', error);
+        });
+      }
+    }
+  }, [currentTutorialStep, currentUser]);
 
   // Update tutorial complete state
   const markTutorialComplete = async (skipFirestore = false) => {
@@ -102,6 +123,11 @@ export const useTutorialState = () => {
 
   // Update current tutorial step
   const setTutorialStep = async (step) => {
+    // Silently clean up old 'intro' step if it's passed
+    if (step === 'intro') {
+      step = null;
+    }
+    
     // Validate step is one of the allowed values
     const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom', 'rideshare', 'walking', 'quickmeet'];
     if (step && !validSteps.includes(step)) {
