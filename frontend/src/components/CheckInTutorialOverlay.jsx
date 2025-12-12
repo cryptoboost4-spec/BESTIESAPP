@@ -12,9 +12,11 @@ const CheckInTutorialOverlay = ({
   highlightedElementRef,
   tooltipConfig,
   isFirstStep = false,
+  stepNumber,
+  totalSteps,
 }) => {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0, rotation: 0 });
+  const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0, rotation: 180 });
   const [showTooltip, setShowTooltip] = useState(true);
 
   // Trigger haptic feedback
@@ -26,16 +28,23 @@ const CheckInTutorialOverlay = ({
 
   // Lock body scroll when tutorial is active
   useEffect(() => {
+    // Save current scroll position
+    const scrollY = window.scrollY;
+    
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
     document.body.style.height = '100%';
+    document.body.style.top = `-${scrollY}px`;
 
     return () => {
+      // Restore scroll position
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.height = '';
+      document.body.style.top = '';
+      window.scrollTo(0, scrollY);
     };
   }, []);
 
@@ -60,32 +69,48 @@ const CheckInTutorialOverlay = ({
         return;
       }
 
-      // For all other sections, position tooltip ABOVE the section
+      // For all other sections, smart positioning
       const tooltipWidth = Math.min(screenWidth - 40, 320);
-      const tooltipHeight = 200; // Approximate height
+      const tooltipHeight = 220; // Approximate height (increased for progress indicator)
       const padding = 20;
+      const minSpaceFromEdge = 20;
 
       // Always center horizontally
       const left = (screenWidth - tooltipWidth) / 2;
 
+      // Calculate space above and below element
+      const spaceAbove = elementRect.top;
+      const spaceBelow = screenHeight - elementRect.bottom;
+
       // Position above the element with padding
       let top = elementRect.top - tooltipHeight - padding;
+      let arrowRotation = 180; // Points down by default
 
-      // Ensure doesn't go off top of screen
-      if (top < 20) {
-        top = 20;
+      // If not enough space above, position below
+      if (spaceAbove < tooltipHeight + padding + minSpaceFromEdge && spaceBelow > tooltipHeight + padding + minSpaceFromEdge) {
+        top = elementRect.bottom + padding;
+        arrowRotation = 0; // Points up
+      }
+
+      // Ensure doesn't go off screen
+      if (top < minSpaceFromEdge) {
+        top = minSpaceFromEdge;
+      } else if (top + tooltipHeight > screenHeight - minSpaceFromEdge) {
+        top = screenHeight - tooltipHeight - minSpaceFromEdge;
       }
 
       setTooltipPosition({ top, left });
 
-      // Calculate arrow position (points down to element)
+      // Calculate arrow position (points to element)
       const arrowLeft = screenWidth / 2;
-      const arrowTop = elementRect.top - padding / 2;
+      const arrowTop = arrowRotation === 180
+        ? elementRect.top - padding / 2  // Points down to element
+        : elementRect.bottom + padding / 2; // Points up to element
 
       setArrowPosition({
         top: arrowTop,
         left: arrowLeft,
-        rotation: 180, // Points down
+        rotation: arrowRotation,
       });
     };
 
@@ -174,7 +199,10 @@ const CheckInTutorialOverlay = ({
               height: 0,
               borderLeft: '12px solid transparent',
               borderRight: '12px solid transparent',
-              borderTop: '12px solid white',
+              ...(arrowPosition.rotation === 180 
+                ? { borderTop: '12px solid white' } // Points down
+                : { borderBottom: '12px solid white' } // Points up
+              ),
             }}
           />
         </div>
@@ -196,26 +224,31 @@ const CheckInTutorialOverlay = ({
             }),
           }}
         >
-          {/* Skip button - only on first step */}
-          {isFirstStep && (
-            <button
-              onClick={handleSkip}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              aria-label="Skip tutorial"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          {/* Progress indicator */}
+          {stepNumber && totalSteps && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-2">
+              Step {stepNumber} of {totalSteps}
+            </div>
           )}
+
+          {/* Skip button - available on all steps */}
+          <button
+            onClick={handleSkip}
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            aria-label="Skip tutorial"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
 
           {/* Icon */}
           {tooltipConfig.icon && (

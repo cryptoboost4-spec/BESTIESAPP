@@ -546,8 +546,9 @@ const CreateCheckInPage = () => {
   }, []);
 
   // Check if this is user's first check-in and show tutorial
+  // Wait for besties to load before showing tutorial (so bestie selection step works)
   useEffect(() => {
-    if (!currentUser || authLoading || hasCheckedForFirstCheckIn) return;
+    if (!currentUser || authLoading || hasCheckedForFirstCheckIn || bestiesLoading) return;
 
     const checkFirstCheckIn = async () => {
       try {
@@ -567,18 +568,42 @@ const CreateCheckInPage = () => {
         // If no previous check-ins and tutorial not complete, show tutorial
         if (querySnapshot.empty && !checkInTutorialComplete) {
           setShowTutorial(true);
-          setCheckInTutorialStep('location'); // Start with location step
+          // Skip location step for quick check-ins (location already set)
+          const isQuickCheckIn = location.state?.skipLocation || location.state?.quickType;
+          setCheckInTutorialStep(isQuickCheckIn ? 'whoMeeting' : 'location');
         }
 
         setHasCheckedForFirstCheckIn(true);
       } catch (error) {
         console.error('Error checking for first check-in:', error);
+        
+        // If permission error, show tutorial anyway (assume first check-in)
+        // This handles cases where Firestore rules prevent checking check-ins
+        if (error.code === 'permission-denied' && !checkInTutorialComplete) {
+          console.warn('Permission denied checking check-ins - showing tutorial anyway');
+          setShowTutorial(true);
+          setCheckInTutorialStep('location');
+        }
+        
         setHasCheckedForFirstCheckIn(true);
       }
     };
 
     checkFirstCheckIn();
-  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep]);
+  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading]);
+
+  // Scroll submit button into view on final step
+  useEffect(() => {
+    if (currentCheckInTutorialStep === 'final' && submitButtonRef.current) {
+      // Small delay to ensure tooltip is rendered first
+      setTimeout(() => {
+        submitButtonRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 300);
+    }
+  }, [currentCheckInTutorialStep]);
 
   // Get tutorial config for current step
   const getTutorialConfig = () => {
@@ -603,7 +628,7 @@ const CreateCheckInPage = () => {
           highlightedElementRef: whoMeetingRef,
           overlayOnElement: false,
           tooltipConfig: {
-            body: `Add a name if you'd like. Could be 'Sarah from Hinge' or 'Mike - new friend.'\n\nTotally optional - skip if you prefer privacy.`,
+            body: `Add a name if you'd like. Examples: 'Sarah from Hinge', 'Mike - new friend', or 'Marketplace seller'.\n\nTotally optional - skip if you prefer privacy.`,
             buttons: [
               { text: 'Skip', action: 'skip', primary: false },
               { text: 'Continue', action: 'continue', primary: true },
@@ -629,7 +654,7 @@ const CreateCheckInPage = () => {
           highlightedElementRef: durationRef,
           overlayOnElement: false,
           tooltipConfig: {
-            body: `How long will you be gone?\n\nDefault is 30 minutes - adjust if you need more time.`,
+            body: `How long will you be gone?\n\nDefault is 30 minutes. Adjust if you need more time - your bestie will be notified if you don't check in by then.`,
             buttons: [
               { text: 'Use Default', action: 'useDefault', primary: false },
               { text: 'Set Custom Time', action: 'setCustom', primary: true },
@@ -643,7 +668,9 @@ const CreateCheckInPage = () => {
           overlayOnElement: false,
           tooltipConfig: {
             title: 'Who should know?',
-            body: `Select at least one bestie who'll get notifications about this check-in.\n\nChoose whoever you trust and who's most likely to notice if something's wrong.`,
+            body: besties.length === 0 
+              ? `You'll need to add besties first before creating check-ins.\n\nGo to your profile to add besties, then come back to create your first check-in!`
+              : `Select at least one bestie who'll get notifications about this check-in.\n\nChoose whoever you trust and who's most likely to notice if something's wrong.`,
           },
         };
 
@@ -653,9 +680,9 @@ const CreateCheckInPage = () => {
           overlayOnElement: false,
           tooltipConfig: {
             title: 'Any extra details?',
-            body: `Want to add notes or photos? Completely optional.\n\nCould be helpful to note what they're wearing, car details, or meeting spot specifics.`,
+            body: `Want to add notes or photos? Completely optional.\n\nExamples: what they're wearing, car details, meeting spot specifics, or any other info your bestie might need.`,
             buttons: [
-              { text: 'Skip to Finish', action: 'skip', primary: false },
+              { text: 'Skip to Submit', action: 'skip', primary: false },
               { text: 'Add Details', action: 'addDetails', primary: true },
             ],
           },
@@ -668,7 +695,7 @@ const CreateCheckInPage = () => {
           tooltipConfig: {
             icon: '💜',
             title: "You're Ready!",
-            body: `Everything looks good. When you tap 'Start Check-In,' your bestie will get a notification and your timer begins.\n\nYou're in control. You're prepared. We've got your back.`,
+            body: `Everything looks good! Tap the '🛡️ Start Check-In' button below to begin.\n\nYour bestie will get a notification and your timer starts. You're in control. You're prepared. We've got your back.`,
           },
         };
 
@@ -735,10 +762,12 @@ const CreateCheckInPage = () => {
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
-      // Auto-advance to next step
-      setTimeout(() => {
+      // Auto-advance to next step with delay to let user see the change
+      const timeoutId = setTimeout(() => {
         setCheckInTutorialStep('whoMeeting');
-      }, 500);
+      }, 800); // Increased from 500ms to 800ms for better UX
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [locationInput, currentCheckInTutorialStep, setCheckInTutorialStep]);
 
@@ -747,10 +776,12 @@ const CreateCheckInPage = () => {
     if (currentCheckInTutorialStep === 'bestieSelection') {
       // If user has selected besties, allow them to continue
       if (selectedBesties.length > 0 || selectedMessengerContacts.length > 0) {
-        // Auto-advance after selection
-        setTimeout(() => {
+        // Auto-advance after selection with delay to let user review
+        const timeoutId = setTimeout(() => {
           setCheckInTutorialStep('notesPhotos');
-        }, 1000);
+        }, 1200); // Increased from 1000ms to 1200ms for better UX
+        
+        return () => clearTimeout(timeoutId);
       }
     }
   }, [selectedBesties, selectedMessengerContacts, currentCheckInTutorialStep, setCheckInTutorialStep]);
@@ -1100,7 +1131,9 @@ const CreateCheckInPage = () => {
             type="submit"
             id="create-checkin-submit-btn"
             disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
-            className="w-full btn btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className={`w-full btn btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98] ${
+              currentCheckInTutorialStep === 'final' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''
+            }`}
             aria-label="Start safety check-in"
             aria-busy={loading}
           >
@@ -1120,6 +1153,11 @@ const CreateCheckInPage = () => {
           const config = getTutorialConfig();
           if (!config) return null;
 
+          const stepOrder = ['location', 'whoMeeting', 'socialMedia', 'duration', 'bestieSelection', 'notesPhotos', 'final'];
+          const currentStepIndex = stepOrder.indexOf(currentCheckInTutorialStep);
+          const stepNumber = currentStepIndex >= 0 ? currentStepIndex + 1 : 1;
+          const totalSteps = stepOrder.length;
+
           return (
             <CheckInTutorialOverlay
               currentStep={currentCheckInTutorialStep}
@@ -1128,6 +1166,8 @@ const CreateCheckInPage = () => {
               highlightedElementRef={config.highlightedElementRef}
               tooltipConfig={config.tooltipConfig}
               isFirstStep={currentCheckInTutorialStep === 'location'}
+              stepNumber={stepNumber}
+              totalSteps={totalSteps}
             />
           );
         })()}
