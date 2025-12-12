@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage } from '../services/firebase';
@@ -228,7 +228,7 @@ const OnboardingPage = () => {
   // Welcome Screen
   if (step === 'welcome') {
     return (
-      <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full text-center">
           <div className="text-8xl mb-6 animate-bounce">💜</div>
           <h1 className="text-4xl font-display text-white mb-4">Welcome to Besties!</h1>
@@ -250,7 +250,7 @@ const OnboardingPage = () => {
   // Slides
   if (step === 'slides') {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-800 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex flex-col items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full text-center">
           <div className="text-7xl mb-6">{currentSlide.emoji}</div>
           <h2 className="text-3xl font-display text-gray-800 dark:text-gray-200 mb-4">
@@ -309,9 +309,10 @@ const OnboardingPage = () => {
   // Name Edit
   if (step === 'name') {
     const hasName = displayName.trim().length > 0;
+    const inputRef = useRef(null);
     
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">👤</div>
@@ -325,26 +326,31 @@ const OnboardingPage = () => {
             </p>
           </div>
 
-          <input
-            type="text"
-            value={displayName}
-            onChange={(e) => {
-              setDisplayName(e.target.value);
-              setNameHasBeenEdited(true);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && displayName.trim()) {
-                e.preventDefault();
-                handleSaveName();
-              }
-            }}
-            maxLength={50}
-            className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-lg mb-4"
-            placeholder="Enter your name"
-            autoFocus
-            aria-label="Your name"
-            aria-required="true"
-          />
+          <div
+            onClick={() => inputRef.current?.focus()}
+            className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl focus-within:border-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 text-lg mb-4 cursor-text"
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={displayName}
+              onChange={(e) => {
+                setDisplayName(e.target.value);
+                setNameHasBeenEdited(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && displayName.trim()) {
+                  e.preventDefault();
+                  handleSaveName();
+                }
+              }}
+              maxLength={50}
+              className="w-full bg-transparent border-none outline-none text-gray-800 dark:text-gray-200"
+              placeholder="Tap to enter your name"
+              aria-label="Your name"
+              aria-required="true"
+            />
+          </div>
 
           {!hasName && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
@@ -377,7 +383,7 @@ const OnboardingPage = () => {
     const hasExistingPhoto = userData?.photoURL || currentUser?.photoURL;
     
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">📷</div>
@@ -473,7 +479,7 @@ const OnboardingPage = () => {
   // Invite Welcome Screen (only shown if user joined via invite)
   if (step === 'invite-welcome' && inviterInfo) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full text-center">
           <div className="text-8xl mb-6 animate-bounce">💜</div>
 
@@ -588,15 +594,15 @@ const OnboardingPage = () => {
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">1️⃣</span>
                     <div className="text-white/90">
-                      <p className="font-semibold">Add Your Besties</p>
-                      <p className="text-sm text-white/70">Build your safety circle on the main page (where you are now)</p>
+                      <p className="font-semibold">Learn How to Check In</p>
+                      <p className="text-sm text-white/70">Create your first check-in to see how it works - we'll guide you through it!</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">2️⃣</span>
                     <div className="text-white/90">
-                      <p className="font-semibold">Create Your First Check-In</p>
-                      <p className="text-sm text-white/70">Use the "Try Test Walkthrough" button on the home page to practice first</p>
+                      <p className="font-semibold">Add Your Besties</p>
+                      <p className="text-sm text-white/70">After you learn check-ins, add real besties to your safety circle</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

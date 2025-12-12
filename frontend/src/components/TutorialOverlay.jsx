@@ -10,7 +10,8 @@ const TutorialOverlay = ({
   highlightedElementRef,
   tooltipConfig,
   stepNumber,
-  totalSteps
+  totalSteps,
+  isPaused = false
 }) => {
   const overlayRef = useRef(null);
   const [highlightRect, setHighlightRect] = useState(null);
@@ -105,22 +106,39 @@ const TutorialOverlay = ({
     };
   }, [highlightedElementRef]);
 
-  // Handle ESC key to exit tutorial
+  // Handle keyboard navigation - World-class UX
   useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && currentStep) {
+    const handleKeyDown = (e) => {
+      if (!currentStep) return;
+
+      // ESC to exit
+      if (e.key === 'Escape') {
         haptic.light();
-        // Ask user if they want to exit (but make it friendly)
         const shouldExit = window.confirm('Exit tutorial? Don\'t worry - you can always start it again later! 💜');
         if (shouldExit) {
           onTutorialComplete?.();
         }
+        return;
+      }
+
+      // Arrow keys for navigation (if enabled)
+      if (e.key === 'ArrowRight' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        haptic.light();
+        onStepComplete?.();
+      }
+
+      // Enter to continue
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        haptic.light();
+        onStepComplete?.();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [currentStep, onTutorialComplete]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [currentStep, onTutorialComplete, onStepComplete]);
 
   const handleNext = () => {
     if (tooltipConfig?.onNext) {
@@ -137,27 +155,29 @@ const TutorialOverlay = ({
       {/* Dark Overlay - full screen, highlighted element will be above it */}
       <div
         ref={overlayRef}
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[90] transition-opacity duration-300"
+        className={`fixed inset-0 backdrop-blur-sm z-[90] transition-opacity duration-300 ${
+          isPaused ? 'bg-black/40' : 'bg-black/75'
+        }`}
         onClick={(e) => {
           // Prevent clicks outside highlighted area
           e.stopPropagation();
         }}
+        aria-hidden="true"
       />
 
       {/* Highlighted Element Glow - positioned above overlay */}
       {highlightedElementRef?.current && highlightRect && (
         <>
-          {/* Glow effect around element */}
+          {/* Glow effect around element - Enhanced */}
           <div
-            className="fixed z-[92] pointer-events-none transition-all duration-300 tutorial-highlight"
+            className="fixed z-[92] pointer-events-none transition-all duration-500 tutorial-highlight-enhanced"
             style={{
               top: `${highlightRect.top - 4}px`,
               left: `${highlightRect.left - 4}px`,
               width: `${highlightRect.width + 8}px`,
               height: `${highlightRect.height + 8}px`,
-              borderRadius: '12px',
-              boxShadow: '0 0 20px rgba(147, 51, 234, 0.6), 0 0 40px rgba(147, 51, 234, 0.4)',
-              filter: 'brightness(1.1)',
+              borderRadius: '16px',
+              filter: 'brightness(1.15)',
             }}
           />
           {/* Ensure highlighted element is clickable above overlay */}
@@ -181,7 +201,9 @@ const TutorialOverlay = ({
         buttonText={tooltipConfig.buttonText || 'Next'}
         onNext={handleNext}
         onBack={onStepBack}
+        onSkip={onTutorialComplete}
         showBack={stepNumber > 1}
+        showSkip={true}
         stepNumber={stepNumber}
         totalSteps={totalSteps}
         targetElement={highlightedElementRef?.current}

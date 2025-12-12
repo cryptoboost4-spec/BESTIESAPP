@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import haptic from '../utils/hapticFeedback';
 import { sanitizeUserInput } from '../utils/sanitize';
 
-const CreatePostModal = ({ onClose, onPostCreated }) => {
+const CreatePostModal = ({ onClose, onPostCreated, onCancel }) => {
   const { currentUser, userData } = useAuth();
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState(null);
@@ -88,8 +88,13 @@ const CreatePostModal = ({ onClose, onPostCreated }) => {
     }
   };
 
+  const handleCancel = () => {
+    onCancel?.(); // Call cancel callback if provided
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={handleCancel}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -97,7 +102,7 @@ const CreatePostModal = ({ onClose, onPostCreated }) => {
             ✍️ Create a Post
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl transition-colors"
           >
             ×
@@ -168,7 +173,7 @@ const CreatePostModal = ({ onClose, onPostCreated }) => {
         {/* Action Buttons */}
         <div className="flex gap-3">
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             disabled={uploading}
             className="flex-1 btn btn-secondary"
           >

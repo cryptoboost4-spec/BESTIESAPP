@@ -13,6 +13,7 @@ import CheckInMap from '../components/checkin/CheckInMap';
 import MeetingInfoSection from '../components/checkin/MeetingInfoSection';
 import DurationSelector from '../components/checkin/DurationSelector';
 import BestieSelector from '../components/checkin/BestieSelector';
+import { MOCK_BESTIE, isMockBestie, filterMockBesties } from '../utils/mockBestie';
 import NotesPhotosSection from '../components/checkin/NotesPhotosSection';
 import InlineError from '../components/errors/InlineError';
 import ContextualError from '../components/errors/ContextualError';
@@ -166,7 +167,7 @@ const CreateCheckInPage = () => {
           console.error('❌ User document does not exist');
           console.groupEnd();
           setBesties([]);
-          setBestiesLoading(false); // Set to false AFTER setting empty array
+          setBestiesLoading(false); // Set to false AFTER setting array
           return;
         }
 
@@ -176,7 +177,7 @@ const CreateCheckInPage = () => {
         if (featuredIds.length === 0) {
           console.warn('⚠️ featuredCircle is empty - no besties to load');
           setBesties([]);
-          setBestiesLoading(false); // Set to false AFTER setting empty array
+          setBestiesLoading(false); // Set to false AFTER setting array
           return;
         }
 
@@ -250,6 +251,7 @@ const CreateCheckInPage = () => {
           })
         );
 
+        // Don't add mock bestie here - let the separate useEffect handle it
         setBesties(bestiesWithUserData);
         // CRITICAL: Set loading to false AFTER data is set
         setBestiesLoading(false);
@@ -314,6 +316,27 @@ const CreateCheckInPage = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, authLoading]);
+  
+  // Add mock bestie during tutorial if user has no real besties
+  useEffect(() => {
+    if (!bestiesLoading && showTutorial) {
+      const hasMockBestie = besties.some(b => isMockBestie(b));
+      const hasRealBesties = besties.some(b => !isMockBestie(b));
+      
+      if (!hasRealBesties && !hasMockBestie) {
+        // Add mock bestie for tutorial
+        console.log('[Tutorial] Adding mock bestie for tutorial');
+        setBesties(prev => [...prev, MOCK_BESTIE]);
+      }
+    } else if (!showTutorial) {
+      // Remove mock bestie when tutorial ends
+      const filteredBesties = besties.filter(b => !isMockBestie(b));
+      if (filteredBesties.length !== besties.length) {
+        setBesties(filteredBesties);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTutorial, bestiesLoading]);
 
   // Load Messenger contacts when currentUser is available
   useEffect(() => {
@@ -772,13 +795,16 @@ const CreateCheckInPage = () => {
           console.warn('[Tutorial] bestieSelectorRef is not ready');
           return null;
         }
+        const hasRealBesties = besties.some(b => !isMockBestie(b));
+        const hasMockBestie = besties.some(b => isMockBestie(b));
+        
         return {
           highlightedElementRef: bestieSelectorRef,
           overlayOnElement: false,
           tooltipConfig: {
             title: 'Who should know?',
-            body: besties.length === 0 
-              ? `You'll need to add besties first before creating check-ins.\n\nGo to your profile to add besties, then come back to create your first check-in!`
+            body: hasMockBestie && !hasRealBesties
+              ? `This is a demo bestie for practice! Select it to see how check-ins work.\n\nAfter you complete this tutorial, you'll add real besties who can actually help keep you safe. 💜`
               : `Select at least one bestie who'll get notifications about this check-in.\n\nChoose whoever you trust and who's most likely to notice if something's wrong.`,
           },
         };
@@ -858,7 +884,7 @@ const CreateCheckInPage = () => {
         
         const element = ref.current;
         const safeZone = 100; // Space above bottom nav
-        
+
         // Scroll element into view with offset for bottom nav
         element.scrollIntoView({
           behavior: 'smooth',
@@ -899,10 +925,9 @@ const CreateCheckInPage = () => {
         scrollToElement(submitButtonRef);
         break;
       default:
-        // No scroll needed for this step
+        // No scroll needed for other steps
         break;
     }
-    // End of scroll handler
   }, [currentCheckInTutorialStep, showTutorial]);
 
   // Handle tutorial step completion
@@ -994,7 +1019,16 @@ const CreateCheckInPage = () => {
         // Validate before allowing final step
         if (nextStep === 'final') {
           const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
-          const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
+          // Allow mock bestie during tutorial
+          const hasRealBestie = selectedBesties.some(bestieId => {
+            const bestie = besties.find(b => b.id === bestieId);
+            return !isMockBestie(bestie);
+          });
+          const hasMockBestie = selectedBesties.some(bestieId => {
+            const bestie = besties.find(b => b.id === bestieId);
+            return isMockBestie(bestie);
+          });
+          const hasBestie = hasRealBestie || hasMockBestie || selectedMessengerContacts.length > 0;
           
           if (!hasAddress || !hasBestie) {
             toast.error('Please add a location and select at least one bestie before continuing.', {
@@ -1018,7 +1052,16 @@ const CreateCheckInPage = () => {
         // Validate before allowing final step
         if (nextStep === 'final') {
           const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
-          const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
+          // Allow mock bestie during tutorial
+          const hasRealBestie = selectedBesties.some(bestieId => {
+            const bestie = besties.find(b => b.id === bestieId);
+            return !isMockBestie(bestie);
+          });
+          const hasMockBestie = selectedBesties.some(bestieId => {
+            const bestie = besties.find(b => b.id === bestieId);
+            return isMockBestie(bestie);
+          });
+          const hasBestie = hasRealBestie || hasMockBestie || selectedMessengerContacts.length > 0;
           
           if (!hasAddress || !hasBestie) {
             toast.error('Please add a location and select at least one bestie before continuing.', {
@@ -1047,11 +1090,23 @@ const CreateCheckInPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Filter out mock besties before validation and submission
+    const realSelectedBesties = selectedBesties.filter(bestieId => {
+      const bestie = besties.find(b => b.id === bestieId);
+      return !isMockBestie(bestie);
+    });
+    
     // Check if at least one contact method is selected (either regular bestie OR messenger contact)
-    const hasRegularBesties = selectedBesties.length > 0;
+    const hasRegularBesties = realSelectedBesties.length > 0;
     const hasMessengerContacts = selectedMessengerContacts.length > 0;
     
-    if (!hasRegularBesties && !hasMessengerContacts) {
+    // During tutorial, allow mock bestie selection
+    const hasMockBestieSelected = selectedBesties.some(bestieId => {
+      const bestie = besties.find(b => b.id === bestieId);
+      return isMockBestie(bestie);
+    });
+    
+    if (!hasRegularBesties && !hasMessengerContacts && !hasMockBestieSelected) {
       errorTracker.trackFunnelStep('checkin', 'error_no_besties');
       setFormErrors(prev => ({ ...prev, besties: 'Please select at least one bestie or messenger contact to notify' }));
       return;
@@ -1059,10 +1114,10 @@ const CreateCheckInPage = () => {
       setFormErrors(prev => ({ ...prev, besties: '' }));
     }
 
-    // For regular besties, check if they have contact methods (phone+SMS, telegram, or push)
-    // But allow check-in even if they only have messenger contacts
+    // For regular besties (not mock), check if they have contact methods
+    // But allow check-in even if they only have messenger contacts or mock bestie (during tutorial)
     if (hasRegularBesties) {
-      const bestiesWithoutContact = selectedBesties.filter(bestieId => {
+      const bestiesWithoutContact = realSelectedBesties.filter(bestieId => {
         const bestie = besties.find(b => b.id === bestieId);
         // Check if bestie has any contact method
         return !bestie?.phone && !bestie?.telegramChatId && !bestie?.notificationPreferences?.telegram && !bestie?.notificationPreferences?.push;
@@ -1080,6 +1135,14 @@ const CreateCheckInPage = () => {
       } else {
         setFormErrors(prev => ({ ...prev, bestiesWithoutContact: '' }));
       }
+    }
+    
+    // Show tutorial message if using mock bestie
+    if (hasMockBestieSelected && showTutorial) {
+      toast.success('This is a practice check-in! After the tutorial, add real besties to keep you safe. 💜', {
+        duration: 5000,
+        icon: '🎓'
+      });
     }
 
     // Location is only required for custom check-ins (not quick check-ins)
@@ -1147,13 +1210,19 @@ const CreateCheckInPage = () => {
           const privacyLevel = userData?.privacySettings?.checkInVisibility || 'all_besties';
           const circleSnapshot = userData?.featuredCircle || [];
 
+          // Filter out mock besties before saving
+          const finalBestieIds = selectedBesties.filter(bestieId => {
+            const bestie = besties.find(b => b.id === bestieId);
+            return !isMockBestie(bestie);
+          });
+          
           const checkInData = {
             userId: currentUser.uid,
             location: locationInput,
             gpsCoords: gpsCoords || null,
             duration: duration,
             alertTime: Timestamp.fromDate(alertTime),
-            bestieIds: selectedBesties,
+            bestieIds: finalBestieIds, // Only real besties
             notes: notes || null,
             meetingWith: meetingWith || null,
             socialMediaLinks: socialMediaLinks || null,
@@ -1163,6 +1232,7 @@ const CreateCheckInPage = () => {
             createdAt: Timestamp.now(),
             lastUpdate: Timestamp.now(),
             isTest: userData?.testMode || false,
+            isTutorial: hasMockBestieSelected && showTutorial, // Mark as tutorial check-in
           };
 
           // Add Messenger contact IDs if any are selected
@@ -1182,10 +1252,11 @@ const CreateCheckInPage = () => {
           const { logAnalyticsEvent } = require('../services/firebase');
           logAnalyticsEvent('checkin_created', {
             duration: duration,
-            besties_count: selectedBesties.length,
+            besties_count: finalBestieIds.length,
             messenger_contacts_count: selectedMessengerContacts.length,
             has_photos: validPhotoURLs.length > 0,
-            has_notes: !!notes
+            has_notes: !!notes,
+            is_tutorial: hasMockBestieSelected && showTutorial
           });
 
           // Verify the document was created by reading it back
@@ -1201,13 +1272,13 @@ const CreateCheckInPage = () => {
             throw new Error('There was a problem saving your check-in. Please try again.');
           }
 
-          // Verify besties were saved correctly
-          if (!savedData.bestieIds || savedData.bestieIds.length !== selectedBesties.length) {
+          // Verify besties were saved correctly (only check real besties, not mock)
+          if (!savedData.bestieIds || savedData.bestieIds.length !== finalBestieIds.length) {
             throw new Error('Your besties weren\'t saved correctly. Please try again.');
           }
 
-          // Verify all bestie IDs match exactly
-          const bestiesMatch = selectedBesties.every(id => savedData.bestieIds.includes(id));
+          // Verify all bestie IDs match exactly (only real besties)
+          const bestiesMatch = finalBestieIds.every(id => savedData.bestieIds.includes(id));
           if (!bestiesMatch) {
             throw new Error('There was a problem saving your bestie list. Please try again.');
           }
@@ -1398,7 +1469,7 @@ const CreateCheckInPage = () => {
             ref={submitButtonRef}
             type="submit"
             id="create-checkin-submit-btn"
-            disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
+            disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0) || (showTutorial && selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
             className={`w-full btn btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98] ${
               currentCheckInTutorialStep === 'final' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''
             }`}

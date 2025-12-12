@@ -72,8 +72,21 @@ const RideshareModal = ({ onClose, isTutorialMode = false }) => {
   }, [handleClose, isTutorialMode]);
 
   const handleStart = () => {
+    haptic.light();
+
+    // In tutorial mode, still navigate to create page so user can create check-in
+    // But allow empty rego for tutorial
     if (isTutorialMode) {
-      // In tutorial mode, just close after showing tooltips
+      navigate('/create', {
+        state: {
+          quickType: 'rideshare',
+          rego: rego.trim() || 'TUTORIAL',
+          duration: duration,
+          skipLocation: true,
+          activity: { name: '🚗 Rideshare', emoji: '🚗' },
+          isTutorial: true
+        }
+      });
       handleClose();
       return;
     }
@@ -81,7 +94,6 @@ const RideshareModal = ({ onClose, isTutorialMode = false }) => {
     if (!rego.trim()) {
       return;
     }
-    haptic.light();
 
     // Navigate to create page with rideshare data - NO LOCATION NEEDED
     navigate('/create', {

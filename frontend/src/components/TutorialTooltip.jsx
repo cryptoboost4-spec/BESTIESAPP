@@ -7,7 +7,9 @@ const TutorialTooltip = ({
   buttonText = 'Next',
   onNext,
   onBack,
+  onSkip,
   showBack = false,
+  showSkip = false,
   stepNumber,
   totalSteps,
   targetElement,
@@ -201,8 +203,14 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-[100] bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/90 dark:to-pink-900/90 rounded-2xl shadow-2xl p-6 border-2 border-purple-200 dark:border-purple-700 backdrop-blur-sm"
-      style={getPositionStyles()}
+      className="fixed z-[100] bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/95 dark:via-pink-900/95 dark:to-purple-900/95 rounded-2xl shadow-2xl p-6 border-2 border-purple-200 dark:border-purple-700 backdrop-blur-md animate-step-transition"
+      style={{
+        ...getPositionStyles(),
+        boxShadow: '0 20px 60px rgba(147, 51, 234, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
+      }}
+      role="dialog"
+      aria-labelledby="tutorial-title"
+      aria-describedby="tutorial-body"
     >
       {/* Arrow - only show if we have a target element */}
       {targetElement && <div style={getArrowStyles()} />}
@@ -210,34 +218,73 @@ const TutorialTooltip = ({
       {/* Content */}
       <div className="space-y-4">
         {title && (
-          <h4 className="text-xl font-display text-gradient flex items-center gap-2">
-            ✨ {title}
+          <h4 id="tutorial-title" className="text-xl font-display text-gradient flex items-center gap-2 font-bold">
+            {title}
           </h4>
         )}
         {body && (
-          <p className="text-base text-text-primary dark:text-gray-100 leading-relaxed font-medium">
+          <p id="tutorial-body" className="text-base text-text-primary dark:text-gray-100 leading-relaxed font-medium">
             {body}
           </p>
         )}
 
-        <div className="flex gap-3 mt-4">
-          {showBack && onBack && (
+        {/* Progress dots */}
+        {stepNumber && totalSteps && (
+          <div className="flex gap-2 justify-center mt-4">
+            {Array.from({ length: totalSteps }, (_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  i < stepNumber
+                    ? 'bg-purple-600 dark:bg-purple-400 scale-110'
+                    : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+                aria-label={`Step ${i + 1} of ${totalSteps}`}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 mt-4">
+          <div className="flex gap-3">
+            {showBack && onBack && (
+              <button
+                onClick={() => {
+                  haptic.light();
+                  onBack();
+                }}
+                className="flex-1 btn btn-secondary py-3 text-base"
+                aria-label="Go back to previous step"
+              >
+                ← Back
+              </button>
+            )}
+            <button
+              onClick={handleNext}
+              className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 text-white font-bold py-3 text-base shadow-xl animate-pulse-slow whitespace-nowrap relative overflow-hidden group`}
+              aria-label={`${buttonText} - Step ${stepNumber} of ${totalSteps}`}
+              style={{
+                backgroundSize: '200% 200%',
+                animation: 'gradient-shift 3s ease infinite, pulse-slow 2s ease-in-out infinite'
+              }}
+            >
+              <span className="relative z-10">{buttonText} ✨</span>
+              {/* Shine effect on hover */}
+              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            </button>
+          </div>
+          {showSkip && onSkip && (
             <button
               onClick={() => {
                 haptic.light();
-                onBack();
+                onSkip();
               }}
-              className="flex-1 btn btn-secondary py-3 text-base"
+              className="text-sm text-text-secondary hover:text-text-primary underline transition-colors text-center"
+              aria-label="Skip tutorial"
             >
-              ← Back
+              Skip Tutorial
             </button>
           )}
-          <button
-            onClick={handleNext}
-            className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-primary hover:shadow-lg hover:scale-105 active:scale-95 transition-all text-white font-bold py-3 text-base shadow-xl animate-pulse-slow whitespace-nowrap`}
-          >
-            {buttonText} ✨
-          </button>
         </div>
       </div>
     </div>
