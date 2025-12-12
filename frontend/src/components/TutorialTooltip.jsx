@@ -63,16 +63,10 @@ const TutorialTooltip = ({
   }, [targetElement, position]);
 
   const getPositionStyles = () => {
-    const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
 
     // Get tooltip dimensions (use defaults if not yet rendered)
     const tooltipHeight = tooltipRef.current?.offsetHeight || 280;
-
-    // Account for bottom navigation menu + buffer zone
-    const bottomNavHeight = 80;
-    const bufferAboveNav = 20;
-    const reservedBottomSpace = bottomNavHeight + bufferAboveNav;
 
     // If no target element, center in middle of screen
     if (!targetElement) {
@@ -87,7 +81,6 @@ const TutorialTooltip = ({
 
     const rect = targetElement.getBoundingClientRect();
     const buttonTop = rect.top;
-    const buttonHeight = rect.height;
 
     // ALWAYS position tooltip ABOVE the button
     const spacing = 16; // Space between tooltip and button
