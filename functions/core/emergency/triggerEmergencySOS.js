@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const { sendSMSAlert, sendWhatsAppAlert, sendEmailAlert, sendPushNotification } = require('../../utils/notifications');
 const { requireAuth, validateLocation, validateBoolean } = require('../../utils/validation');
 const { RATE_LIMITS, checkUserRateLimit } = require('../../utils/rateLimiting');
+const { logAuditEvent, AuditEventType } = require('../../utils/auditLogger');
 
 const db = admin.firestore();
 
@@ -41,7 +42,7 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       validateBoolean(isReversePIN, 'isReversePIN');
     }
 
-    // Rate limiting: 3 SOS per hour
+    // Rate limiting: 3 SOS per hour - FAIL CLOSED on error
     let rateLimit;
     try {
       functions.logger.info('Checking rate limit', { userId });
@@ -53,29 +54,56 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
         'userId',
         'createdAt'
       );
-      functions.logger.info('Rate limit check completed', { 
-        allowed: rateLimit.allowed, 
+      functions.logger.info('Rate limit check completed', {
+        allowed: rateLimit.allowed,
         count: rateLimit.count,
         limit: rateLimit.limit
       });
     } catch (rateLimitError) {
-      functions.logger.error('Rate limit check failed', { 
+      // Check if this is an intentional rate limit (resource-exhausted)
+      if (rateLimitError.code === 'resource-exhausted') {
+        // This is a legitimate rate limit - re-throw it
+        throw rateLimitError;
+      }
+
+      // If rate limit check itself fails (infrastructure issue),
+      // FAIL CLOSED - deny the request for security
+      functions.logger.error('Rate limit check failed - DENYING REQUEST', {
+        userId,
         error: rateLimitError.message,
-        stack: rateLimitError.stack,
-        userId
       });
-      // Continue with default rate limit result to allow SOS to proceed
-      rateLimit = {
-        allowed: true,
-        count: 0,
-        limit: 3,
-        resetAt: new Date(Date.now() + 3600000),
-        remaining: 3
-      };
-      functions.logger.warn('Using default rate limit due to error', { rateLimit });
+
+      await logAuditEvent(
+        AuditEventType.SUSPICIOUS_ACTIVITY,
+        userId,
+        {
+          action: 'rate_limit_check_failure',
+          operation: 'emergency_sos',
+          error: rateLimitError.message,
+        },
+        'critical'
+      );
+
+      throw new functions.https.HttpsError(
+        'internal',
+        'Unable to verify rate limit. Please try again in a few seconds.',
+        { retryable: true }
+      );
     }
 
     if (!rateLimit.allowed) {
+      // Log rate limit violation
+      await logAuditEvent(
+        AuditEventType.RATE_LIMIT_EXCEEDED,
+        userId,
+        {
+          operation: 'emergency_sos',
+          limit: rateLimit.limit,
+          count: rateLimit.count,
+        },
+        'warning'
+      );
+
       throw new functions.https.HttpsError(
         'resource-exhausted',
         `SOS limit reached: Maximum ${rateLimit.limit} emergency SOS calls per hour. Please wait before triggering again.`,
@@ -152,10 +180,23 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       status: 'active',
       createdAt: admin.firestore.Timestamp.now(),
     });
-    functions.logger.info('SOS document created', { 
+    functions.logger.info('SOS document created', {
       userId,
       sosId: sosRef.id
     });
+
+    // Audit log the SOS event
+    await logAuditEvent(
+      AuditEventType.SOS_TRIGGERED,
+      userId,
+      {
+        emergencyId: sosRef.id,
+        location: normalizedLocation,
+        notifiedBestieCount: bestieIds.length,
+        isReversePIN: isReversePIN || false,
+      },
+      'critical'
+    );
 
     // Sanitize display name to prevent spam flags
     const cleanName = ((userData && userData.displayName) || 'Your friend')

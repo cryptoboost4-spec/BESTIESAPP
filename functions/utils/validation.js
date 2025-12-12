@@ -159,6 +159,38 @@ function validateEnum(value, allowedValues, fieldName = 'value') {
   return value;
 }
 
+/**
+ * Validate text field with length limits
+ * @param {string} value - Text to validate
+ * @param {string} fieldName - Field name for error messages
+ * @param {number} maxLength - Maximum allowed length
+ * @param {number} minLength - Minimum allowed length (optional)
+ */
+function validateText(value, fieldName, maxLength, minLength = 0) {
+  if (typeof value !== 'string') {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      `${fieldName} must be a string`
+    );
+  }
+
+  if (value.length < minLength) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      `${fieldName} must be at least ${minLength} characters`
+    );
+  }
+
+  if (value.length > maxLength) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      `${fieldName} must be at most ${maxLength} characters`
+    );
+  }
+
+  return value.trim();
+}
+
 module.exports = {
   requireAuth,
   validateId,
@@ -170,5 +202,6 @@ module.exports = {
   validateBoolean,
   validateNumber,
   validateEnum,
+  validateText,
 };
 
