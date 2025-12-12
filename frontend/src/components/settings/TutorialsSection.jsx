@@ -70,6 +70,7 @@ const TutorialsSection = () => {
     };
 
     loadStates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, location.state]);
 
   const handleRestartTutorial = async (tutorialName) => {
