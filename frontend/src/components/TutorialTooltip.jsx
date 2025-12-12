@@ -26,7 +26,6 @@ const TutorialTooltip = ({
     const calculatePosition = () => {
       const rect = targetElement.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
 
       let arrowPos = 'top';
 
