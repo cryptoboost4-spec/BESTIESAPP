@@ -27,19 +27,8 @@ const TutorialOverlay = ({
     }
 
     const element = highlightedElementRef.current;
-    
-    // Lock screen - prevent scrolling
-    const scrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = `-${scrollY}px`;
-    
-    // Add class to elevate z-index of highlighted element
-    element.classList.add('tutorial-highlighted-element');
-    element.style.zIndex = '95';
-    element.style.position = 'relative';
 
+    // Define updateHighlight first (before lockScreen uses it)
     const updateHighlight = () => {
       const rect = element.getBoundingClientRect();
       setHighlightRect({
@@ -50,7 +39,50 @@ const TutorialOverlay = ({
       });
     };
 
-    updateHighlight();
+    // FIRST: Scroll element into view to position just above bottom nav (before locking)
+    const rect = element.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const bottomNavHeight = 80; // Actual bottom nav height
+    const bufferAboveNav = 20; // Small buffer space above nav
+    const desiredBottomPosition = viewportHeight - bottomNavHeight - bufferAboveNav;
+
+    // Calculate if element bottom is too low (would be hidden/covered by nav)
+    const elementBottom = rect.bottom;
+
+    // If element is too close to or below the safe zone, scroll it up
+    if (elementBottom > desiredBottomPosition) {
+      // Position element so its bottom is at the desired position
+      const targetY = rect.top + window.scrollY - (desiredBottomPosition - rect.height);
+      window.scrollTo({
+        top: Math.max(0, targetY), // Don't scroll negative
+        behavior: 'instant'
+      });
+
+      // Small delay to ensure DOM is settled after scroll
+      requestAnimationFrame(() => {
+        lockScreen();
+      });
+    } else {
+      // Element is already visible in safe zone, lock immediately
+      lockScreen();
+    }
+
+    function lockScreen() {
+      // Lock screen - prevent scrolling
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${scrollY}px`;
+
+      // Add class to elevate z-index of highlighted element
+      element.classList.add('tutorial-highlighted-element');
+      element.style.zIndex = '95';
+      element.style.position = 'relative';
+
+      updateHighlight();
+    }
+
     // Only listen to resize, not scroll (since we're locking scroll)
     window.addEventListener('resize', updateHighlight);
 

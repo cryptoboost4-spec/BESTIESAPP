@@ -135,7 +135,10 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                if (name.trim() || isTutorialMode) {
+                // In tutorial mode, just close keyboard
+                if (isTutorialMode) {
+                  e.target.blur();
+                } else if (name.trim()) {
                   handleStart();
                 } else {
                   e.target.blur(); // Close keyboard if invalid

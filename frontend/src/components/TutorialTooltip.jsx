@@ -26,18 +26,18 @@ const TutorialTooltip = ({
     const calculatePosition = () => {
       const rect = targetElement.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
 
-      let pos = position;
       let arrowPos = 'top';
 
-      if (position === 'auto') {
-        // Auto-calculate best position based on available space
+      if (position === 'left') {
+        // Tooltip above button, arrow points to LEFT side of button
+        arrowPos = 'bottom-left';
+      } else if (position === 'right') {
+        // Tooltip above button, arrow points to RIGHT side of button
+        arrowPos = 'bottom-right';
+      } else if (position === 'auto') {
+        // Auto-calculate based on available space
         const spaceAbove = rect.top;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceLeft = rect.left;
-        const spaceRight = viewportWidth - rect.right;
 
         // Determine arrow position based on where tooltip will be positioned
         if (spaceAbove < tooltipRect.height + 20) {
@@ -45,29 +45,8 @@ const TutorialTooltip = ({
           arrowPos = 'top'; // Arrow points up to button
         } else {
           // Enough space above, position above
-          arrowPos = 'bottom'; // Arrow points down to button
+          arrowPos = 'bottom'; // Arrow points down to button (center)
         }
-
-        if (spaceBelow >= tooltipRect.height + 20) {
-          pos = 'below';
-          arrowPos = 'top';
-        } else if (spaceAbove >= tooltipRect.height + 20) {
-          pos = 'above';
-          arrowPos = 'bottom';
-        } else if (spaceRight >= tooltipRect.width + 20) {
-          pos = 'right';
-          arrowPos = 'left';
-        } else if (spaceLeft >= tooltipRect.width + 20) {
-          pos = 'left';
-          arrowPos = 'right';
-        } else {
-          // Default to below if no space
-          pos = 'below';
-          arrowPos = 'top';
-        }
-      } else {
-        pos = position;
-        arrowPos = pos === 'above' ? 'bottom' : pos === 'below' ? 'top' : pos === 'left' ? 'right' : 'left';
       }
 
       setArrowPosition(arrowPos);
@@ -84,10 +63,10 @@ const TutorialTooltip = ({
   }, [targetElement, position]);
 
   const getPositionStyles = () => {
-    const viewportHeight = window.innerHeight;
-    
+    const viewportWidth = window.innerWidth;
+
     // Get tooltip dimensions (use defaults if not yet rendered)
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 200;
+    const tooltipHeight = tooltipRef.current?.offsetHeight || 280;
 
     // If no target element, center in middle of screen
     if (!targetElement) {
@@ -95,34 +74,40 @@ const TutorialTooltip = ({
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        maxWidth: '90vw',
-        width: 'auto'
+        width: '90%',
+        maxWidth: '500px'
       };
     }
 
     const rect = targetElement.getBoundingClientRect();
-    const spaceAbove = rect.top;
-    
-    // Position above the button with some spacing
-    const spacing = 20; // Space between tooltip and button
-    let top = rect.top - tooltipHeight - spacing;
-    
-    // Note: Arrow position is set in useEffect, not here (to avoid setState during render)
-    // If not enough space above, position below instead
-    if (spaceAbove < tooltipHeight + spacing + 20) {
-      top = rect.bottom + spacing;
+    const buttonTop = rect.top;
+
+    // ALWAYS position tooltip ABOVE the button
+    const spacing = 16; // Space between tooltip and button
+    let top = buttonTop - tooltipHeight - spacing;
+
+    // If tooltip would go off top of screen, shift it down slightly
+    // but NEVER let it cover the button
+    const minTop = 20; // Minimum distance from top of screen
+    if (top < minTop) {
+      // Shift down but ensure we don't cover button
+      top = Math.min(minTop, buttonTop - tooltipHeight - 8);
     }
-    
-    // Ensure tooltip doesn't go off top or bottom of screen
-    top = Math.max(20, Math.min(top, viewportHeight - tooltipHeight - 20));
-    
-    // Center horizontally on screen
+
+    // Ensure tooltip stays above button (failsafe)
+    const maxTop = buttonTop - tooltipHeight - 8;
+    top = Math.min(top, maxTop);
+
+    // Full width on mobile, centered with max-width on larger screens
+    const isMobile = viewportWidth < 640; // sm breakpoint
+
     return {
-      top: `${top}px`,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      maxWidth: '90vw',
-      width: 'auto'
+      top: `${Math.max(minTop, top)}px`,
+      left: isMobile ? '1rem' : '50%',
+      right: isMobile ? '1rem' : 'auto',
+      transform: isMobile ? 'none' : 'translateX(-50%)',
+      width: isMobile ? 'auto' : '90%',
+      maxWidth: isMobile ? 'none' : '500px'
     };
   };
 
@@ -133,6 +118,11 @@ const TutorialTooltip = ({
       height: 0,
     };
 
+    // Match the gradient background color based on color scheme
+    // Check if dark mode is active
+    const isDark = document.documentElement.classList.contains('dark');
+    const arrowColor = isDark ? '#581c87' : '#fdf2f8'; // purple-900 for dark, purple-50 for light
+
     switch (arrowPosition) {
       case 'top':
         return {
@@ -142,7 +132,7 @@ const TutorialTooltip = ({
           transform: 'translateX(-50%)',
           borderLeft: '8px solid transparent',
           borderRight: '8px solid transparent',
-          borderBottom: '8px solid white',
+          borderBottom: `8px solid ${arrowColor}`,
         };
       case 'bottom':
         return {
@@ -152,7 +142,29 @@ const TutorialTooltip = ({
           transform: 'translateX(-50%)',
           borderLeft: '8px solid transparent',
           borderRight: '8px solid transparent',
-          borderTop: '8px solid white',
+          borderTop: `8px solid ${arrowColor}`,
+        };
+      case 'bottom-left':
+        // Arrow pointing down-left (for rideshare button on left)
+        return {
+          ...baseStyles,
+          top: '100%',
+          left: '20%', // Position arrow toward left side
+          transform: 'translateX(-50%)',
+          borderLeft: '10px solid transparent',
+          borderRight: '10px solid transparent',
+          borderTop: `10px solid ${arrowColor}`,
+        };
+      case 'bottom-right':
+        // Arrow pointing down-right (for quick meet button on right)
+        return {
+          ...baseStyles,
+          top: '100%',
+          right: '20%', // Position arrow toward right side
+          transform: 'translateX(50%)',
+          borderLeft: '10px solid transparent',
+          borderRight: '10px solid transparent',
+          borderTop: `10px solid ${arrowColor}`,
         };
       case 'left':
         return {
@@ -162,7 +174,7 @@ const TutorialTooltip = ({
           transform: 'translateY(-50%)',
           borderTop: '8px solid transparent',
           borderBottom: '8px solid transparent',
-          borderRight: '8px solid white',
+          borderRight: `8px solid ${arrowColor}`,
         };
       case 'right':
         return {
@@ -172,7 +184,7 @@ const TutorialTooltip = ({
           transform: 'translateY(-50%)',
           borderTop: '8px solid transparent',
           borderBottom: '8px solid transparent',
-          borderLeft: '8px solid white',
+          borderLeft: `8px solid ${arrowColor}`,
         };
       default:
         return baseStyles;
@@ -189,49 +201,42 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-[100] max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4"
+      className="fixed z-[100] bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/90 dark:to-pink-900/90 rounded-2xl shadow-2xl p-6 border-2 border-purple-200 dark:border-purple-700 backdrop-blur-sm"
       style={getPositionStyles()}
     >
       {/* Arrow - only show if we have a target element */}
       {targetElement && <div style={getArrowStyles()} />}
 
       {/* Content */}
-      <div className="space-y-3">
-        {/* Progress indicator */}
-        {stepNumber && totalSteps && (
-          <div className="text-xs text-text-secondary text-center mb-1">
-            Step {stepNumber} of {totalSteps}
-          </div>
-        )}
-        
+      <div className="space-y-4">
         {title && (
-          <h4 className="text-lg font-display text-text-primary">
-            {title}
+          <h4 className="text-xl font-display text-gradient flex items-center gap-2">
+            ✨ {title}
           </h4>
         )}
         {body && (
-          <p className="text-base text-text-secondary leading-relaxed">
+          <p className="text-base text-text-primary dark:text-gray-100 leading-relaxed font-medium">
             {body}
           </p>
         )}
-        
-        <div className="flex gap-2 mt-2">
+
+        <div className="flex gap-3 mt-4">
           {showBack && onBack && (
             <button
               onClick={() => {
                 haptic.light();
                 onBack();
               }}
-              className="flex-1 btn btn-secondary text-sm"
+              className="flex-1 btn btn-secondary py-3 text-base"
             >
-              Back
+              ← Back
             </button>
           )}
           <button
             onClick={handleNext}
-            className={showBack && onBack ? "flex-1 btn btn-primary" : "w-full btn btn-primary"}
+            className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-primary hover:shadow-lg hover:scale-105 active:scale-95 transition-all text-white font-bold py-3 text-base shadow-xl animate-pulse-slow whitespace-nowrap`}
           >
-            {buttonText}
+            {buttonText} ✨
           </button>
         </div>
       </div>
