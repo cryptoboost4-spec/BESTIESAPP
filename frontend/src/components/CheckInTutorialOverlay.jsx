@@ -102,7 +102,6 @@ const CheckInTutorialOverlay = ({
       if (isMobile && (elementTop < 0 || elementTop > screenHeight * 2)) {
         // Fallback: use offsetTop relative to document, then subtract scroll
         const offsetTop = element.offsetTop;
-        const parentOffset = element.offsetParent ? element.offsetParent.offsetTop : 0;
         elementTop = offsetTop - scrollYRef.current;
         
         // If still wrong, use a safe default
