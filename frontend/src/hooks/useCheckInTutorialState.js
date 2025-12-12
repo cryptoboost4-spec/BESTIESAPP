@@ -3,6 +3,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
+// Valid steps for check-in tutorial (constant)
+const VALID_STEPS = [
+  'location',
+  'whoMeeting',
+  'socialMedia',
+  'duration',
+  'bestieSelection',
+  'notesPhotos',
+  'final'
+];
+
 /**
  * Hook to manage check-in tutorial state
  * First-time only tutorial that walks users through creating their first check-in
@@ -11,17 +22,6 @@ export const useCheckInTutorialState = () => {
   const { currentUser } = useAuth();
   const [checkInTutorialComplete, setCheckInTutorialComplete] = useState(false);
   const [currentCheckInTutorialStep, setCurrentCheckInTutorialStep] = useState(null);
-
-  // Valid steps for check-in tutorial
-  const validSteps = [
-    'location',
-    'whoMeeting',
-    'socialMedia',
-    'duration',
-    'bestieSelection',
-    'notesPhotos',
-    'final'
-  ];
 
   // Load initial state from localStorage and Firestore
   useEffect(() => {
@@ -32,7 +32,7 @@ export const useCheckInTutorialState = () => {
     let localStep = localStorage.getItem('current_checkInTutorial_step');
 
     // Validate step
-    if (localStep && !validSteps.includes(localStep)) {
+    if (localStep && !VALID_STEPS.includes(localStep)) {
       localStorage.removeItem('current_checkInTutorial_step');
       localStep = null;
     }
@@ -52,7 +52,7 @@ export const useCheckInTutorialState = () => {
           let firestoreStep = data.currentCheckInTutorialStep || null;
 
           // Validate Firestore step
-          if (firestoreStep && !validSteps.includes(firestoreStep)) {
+          if (firestoreStep && !VALID_STEPS.includes(firestoreStep)) {
             firestoreStep = null;
             try {
               await updateDoc(userRef, {
@@ -113,7 +113,7 @@ export const useCheckInTutorialState = () => {
   // Update current tutorial step
   const setCheckInTutorialStep = async (step) => {
     // Validate step is one of the allowed values
-    if (step && !validSteps.includes(step)) {
+    if (step && !VALID_STEPS.includes(step)) {
       console.warn('Invalid check-in tutorial step attempted:', step, '- ignoring');
       return;
     }
@@ -175,6 +175,6 @@ export const useCheckInTutorialState = () => {
     markCheckInTutorialComplete,
     setCheckInTutorialStep,
     resetCheckInTutorial,
-    validSteps
+    validSteps: VALID_STEPS
   };
 };
