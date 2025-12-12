@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 /**
  * CheckInTutorialOverlay - Guides users through their first check-in
@@ -24,25 +24,35 @@ const CheckInTutorialOverlay = ({
     }
   };
 
+  // Store scroll position for mobile calculations
+  const scrollYRef = useRef(0);
+
   // Lock body scroll when tutorial is active
   useEffect(() => {
-    // Save current scroll position
-    const scrollY = window.scrollY;
+    // Save current scroll position BEFORE locking
+    scrollYRef.current = window.scrollY;
     
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
-    document.body.style.top = `-${scrollY}px`;
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.top = `-${scrollYRef.current}px`;
+    });
 
     return () => {
       // Restore scroll position
+      const savedScrollY = scrollYRef.current;
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.height = '';
       document.body.style.top = '';
-      window.scrollTo(0, scrollY);
+      // Use requestAnimationFrame to ensure styles are cleared before scrolling
+      requestAnimationFrame(() => {
+        window.scrollTo(0, savedScrollY);
+      });
     };
   }, []);
 
@@ -50,8 +60,15 @@ const CheckInTutorialOverlay = ({
   useEffect(() => {
     if (!highlightedElementRef?.current) return;
 
+    // Detect mobile device (outside function so it can be used in cleanup)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+
     const calculatePositions = () => {
       const element = highlightedElementRef.current;
+      if (!element) return;
+
+      // On mobile, getBoundingClientRect can be wrong after scroll lock
+      // Use a small delay to ensure DOM is settled, or calculate before lock
       const elementRect = element.getBoundingClientRect();
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
@@ -76,8 +93,26 @@ const CheckInTutorialOverlay = ({
       // Always center horizontally
       const left = (screenWidth - tooltipWidth) / 2;
 
+      // On mobile, elementRect.top might be wrong after scroll lock
+      // Account for this by using the stored scroll position if needed
+      let elementTop = elementRect.top;
+      
+      // If on mobile and element seems positioned incorrectly (negative or very large),
+      // try to get position from element's offsetTop instead
+      if (isMobile && (elementTop < 0 || elementTop > screenHeight * 2)) {
+        // Fallback: use offsetTop relative to document, then subtract scroll
+        const offsetTop = element.offsetTop;
+        const parentOffset = element.offsetParent ? element.offsetParent.offsetTop : 0;
+        elementTop = offsetTop - scrollYRef.current;
+        
+        // If still wrong, use a safe default
+        if (elementTop < 0 || elementTop > screenHeight * 2) {
+          elementTop = screenHeight / 2; // Center as fallback
+        }
+      }
+
       // Always position above the element with padding
-      let top = elementRect.top - tooltipHeight - padding;
+      let top = elementTop - tooltipHeight - padding;
 
       // Ensure doesn't go off top of screen
       if (top < minSpaceFromEdge) {
@@ -88,7 +123,7 @@ const CheckInTutorialOverlay = ({
 
       // Calculate arrow position (always points down to element)
       const arrowLeft = screenWidth / 2;
-      const arrowTop = elementRect.top - padding / 2;
+      const arrowTop = elementTop - padding / 2;
 
       setArrowPosition({
         top: arrowTop,
@@ -97,11 +132,25 @@ const CheckInTutorialOverlay = ({
       });
     };
 
-    calculatePositions();
+    // On mobile, add a small delay to ensure scroll lock is applied and DOM is settled
+    const delay = isMobile ? 100 : 0;
+    
+    const timeoutId = setTimeout(() => {
+      calculatePositions();
+    }, delay);
+    
     window.addEventListener('resize', calculatePositions);
+    // Also listen to orientation changes on mobile
+    if (isMobile) {
+      window.addEventListener('orientationchange', calculatePositions);
+    }
 
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener('resize', calculatePositions);
+      if (isMobile) {
+        window.removeEventListener('orientationchange', calculatePositions);
+      }
     };
   }, [highlightedElementRef, tooltipConfig.overlayOnElement]);
 
