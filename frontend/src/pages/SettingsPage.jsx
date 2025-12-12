@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -17,6 +17,10 @@ import PreferencesAndQuickAccess from '../components/settings/PreferencesAndQuic
 import LegalSection from '../components/settings/LegalSection';
 import PricingTiers from '../components/settings/PricingTiers';
 import { FEATURES } from '../config/features';
+import { useSettingsTutorialState } from '../hooks/useSettingsTutorialState';
+import SettingsTutorialWelcome from '../components/tutorials/settings/SettingsTutorialWelcome';
+import SettingsTutorialOverlay from '../components/tutorials/settings/SettingsTutorialOverlay';
+import CelebrationToast from '../components/tutorials/CelebrationToast';
 
 const SettingsPage = () => {
   const { currentUser, userData } = useAuth();
@@ -39,6 +43,17 @@ const SettingsPage = () => {
   const [passcode, setPasscode] = useState('');
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [showPasscodeInfo, setShowPasscodeInfo] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  // Tutorial state
+  const tutorial = useSettingsTutorialState();
+  
+  // Refs for highlighted elements
+  const notificationSettingsRef = useRef(null);
+  const messengerLinkRef = useRef(null);
+  const privacySettingsRef = useRef(null);
+  const securityPasscodesRef = useRef(null);
+  const preferencesRef = useRef(null);
 
   // Check if push notifications are supported and enabled
   useEffect(() => {
@@ -493,7 +508,7 @@ const SettingsPage = () => {
           <p className="text-text-secondary">Manage your account and preferences</p>
         </div>
         {/* Notification Preferences */}
-        <div id="notifications">
+        <div id="notifications" ref={notificationSettingsRef}>
           <NotificationSettings
             userData={userData}
             currentUserId={currentUser.uid}
@@ -503,13 +518,18 @@ const SettingsPage = () => {
             pushNotificationsEnabled={pushNotificationsEnabled}
             loading={loading}
             smsWeeklyCount={smsWeeklyCount}
-            onOpenTestModal={() => setShowTestAlertModal(true)}
+            onOpenTestModal={() => {
+              if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+                tutorial.pauseTutorial();
+              }
+              setShowTestAlertModal(true);
+            }}
           />
         </div>
 
         {/* Messenger Integration */}
         {FEATURES.messengerAlerts && (
-          <div id="messenger">
+          <div id="messenger" ref={messengerLinkRef}>
             <MessengerLinkDisplay userId={currentUser?.uid} />
           </div>
         )}
@@ -522,14 +542,14 @@ const SettingsPage = () => {
 
 
         {/* Privacy Settings */}
-        <div id="privacy">
+        <div id="privacy" ref={privacySettingsRef}>
           <PrivacySettings userData={userData} currentUser={currentUser} />
         </div>
 
 
 
         {/* Security - Passcodes */}
-        <div id="security">
+        <div id="security" ref={securityPasscodesRef}>
           <SecurityPasscodes
             userData={userData}
             showPasscodeInfo={showPasscodeInfo}
@@ -566,13 +586,15 @@ const SettingsPage = () => {
         </div>
 
         {/* Preferences */}
-        <PreferencesAndQuickAccess
-          isDark={isDark}
-          toggleDarkMode={toggleDarkMode}
-          toggleHoldData={toggleHoldData}
-          userData={userData}
-          navigate={navigate}
-        />
+        <div ref={preferencesRef}>
+          <PreferencesAndQuickAccess
+            isDark={isDark}
+            toggleDarkMode={toggleDarkMode}
+            toggleHoldData={toggleHoldData}
+            userData={userData}
+            navigate={navigate}
+          />
+        </div>
 
         {/* Active Donation */}
         {userData?.donationStats?.isActive && (
@@ -759,11 +781,94 @@ const SettingsPage = () => {
       {/* Test Alert Modal */}
       <TestAlertModal
         isOpen={showTestAlertModal}
-        onClose={() => setShowTestAlertModal(false)}
+        onClose={() => {
+          if (tutorial.tutorialActive && tutorial.isPaused) {
+            tutorial.resumeTutorial();
+          }
+          setShowTestAlertModal(false);
+        }}
         userData={userData}
         onSendTest={handleSendTestAlert}
         loading={loading}
       />
+
+      {/* Tutorial Welcome Card */}
+      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && (
+        <SettingsTutorialWelcome
+          onStart={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_started', { page: 'settings' });
+            }
+            tutorial.startTutorial();
+          }}
+          onSkip={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_skipped', { page: 'settings', at_step: 0 });
+            }
+            tutorial.skipTutorial();
+          }}
+        />
+      )}
+
+      {/* Tutorial Overlay */}
+      {tutorial.tutorialActive && tutorial.currentStep && (
+        <SettingsTutorialOverlay
+          currentStep={tutorial.currentStep}
+          onNext={() => {
+            // Track step completion
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_step_completed', {
+                page: 'settings',
+                step: tutorial.currentStep,
+                total_steps: FEATURES.messengerAlerts ? 5 : 4
+              });
+            }
+            
+            const totalSteps = FEATURES.messengerAlerts ? 5 : 4;
+            if (tutorial.currentStep === totalSteps) {
+              // Last step - complete tutorial
+              if (typeof window !== 'undefined' && window.analytics) {
+                window.analytics.track('tutorial_completed', {
+                  page: 'settings',
+                  total_steps: totalSteps
+                });
+              }
+              tutorial.completeTutorial().then(() => {
+                setShowCelebration(true);
+              });
+            } else {
+              tutorial.nextStep();
+            }
+          }}
+          onSkip={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_skipped', {
+                page: 'settings',
+                at_step: tutorial.currentStep
+              });
+            }
+            tutorial.skipTutorial();
+          }}
+          isPaused={tutorial.isPaused}
+          refs={{
+            notificationSettings: notificationSettingsRef,
+            messengerLink: messengerLinkRef,
+            privacySettings: privacySettingsRef,
+            securityPasscodes: securityPasscodesRef,
+            preferences: preferencesRef
+          }}
+          hasMessenger={FEATURES.messengerAlerts}
+        />
+      )}
+
+      {/* Celebration Toast */}
+      {showCelebration && (
+        <CelebrationToast
+          message="Your settings are all set! ⚙️"
+          icon="🎉"
+          onClose={() => setShowCelebration(false)}
+        />
+      )}
     </div>
   );
 };

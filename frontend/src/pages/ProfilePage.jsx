@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
@@ -16,6 +16,11 @@ import ProfileAuraStyles from '../components/profile/ProfileAuraStyles';
 import RequestSupportSection from '../components/RequestSupportSection';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import OfflineBanner from '../components/OfflineBanner';
+import { useProfileTutorialState } from '../hooks/useProfileTutorialState';
+import ProfileTutorialWelcome from '../components/tutorials/profile/ProfileTutorialWelcome';
+import ProfileTutorialOverlay from '../components/tutorials/profile/ProfileTutorialOverlay';
+import CelebrationToast from '../components/tutorials/CelebrationToast';
+import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
@@ -33,6 +38,18 @@ const ProfilePage = () => {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  // Tutorial state
+  const tutorial = useProfileTutorialState();
+  
+  // Refs for highlighted elements
+  const profileCardRef = useRef(null);
+  const customizerButtonRef = useRef(null);
+  const profileCompletionRef = useRef(null);
+  const badgesSectionRef = useRef(null);
+  const statsSectionRef = useRef(null);
+  const settingsButtonRef = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -418,19 +435,23 @@ const ProfilePage = () => {
         )}
 
         {/* Profile Card */}
-        <ProfileCard 
-          currentUser={currentUser} 
-          userData={userData} 
-          showCustomizer={showCustomizer}
-          setShowCustomizer={setShowCustomizer}
-        />
+        <div ref={profileCardRef}>
+          <ProfileCard 
+            currentUser={currentUser} 
+            userData={userData} 
+            showCustomizer={showCustomizer}
+            setShowCustomizer={setShowCustomizer}
+          />
+        </div>
 
         {/* Profile Completion */}
-        <ProfileCompletion
-          profileCompletion={profileCompletion}
-          animatedProgress={animatedProgress}
-          onTaskNavigation={handleTaskNavigation}
-        />
+        <div ref={profileCompletionRef}>
+          <ProfileCompletion
+            profileCompletion={profileCompletion}
+            animatedProgress={animatedProgress}
+            onTaskNavigation={handleTaskNavigation}
+          />
+        </div>
 
         {/* Request Support Section */}
         <RequestSupportSection />
@@ -442,33 +463,45 @@ const ProfilePage = () => {
         <LoginStreak loginStreak={loginStreak} />
 
         {/* Badges Section */}
-        <BadgesSection
-          currentUser={currentUser}
-          badges={badges}
-          featuredBadgeIds={featuredBadgeIds}
-          setFeaturedBadgeIds={setFeaturedBadgeIds}
-          setConfettiTrigger={setConfettiTrigger}
-        />
+        <div ref={badgesSectionRef}>
+          <BadgesSection
+            currentUser={currentUser}
+            badges={badges}
+            featuredBadgeIds={featuredBadgeIds}
+            setFeaturedBadgeIds={setFeaturedBadgeIds}
+            setConfettiTrigger={setConfettiTrigger}
+          />
+        </div>
 
         {/* Stats Section */}
-        <StatsSection
-          bestiesCount={bestiesCount}
-          emergencyContactCount={emergencyContactCount}
-          daysActive={getDaysActive()}
-          userData={userData}
-          badges={badges}
-          loginStreak={loginStreak}
-          nighttimeCheckIns={nighttimeCheckIns}
-          weekendCheckIns={weekendCheckIns}
-        />
+        <div ref={statsSectionRef}>
+          <StatsSection
+            bestiesCount={bestiesCount}
+            emergencyContactCount={emergencyContactCount}
+            daysActive={getDaysActive()}
+            userData={userData}
+            badges={badges}
+            loginStreak={loginStreak}
+            nighttimeCheckIns={nighttimeCheckIns}
+            weekendCheckIns={weekendCheckIns}
+          />
+        </div>
 
         {/* Donation Status */}
         <DonationStatus userData={userData} />
 
         {/* Settings Button */}
-        <div className="space-y-3">
+        <div className="space-y-3" ref={settingsButtonRef}>
           <button
-            onClick={() => navigate('/settings')}
+            onClick={() => {
+              if (tutorial.tutorialActive && tutorial.currentStep === 6) {
+                tutorial.completeTutorial().then(() => {
+                  navigate('/settings');
+                });
+              } else {
+                navigate('/settings');
+              }
+            }}
             className="w-full btn btn-secondary"
           >
             ⚙️ Settings
@@ -479,6 +512,84 @@ const ProfilePage = () => {
       {/* Share Modal */}
       {showShareModal && (
         <SocialShareCardsModal onClose={() => setShowShareModal(false)} />
+      )}
+
+      {/* Tutorial Welcome Card */}
+      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && (
+        <ProfileTutorialWelcome
+          onStart={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_started', { page: 'profile' });
+            }
+            tutorial.startTutorial();
+          }}
+          onSkip={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_skipped', { page: 'profile', at_step: 0 });
+            }
+            tutorial.skipTutorial();
+          }}
+        />
+      )}
+
+      {/* Tutorial Overlay */}
+      {tutorial.tutorialActive && tutorial.currentStep && (
+        <ProfileTutorialOverlay
+          currentStep={tutorial.currentStep}
+          onNext={() => {
+            // Track step completion
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_step_completed', {
+                page: 'profile',
+                step: tutorial.currentStep,
+                total_steps: 6
+              });
+            }
+            
+            if (tutorial.currentStep === 6) {
+              // Last step - complete tutorial
+              if (typeof window !== 'undefined' && window.analytics) {
+                window.analytics.track('tutorial_completed', {
+                  page: 'profile',
+                  total_steps: 6
+                });
+              }
+              tutorial.completeTutorial().then(() => {
+                setShowCelebration(true);
+              });
+            } else {
+              tutorial.nextStep();
+            }
+          }}
+          onSkip={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_skipped', {
+                page: 'profile',
+                at_step: tutorial.currentStep
+              });
+            }
+            tutorial.skipTutorial();
+          }}
+          isPaused={tutorial.isPaused}
+          refs={{
+            profileCard: profileCardRef,
+            customizerButton: profileCardRef, // Use same ref since customizer is in ProfileCard
+            profileCompletion: profileCompletionRef,
+            badgesSection: badgesSectionRef,
+            statsSection: statsSectionRef,
+            settingsButton: settingsButtonRef
+          }}
+          profileCompletion={profileCompletion.percentage}
+        />
+      )}
+
+      {/* Celebration Toast */}
+      {showCelebration && (
+        <CelebrationToast
+          message="Your profile is looking great! ✨"
+          icon="🎉"
+          onClose={() => setShowCelebration(false)}
+        />
       )}
     </div>
   );
