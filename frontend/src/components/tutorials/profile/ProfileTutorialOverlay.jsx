@@ -84,7 +84,7 @@ const ProfileTutorialOverlay = ({
     setTimeout(() => {
       setTooltipConfig(configs[currentStep]);
     }, 150);
-  }, [currentStep, refs, profileCompletion]);
+  }, [currentStep, refs, profileCompletion, onPause]);
 
   if (!currentStep || !tooltipConfig) return null;
 
