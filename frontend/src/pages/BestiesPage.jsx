@@ -18,11 +18,8 @@ import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import ActivityFeed from '../components/besties/ActivityFeed';
-import ActivityFeedSkeleton from '../components/besties/ActivityFeedSkeleton';
 import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
-import LoadingSkeleton from '../components/LoadingSkeleton';
-import BestiesLeaderboard from '../components/besties/BestiesLeaderboard';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
 import FloatingNotificationBell from '../components/FloatingNotificationBell';
@@ -47,16 +44,12 @@ const BestiesPage = () => {
   // Activity feed - using custom hook
   const { activityFeed, activityLoading, missedCheckIns, requestsForAttention } = useActivityFeed(currentUser, besties, userData);
 
-  // Rankings period state (weekly, monthly, yearly)
-  const [rankingsPeriod, setRankingsPeriod] = useState('weekly');
-
   // Tutorial state
   const tutorial = useBestiesTutorialState();
   
   // Refs for highlighted elements
   const activityFeedRef = useRef(null);
   const postButtonRef = useRef(null);
-  const leaderboardRef = useRef(null);
   const bestiesGridRef = useRef(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
@@ -420,8 +413,11 @@ const BestiesPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern">
-        <LoadingSkeleton type="list" count={5} message="Loading your besties... 👯‍♀️" />
+      <div className="min-h-screen bg-pattern flex items-center justify-center">
+        <div className="text-center">
+          <div className="spinner mb-4"></div>
+          <p className="text-text-secondary">Loading your besties... 👯‍♀️</p>
+        </div>
       </div>
     );
   }
@@ -478,9 +474,7 @@ const BestiesPage = () => {
           </div>
 
           {/* Activity Feed */}
-          {activityLoading ? (
-            <ActivityFeedSkeleton />
-          ) : (
+          {!activityLoading && (
             <ActivityFeed
               activityFeed={activityFeed.filter(activity => {
                 // Filter out activities that are already shown in Needs Attention section
@@ -502,16 +496,8 @@ const BestiesPage = () => {
           )}
         </div>
 
-        {/* Leaderboard and Besties Section */}
+        {/* Besties Section */}
         <div className="space-y-6">
-          {/* This Week's Champions */}
-          <div ref={leaderboardRef}>
-            <BestiesLeaderboard
-              rankingsPeriod={rankingsPeriod}
-              setRankingsPeriod={setRankingsPeriod}
-            />
-          </div>
-
           {/* Besties Grid */}
           <div ref={bestiesGridRef}>
             <BestiesGrid
@@ -624,16 +610,16 @@ const BestiesPage = () => {
               window.analytics.track('tutorial_step_completed', {
                 page: 'besties',
                 step: tutorial.currentStep,
-                total_steps: 4
+                total_steps: 3
               });
             }
             
-            if (tutorial.currentStep === 4) {
+            if (tutorial.currentStep === 3) {
               // Last step - complete tutorial
               if (typeof window !== 'undefined' && window.analytics) {
                 window.analytics.track('tutorial_completed', {
                   page: 'besties',
-                  total_steps: 4
+                  total_steps: 3
                 });
               }
               tutorial.completeTutorial();
@@ -656,7 +642,6 @@ const BestiesPage = () => {
           refs={{
             activityFeed: activityFeedRef,
             postButton: postButtonRef,
-            leaderboard: leaderboardRef,
             bestiesGrid: bestiesGridRef
           }}
         />
