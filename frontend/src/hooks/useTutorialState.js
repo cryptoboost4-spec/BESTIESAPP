@@ -18,7 +18,13 @@ export const useTutorialState = () => {
 
     // Load from localStorage first (quick access)
     const localComplete = localStorage.getItem('tutorial_complete') === 'true';
-    const localStep = localStorage.getItem('current_tutorial_step');
+    let localStep = localStorage.getItem('current_tutorial_step');
+    
+    // Clean up old 'intro' step if it exists
+    if (localStep === 'intro') {
+      localStorage.removeItem('current_tutorial_step');
+      localStep = null;
+    }
     
     setTutorialComplete(localComplete);
     setCurrentTutorialStep(localStep || null);
@@ -32,7 +38,20 @@ export const useTutorialState = () => {
         if (userSnap.exists()) {
           const data = userSnap.data();
           const firestoreComplete = data.tutorialComplete || false;
-          const firestoreStep = data.currentTutorialStep || null;
+          let firestoreStep = data.currentTutorialStep || null;
+
+          // Clean up old 'intro' step if it exists in Firestore
+          if (firestoreStep === 'intro') {
+            firestoreStep = null;
+            // Update Firestore to remove intro
+            try {
+              await updateDoc(userRef, {
+                currentTutorialStep: null
+              });
+            } catch (error) {
+              console.error('Error cleaning up intro step:', error);
+            }
+          }
 
           // Firestore takes precedence if it exists
           if (firestoreComplete !== localComplete || firestoreStep !== localStep) {

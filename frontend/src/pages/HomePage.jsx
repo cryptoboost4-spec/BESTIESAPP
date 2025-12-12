@@ -45,6 +45,14 @@ const HomePage = () => {
   const [tutorialModalOpen, setTutorialModalOpen] = useState(false);
   const [tutorialFormStep, setTutorialFormStep] = useState(null);
 
+  // Clean up any old 'intro' step from localStorage/Firestore
+  useEffect(() => {
+    if (currentTutorialStep === 'intro') {
+      // If somehow intro step exists, clear it and go to rideshare
+      setTutorialStep('rideshare');
+    }
+  }, [currentTutorialStep, setTutorialStep]);
+
   // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
 
@@ -466,8 +474,21 @@ const HomePage = () => {
 
   // Get tooltip config based on current step
   const getTooltipConfig = () => {
+    // If no step or invalid step, return null
+    if (!currentTutorialStep) return null;
+    
     const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
     const stepIndex = steps.indexOf(currentTutorialStep);
+    
+    // If step is not in valid steps (e.g., old 'intro' step), return null
+    if (stepIndex === -1) {
+      // Clean up invalid step
+      if (currentTutorialStep === 'intro') {
+        setTutorialStep('rideshare');
+      }
+      return null;
+    }
+    
     const stepNumber = stepIndex + 1;
     const totalSteps = steps.length;
 
@@ -855,8 +876,8 @@ const HomePage = () => {
         />
       )}
 
-      {/* Tutorial Overlay - Only show when modal is not open */}
-      {currentTutorialStep && !tutorialModalOpen && (
+      {/* Tutorial Overlay - Only show when modal is not open and we have valid config */}
+      {currentTutorialStep && !tutorialModalOpen && getTooltipConfig() && (
         <TutorialOverlay
           currentStep={currentTutorialStep}
           onStepComplete={handleTutorialStepComplete}

@@ -98,7 +98,7 @@ const TutorialOverlay = ({
     }
   };
 
-  if (!currentStep) return null;
+  if (!currentStep || !tooltipConfig) return null;
 
   return (
     <>
@@ -142,21 +142,19 @@ const TutorialOverlay = ({
         </>
       )}
 
-      {/* Tooltip - show even without highlighted element for intro step */}
-      {tooltipConfig && (
-        <TutorialTooltip
-          title={tooltipConfig.title}
-          body={tooltipConfig.body}
-          buttonText={tooltipConfig.buttonText || 'Next'}
-          onNext={handleNext}
-          onBack={onStepBack}
-          showBack={stepNumber > 1}
-          stepNumber={stepNumber}
-          totalSteps={totalSteps}
-          targetElement={highlightedElementRef?.current}
-          position={tooltipConfig.position}
-        />
-      )}
+      {/* Tooltip */}
+      <TutorialTooltip
+        title={tooltipConfig.title}
+        body={tooltipConfig.body}
+        buttonText={tooltipConfig.buttonText || 'Next'}
+        onNext={handleNext}
+        onBack={onStepBack}
+        showBack={stepNumber > 1}
+        stepNumber={stepNumber}
+        totalSteps={totalSteps}
+        targetElement={highlightedElementRef?.current}
+        position={tooltipConfig.position}
+      />
     </>
   );
 };
