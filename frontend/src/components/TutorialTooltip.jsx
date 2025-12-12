@@ -67,10 +67,12 @@ const TutorialTooltip = ({
     const viewportWidth = window.innerWidth;
 
     // Get tooltip dimensions (use defaults if not yet rendered)
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 250;
+    const tooltipHeight = tooltipRef.current?.offsetHeight || 280;
 
-    // Account for bottom navigation menu (80px) + some padding
-    const bottomNavHeight = 100;
+    // Account for bottom navigation menu + buffer zone
+    const bottomNavHeight = 80;
+    const bufferAboveNav = 20;
+    const reservedBottomSpace = bottomNavHeight + bufferAboveNav;
 
     // If no target element, center in middle of screen
     if (!targetElement) {
@@ -84,33 +86,30 @@ const TutorialTooltip = ({
     }
 
     const rect = targetElement.getBoundingClientRect();
-    const spaceAbove = rect.top;
-    const spaceBelow = viewportHeight - rect.bottom - bottomNavHeight;
+    const buttonTop = rect.top;
+    const buttonHeight = rect.height;
 
-    // Position above the button with some spacing
-    const spacing = 20; // Space between tooltip and button
-    let top = rect.top - tooltipHeight - spacing;
+    // ALWAYS position tooltip ABOVE the button
+    const spacing = 16; // Space between tooltip and button
+    let top = buttonTop - tooltipHeight - spacing;
 
-    // Note: Arrow position is set in useEffect, not here (to avoid setState during render)
-    // If not enough space above, position below instead (but above bottom nav)
-    if (spaceAbove < tooltipHeight + spacing + 20) {
-      // Check if there's enough space below (accounting for bottom nav)
-      if (spaceBelow >= tooltipHeight + spacing) {
-        top = rect.bottom + spacing;
-      } else {
-        // If neither above nor below works, position to avoid bottom nav
-        top = viewportHeight - bottomNavHeight - tooltipHeight - spacing;
-      }
+    // If tooltip would go off top of screen, shift it down slightly
+    // but NEVER let it cover the button
+    const minTop = 20; // Minimum distance from top of screen
+    if (top < minTop) {
+      // Shift down but ensure we don't cover button
+      top = Math.min(minTop, buttonTop - tooltipHeight - 8);
     }
 
-    // Ensure tooltip doesn't go off top or bottom of screen (accounting for bottom nav)
-    top = Math.max(20, Math.min(top, viewportHeight - bottomNavHeight - tooltipHeight - 20));
+    // Ensure tooltip stays above button (failsafe)
+    const maxTop = buttonTop - tooltipHeight - 8;
+    top = Math.min(top, maxTop);
 
     // Full width on mobile, centered with max-width on larger screens
     const isMobile = viewportWidth < 640; // sm breakpoint
 
     return {
-      top: `${top}px`,
+      top: `${Math.max(minTop, top)}px`,
       left: isMobile ? '1rem' : '50%',
       right: isMobile ? '1rem' : 'auto',
       transform: isMobile ? 'none' : 'translateX(-50%)',
@@ -228,21 +227,21 @@ const TutorialTooltip = ({
           </p>
         )}
 
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-3 mt-4">
           {showBack && onBack && (
             <button
               onClick={() => {
                 haptic.light();
                 onBack();
               }}
-              className="flex-1 btn btn-secondary text-sm"
+              className="flex-1 btn btn-secondary py-3 text-base"
             >
               ← Back
             </button>
           )}
           <button
             onClick={handleNext}
-            className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-primary hover:shadow-lg hover:scale-105 active:scale-95 transition-all text-white font-bold py-3 text-lg shadow-xl animate-pulse-slow`}
+            className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-primary hover:shadow-lg hover:scale-105 active:scale-95 transition-all text-white font-bold py-3 text-base shadow-xl animate-pulse-slow whitespace-nowrap`}
           >
             {buttonText} ✨
           </button>

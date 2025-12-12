@@ -39,19 +39,23 @@ const TutorialOverlay = ({
       });
     };
 
-    // FIRST: Scroll element into view if it's near/below bottom nav (before locking)
+    // FIRST: Scroll element into view to position just above bottom nav (before locking)
     const rect = element.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const bottomNavHeight = 100; // Account for bottom nav
+    const bottomNavHeight = 80; // Actual bottom nav height
+    const bufferAboveNav = 20; // Small buffer space above nav
+    const desiredBottomPosition = viewportHeight - bottomNavHeight - bufferAboveNav;
+
+    // Calculate if element bottom is too low (would be hidden/covered by nav)
     const elementBottom = rect.bottom;
 
-    // If element is too close to bottom or below it, scroll it into better position
-    if (elementBottom > viewportHeight - bottomNavHeight - 40) {
-      // Scroll element to middle of visible area (above bottom nav)
-      const targetY = rect.top + window.scrollY - (viewportHeight - bottomNavHeight) / 2;
+    // If element is too close to or below the safe zone, scroll it up
+    if (elementBottom > desiredBottomPosition) {
+      // Position element so its bottom is at the desired position
+      const targetY = rect.top + window.scrollY - (desiredBottomPosition - rect.height);
       window.scrollTo({
-        top: targetY,
-        behavior: 'instant' // Instant for tutorial - users want to get to content quickly
+        top: Math.max(0, targetY), // Don't scroll negative
+        behavior: 'instant'
       });
 
       // Small delay to ensure DOM is settled after scroll
@@ -59,7 +63,7 @@ const TutorialOverlay = ({
         lockScreen();
       });
     } else {
-      // Element is already visible, lock immediately
+      // Element is already visible in safe zone, lock immediately
       lockScreen();
     }
 
