@@ -6,13 +6,14 @@ import RideshareModal from './checkin/RideshareModal';
 import WalkingModal from './checkin/WalkingModal';
 import QuickMeetModal from './checkin/QuickMeetModal';
 
-const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction }, ref) => {
+const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction, currentTutorialStep }, ref) => {
   const navigate = useNavigate();
   const [showRideshareModal, setShowRideshareModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
   const [showQuickMeetModal, setShowQuickMeetModal] = useState(false);
   
   // Refs for tutorial highlighting
+  const containerRef = useRef(null);
   const rideshareButtonRef = useRef(null);
   const walkingButtonRef = useRef(null);
   const quickMeetButtonRef = useRef(null);
@@ -20,6 +21,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
 
   // Expose refs to parent component
   useImperativeHandle(ref, () => ({
+    containerRef: containerRef.current,
     rideshareButton: rideshareButtonRef.current,
     walkingButton: walkingButtonRef.current,
     quickMeetButton: quickMeetButtonRef.current,
@@ -28,7 +30,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
 
   return (
     <>
-      <div className="mb-6">
+      <div ref={containerRef} className="mb-6 sticky top-0 z-[50] bg-white dark:bg-gray-900 py-2 -mx-4 px-4">
         <div className="flex items-center mb-4">
           <h2 className="text-xl font-display text-text-primary">Quick Check-In</h2>
           <InfoButton message="Start a quick safety check-in! Choose a preset (rideshare, walking, or meeting someone) or create a custom check-in. Your selected besties will be notified if you don't check back in. ✨" />
@@ -41,11 +43,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             ref={rideshareButtonRef}
             onClick={() => {
               haptic.light();
-              if (isTutorialMode && onTutorialAction) {
-                onTutorialAction('rideshare');
-              } else {
-                setShowRideshareModal(true);
-              }
+              setShowRideshareModal(true);
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -54,7 +52,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
                 setShowRideshareModal(true);
               }
             }}
-            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white"
+            className={`card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white ${currentTutorialStep === 'intro' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create rideshare check-in"
             tabIndex={0}
           >
@@ -67,11 +65,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             ref={walkingButtonRef}
             onClick={() => {
               haptic.light();
-              if (isTutorialMode && onTutorialAction) {
-                onTutorialAction('walking');
-              } else {
-                setShowWalkingModal(true);
-              }
+              setShowWalkingModal(true);
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -80,7 +74,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
                 setShowWalkingModal(true);
               }
             }}
-            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white"
+            className={`card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white ${currentTutorialStep === 'intro' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create walking check-in"
             tabIndex={0}
           >
@@ -93,11 +87,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             ref={quickMeetButtonRef}
             onClick={() => {
               haptic.light();
-              if (isTutorialMode && onTutorialAction) {
-                onTutorialAction('quickmeet');
-              } else {
-                setShowQuickMeetModal(true);
-              }
+              setShowQuickMeetModal(true);
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -106,7 +96,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
                 setShowQuickMeetModal(true);
               }
             }}
-            className="card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white"
+            className={`card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white ${currentTutorialStep === 'intro' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create quick meet check-in"
             tabIndex={0}
           >
@@ -120,11 +110,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
           ref={customButtonRef}
           onClick={() => {
             haptic.light();
-            if (isTutorialMode && onTutorialAction) {
-              onTutorialAction('custom');
-            } else {
-              navigate('/create');
-            }
+            navigate('/create');
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -133,7 +119,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
               navigate('/create');
             }
           }}
-          className="w-full card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-rose-400 to-pink-500 text-white"
+          className={`w-full card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-rose-400 to-pink-500 text-white ${currentTutorialStep === 'intro' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
           aria-label="Create custom check-in"
           tabIndex={0}
         >

@@ -49,7 +49,8 @@ const CheckInMap = ({
   showLocationDropdown,
   setShowLocationDropdown,
   loading,
-  setLoading
+  setLoading,
+  onLocationSet
 }) => {
   // Essential refs only
   const locationInputRef = useRef(null);
@@ -168,6 +169,13 @@ const CheckInMap = ({
         }, PIN_ANIMATION_DURATION_MS);
       }
       triggerHaptic([10]);
+      
+      // Notify parent that location was set (for tutorial)
+      if (onLocationSet && source !== 'auto') {
+        setTimeout(() => {
+          onLocationSet(true);
+        }, 100);
+      }
       return;
     }
     
@@ -214,13 +222,20 @@ const CheckInMap = ({
           }
           triggerHaptic([10]);
           logAnalyticsEvent('map_location_geocoded', { source });
+          
+          // Notify parent that location was set (for tutorial)
+          if (onLocationSet && source !== 'auto') {
+            setTimeout(() => {
+              onLocationSet(true);
+            }, 100);
+          }
         } else {
           setGeocodingError(true);
           errorTracker.logCustomError('Geocoding failed', { status, coords: rounded });
         }
       });
     }, GEOCODE_DEBOUNCE_MS);
-  }, [setLocationInput, setGpsCoords]);
+  }, [setLocationInput, setGpsCoords, onLocationSet]);
   
   // Try to get location automatically on mount if GPS is enabled and no location set
   useEffect(() => {

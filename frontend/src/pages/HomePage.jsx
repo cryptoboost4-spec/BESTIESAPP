@@ -12,7 +12,7 @@ import QuickMeetModal from '../components/checkin/QuickMeetModal';
 import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
-import EmergencySOSButton from '../components/EmergencySOSButton';
+// EmergencySOSButton removed per user request
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
@@ -43,7 +43,7 @@ const HomePage = () => {
 
   // Validate tutorial state and clean up invalid states
   useEffect(() => {
-    const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const validSteps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     
     // If tutorial is marked complete but has a step, clear the step
     if (tutorialComplete && currentTutorialStep) {
@@ -51,7 +51,7 @@ const HomePage = () => {
       return;
     }
     
-    // If we have an invalid step (like old 'intro'), reset to null
+    // If we have an invalid step, reset to null
     if (currentTutorialStep && !validSteps.includes(currentTutorialStep)) {
       console.warn('Invalid tutorial step detected:', currentTutorialStep, '- resetting');
       setTutorialStep(null);
@@ -367,7 +367,7 @@ const HomePage = () => {
     // First, reset any existing tutorial state to ensure clean start
     resetTutorial();
     
-    // Small delay to ensure state is cleared, then set to rideshare
+    // Small delay to ensure state is cleared, then set to intro
     setTimeout(() => {
       // Ensure refs are ready before starting
       let retryCount = 0;
@@ -375,7 +375,7 @@ const HomePage = () => {
       
       const checkRefs = () => {
         if (quickCheckInButtonsRef.current?.rideshareButton) {
-          setTutorialStep('rideshare');
+          setTutorialStep('intro');
         } else if (retryCount < maxRetries) {
           retryCount++;
           // Retry after short delay if refs aren't ready
@@ -384,7 +384,7 @@ const HomePage = () => {
           // If refs still not ready after max retries, set step anyway
           // The overlay will handle missing refs gracefully
           console.warn('Tutorial refs not ready after max retries, starting anyway');
-          setTutorialStep('rideshare');
+          setTutorialStep('intro');
         }
       };
       checkRefs();
@@ -396,7 +396,7 @@ const HomePage = () => {
   };
 
   const handleTutorialStepComplete = () => {
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
     
     if (currentIndex < steps.length - 1) {
@@ -418,30 +418,58 @@ const HomePage = () => {
   };
 
   const handleTutorialAction = (action) => {
+    // Actually click the buttons - this will open the modals
+    haptic.light();
+    
+    const buttonsRef = quickCheckInButtonsRef.current;
+    
+    // More reliable button clicking with fallback
+    const clickButton = (button) => {
+      if (!button) return false;
+      
+      try {
+        // Try direct click first
+        button.click();
+        
+        // Fallback: if click didn't work, dispatch event manually
+        setTimeout(() => {
+          // Try dispatching event as fallback
+          const event = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          button.dispatchEvent(event);
+        }, 100);
+        return true;
+      } catch (error) {
+        console.error('Error clicking button:', error);
+        return false;
+      }
+    };
+    
     if (action === 'rideshare') {
-      // Open rideshare modal in tutorial mode
-      const buttonsRef = quickCheckInButtonsRef.current;
-      if (buttonsRef) {
-        // Trigger the modal to open
-        setTutorialModalOpen(true);
-        setTutorialFormStep('rideshare');
+      // Click the rideshare button - button handles opening modal
+      if (clickButton(buttonsRef?.rideshareButton)) {
+        // Track that modal should be open (buttons set this via state)
+        // Tutorial will advance when modal closes
       }
     } else if (action === 'walking') {
-      setTutorialModalOpen(true);
-      setTutorialFormStep('walking');
+      clickButton(buttonsRef?.walkingButton);
     } else if (action === 'quickmeet') {
-      setTutorialModalOpen(true);
-      setTutorialFormStep('quickmeet');
+      clickButton(buttonsRef?.quickMeetButton);
     } else if (action === 'custom') {
-      // Step 4 - allow real check-in creation
-      markTutorialComplete();
-      navigate('/create');
+      // Custom button navigates to create page
+      if (clickButton(buttonsRef?.customButton)) {
+        markTutorialComplete();
+      }
     }
   };
 
   const handleTutorialFormClose = () => {
     setTutorialModalOpen(false);
     setTutorialFormStep(null);
+    // Advance tutorial to next step when modal closes
     handleTutorialStepComplete();
   };
 
@@ -455,6 +483,9 @@ const HomePage = () => {
     try {
       let element = null;
       switch (currentTutorialStep) {
+        case 'intro':
+          element = quickCheckInButtonsRef.current.containerRef || null;
+          break;
         case 'rideshare':
           element = quickCheckInButtonsRef.current.rideshareButton || null;
           break;
@@ -485,7 +516,7 @@ const HomePage = () => {
     // If tutorial is marked complete, don't show tooltip
     if (tutorialComplete) return null;
     
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     const stepIndex = steps.indexOf(currentTutorialStep);
     
     // If step is not in valid steps, return null and reset
@@ -499,11 +530,21 @@ const HomePage = () => {
     const totalSteps = steps.length;
 
     switch (currentTutorialStep) {
+      case 'intro':
+        return {
+          title: 'Create Your Check-Ins',
+          body: "This is where you'll create check-ins. Choose from quick options or create a custom one. Let's explore each button!",
+          buttonText: "Let's go",
+          onNext: () => handleTutorialStepComplete(),
+          position: 'auto',
+          stepNumber,
+          totalSteps
+        };
       case 'rideshare':
         return {
           title: '🚗 Rideshare Safety',
           body: "Getting an Uber or Lyft? Just tap here! Share the license plate & when you'll arrive. If you don't check in as safe, your bestie gets automatically notified.",
-          buttonText: 'Show me how',
+          buttonText: 'Try it',
           onNext: () => handleTutorialAction('rideshare'),
           position: 'left', // Arrow points to left button
           stepNumber,
@@ -513,7 +554,7 @@ const HomePage = () => {
         return {
           title: '🚶‍♀️ Walking Alone',
           body: "Going for a walk or run? Set how long you'll be gone. Your bestie will know if you don't return on time. Perfect for evening jogs or walking to your car!",
-          buttonText: 'Show me how',
+          buttonText: 'Try it',
           onNext: () => handleTutorialAction('walking'),
           position: 'auto', // Arrow points down to center button
           stepNumber,
@@ -521,9 +562,9 @@ const HomePage = () => {
         };
       case 'quickmeet':
         return {
-          title: '👤 Meeting Someone New',
+          title: '👤 Quick Meet',
           body: "First date? Meeting a marketplace seller? Let your bestie know who you're with and where. They'll get an alert if you don't check in safe.",
-          buttonText: 'Show me how',
+          buttonText: 'Try it',
           onNext: () => handleTutorialAction('quickmeet'),
           position: 'right', // Arrow points to right button
           stepNumber,
@@ -545,7 +586,7 @@ const HomePage = () => {
   };
 
   const handleTutorialBack = () => {
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
     
     if (currentIndex > 0) {
@@ -554,7 +595,7 @@ const HomePage = () => {
   };
 
   const getStepNumber = () => {
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     const index = steps.indexOf(currentTutorialStep);
     return index >= 0 ? index + 1 : 1; // Default to 1 if step not found
   };
@@ -579,7 +620,7 @@ const HomePage = () => {
   }
 
   // Calculate tutorial overlay visibility before return
-  const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+  const validSteps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
   const isValidStep = currentTutorialStep && validSteps.includes(currentTutorialStep);
   const shouldShowTutorial = isValidStep && !tutorialComplete && !tutorialModalOpen;
   const tooltipConfig = shouldShowTutorial ? getTooltipConfig() : null;
@@ -663,7 +704,8 @@ const HomePage = () => {
         {/* Quick Check-In Buttons - Moved to middle */}
         {activeCheckIns.length === 0 && (
           <>
-            <QuickCheckInButtons 
+            <QuickCheckInButtons
+              currentTutorialStep={currentTutorialStep} 
               ref={quickCheckInButtonsRef}
               isTutorialMode={!!currentTutorialStep && !tutorialModalOpen}
               onTutorialAction={handleTutorialAction}
@@ -865,8 +907,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Emergency SOS Button */}
-      <EmergencySOSButton hasActiveAlert={activeCheckIns.some(checkIn => checkIn.status === 'alerted')} />
+      {/* Emergency SOS Button - Removed per user request */}
 
       {/* Add to Home Screen Prompt - Disabled per user request */}
       {/* <AddToHomeScreenPrompt currentUser={currentUser} userData={userData} /> */}
@@ -887,7 +928,7 @@ const HomePage = () => {
           highlightedElementRef={getHighlightedElementRef()}
           tooltipConfig={tooltipConfig}
           stepNumber={getStepNumber()}
-          totalSteps={4}
+          totalSteps={5}
         />
       )}
     </div>

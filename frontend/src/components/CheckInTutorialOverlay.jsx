@@ -203,9 +203,9 @@ const CheckInTutorialOverlay = ({
 
   return (
     <>
-      {/* Dark overlay backdrop - dims everything */}
+      {/* Dark overlay backdrop - dims everything (lighter for mobile visibility) */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-60 pointer-events-auto"
+        className="fixed inset-0 bg-black bg-opacity-40 pointer-events-auto"
         style={{ zIndex: 9998 }}
         onClick={(e) => {
           e.preventDefault();
@@ -307,19 +307,29 @@ const CheckInTutorialOverlay = ({
             </div>
           )}
 
-          {/* Dismiss button for map overlay */}
-          {tooltipConfig.overlayOnElement && tooltipConfig.dismissible && (
-            <button
-              onClick={handleDismissTooltip}
-              disabled={tooltipConfig.canDismiss === false}
-              className={`mt-4 w-full px-4 py-2 rounded-lg font-medium transition-all transform active:scale-95 ${
-                tooltipConfig.canDismiss === false
-                  ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'bg-primary text-white hover:bg-primary-dark'
-              }`}
-            >
-              Got it
-            </button>
+          {/* Dismiss/Continue button for map overlay */}
+          {tooltipConfig.overlayOnElement && (
+            tooltipConfig.showScrollMessage ? (
+              // Show scroll message with continue button
+              <button
+                onClick={handleDismissTooltip}
+                className="mt-4 w-full px-4 py-2 rounded-lg font-medium transition-all transform active:scale-95 bg-primary text-white hover:bg-primary-dark"
+              >
+                Continue
+              </button>
+            ) : tooltipConfig.dismissible ? (
+              <button
+                onClick={handleDismissTooltip}
+                disabled={tooltipConfig.canDismiss === false}
+                className={`mt-4 w-full px-4 py-2 rounded-lg font-medium transition-all transform active:scale-95 ${
+                  tooltipConfig.canDismiss === false
+                    ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'bg-primary text-white hover:bg-primary-dark'
+                }`}
+              >
+                Got it
+              </button>
+            ) : null
           )}
         </div>
       )}

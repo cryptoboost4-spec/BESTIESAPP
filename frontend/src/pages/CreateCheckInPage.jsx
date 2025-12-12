@@ -81,6 +81,8 @@ const CreateCheckInPage = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedForFirstCheckIn, setHasCheckedForFirstCheckIn] = useState(false);
   const [bestiesLoadingTimeout, setBestiesLoadingTimeout] = useState(false);
+  const [showScrollDownMessage, setShowScrollDownMessage] = useState(false);
+  const [locationStepCompleted, setLocationStepCompleted] = useState(false);
 
   // Log showTutorial changes
   useEffect(() => {
@@ -639,16 +641,11 @@ const CreateCheckInPage = () => {
     checkFirstCheckIn();
   }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading, bestiesLoadingTimeout, isTutorialStateLoaded, location.state?.quickType, location.state?.skipLocation]);
 
-  // Scroll submit button into view on final step
+  // Reset location step state when leaving location step
   useEffect(() => {
-    if (currentCheckInTutorialStep === 'final' && submitButtonRef.current) {
-      // Small delay to ensure tooltip is rendered first
-      setTimeout(() => {
-        submitButtonRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-      }, 300);
+    if (currentCheckInTutorialStep !== 'location') {
+      setShowScrollDownMessage(false);
+      setLocationStepCompleted(false);
     }
   }, [currentCheckInTutorialStep]);
 
@@ -675,16 +672,47 @@ const CreateCheckInPage = () => {
           console.warn('[Tutorial] mapRef is not ready for location step');
           return null;
         }
+        
+        // If location is entered but step not completed, show scroll message
+        if (locationInput.trim() !== '' && !locationStepCompleted) {
+          return {
+            highlightedElementRef: mapRef,
+            overlayOnElement: true,
+            dismissible: false,
+            tooltipConfig: {
+              title: '📍 Location Added!',
+              body: `Great! Your location is set.\n\nScroll down when you're done to continue.`,
+              overlayOnElement: true,
+              dismissible: false,
+              canDismiss: false,
+              showScrollMessage: true,
+            },
+          };
+        }
+        
+        // Initial location explanation
         return {
           highlightedElementRef: mapRef,
           overlayOnElement: true,
           dismissible: true,
           tooltipConfig: {
-            title: 'Where are you going?',
-            body: `Tap the map or search for your location.\n\nThis is for your safety - your bestie will know where to find you if something feels off.`,
+            title: 'Set Your Location',
+            body: `Web browser location isn't very accurate. The mobile app will have precise location that works even when your phone is locked.\n\nYou can use your location now (optional) or enter it manually.`,
             overlayOnElement: true,
             dismissible: true,
-            canDismiss: locationInput.trim() !== '', // Only allow dismiss when address is entered
+            canDismiss: false, // Can't dismiss until location is entered
+            buttons: [
+              {
+                text: 'Use My Location',
+                action: 'useLocation',
+                primary: true,
+              },
+              {
+                text: 'Enter Manually',
+                action: 'enterManually',
+                primary: false,
+              },
+            ],
           },
         };
 
@@ -797,10 +825,126 @@ const CreateCheckInPage = () => {
     }
   };
 
+  // Handle location input changes - show scroll message when location is entered
+  useEffect(() => {
+    if (currentCheckInTutorialStep === 'location' && locationInput.trim() !== '' && !locationStepCompleted) {
+      setShowScrollDownMessage(true);
+    }
+  }, [locationInput, currentCheckInTutorialStep, locationStepCompleted]);
+
+  // Handle scroll detection for location step
+  useEffect(() => {
+    if (!showScrollDownMessage || currentCheckInTutorialStep !== 'location') return;
+
+    const handleScroll = () => {
+      // If user has scrolled down significantly, hide message and mark step as ready to complete
+      if (window.scrollY > 200) {
+        setShowScrollDownMessage(false);
+        setLocationStepCompleted(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [showScrollDownMessage, currentCheckInTutorialStep]);
+
+  // Scroll sections into view for each tutorial step
+  useEffect(() => {
+    if (!currentCheckInTutorialStep || !showTutorial) return;
+
+    const scrollToElement = (ref, delay = 300) => {
+      setTimeout(() => {
+        if (!ref?.current) return;
+        
+        const element = ref.current;
+        const elementRect = element.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const bottomNavHeight = 80;
+        const safeZone = 100; // Space above bottom nav
+        
+        // Calculate desired position (center of viewport, but above bottom nav)
+        const desiredTop = (viewportHeight - bottomNavHeight - safeZone) / 2;
+        const currentTop = elementRect.top;
+        const scrollOffset = currentTop - desiredTop;
+        
+        // Scroll element into view with offset for bottom nav
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+        
+        // Adjust for bottom nav after scroll
+        setTimeout(() => {
+          window.scrollBy({
+            top: -safeZone,
+            behavior: 'smooth',
+          });
+        }, 100);
+      }, delay);
+    };
+
+    // Scroll based on current step
+    switch (currentCheckInTutorialStep) {
+      case 'location':
+        scrollToElement(mapRef, 500); // Longer delay for map to load
+        break;
+      case 'whoMeeting':
+        scrollToElement(whoMeetingRef);
+        break;
+      case 'socialMedia':
+        scrollToElement(socialMediaRef);
+        break;
+      case 'duration':
+        scrollToElement(durationRef);
+        break;
+      case 'bestieSelection':
+        scrollToElement(bestieSelectorRef);
+        break;
+      case 'notesPhotos':
+        scrollToElement(notesPhotosRef);
+        break;
+      case 'final':
+        scrollToElement(submitButtonRef);
+        break;
+    }
+  }, [currentCheckInTutorialStep, showTutorial]);
+
   // Handle tutorial step completion
   const handleTutorialStepComplete = async (action) => {
     const stepOrder = ['location', 'whoMeeting', 'socialMedia', 'duration', 'bestieSelection', 'notesPhotos', 'final'];
     const currentIndex = stepOrder.indexOf(currentCheckInTutorialStep);
+
+    // Handle location step actions
+    if (currentCheckInTutorialStep === 'location') {
+      if (action === 'useLocation') {
+        // Trigger location request from map component
+        // The map component will handle this via its GPS button
+        // We'll wait for locationInput to be set
+        const mapElement = mapRef.current?.querySelector('[aria-label*="location" i], button[class*="gps"], .gps-button');
+        if (mapElement) {
+          mapElement.click();
+        } else {
+          // Fallback: try to find and click GPS button
+          const gpsButton = document.querySelector('button[aria-label*="location" i], .gps-button, [class*="gps"]');
+          if (gpsButton) {
+            gpsButton.click();
+          } else {
+            toast.info('Please use the location button on the map or enter location manually.');
+          }
+        }
+        return; // Don't advance yet, wait for location to be set
+      } else if (action === 'enterManually') {
+        // User will enter manually, just dismiss the popup
+        // They can tap map or use search
+        return; // Don't advance yet
+      } else if (action === 'continue') {
+        // User clicked continue after seeing scroll message
+        setShowScrollDownMessage(false);
+        setLocationStepCompleted(false);
+        setCheckInTutorialStep('whoMeeting');
+        return;
+      }
+    }
 
     if (action === 'skip' && currentCheckInTutorialStep === 'whoMeeting') {
       // Skip to social media
@@ -1142,6 +1286,10 @@ const CreateCheckInPage = () => {
                 setLocationInput(value);
                 if (value.trim()) {
                   setFormErrors(prev => ({ ...prev, location: '' }));
+                  // If in tutorial and location just entered, show scroll message
+                  if (currentCheckInTutorialStep === 'location' && !locationStepCompleted) {
+                    setShowScrollDownMessage(true);
+                  }
                 }
               }}
               gpsCoords={gpsCoords}
@@ -1153,6 +1301,12 @@ const CreateCheckInPage = () => {
               setShowLocationDropdown={setShowLocationDropdown}
               loading={loading}
               setLoading={setLoading}
+              onLocationSet={(value) => {
+                // When location is set via GPS, update locationInput
+                if (value && currentCheckInTutorialStep === 'location') {
+                  setShowScrollDownMessage(true);
+                }
+              }}
             />
           </div>
           {formErrors.location && <InlineError message={formErrors.location} className="px-6 -mt-4" />}
@@ -1312,6 +1466,17 @@ const CreateCheckInPage = () => {
             />
           );
         })()}
+        
+        {/* Scroll Down Message - shown after location is entered */}
+        {showScrollDownMessage && currentCheckInTutorialStep === 'location' && (
+          <div className="fixed bottom-24 left-0 right-0 z-[10003] flex justify-center pointer-events-none">
+            <div className="bg-primary text-white px-6 py-4 rounded-xl shadow-2xl animate-pulse max-w-sm mx-4">
+              <p className="text-center font-semibold text-lg">
+                📍 Scroll down when you're done
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

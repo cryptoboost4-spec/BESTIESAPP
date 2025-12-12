@@ -137,15 +137,15 @@ const AddBestieCard = ({ onBestieAdded }) => {
             {/* Messenger Bestie Card */}
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4">
               <div className="flex items-center gap-3 mb-3">
-                <div className="text-3xl">💬</div>
+                <div className="text-2xl">💬</div>
                 <div className="flex-1">
-                  <h4 className="font-display text-lg text-text-primary">Messenger Bestie</h4>
-                  <p className="text-sm text-text-secondary">Free & unlimited alerts • Connect when they message you for 20 hours</p>
+                  <h4 className="font-display text-base text-text-primary">Messenger Bestie</h4>
+                  <p className="text-xs text-text-secondary">Free alerts • 20 hour connection</p>
                 </div>
               </div>
               <button
                 onClick={handleMessengerBestie}
-                className="w-full btn btn-primary"
+                className="w-full btn btn-primary text-sm py-2"
               >
                 Connect with Facebook
               </button>
