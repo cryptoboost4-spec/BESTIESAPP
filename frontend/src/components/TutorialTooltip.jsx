@@ -39,15 +39,6 @@ const TutorialTooltip = ({
         const spaceLeft = rect.left;
         const spaceRight = viewportWidth - rect.right;
 
-        // Determine arrow position based on where tooltip will be positioned
-        if (spaceAbove < tooltipRect.height + 20) {
-          // Not enough space above, position below
-          arrowPos = 'top'; // Arrow points up to button
-        } else {
-          // Enough space above, position above
-          arrowPos = 'bottom'; // Arrow points down to button
-        }
-
         if (spaceBelow >= tooltipRect.height + 20) {
           pos = 'below';
           arrowPos = 'top';
@@ -96,6 +87,7 @@ const TutorialTooltip = ({
         left: '50%',
         transform: 'translate(-50%, -50%)',
         maxWidth: '90vw',
+        minWidth: '280px',
         width: 'auto'
       };
     }
@@ -122,6 +114,7 @@ const TutorialTooltip = ({
       left: '50%',
       transform: 'translateX(-50%)',
       maxWidth: '90vw',
+      minWidth: '280px',
       width: 'auto'
     };
   };
