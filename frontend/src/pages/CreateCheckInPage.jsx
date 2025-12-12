@@ -590,7 +590,7 @@ const CreateCheckInPage = () => {
     };
 
     checkFirstCheckIn();
-  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading]);
+  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading, location.state?.quickType, location.state?.skipLocation]);
 
   // Scroll submit button into view on final step
   useEffect(() => {
