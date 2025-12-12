@@ -27,18 +27,46 @@ const TutorialOverlay = ({
     }
 
     const element = highlightedElementRef.current;
-    
-    // Lock screen - prevent scrolling
-    const scrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = `-${scrollY}px`;
-    
-    // Add class to elevate z-index of highlighted element
-    element.classList.add('tutorial-highlighted-element');
-    element.style.zIndex = '95';
-    element.style.position = 'relative';
+
+    // FIRST: Scroll element into view if it's near/below bottom nav (before locking)
+    const rect = element.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const bottomNavHeight = 100; // Account for bottom nav
+    const elementBottom = rect.bottom;
+
+    // If element is too close to bottom or below it, scroll it into better position
+    if (elementBottom > viewportHeight - bottomNavHeight - 40) {
+      // Scroll element to middle of visible area (above bottom nav)
+      const targetY = rect.top + window.scrollY - (viewportHeight - bottomNavHeight) / 2;
+      window.scrollTo({
+        top: targetY,
+        behavior: 'smooth'
+      });
+
+      // Wait for smooth scroll to finish before locking
+      setTimeout(() => {
+        lockScreen();
+      }, 300);
+    } else {
+      // Element is already visible, lock immediately
+      lockScreen();
+    }
+
+    function lockScreen() {
+      // Lock screen - prevent scrolling
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${scrollY}px`;
+
+      // Add class to elevate z-index of highlighted element
+      element.classList.add('tutorial-highlighted-element');
+      element.style.zIndex = '95';
+      element.style.position = 'relative';
+
+      updateHighlight();
+    }
 
     const updateHighlight = () => {
       const rect = element.getBoundingClientRect();
@@ -50,7 +78,6 @@ const TutorialOverlay = ({
       });
     };
 
-    updateHighlight();
     // Only listen to resize, not scroll (since we're locking scroll)
     window.addEventListener('resize', updateHighlight);
 

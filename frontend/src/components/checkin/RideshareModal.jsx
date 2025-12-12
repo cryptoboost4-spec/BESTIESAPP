@@ -136,7 +136,10 @@ const RideshareModal = ({ onClose, isTutorialMode = false }) => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  if (rego.trim() || isTutorialMode) {
+                  // In tutorial mode, just close keyboard
+                  if (isTutorialMode) {
+                    e.target.blur();
+                  } else if (rego.trim()) {
                     handleStart();
                   } else {
                     e.target.blur(); // Close keyboard if invalid
