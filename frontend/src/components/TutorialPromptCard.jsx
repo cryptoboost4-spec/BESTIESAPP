@@ -17,10 +17,10 @@ const TutorialPromptCard = ({ onStartTutorial, onSkip }) => {
       <div className="text-center">
         <div className="text-4xl mb-3">💜</div>
         <h3 className="font-display text-xl text-text-primary mb-2">
-          You're Doing the Right Thing
+          Let's Learn How to Create Check-Ins
         </h3>
         <p className="text-text-secondary mb-4 leading-relaxed">
-          Creating your first check-in is quick and easy. We'll walk you through it together - it only takes a minute, and you'll feel so much more confident knowing your bestie has your back.
+          We'll walk you through the different check-in types together. It only takes a minute, and you'll feel so much more confident knowing your bestie has your back.
         </p>
         <p className="text-sm text-text-secondary mb-6">
           This is a safe space, and you're taking control of your safety. That's something to be proud of! ✨
