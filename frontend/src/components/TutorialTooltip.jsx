@@ -14,7 +14,6 @@ const TutorialTooltip = ({
   position = 'auto' // 'auto', 'above', 'below', 'left', 'right'
 }) => {
   const tooltipRef = useRef(null);
-  const [calculatedPosition, setCalculatedPosition] = useState('below');
   const [arrowPosition, setArrowPosition] = useState('top');
 
   useEffect(() => {
@@ -58,7 +57,6 @@ const TutorialTooltip = ({
         arrowPos = pos === 'above' ? 'bottom' : pos === 'below' ? 'top' : pos === 'left' ? 'right' : 'left';
       }
 
-      setCalculatedPosition(pos);
       setArrowPosition(arrowPos);
     };
 
@@ -73,7 +71,6 @@ const TutorialTooltip = ({
   }, [targetElement, position]);
 
   const getPositionStyles = () => {
-    const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
     // Get tooltip dimensions (use defaults if not yet rendered)
@@ -92,7 +89,6 @@ const TutorialTooltip = ({
 
     const rect = targetElement.getBoundingClientRect();
     const spaceAbove = rect.top;
-    const spaceBelow = viewportHeight - rect.bottom;
     
     // Position above the button with some spacing
     const spacing = 20; // Space between tooltip and button
