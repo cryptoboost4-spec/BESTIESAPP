@@ -857,9 +857,6 @@ const CreateCheckInPage = () => {
         if (!ref?.current) return;
         
         const element = ref.current;
-        const elementRect = element.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const bottomNavHeight = 80;
         const safeZone = 100; // Space above bottom nav
         
         // Scroll element into view with offset for bottom nav
