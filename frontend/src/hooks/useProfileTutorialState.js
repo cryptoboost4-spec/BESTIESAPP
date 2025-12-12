@@ -112,6 +112,33 @@ export const useProfileTutorialState = () => {
   const pauseTutorial = () => setIsPaused(true);
   const resumeTutorial = () => setIsPaused(false);
 
+  const resetTutorial = async () => {
+    setTutorialActive(false);
+    setCurrentStep(null);
+    setIsCompleted(false);
+    setIsPaused(false);
+
+    // Clear localStorage
+    localStorage.removeItem('profile_tutorial_completed');
+    localStorage.removeItem('profile_tutorial_dismissed');
+    localStorage.removeItem('profile_tutorial_completed_at');
+
+    // Clear Firestore
+    if (currentUser) {
+      try {
+        const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
+        await updateDoc(tutorialsRef, {
+          'profile.completed': false,
+          'profile.completedAt': null,
+          'profile.dismissed': false,
+          'profile.dismissedAt': null
+        });
+      } catch (error) {
+        console.error('Error resetting Profile tutorial in Firestore:', error);
+      }
+    }
+  };
+
   return {
     tutorialActive,
     currentStep,
@@ -120,10 +147,12 @@ export const useProfileTutorialState = () => {
     isLoading,
     startTutorial,
     nextStep,
+    setCurrentStep,
     skipTutorial,
     completeTutorial,
     pauseTutorial,
-    resumeTutorial
+    resumeTutorial,
+    resetTutorial
   };
 };
 

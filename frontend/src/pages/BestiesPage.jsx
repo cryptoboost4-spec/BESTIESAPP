@@ -47,6 +47,17 @@ const BestiesPage = () => {
   // Tutorial state
   const tutorial = useBestiesTutorialState();
   
+  // Handle tutorial restart from navigation state
+  useEffect(() => {
+    if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
+      tutorial.resetTutorial().then(() => {
+        tutorial.startTutorial();
+        // Clear the state
+        window.history.replaceState({}, document.title);
+      });
+    }
+  }, [location.state, tutorial]);
+  
   // Refs for highlighted elements
   const activityFeedRef = useRef(null);
   const postButtonRef = useRef(null);
@@ -626,6 +637,11 @@ const BestiesPage = () => {
               setShowCelebration(true);
             } else {
               tutorial.nextStep();
+            }
+          }}
+          onBack={() => {
+            if (tutorial.currentStep > 1) {
+              tutorial.setCurrentStep(tutorial.currentStep - 1);
             }
           }}
           onSkip={() => {

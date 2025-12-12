@@ -8,8 +8,11 @@ import TutorialOverlay from '../../TutorialOverlay';
 const SettingsTutorialOverlay = ({
   currentStep,
   onNext,
+  onBack,
   onSkip,
   isPaused,
+  onPause,
+  onResume,
   refs,
   hasMessenger = false
 }) => {
@@ -18,13 +21,20 @@ const SettingsTutorialOverlay = ({
   useEffect(() => {
     if (!currentStep || !refs) return;
 
+    // Smart step skipping will be handled by the page component
+    // (checking if notifications are already configured)
+
     const configs = {
       1: {
         title: 'Stay Connected',
         body: "Enable notifications so your besties can reach you in emergencies. Choose how you want to be notified - email, SMS, or push notifications.",
         buttonText: 'Try It',
         position: 'auto',
-        highlightedElementRef: refs.notificationSettings
+        highlightedElementRef: refs.notificationSettings,
+        requiresInteraction: true, // Pause tutorial and allow interaction
+        onTryIt: () => {
+          onPause?.();
+        }
       },
       2: {
         title: 'Connect Messenger',
@@ -80,10 +90,22 @@ const SettingsTutorialOverlay = ({
   // Adjust total steps if messenger is not available
   const totalSteps = hasMessenger ? 5 : 4;
 
+  // Handle "Try It" button click for interactive steps
+  const handleNext = () => {
+    if (tooltipConfig.requiresInteraction && tooltipConfig.onTryIt) {
+      // Pause tutorial and allow interaction
+      tooltipConfig.onTryIt();
+    } else {
+      // Normal next step
+      onNext();
+    }
+  };
+
   return (
     <TutorialOverlay
       currentStep={currentStep}
-      onStepComplete={onNext}
+      onStepComplete={handleNext}
+      onStepBack={onBack}
       onTutorialComplete={onSkip}
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}

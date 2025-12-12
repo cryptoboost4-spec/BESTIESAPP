@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs, onSnapshot, limit } from 'firebase/firestore';
@@ -18,6 +18,7 @@ import OfflineBanner from '../components/OfflineBanner';
 import { useProfileTutorialState } from '../hooks/useProfileTutorialState';
 import ProfileTutorialWelcome from '../components/tutorials/profile/ProfileTutorialWelcome';
 import ProfileTutorialOverlay from '../components/tutorials/profile/ProfileTutorialOverlay';
+import MiniModeTooltip from '../components/tutorials/MiniModeTooltip';
 import CelebrationToast from '../components/tutorials/CelebrationToast';
 import toast from 'react-hot-toast';
 
@@ -41,6 +42,17 @@ const ProfilePage = () => {
 
   // Tutorial state
   const tutorial = useProfileTutorialState();
+  
+  // Handle tutorial restart from navigation state
+  useEffect(() => {
+    if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
+      tutorial.resetTutorial().then(() => {
+        tutorial.startTutorial();
+        // Clear the state
+        window.history.replaceState({}, document.title);
+      });
+    }
+  }, [location.state, tutorial]);
   
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
@@ -563,6 +575,11 @@ const ProfilePage = () => {
               tutorial.nextStep();
             }
           }}
+          onBack={() => {
+            if (tutorial.currentStep > 1) {
+              tutorial.setCurrentStep(tutorial.currentStep - 1);
+            }
+          }}
           onSkip={() => {
             if (typeof window !== 'undefined' && window.analytics) {
               window.analytics.track('tutorial_skipped', {
@@ -573,6 +590,16 @@ const ProfilePage = () => {
             tutorial.skipTutorial();
           }}
           isPaused={tutorial.isPaused}
+          onPause={() => {
+            tutorial.pauseTutorial();
+            // For step 2, open customizer
+            if (tutorial.currentStep === 2) {
+              setShowCustomizer(true);
+            }
+          }}
+          onResume={() => {
+            tutorial.resumeTutorial();
+          }}
           refs={{
             profileCard: profileCardRef,
             customizerButton: profileCardRef, // Use same ref since customizer is in ProfileCard
@@ -582,6 +609,32 @@ const ProfilePage = () => {
             settingsButton: settingsButtonRef
           }}
           profileCompletion={profileCompletion.percentage}
+        />
+      )}
+
+      {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
+      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && (
+        <MiniModeTooltip
+          message={
+            tutorial.currentStep === 2
+              ? "Try customizing your profile! When you're done, click Continue below."
+              : tutorial.currentStep === 4
+              ? "Explore the badges! Tap any badge to see how to earn it. When you're done, click Continue."
+              : "Take your time exploring! Click Continue when you're ready."
+          }
+          progressDots={Array.from({ length: 6 }, (_, i) => ({
+            filled: i < tutorial.currentStep
+          }))}
+          onContinue={() => {
+            tutorial.resumeTutorial();
+            // Auto-advance after interaction
+            if (tutorial.currentStep === 2 || tutorial.currentStep === 4) {
+              setTimeout(() => {
+                tutorial.nextStep();
+              }, 300);
+            }
+          }}
+          onSkip={tutorial.skipTutorial}
         />
       )}
 

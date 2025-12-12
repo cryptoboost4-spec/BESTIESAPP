@@ -16,16 +16,19 @@ import SecurityPasscodes from '../components/settings/SecurityPasscodes';
 import PreferencesAndQuickAccess from '../components/settings/PreferencesAndQuickAccess';
 import LegalSection from '../components/settings/LegalSection';
 import PricingTiers from '../components/settings/PricingTiers';
+import TutorialsSection from '../components/settings/TutorialsSection';
 import { FEATURES } from '../config/features';
 import { useSettingsTutorialState } from '../hooks/useSettingsTutorialState';
 import SettingsTutorialWelcome from '../components/tutorials/settings/SettingsTutorialWelcome';
 import SettingsTutorialOverlay from '../components/tutorials/settings/SettingsTutorialOverlay';
+import MiniModeTooltip from '../components/tutorials/MiniModeTooltip';
 import CelebrationToast from '../components/tutorials/CelebrationToast';
 
 const SettingsPage = () => {
   const { currentUser, userData } = useAuth();
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [pushNotificationsSupported, setPushNotificationsSupported] = useState(true);
@@ -47,6 +50,35 @@ const SettingsPage = () => {
 
   // Tutorial state
   const tutorial = useSettingsTutorialState();
+  
+  // Handle tutorial restart from navigation state
+  useEffect(() => {
+    if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
+      tutorial.resetTutorial().then(() => {
+        tutorial.startTutorial();
+        // Clear the state
+        window.history.replaceState({}, document.title);
+      });
+    }
+  }, [location.state, tutorial, tutorial.isLoading, tutorial.isCompleted]);
+
+  // Smart step skipping: Skip step 1 if notifications are already configured
+  useEffect(() => {
+    if (tutorial.tutorialActive && tutorial.currentStep === 1 && userData) {
+      const hasNotificationsConfigured = 
+        userData?.settings?.notifications?.email ||
+        userData?.settings?.notifications?.sms ||
+        userData?.settings?.notifications?.push ||
+        pushNotificationsEnabled;
+      
+      if (hasNotificationsConfigured) {
+        // Skip to step 2
+        setTimeout(() => {
+          tutorial.nextStep();
+        }, 500);
+      }
+    }
+  }, [tutorial.tutorialActive, tutorial.currentStep, userData, pushNotificationsEnabled, tutorial]);
   
   // Refs for highlighted elements
   const notificationSettingsRef = useRef(null);
@@ -585,6 +617,9 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Tutorials Section */}
+        <TutorialsSection />
+
         {/* Preferences */}
         <div ref={preferencesRef}>
           <PreferencesAndQuickAccess
@@ -840,6 +875,11 @@ const SettingsPage = () => {
               tutorial.nextStep();
             }
           }}
+          onBack={() => {
+            if (tutorial.currentStep > 1) {
+              tutorial.setCurrentStep(tutorial.currentStep - 1);
+            }
+          }}
           onSkip={() => {
             if (typeof window !== 'undefined' && window.analytics) {
               window.analytics.track('tutorial_skipped', {
@@ -850,6 +890,12 @@ const SettingsPage = () => {
             tutorial.skipTutorial();
           }}
           isPaused={tutorial.isPaused}
+          onPause={() => {
+            tutorial.pauseTutorial();
+          }}
+          onResume={() => {
+            tutorial.resumeTutorial();
+          }}
           refs={{
             notificationSettings: notificationSettingsRef,
             messengerLink: messengerLinkRef,
@@ -858,6 +904,30 @@ const SettingsPage = () => {
             preferences: preferencesRef
           }}
           hasMessenger={FEATURES.messengerAlerts}
+        />
+      )}
+
+      {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
+      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && (
+        <MiniModeTooltip
+          message={
+            tutorial.currentStep === 1
+              ? "Try toggling the notification settings! When you're done, click Continue below."
+              : "Take your time exploring! Click Continue when you're ready."
+          }
+          progressDots={Array.from({ length: FEATURES.messengerAlerts ? 5 : 4 }, (_, i) => ({
+            filled: i < tutorial.currentStep
+          }))}
+          onContinue={() => {
+            tutorial.resumeTutorial();
+            // Auto-advance after interaction
+            if (tutorial.currentStep === 1) {
+              setTimeout(() => {
+                tutorial.nextStep();
+              }, 300);
+            }
+          }}
+          onSkip={tutorial.skipTutorial}
         />
       )}
 

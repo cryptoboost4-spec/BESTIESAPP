@@ -28,6 +28,13 @@ const TutorialOverlay = ({
     }
 
     const element = highlightedElementRef.current;
+    
+    // Enhanced error handling: Verify element is in DOM
+    if (!document.body.contains(element)) {
+      console.warn('[Tutorial] Highlighted element is not in DOM, skipping highlight');
+      setHighlightRect(null);
+      return;
+    }
 
     // Define updateHighlight first (before lockScreen uses it)
     const updateHighlight = () => {
@@ -126,6 +133,10 @@ const TutorialOverlay = ({
         e.preventDefault();
         haptic.light();
         onStepComplete?.();
+      } else if (e.key === 'ArrowLeft' && onStepBack && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        haptic.light();
+        onStepBack?.();
       }
 
       // Enter to continue

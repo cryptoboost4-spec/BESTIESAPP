@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(functions.config().stripe?.secret_key);
 const { updateUserBadges } = require('../../utils/badges');
+const { logAuditEvent, AuditEventType } = require('../../utils/auditLogger');
 
 const db = admin.firestore();
 
@@ -53,6 +54,18 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
         // Update badges to award subscriber badge
         await updateUserBadges(firebaseUID);
+
+        // Audit log
+        await logAuditEvent(
+          AuditEventType.PAYMENT_COMPLETED,
+          firebaseUID,
+          {
+            type: 'subscription',
+            subscriptionId: session.subscription,
+            amount: session.amount_total,
+          },
+          'info'
+        );
       } else if (type === 'donation') {
         // Track donation
         const amount = session.amount_total / 100;

@@ -8,8 +8,11 @@ import TutorialOverlay from '../../TutorialOverlay';
 const ProfileTutorialOverlay = ({
   currentStep,
   onNext,
+  onBack,
   onSkip,
   isPaused,
+  onPause,
+  onResume,
   refs,
   profileCompletion = 0
 }) => {
@@ -33,7 +36,12 @@ const ProfileTutorialOverlay = ({
         body: "Customize your profile with different layouts, backgrounds, and themes. Express yourself! Your besties will see your unique style.",
         buttonText: 'Try It',
         position: 'auto',
-        highlightedElementRef: refs.customizerButton
+        highlightedElementRef: refs.customizerButton,
+        requiresInteraction: true, // Pause tutorial and allow interaction
+        onTryIt: () => {
+          onPause?.();
+          // The customizer will be opened by the page component
+        }
       },
       3: {
         title: 'Complete Your Profile',
@@ -47,9 +55,13 @@ const ProfileTutorialOverlay = ({
       4: {
         title: 'Earn Badges',
         body: "Complete check-ins, add besties, and stay active to earn badges. Show off your achievements! Tap badges to see how to earn them.",
-        buttonText: 'Next',
+        buttonText: 'Try It',
         position: 'auto',
-        highlightedElementRef: refs.badgesSection
+        highlightedElementRef: refs.badgesSection,
+        requiresInteraction: true, // Pause tutorial and allow interaction
+        onTryIt: () => {
+          onPause?.();
+        }
       },
       5: {
         title: 'Track Your Progress',
@@ -76,10 +88,22 @@ const ProfileTutorialOverlay = ({
 
   if (!currentStep || !tooltipConfig) return null;
 
+  // Handle "Try It" button click for interactive steps
+  const handleNext = () => {
+    if (tooltipConfig.requiresInteraction && tooltipConfig.onTryIt) {
+      // Pause tutorial and allow interaction
+      tooltipConfig.onTryIt();
+    } else {
+      // Normal next step
+      onNext();
+    }
+  };
+
   return (
     <TutorialOverlay
       currentStep={currentStep}
-      onStepComplete={onNext}
+      onStepComplete={handleNext}
+      onStepBack={onBack}
       onTutorialComplete={onSkip}
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}

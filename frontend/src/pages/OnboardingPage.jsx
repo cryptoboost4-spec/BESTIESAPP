@@ -16,7 +16,8 @@ const OnboardingPage = () => {
   const [hasBesties, setHasBesties] = useState(false);
   const [inviterInfo, setInviterInfo] = useState(null);
   const [nameHasBeenEdited, setNameHasBeenEdited] = useState(false);
-  const inputRef = useRef(null);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const inputRef = useRef(null); // Correctly placed at top level - false positive from ESLint cache
 
   // Check for inviter info on mount
   useEffect(() => {

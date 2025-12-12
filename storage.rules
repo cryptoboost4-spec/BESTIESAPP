@@ -25,11 +25,20 @@ service firebase.storage {
     
     // Check-in media (photos/videos)
     match /checkin-photos/{userId}/{fileName} {
-      allow read: if isAuthenticated();
+      // Only the owner OR their besties can view check-in photos
+      allow read: if isAuthenticated() && (
+        isOwner(userId) ||
+        // Check if viewer is in the owner's bestieUserIds
+        (exists(/databases/$(database)/documents/users/$(userId)) &&
+         get(/databases/$(database)/documents/users/$(userId)).data.bestieUserIds != null &&
+         request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.bestieUserIds)
+      );
+
       allow write: if isAuthenticated()
         && isOwner(userId)
         && (isImage() || isVideo())
         && isUnder10MB();
+
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     

@@ -18,6 +18,32 @@ const TutorialTooltip = ({
   const tooltipRef = useRef(null);
   const [arrowPosition, setArrowPosition] = useState('top');
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        if (onNext) {
+          haptic.light();
+          onNext();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (onSkip) {
+          haptic.light();
+          onSkip();
+        }
+      } else if (e.key === 'ArrowLeft' && onBack && showBack) {
+        e.preventDefault();
+        haptic.light();
+        onBack();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onNext, onBack, onSkip, showBack]);
+
   useEffect(() => {
     if (!targetElement || !tooltipRef.current) {
       // If no target element, set default arrow position
