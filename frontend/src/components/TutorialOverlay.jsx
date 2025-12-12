@@ -40,13 +40,13 @@ const TutorialOverlay = ({
       const targetY = rect.top + window.scrollY - (viewportHeight - bottomNavHeight) / 2;
       window.scrollTo({
         top: targetY,
-        behavior: 'smooth'
+        behavior: 'instant' // Instant for tutorial - users want to get to content quickly
       });
 
-      // Wait for smooth scroll to finish before locking
-      setTimeout(() => {
+      // Small delay to ensure DOM is settled after scroll
+      requestAnimationFrame(() => {
         lockScreen();
-      }, 300);
+      });
     } else {
       // Element is already visible, lock immediately
       lockScreen();

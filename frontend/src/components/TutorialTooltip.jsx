@@ -27,7 +27,6 @@ const TutorialTooltip = ({
       const rect = targetElement.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
 
       let arrowPos = 'top';
 
@@ -40,7 +39,6 @@ const TutorialTooltip = ({
       } else if (position === 'auto') {
         // Auto-calculate based on available space
         const spaceAbove = rect.top;
-        const spaceBelow = viewportHeight - rect.bottom;
 
         // Determine arrow position based on where tooltip will be positioned
         if (spaceAbove < tooltipRect.height + 20) {
@@ -129,8 +127,10 @@ const TutorialTooltip = ({
       height: 0,
     };
 
-    // Match the gradient background color
-    const arrowColor = '#fdf2f8'; // purple-50 to match gradient
+    // Match the gradient background color based on color scheme
+    // Check if dark mode is active
+    const isDark = document.documentElement.classList.contains('dark');
+    const arrowColor = isDark ? '#581c87' : '#fdf2f8'; // purple-900 for dark, purple-50 for light
 
     switch (arrowPosition) {
       case 'top':
