@@ -103,7 +103,7 @@ export const useTutorialState = () => {
   // Update current tutorial step
   const setTutorialStep = async (step) => {
     // Validate step is one of the allowed values
-    const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom', 'rideshare', 'walking', 'quickmeet'];
     if (step && !validSteps.includes(step)) {
       console.warn('Invalid tutorial step attempted:', step, '- ignoring');
       return;

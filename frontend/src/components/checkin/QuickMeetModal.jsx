@@ -71,8 +71,21 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
   }, [handleClose, isTutorialMode]);
 
   const handleStart = () => {
+    haptic.light();
+
+    // In tutorial mode, still navigate to create page so user can create check-in
+    // Allow empty name for tutorial
     if (isTutorialMode) {
-      // In tutorial mode, just close after showing tooltip
+      navigate('/create', {
+        state: {
+          quickType: 'quickmeet',
+          meetingWith: name.trim() || 'Tutorial Demo',
+          duration: duration,
+          skipLocation: true,
+          activity: { name: '👤 Meeting Someone', emoji: '👤' },
+          isTutorial: true
+        }
+      });
       handleClose();
       return;
     }
@@ -80,7 +93,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
     if (!name.trim()) {
       return;
     }
-    haptic.light();
 
     // Navigate to create page with quick meet data - NO LOCATION NEEDED
     navigate('/create', {
