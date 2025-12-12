@@ -27,6 +27,11 @@ import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
 import FloatingNotificationBell from '../components/FloatingNotificationBell';
 import { useActivityFeed } from '../hooks/useActivityFeed';
+import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
+import BestiesTutorialWelcome from '../components/tutorials/besties/BestiesTutorialWelcome';
+import BestiesTutorialOverlay from '../components/tutorials/besties/BestiesTutorialOverlay';
+import CelebrationToast from '../components/tutorials/CelebrationToast';
+import { useRef } from 'react';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -44,6 +49,16 @@ const BestiesPage = () => {
 
   // Rankings period state (weekly, monthly, yearly)
   const [rankingsPeriod, setRankingsPeriod] = useState('weekly');
+
+  // Tutorial state
+  const tutorial = useBestiesTutorialState();
+  
+  // Refs for highlighted elements
+  const activityFeedRef = useRef(null);
+  const postButtonRef = useRef(null);
+  const leaderboardRef = useRef(null);
+  const bestiesGridRef = useRef(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Modal state
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
@@ -435,15 +450,28 @@ const BestiesPage = () => {
         />
 
         {/* Activity Feed - Moved to top */}
-        <div className="mb-6">
+        <div ref={activityFeedRef} className="mb-6">
           {/* Activity Feed Header with Create Post Button */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg md:text-xl font-display text-text-primary">
               📰 Activity Feed
             </h2>
             <button
-              onClick={() => setShowCreatePostModal(true)}
-              className="btn btn-primary px-4 py-2 text-sm font-semibold"
+              ref={postButtonRef}
+              onClick={() => {
+                setShowCreatePostModal(true);
+                // If tutorial active on step 2, pause it
+                if (tutorial.tutorialActive && tutorial.currentStep === 2) {
+                  tutorial.pauseTutorial();
+                  if (typeof window !== 'undefined' && window.analytics) {
+                    window.analytics.track('tutorial_post_attempted', { page: 'besties' });
+                  }
+                }
+              }}
+              className={`btn btn-primary px-4 py-2 text-sm font-semibold ${
+                tutorial.tutorialActive && tutorial.currentStep === 2 ? 'animate-pulse' : ''
+              }`}
+              aria-label="Create a new post"
             >
               ✍️ Post
             </button>
@@ -477,17 +505,21 @@ const BestiesPage = () => {
         {/* Leaderboard and Besties Section */}
         <div className="space-y-6">
           {/* This Week's Champions */}
-          <BestiesLeaderboard
-            rankingsPeriod={rankingsPeriod}
-            setRankingsPeriod={setRankingsPeriod}
-          />
+          <div ref={leaderboardRef}>
+            <BestiesLeaderboard
+              rankingsPeriod={rankingsPeriod}
+              setRankingsPeriod={setRankingsPeriod}
+            />
+          </div>
 
           {/* Besties Grid */}
-          <BestiesGrid
-            featuredCircle={featuredCircle}
-            besties={filteredBesties}
-            activityFeed={activityFeed}
-          />
+          <div ref={bestiesGridRef}>
+            <BestiesGrid
+              featuredCircle={featuredCircle}
+              besties={filteredBesties}
+              activityFeed={activityFeed}
+            />
+          </div>
         </div>
 
         {/* Empty State */}
@@ -534,11 +566,110 @@ const BestiesPage = () => {
       {/* Create Post Modal */}
       {showCreatePostModal && (
         <CreatePostModal
-          onClose={() => setShowCreatePostModal(false)}
-          onPostCreated={() => {
-            // Reload activity feed after post creation
-            window.location.reload();
+          onClose={() => {
+            setShowCreatePostModal(false);
           }}
+          onCancel={() => {
+            // If tutorial active on step 2
+            if (tutorial.tutorialActive && tutorial.currentStep === 2) {
+              tutorial.resumeTutorial();
+              if (typeof window !== 'undefined' && window.analytics) {
+                window.analytics.track('tutorial_post_cancelled', { page: 'besties' });
+              }
+              // Stay on step 2 (user cancelled)
+            }
+          }}
+          onPostCreated={() => {
+            setShowCreatePostModal(false);
+            
+            // If tutorial active on step 2
+            if (tutorial.tutorialActive && tutorial.currentStep === 2) {
+              tutorial.resumeTutorial();
+              if (typeof window !== 'undefined' && window.analytics) {
+                window.analytics.track('tutorial_post_created', { page: 'besties' });
+              }
+              toast.success("Nice! Your besties will see it 🎉", { duration: 2000 });
+              tutorial.nextStep();
+            }
+            // Note: Activity feed will update automatically via useActivityFeed hook
+          }}
+        />
+      )}
+
+      {/* Tutorial Welcome Card */}
+      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && besties.length > 0 && !location.state?.fromNotification && (
+        <BestiesTutorialWelcome
+          onStart={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_started', { page: 'besties' });
+            }
+            tutorial.startTutorial();
+          }}
+          onSkip={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_skipped', { page: 'besties', at_step: 0 });
+            }
+            tutorial.skipTutorial();
+          }}
+        />
+      )}
+
+      {/* Tutorial Overlay */}
+      {tutorial.tutorialActive && tutorial.currentStep && (
+        <BestiesTutorialOverlay
+          currentStep={tutorial.currentStep}
+          onNext={() => {
+            // Track step completion
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_step_completed', {
+                page: 'besties',
+                step: tutorial.currentStep,
+                total_steps: 4
+              });
+            }
+            
+            if (tutorial.currentStep === 4) {
+              // Last step - complete tutorial
+              if (typeof window !== 'undefined' && window.analytics) {
+                window.analytics.track('tutorial_completed', {
+                  page: 'besties',
+                  total_steps: 4
+                });
+              }
+              tutorial.completeTutorial();
+              setShowCelebration(true);
+            } else {
+              tutorial.nextStep();
+            }
+          }}
+          onSkip={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_skipped', {
+                page: 'besties',
+                at_step: tutorial.currentStep
+              });
+            }
+            tutorial.skipTutorial();
+          }}
+          isPaused={tutorial.isPaused}
+          activityFeedLength={activityFeed.length}
+          refs={{
+            activityFeed: activityFeedRef,
+            postButton: postButtonRef,
+            leaderboard: leaderboardRef,
+            bestiesGrid: bestiesGridRef
+          }}
+        />
+      )}
+
+      {/* Celebration Toast with Confetti */}
+      {showCelebration && (
+        <CelebrationToast
+          message="You're all set! Enjoy your Besties space 💜"
+          icon="🎉"
+          duration={4000}
+          showConfetti={true}
+          onComplete={() => setShowCelebration(false)}
         />
       )}
 

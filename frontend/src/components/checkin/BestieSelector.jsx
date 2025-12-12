@@ -5,6 +5,7 @@ import ProfileWithBubble from '../ProfileWithBubble';
 import SharePromptButtons from './SharePromptButtons';
 import { MESSENGER_CONFIG } from '../../config/messenger';
 import haptic from '../../utils/hapticFeedback';
+import { isMockBestie } from '../../utils/mockBestie';
 
 const BestieSelector = ({ 
   besties, 
@@ -291,6 +292,7 @@ const BestieSelector = ({
             const selectionIndex = selectedBesties.indexOf(bestie.id);
             const isSelected = selectionIndex !== -1;
             const selectionNumber = isSelected ? selectionIndex + 1 : null;
+            const isMock = isMockBestie(bestie);
 
             return (
               <button
@@ -301,7 +303,7 @@ const BestieSelector = ({
                   isSelected
                     ? 'border-primary bg-primary/10 shadow-md scale-[1.02]'
                     : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:scale-[1.01] active:scale-[0.99]'
-                }`}
+                } ${isMock ? 'border-dashed border-purple-400 bg-purple-50/50 dark:bg-purple-900/20' : ''}`}
                 aria-label={`${isSelected ? 'Deselect' : 'Select'} ${bestie.name || 'bestie'}`}
                 aria-pressed={isSelected}
               >
@@ -315,9 +317,18 @@ const BestieSelector = ({
                       showBubble={true}
                     />
                     <div className="flex-1">
-                      <div className="font-semibold text-text-primary">{bestie.name || bestie.email || 'Unknown'}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-text-primary">{bestie.name || bestie.email || 'Unknown'}</div>
+                        {isMock && (
+                          <span className="text-xs bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full font-bold">
+                            🎓 DEMO
+                          </span>
+                        )}
+                      </div>
                       <div className="text-sm text-text-secondary">
-                        {bestie.phone && bestie.smsEnabled
+                        {isMock 
+                          ? 'Practice bestie for tutorial'
+                          : bestie.phone && bestie.smsEnabled
                           ? bestie.email || bestie.phone
                           : bestie.telegramChatId
                           ? '📱 Telegram enabled'

@@ -19,7 +19,9 @@ import InfoButton from '../components/InfoButton';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
 import AddBestieCard from '../components/AddBestieCard';
 import TutorialPromptCard from '../components/TutorialPromptCard';
+import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import TutorialOverlay from '../components/TutorialOverlay';
+import TutorialTooltip from '../components/TutorialTooltip';
 import { useTutorialState } from '../hooks/useTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
@@ -35,15 +37,17 @@ const HomePage = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   
 
-  // Tutorial state
+  // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
   const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep, resetTutorial } = useTutorialState();
+  const { checkInTutorialComplete } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const [tutorialModalOpen, setTutorialModalOpen] = useState(false);
   const [tutorialFormStep, setTutorialFormStep] = useState(null);
+  const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
 
   // Validate tutorial state and clean up invalid states
   useEffect(() => {
-    const validSteps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
+    const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     
     // If tutorial is marked complete but has a step, clear the step
     if (tutorialComplete && currentTutorialStep) {
@@ -108,6 +112,16 @@ const HomePage = () => {
         snapshot.forEach((doc) => {
           checkIns.push({ id: doc.id, ...doc.data() });
         });
+        
+        // Detect check-in creation during tutorial
+        if (currentTutorialStep === 'quickCheckIns' && checkIns.length > previousCheckInCount) {
+          // Check-in was just created - advance tutorial
+          setTimeout(() => {
+            setTutorialStep('afterQuickCheckIn');
+          }, 1000); // Small delay to let user see their check-in
+        }
+        
+        setPreviousCheckInCount(checkIns.length);
         setActiveCheckIns(checkIns);
         setLoading(false);
       },
@@ -191,7 +205,7 @@ const HomePage = () => {
       unsubscribeCheckIns();
       unsubscribeAlerted();
     };
-  }, [currentUser]);
+  }, [currentUser, currentTutorialStep, previousCheckInCount, setTutorialStep]);
 
   // Load alerts for featured circle besties
   useEffect(() => {
@@ -362,50 +376,25 @@ const HomePage = () => {
 
   const hasCompletedFirstCheckIn = (userData?.stats?.completedCheckIns || 0) > 0;
 
-  // Tutorial handlers
+  // Tutorial handlers - NEW FLOW
   const handleStartTutorial = () => {
     // First, reset any existing tutorial state to ensure clean start
     resetTutorial();
+    setPreviousCheckInCount(activeCheckIns.length); // Track current count
     
-    // Small delay to ensure state is cleared, then set to intro
+    // Small delay to ensure state is cleared, then set to welcome
     setTimeout(() => {
-      // Ensure refs are ready before starting
-      let retryCount = 0;
-      const maxRetries = 20; // Max 2 seconds of retries
-      
-      const checkRefs = () => {
-        if (quickCheckInButtonsRef.current?.rideshareButton) {
-          setTutorialStep('intro');
-        } else if (retryCount < maxRetries) {
-          retryCount++;
-          // Retry after short delay if refs aren't ready
-          setTimeout(checkRefs, 100);
-        } else {
-          // If refs still not ready after max retries, set step anyway
-          // The overlay will handle missing refs gracefully
-          console.warn('Tutorial refs not ready after max retries, starting anyway');
-          setTutorialStep('intro');
-        }
-      };
-      checkRefs();
+      setTutorialStep('welcome');
     }, 50);
   };
-
-  const handleSkipTutorial = () => {
-    markTutorialComplete();
-  };
-
-  const handleTutorialStepComplete = () => {
-    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
+  
+  const handleTutorialNext = () => {
+    const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
     
     if (currentIndex < steps.length - 1) {
-      // Move to next step with smooth transition
       haptic.success();
-      // Small delay for smoother transition
-      setTimeout(() => {
-        setTutorialStep(steps[currentIndex + 1]);
-      }, 300);
+      setTutorialStep(steps[currentIndex + 1]);
     } else {
       // Tutorial complete - celebrate!
       haptic.success();
@@ -417,53 +406,19 @@ const HomePage = () => {
     }
   };
 
+  const handleSkipTutorial = () => {
+    markTutorialComplete();
+  };
+
+  const handleTutorialStepComplete = () => {
+    // This is now handled by handleTutorialNext
+    handleTutorialNext();
+  };
+
   const handleTutorialAction = (action) => {
-    // Actually click the buttons - this will open the modals
+    // This function is no longer needed in the new flow
+    // Buttons handle their own clicks now
     haptic.light();
-    
-    const buttonsRef = quickCheckInButtonsRef.current;
-    
-    // More reliable button clicking with fallback
-    const clickButton = (button) => {
-      if (!button) return false;
-      
-      try {
-        // Try direct click first
-        button.click();
-        
-        // Fallback: if click didn't work, dispatch event manually
-        setTimeout(() => {
-          // Try dispatching event as fallback
-          const event = new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window
-          });
-          button.dispatchEvent(event);
-        }, 100);
-        return true;
-      } catch (error) {
-        console.error('Error clicking button:', error);
-        return false;
-      }
-    };
-    
-    if (action === 'rideshare') {
-      // Click the rideshare button - button handles opening modal
-      if (clickButton(buttonsRef?.rideshareButton)) {
-        // Track that modal should be open (buttons set this via state)
-        // Tutorial will advance when modal closes
-      }
-    } else if (action === 'walking') {
-      clickButton(buttonsRef?.walkingButton);
-    } else if (action === 'quickmeet') {
-      clickButton(buttonsRef?.quickMeetButton);
-    } else if (action === 'custom') {
-      // Custom button navigates to create page
-      if (clickButton(buttonsRef?.customButton)) {
-        markTutorialComplete();
-      }
-    }
   };
 
   const handleTutorialFormClose = () => {
@@ -473,7 +428,7 @@ const HomePage = () => {
     handleTutorialStepComplete();
   };
 
-  // Get highlighted element ref based on current step
+  // Get highlighted element ref based on current step - NEW FLOW
   const getHighlightedElementRef = () => {
     // Always return consistent structure: { current: element | null }
     if (!quickCheckInButtonsRef.current) {
@@ -483,17 +438,21 @@ const HomePage = () => {
     try {
       let element = null;
       switch (currentTutorialStep) {
-        case 'intro':
+        case 'welcome':
+          // No element highlighted - full screen overlay
+          element = null;
+          break;
+        case 'allButtons':
+          // Highlight entire container
           element = quickCheckInButtonsRef.current.containerRef || null;
           break;
-        case 'rideshare':
-          element = quickCheckInButtonsRef.current.rideshareButton || null;
+        case 'quickCheckIns':
+          // Highlight container (all 3 quick buttons will be highlighted via CSS)
+          element = quickCheckInButtonsRef.current.containerRef || null;
           break;
-        case 'walking':
-          element = quickCheckInButtonsRef.current.walkingButton || null;
-          break;
-        case 'quickmeet':
-          element = quickCheckInButtonsRef.current.quickMeetButton || null;
+        case 'afterQuickCheckIn':
+          // No element highlighted - show message
+          element = null;
           break;
         case 'custom':
           element = quickCheckInButtonsRef.current.customButton || null;
@@ -508,7 +467,7 @@ const HomePage = () => {
     }
   };
 
-  // Get tooltip config based on current step
+  // Get tooltip config based on current step - NEW FLOW
   const getTooltipConfig = () => {
     // If no step or invalid step, return null
     if (!currentTutorialStep) return null;
@@ -516,7 +475,7 @@ const HomePage = () => {
     // If tutorial is marked complete, don't show tooltip
     if (tutorialComplete) return null;
     
-    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const stepIndex = steps.indexOf(currentTutorialStep);
     
     // If step is not in valid steps, return null and reset
@@ -530,53 +489,62 @@ const HomePage = () => {
     const totalSteps = steps.length;
 
     switch (currentTutorialStep) {
-      case 'intro':
+      case 'welcome':
         return {
-          title: 'Create Your Check-Ins',
-          body: "This is where you'll create check-ins. Choose from quick options or create a custom one. Let's explore each button!",
-          buttonText: "Let's go",
-          onNext: () => handleTutorialStepComplete(),
+          title: 'Welcome to Besties! 🛡️',
+          body: "Let's show you around! This is where you'll create check-ins to keep yourself safe. Ready to learn?",
+          buttonText: 'Show Me Around',
+          onNext: () => handleTutorialNext(),
           position: 'auto',
           stepNumber,
           totalSteps
         };
-      case 'rideshare':
+      case 'allButtons':
         return {
-          title: '🚗 Rideshare Safety',
-          body: "Getting an Uber or Lyft? Just tap here! Share the license plate & when you'll arrive. If you don't check in as safe, your bestie gets automatically notified.",
-          buttonText: 'Try it',
-          onNext: () => handleTutorialAction('rideshare'),
-          position: 'left', // Arrow points to left button
+          title: 'Your Check-In Hub',
+          body: "These are your check-in buttons! You have 3 quick options (rideshare, walking, meeting) and one custom option. This is where you'll create all your safety check-ins.",
+          buttonText: 'Got It',
+          onNext: () => handleTutorialNext(),
+          position: 'auto',
           stepNumber,
           totalSteps
         };
-      case 'walking':
+      case 'quickCheckIns':
         return {
-          title: '🚶‍♀️ Walking Alone',
-          body: "Going for a walk or run? Set how long you'll be gone. Your bestie will know if you don't return on time. Perfect for evening jogs or walking to your car!",
-          buttonText: 'Try it',
-          onNext: () => handleTutorialAction('walking'),
-          position: 'auto', // Arrow points down to center button
+          title: 'Quick Check-Ins',
+          body: "These 3 buttons are quick check-ins - each one is slightly different:\n\n🚗 Rideshare - For Uber/Lyft rides\n🚶‍♀️ Walking - When walking alone\n💬 Quick Meet - Meeting someone new\n\nPick any one to try it out!",
+          buttonText: 'I\'ll Pick One',
+          onNext: () => {
+            // Don't advance - wait for them to click a button
+            // This step stays active until they click
+          },
+          position: 'auto',
           stepNumber,
           totalSteps
         };
-      case 'quickmeet':
+      case 'afterQuickCheckIn':
         return {
-          title: '👤 Quick Meet',
-          body: "First date? Meeting a marketplace seller? Let your bestie know who you're with and where. They'll get an alert if you don't check in safe.",
-          buttonText: 'Try it',
-          onNext: () => handleTutorialAction('quickmeet'),
-          position: 'right', // Arrow points to right button
+          title: 'Great Job! 🎉',
+          body: "You just created your first check-in! Now let's learn about the custom check-in option. It gives you full control over all the details.",
+          buttonText: 'Show Me Custom',
+          onNext: () => handleTutorialNext(),
+          position: 'auto',
           stepNumber,
           totalSteps
         };
       case 'custom':
         return {
-          title: '✨ You Got This!',
-          body: "You've learned all the quick options! Now try the Custom Check-In for any situation. Job interview, blind date, house viewing - you name it, we've got you covered! 💜",
-          buttonText: 'Create My First Check-In',
-          onNext: () => handleTutorialAction('custom'),
-          position: 'auto', // Arrow points up to full-width button
+          title: 'Custom Check-In',
+          body: "This is the custom check-in button! Use it when you need full control - set your own location, duration, notes, and more. Perfect for unique situations.",
+          buttonText: 'Got It',
+          onNext: () => {
+            markTutorialComplete();
+            toast.success("You're all set! Your besties are ready to keep you safe. 💜", {
+              duration: 4000,
+              icon: '🎉'
+            });
+          },
+          position: 'auto',
           stepNumber,
           totalSteps
         };
@@ -586,7 +554,7 @@ const HomePage = () => {
   };
 
   const handleTutorialBack = () => {
-    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
     
     if (currentIndex > 0) {
@@ -595,7 +563,7 @@ const HomePage = () => {
   };
 
   const getStepNumber = () => {
-    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const index = steps.indexOf(currentTutorialStep);
     return index >= 0 ? index + 1 : 1; // Default to 1 if step not found
   };
@@ -620,7 +588,7 @@ const HomePage = () => {
   }
 
   // Calculate tutorial overlay visibility before return
-  const validSteps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
+  const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
   const isValidStep = currentTutorialStep && validSteps.includes(currentTutorialStep);
   const shouldShowTutorial = isValidStep && !tutorialComplete && !tutorialModalOpen;
   const tooltipConfig = shouldShowTutorial ? getTooltipConfig() : null;
@@ -637,8 +605,50 @@ const HomePage = () => {
         {/* Stats Card / Add Bestie Card / Tutorial Prompt Card */}
         {activeCheckIns.length === 0 && (
           <>
-            {/* Show Add Bestie Card when user has no besties */}
-            {!hasAnyBestie && (
+            {/* Show "Create First Check-In" card when user has no besties and hasn't completed check-in tutorial */}
+            {!hasAnyBestie && !checkInTutorialComplete && (
+              <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50 animate-fade-in">
+                <div className="text-center">
+                  <div className="text-5xl mb-4">🛡️</div>
+                  <h3 className="font-display text-2xl text-text-primary mb-3">
+                    Learn How to Check In
+                  </h3>
+                  <p className="text-text-secondary mb-4 leading-relaxed">
+                    Let's walk you through creating your first check-in! You'll practice with a demo bestie, then add real besties afterward.
+                  </p>
+                  
+                  {/* Green highlight box */}
+                  <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-200 dark:border-green-700 rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">
+                      🎓 Practice Mode
+                    </p>
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      We'll guide you step-by-step with a demo bestie. No real alerts will be sent!
+                    </p>
+                  </div>
+                  
+                  {/* Blue highlight box */}
+                  <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 mb-6">
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      ⏱️ Takes about 2 minutes. You'll learn everything you need to know!
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      haptic.light();
+                      navigate('/create-check-in');
+                    }}
+                    className="btn btn-primary text-lg py-3 px-8 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                  >
+                    Start Tutorial →
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Show Add Bestie Card when user has no besties but has completed check-in tutorial */}
+            {!hasAnyBestie && checkInTutorialComplete && (
               <AddBestieCard 
                 onBestieAdded={() => {
                   // BestieCelebrationModal will play automatically via App.jsx
@@ -709,6 +719,7 @@ const HomePage = () => {
               ref={quickCheckInButtonsRef}
               isTutorialMode={!!currentTutorialStep && !tutorialModalOpen}
               onTutorialAction={handleTutorialAction}
+              allowQuickCheckInClick={currentTutorialStep === 'quickCheckIns'}
             />
 
             {/* Tutorial Modals */}
@@ -918,18 +929,39 @@ const HomePage = () => {
       )}
 
 
-      {/* Tutorial Overlay - Only show when modal is not open and we have valid config */}
+      {/* Tutorial Overlay - NEW FLOW */}
       {shouldShowTutorial && tooltipConfig && (
-        <TutorialOverlay
-          currentStep={currentTutorialStep}
-          onStepComplete={handleTutorialStepComplete}
-          onTutorialComplete={handleSkipTutorial}
-          onStepBack={handleTutorialBack}
-          highlightedElementRef={getHighlightedElementRef()}
-          tooltipConfig={tooltipConfig}
-          stepNumber={getStepNumber()}
-          totalSteps={5}
-        />
+        <>
+          {/* For welcome step, show full-screen dark overlay */}
+          {currentTutorialStep === 'welcome' ? (
+            <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <div className="max-w-md w-full">
+                <TutorialTooltip
+                  title={tooltipConfig.title}
+                  body={tooltipConfig.body}
+                  buttonText={tooltipConfig.buttonText}
+                  onNext={tooltipConfig.onNext}
+                  onSkip={handleSkipTutorial}
+                  stepNumber={tooltipConfig.stepNumber}
+                  totalSteps={tooltipConfig.totalSteps}
+                  targetElement={null}
+                  position="auto"
+                />
+              </div>
+            </div>
+          ) : (
+            <TutorialOverlay
+              currentStep={currentTutorialStep}
+              onStepComplete={handleTutorialNext}
+              onTutorialComplete={handleSkipTutorial}
+              onStepBack={handleTutorialBack}
+              highlightedElementRef={getHighlightedElementRef()}
+              tooltipConfig={tooltipConfig}
+              stepNumber={getStepNumber()}
+              totalSteps={5}
+            />
+          )}
+        </>
       )}
     </div>
   );

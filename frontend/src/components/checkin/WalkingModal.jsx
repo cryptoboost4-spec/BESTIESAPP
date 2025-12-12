@@ -71,13 +71,22 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
   }, [handleClose, isTutorialMode]);
 
   const handleStart = () => {
+    haptic.light();
+
+    // In tutorial mode, still navigate to create page so user can create check-in
     if (isTutorialMode) {
-      // In tutorial mode, just close after showing tooltip
+      navigate('/create', {
+        state: {
+          quickType: 'walking',
+          duration: duration,
+          skipLocation: true,
+          activity: { name: '🚶‍♀️ Walking Alone', emoji: '🚶‍♀️' },
+          isTutorial: true
+        }
+      });
       handleClose();
       return;
     }
-
-    haptic.light();
 
     // Navigate to create page with walking data - NO LOCATION NEEDED
     navigate('/create', {
