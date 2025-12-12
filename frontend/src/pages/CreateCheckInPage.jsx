@@ -589,12 +589,17 @@ const CreateCheckInPage = () => {
         return {
           highlightedElementRef: mapRef,
           overlayOnElement: true,
-          dismissible: true,
+          dismissible: false,
           tooltipConfig: {
-            title: 'Where are you going?',
-            body: `Tap the map or search for your location.\n\nThis is for your safety - your bestie will know where to find you if something feels off.`,
+            title: '📍 Pick your location',
+            body: locationInput.trim()
+              ? `Great! Now click Continue below to move forward.`
+              : `Tap the map or use search above to set your location.`,
             overlayOnElement: true,
-            dismissible: true,
+            dismissible: false,
+            buttons: locationInput.trim() ? [
+              { text: 'Continue', action: 'continue', primary: true }
+            ] : [],
           },
         };
 
@@ -728,19 +733,22 @@ const CreateCheckInPage = () => {
     setShowTutorial(false);
   };
 
-  // Handle location selected (auto-advance from location step)
+  // Auto-scroll to highlighted section when tutorial step changes
   useEffect(() => {
-    if (currentCheckInTutorialStep === 'location' && locationInput.trim() !== '') {
-      // Trigger haptic feedback
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-      // Auto-advance to next step
-      setTimeout(() => {
-        setCheckInTutorialStep('whoMeeting');
-      }, 500);
-    }
-  }, [locationInput, currentCheckInTutorialStep, setCheckInTutorialStep]);
+    if (!showTutorial || !currentCheckInTutorialStep) return;
+
+    const config = getTutorialConfig();
+    if (!config?.highlightedElementRef?.current) return;
+
+    // Small delay to ensure layout is ready
+    setTimeout(() => {
+      config.highlightedElementRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      });
+    }, 100);
+  }, [currentCheckInTutorialStep, showTutorial]);
 
   // Handle bestie selection (check for validation error)
   useEffect(() => {
@@ -984,7 +992,18 @@ const CreateCheckInPage = () => {
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            // Prevent Enter key from submitting form when pressed in input/textarea fields
+            // This allows mobile keyboard "Done" button to just close keyboard
+            if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+              e.preventDefault();
+              e.target.blur(); // Close keyboard
+            }
+          }}
+          className="space-y-6"
+        >
           {/* Location with Map */}
           <div ref={mapRef}>
             <CheckInMap

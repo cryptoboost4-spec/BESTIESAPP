@@ -49,14 +49,25 @@ const CheckInTutorialOverlay = ({
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
 
-      // For map overlay, center the tooltip on screen
+      // For map section, position tooltip just below the map
       if (tooltipConfig.overlayOnElement) {
         const tooltipWidth = Math.min(screenWidth - 40, 320);
+        const padding = 12;
+
         setTooltipPosition({
-          top: screenHeight / 2 - 100, // Roughly centered
+          top: elementRect.bottom + padding,
           left: (screenWidth - tooltipWidth) / 2,
         });
-        setArrowPosition({ top: -1000, left: -1000, rotation: 0 }); // Hide arrow
+
+        // Arrow points up to map
+        const arrowLeft = screenWidth / 2;
+        const arrowTop = elementRect.bottom + padding / 2;
+
+        setArrowPosition({
+          top: arrowTop,
+          left: arrowLeft,
+          rotation: 0, // Points up
+        });
         return;
       }
 
@@ -157,8 +168,8 @@ const CheckInTutorialOverlay = ({
         }}
       />
 
-      {/* Arrow pointing to element (hidden for map overlay) */}
-      {!tooltipConfig.overlayOnElement && arrowPosition.top > 0 && (
+      {/* Arrow pointing to element */}
+      {arrowPosition.top > 0 && (
         <div
           className="fixed w-0 h-0 pointer-events-none"
           style={{
@@ -168,32 +179,44 @@ const CheckInTutorialOverlay = ({
             transform: 'translateX(-50%)',
           }}
         >
-          <div
-            style={{
-              width: 0,
-              height: 0,
-              borderLeft: '12px solid transparent',
-              borderRight: '12px solid transparent',
-              borderTop: '12px solid white',
-            }}
-          />
+          {arrowPosition.rotation === 0 ? (
+            // Upward arrow for map tooltip
+            <div
+              style={{
+                width: 0,
+                height: 0,
+                borderLeft: '10px solid transparent',
+                borderRight: '10px solid transparent',
+                borderBottom: '10px solid white',
+              }}
+            />
+          ) : (
+            // Downward arrow for other sections
+            <div
+              style={{
+                width: 0,
+                height: 0,
+                borderLeft: '12px solid transparent',
+                borderRight: '12px solid transparent',
+                borderTop: '12px solid white',
+              }}
+            />
+          )}
         </div>
       )}
 
       {/* Tooltip */}
       {showTooltip && (
         <div
-          className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-[320px] animate-in fade-in zoom-in duration-200"
+          className={`fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-[320px] animate-in fade-in zoom-in duration-200 ${
+            tooltipConfig.overlayOnElement ? 'p-4' : 'p-6'
+          }`}
           style={{
             top: `${tooltipPosition.top}px`,
             left: `${tooltipPosition.left}px`,
             zIndex: 10002,
             width: 'calc(100vw - 40px)',
             maxWidth: '320px',
-            ...(tooltipConfig.overlayOnElement && {
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-            }),
           }}
         >
           {/* Skip button - only on first step */}
