@@ -36,18 +36,28 @@ const HomePage = () => {
   
 
   // Tutorial state
-  const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
+  const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep, resetTutorial } = useTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const [tutorialModalOpen, setTutorialModalOpen] = useState(false);
   const [tutorialFormStep, setTutorialFormStep] = useState(null);
 
-  // Clean up any old 'intro' step from localStorage/Firestore
+  // Validate tutorial state and clean up invalid states
   useEffect(() => {
-    if (currentTutorialStep === 'intro') {
-      // If somehow intro step exists, clear it and go to rideshare
-      setTutorialStep('rideshare');
+    const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    
+    // If tutorial is marked complete but has a step, clear the step
+    if (tutorialComplete && currentTutorialStep) {
+      setTutorialStep(null);
+      return;
     }
-  }, [currentTutorialStep, setTutorialStep]);
+    
+    // If we have an invalid step (like old 'intro'), reset to null
+    if (currentTutorialStep && !validSteps.includes(currentTutorialStep)) {
+      console.warn('Invalid tutorial step detected:', currentTutorialStep, '- resetting');
+      setTutorialStep(null);
+      return;
+    }
+  }, [currentTutorialStep, tutorialComplete, setTutorialStep]);
 
   // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
@@ -354,25 +364,31 @@ const HomePage = () => {
 
   // Tutorial handlers
   const handleStartTutorial = () => {
-    // Ensure refs are ready before starting
-    let retryCount = 0;
-    const maxRetries = 20; // Max 2 seconds of retries
+    // First, reset any existing tutorial state to ensure clean start
+    resetTutorial();
     
-    const checkRefs = () => {
-      if (quickCheckInButtonsRef.current?.rideshareButton) {
-        setTutorialStep('rideshare');
-      } else if (retryCount < maxRetries) {
-        retryCount++;
-        // Retry after short delay if refs aren't ready
-        setTimeout(checkRefs, 100);
-      } else {
-        // If refs still not ready after max retries, set step anyway
-        // The overlay will handle missing refs gracefully
-        console.warn('Tutorial refs not ready after max retries, starting anyway');
-        setTutorialStep('rideshare');
-      }
-    };
-    checkRefs();
+    // Small delay to ensure state is cleared, then set to rideshare
+    setTimeout(() => {
+      // Ensure refs are ready before starting
+      let retryCount = 0;
+      const maxRetries = 20; // Max 2 seconds of retries
+      
+      const checkRefs = () => {
+        if (quickCheckInButtonsRef.current?.rideshareButton) {
+          setTutorialStep('rideshare');
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          // Retry after short delay if refs aren't ready
+          setTimeout(checkRefs, 100);
+        } else {
+          // If refs still not ready after max retries, set step anyway
+          // The overlay will handle missing refs gracefully
+          console.warn('Tutorial refs not ready after max retries, starting anyway');
+          setTutorialStep('rideshare');
+        }
+      };
+      checkRefs();
+    }, 50);
   };
 
   const handleSkipTutorial = () => {
@@ -459,15 +475,16 @@ const HomePage = () => {
     // If no step or invalid step, return null
     if (!currentTutorialStep) return null;
     
+    // If tutorial is marked complete, don't show tooltip
+    if (tutorialComplete) return null;
+    
     const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
     const stepIndex = steps.indexOf(currentTutorialStep);
     
-    // If step is not in valid steps (e.g., old 'intro' step), return null
+    // If step is not in valid steps, return null and reset
     if (stepIndex === -1) {
-      // Clean up invalid step
-      if (currentTutorialStep === 'intro') {
-        setTutorialStep('rideshare');
-      }
+      console.warn('Invalid tutorial step in getTooltipConfig:', currentTutorialStep);
+      setTutorialStep(null);
       return null;
     }
     
@@ -845,8 +862,21 @@ const HomePage = () => {
 
       {/* Tutorial Overlay - Only show when modal is not open and we have valid config */}
       {(() => {
+        // Validate step is one of the valid steps
+        const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+        const isValidStep = currentTutorialStep && validSteps.includes(currentTutorialStep);
+        
+        // Don't show if tutorial is complete or step is invalid
+        if (!isValidStep || tutorialComplete || tutorialModalOpen) {
+          return null;
+        }
+        
         const tooltipConfig = getTooltipConfig();
-        return currentTutorialStep && !tutorialModalOpen && tooltipConfig && (
+        if (!tooltipConfig) {
+          return null;
+        }
+        
+        return (
           <TutorialOverlay
             currentStep={currentTutorialStep}
             onStepComplete={handleTutorialStepComplete}

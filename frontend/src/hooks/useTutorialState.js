@@ -102,11 +102,24 @@ export const useTutorialState = () => {
 
   // Update current tutorial step
   const setTutorialStep = async (step) => {
+    // Validate step is one of the allowed values
+    const validSteps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    if (step && !validSteps.includes(step)) {
+      console.warn('Invalid tutorial step attempted:', step, '- ignoring');
+      return;
+    }
+    
+    // If setting step, ensure tutorial is not marked complete
+    if (step) {
+      setTutorialComplete(false);
+    }
+    
     setCurrentTutorialStep(step);
     
     // Update localStorage
     if (step) {
       localStorage.setItem('current_tutorial_step', step);
+      localStorage.setItem('tutorial_complete', 'false');
     } else {
       localStorage.removeItem('current_tutorial_step');
     }
@@ -116,7 +129,8 @@ export const useTutorialState = () => {
       try {
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, {
-          currentTutorialStep: step
+          currentTutorialStep: step,
+          ...(step ? { tutorialComplete: false } : {})
         });
       } catch (error) {
         console.error('Error updating tutorial step in Firestore:', error);
