@@ -577,3 +577,113 @@ input[type="range"]::-moz-range-thumb:active {
 .animate-fade-in {
   animation: fade-in 0.5s ease-out;
 }
+
+/* Fade slide down animation for welcome cards */
+@keyframes fade-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-down {
+  animation: fade-slide-down 0.4s ease-out;
+}
+
+/* Bounce in animation for celebration toast */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px) scale(1.05);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.4s ease-out;
+}
+
+/* Slide in right animation for mini tooltip */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* World-class polish animations */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+/* Smooth step transition */
+@keyframes step-transition {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-step-transition {
+  animation: step-transition 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Enhanced highlight pulse */
+@keyframes highlight-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 4px rgba(147, 51, 234, 0.4),
+      0 0 20px rgba(147, 51, 234, 0.6),
+      0 0 40px rgba(147, 51, 234, 0.5);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 6px rgba(147, 51, 234, 0.6),
+      0 0 30px rgba(147, 51, 234, 0.8),
+      0 0 60px rgba(147, 51, 234, 0.7);
+  }
+}
+
+.tutorial-highlight-enhanced {
+  animation: highlight-pulse 2s ease-in-out infinite;
+}

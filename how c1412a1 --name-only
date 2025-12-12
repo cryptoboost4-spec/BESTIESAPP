@@ -1,0 +1,496 @@
+[33mcommit c1412a137f9f40d9351dc0f5ca04035bf1c90210[m[33m ([m[1;31morigin/claude/review-tutorial-docs-01Qads2TwxigWWtttE8ZqHbe[m[33m)[m
+Author: Claude <noreply@anthropic.com>
+Date:   Fri Dec 12 11:31:01 2025 +0000
+
+    Create final interactive tutorial plans based on actual app
+    
+    Built three comprehensive, implementation-ready tutorial plans:
+    
+    BESTIES PAGE TUTORIAL (4 steps):
+    - Welcome card explaining private social space
+    - Activity Feed overview (scrollable, contextual)
+    - Create Post (INTERACTIVE - users actually post)
+    - Leaderboard (fun, exploratory)
+    - Besties Grid (your squad)
+    - Removes window.location.reload() from CreatePostModal
+    - Real post creation with callbacks
+    
+    PROFILE PAGE TUTORIAL (4 steps):
+    - Welcome card for personalization
+    - Profile customization (colors, aura, photo)
+    - Profile completion checklist (mini mode, clickable tasks)
+    - Badges & achievements (tap to explore)
+    - Settings bridge + stats highlight
+    - Motivational and achievement-focused
+    
+    SETTINGS PAGE TUTORIAL (5 steps):
+    - Welcome card with trust colors (blue)
+    - Notification options overview
+    - Enable notifications (INTERACTIVE - real toggles)
+      - Telegram connection
+      - Push permissions
+      - SMS with popup
+    - Test alerts (confidence-building)
+    - Privacy settings (mini mode)
+    - Summary completion
+    
+    Each plan includes:
+    ✅ Deep user psychology analysis ("what they NEED")
+    ✅ Actual page structure (line numbers from real code)
+    ✅ Interactive flows (users DO things, not just watch)
+    ✅ Mini mode for exploration
+    ✅ Micro-celebrations and feedback
+    ✅ Complete visual design specs (CSS)
+    ✅ State management implementation
+    ✅ Component integration code
+    ✅ Edge case handling
+    ✅ Analytics tracking
+    ✅ Testing checklists
+    
+    Key design principles:
+    - Simple but effective (4-5 steps max)
+    - Interactive (users configure actual settings)
+    - Supportive (never pushy, always respectful)
+    - Modern UX (micro-toasts, confetti, smooth animations)
+    - Mobile-first responsive design
+    
+    Plans are ready for immediate implementation.
+
+[1mdiff --git a/BESTIES_TUTORIAL_FINAL.md b/BESTIES_TUTORIAL_FINAL.md[m
+[1mnew file mode 100644[m
+[1mindex 0000000..68bb913[m
+[1m--- /dev/null[m
+[1m+++ b/BESTIES_TUTORIAL_FINAL.md[m
+[36m@@ -0,0 +1,1049 @@[m
+[32m+[m[32m# Besties Page Tutorial - Final Implementation Plan[m
+[32m+[m
+[32m+[m[32m## 🎯 User Needs Analysis[m
+[32m+[m
+[32m+[m[32m**When users first land on the Besties page, they're thinking:**[m
+[32m+[m[32m- "What is this page for?"[m
+[32m+[m[32m- "Is this like Instagram/Facebook?"[m
+[32m+[m[32m- "Can people outside my circle see this?"[m
+[32m+[m[32m- "What should I do here?"[m
+[32m+[m
+[32m+[m[32m**What they NEED to know:**[m
+[32m+[m[32m1. This is PRIVATE - only their besties see content[m
+[32m+[m[32m2. They can see what besties are doing (check-ins, posts)[m
+[32m+[m[32m3. They can share their own updates[m
+[32m+[m[32m4. There's a fun leaderboard (but it's supportive, not competitive)[m
+[32m+[m[32m5. They can interact with their besties[m
+[32m+[m
+[32m+[m[32m**What they NEED to do:**[m
+[32m+[m[32m- Try posting something (the main action)[m
+[32m+[m[32m- Understand where to see activity[m
+[32m+[m[32m- Know this is their safe social space[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m## 📱 Actual Page Structure (from BestiesPage.jsx)[m
+[32m+[m
+[32m+[m[32m```[m
+[32m+[m[32m1. Header: "💜 Your Besties" (centered, line 424)[m
+[32m+[m[32m2. FloatingNotificationBell (top-right, line 417-419)[m
+[32m+[m[32m3. PendingRequestsList (line 428)[m
+[32m+[m[32m4. NeedsAttentionSection (line 431-435, conditional)[m
+[32m+[m[32m5. Activity Feed Section (line 438-475):[m
+[32m+[m[32m   - Header: "📰 Activity Feed" (left)[m
+[32m+[m[32m   - "✍️ Post" button (right, line 444-449)[m
+[32m+[m[32m   - ActivityFeed component (line 456-474)[m
+[32m+[m[32m6. BestiesLeaderboard (line 480-483)[m
+[32m+[m[32m   - Tabs: Week/Month/Year[m
+[32m+[m[32m   - Shows: Most Reliable, Super Speedy, Guardian Angel, Streak Queen[m
+[32m+[m[32m7. BestiesGrid (line 486-490)[m
+[32m+[m[32m   - Header: "All Besties" + "ℹ️ Symbols" button[m
+[32m+[m[32m   - Grid of bestie cards[m
+[32m+[m[32m8. Floating "+" button (bottom-right, line 519-525)[m
+[32m+[m[32m9. CreatePostModal (line 535-543)[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m## 🎬 Tutorial Flow (4 Steps - SIMPLE)[m
+[32m+[m
+[32m+[m[32m### Pre-Tutorial: Welcome Card[m
+[32m+[m
+[32m+[m[32m**When to show:**[m
+[32m+[m[32m- User has at least 1 bestie[m
+[32m+[m[32m- First visit to Besties page (or hasn't visited in 7+ days)[m
+[32m+[m[32m- NOT if navigated from notification (they have a task)[m
+[32m+[m[32m- Data has loaded (no skeletons visible)[m
+[32m+[m
+[32m+[m[32m**Component:** Card (NOT full overlay yet)[m
+[32m+[m[32m**Position:** Top of page, after header, before content[m
+[32m+[m[32m**Style:** Purple/pink gradient card with soft shadow[m
+[32m+[m
+[32m+[m[32m**Content:**[m
+[32m+[m[32m```[m
+[32m+[m[32mIcon: 💜[m
+[32m+[m[32mTitle: "Welcome to Your Besties Space!"[m
+[32m+[m[32mBody: "This is your private social hub - only your besties see what's shared here. Let's take a quick look around!"[m
+[32m+[m
+[32m+[m[32mHighlight box (purple gradient):[m
+[32m+[m[32m"🔒 Private & Safe - No algorithm, no strangers, just your circle"[m
+[32m+[m
+[32m+[m[32mTime: "⏱️ About 90 seconds"[m
+[32m+[m
+[32m+[m[32mButtons:[m
+[32m+[m[32m- "Show Me Around" (primary, purple gradient)[m
+[32m+[m[32m- "I'll Explore Myself" (text link, gray)[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m**Actions:**[m
+[32m+[m[32m- "Show Me Around" → Start Step 1[m
+[32m+[m[32m- "I'll Explore Myself" → Dismiss forever, save to Firestore[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m### Step 1: Activity Feed Overview[m
+[32m+[m
+[32m+[m[32m**User Need:** "What's all this content? Where do I see what's happening?"[m
+[32m+[m
+[32m+[m[32m**What to highlight:** Activity Feed section (the entire section div, line 438-475)[m
+[32m+[m
+[32m+[m[32m**Tutorial State:**[m
+[32m+[m[32m- Dark overlay (75% opacity)[m
+[32m+[m[32m- Activity Feed section glowing with purple ring[m
+[32m+[m[32m- Section is scrollable (user can scroll feed)[m
+[32m+[m[32m- Everything else dimmed/blocked[m
+[32m+[m
+[32m+[m[32m**Tooltip:**[m
+[32m+[m[32m```[m
+[32m+[m[32mPosition: Above the "📰 Activity Feed" header[m
+[32m+[m[32mIcon: 📱[m
+[32m+[m[32mTitle: "Your Social Feed"[m
+[32m+[m[32mBody: [Context-aware based on content][m
+[32m+[m
+[32m+[m[32mIf feed has posts/check-ins:[m
+[32m+[m[32m"This is where you see everything your besties share - check-ins, posts, milestones. It's like a private timeline just for your circle. Scroll down to see more!"[m
+[32m+[m
+[32m+[m[32mIf feed is empty (only welcome messages):[m
+[32m+[m[32m"This is where your besties' check-ins and posts will appear. Once you start sharing, it'll get lively! It's like a private timeline for your circle."[m
+[32m+[m
+[32m+[m[32mProgress dots: ●○○○[m
+[32m+[m[32mButtons:[m
+[32m+[m[32m- "Next" (primary)[m
+[32m+[m[32m- "Skip Tutorial" (text link)[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m**User Actions:**[m
+[32m+[m[32m- Can scroll the activity feed while reading[m
+[32m+[m[32m- Feed items NOT clickable yet (overlay blocks)[m
+[32m+[m[32m- Click "Next" to continue[m
+[32m+[m
+[32m+[m[32m**Why this works:**[m
+[32m+[m[32m- Shows them WHERE content lives[m
+[32m+[m[32m- They can see examples if feed has content[m
+[32m+[m[32m- Makes them understand the "timeline" concept[m
+[32m+[m[32m- No action required - just awareness[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m### Step 2: Create a Post (INTERACTIVE)[m
+[32m+[m
+[32m+[m[32m**User Need:** "How do I share something? What can I post?"[m
+[32m+[m
+[32m+[m[32m**What to highlight:** "✍️ Post" button (top-right of Activity Feed header, line 444-449)[m
+[32m+[m
+[32m+[m[32m**Tutorial State:**[m
+[32m+[m[32m- Dark overlay (75% opacity)[m
+[32m+[m[32m- Post button glowing, pulsing, and CLICKABLE[m
+[32m+[m[32m- Everything else dimmed/blocked[m
+[32m+[m
+[32m+[m[32m**Tooltip:**[m
+[32m+[m[32m```[m
+[32m+[m[32mPosition: Above the Post button, right-aligned[m
+[32m+[m[32mIcon: ✍️[m
+[32m+[m[32mTitle: "Share with Your Besties"[m
+[32m+[m[32mBody: "Want to post something? Tap this button to share updates, photos, or just say hi. Your besties will see it in their feed. Give it a try!"[m
+[32m+[m
+[32m+[m[32mProgress dots: ○●○○[m
+[32m+[m[32mButtons:[m
+[32m+[m[32m- "Try Posting" (primary, pulsing) → opens modal[m
+[32m+[m[32m- "Maybe Later" (secondary) → skip to Step 3[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m**Interactive Flow:**[m
+[32m+[m
+[32m+[m[32m**When "Try Posting" clicked OR user clicks Post button:**[m
+[32m+[m[32m1. Tutorial pauses → overlay opacity: 40% (still visible but lighter)[m
+[32m+[m[32m2. CreatePostModal opens (native, line 535-543)[m
+[32m+[m[32m3. User can:[m
+[32m+[m[32m   - Type text[m
+[32m+[m[32m   - Upload photo[m
+[32m+[m[32m   - Click "Post" → Creates post[m
+[32m+[m[32m   - Click "Cancel" or X → Closes modal[m
+[32m+[m
+[32m+[m[32m4. **On modal close:**[m
+[32m+[m[32m   - Tutorial resumes (overlay back to 75%)[m
+[32m+[m[32m   - **If post was created:**[m
+[32m+[m[32m     - Show micro-toast: "Nice! Your besties will see it 🎉" (2 sec, bottom)[m
+[32m+[m[32m     - Advance to Step 3[m
+[32m+[m[32m   - **If cancelled (no post):**[m
+[32m+[m[32m     - Stay on Step 2[m
+[32m+[m[32m     - Update tooltip:[m
+[32m+[m[32m       ```[m
+[32m+[m[32m       Body: "No problem! You can post anytime. Want to try, or move on?"[m
+[32m+[m[32m       Buttons:[m
+[32m+[m[32m       - "Try Again" (primary)[m
+[32m+[m[32m       - "Continue" (secondary) → Step 3[m
+[32m+[m[32m       ```[m
+[32m+[m
+[32m+[m[32m**Why this works:**[m
+[32m+[m[32m- They actually DO something (not just watch)[m
+[32m+[m[32m- Real post creation (builds engagement)[m
+[32m+[m[32m- No pressure if they cancel[m
+[32m+[m[32m- Celebrates if they post[m
+[32m+[m
+[32m+[m[32m**Technical Notes:**[m
+[32m+[m[32m- Need to modify CreatePostModal:[m
+[32m+[m[32m  - Add `onPostCreated` callback (already exists, line 80)[m
+[32m+[m[32m  - Add `onCancel` callback (need to add)[m
+[32m+[m[32m  - Remove `window.location.reload()` (line 540) - use state update instead[m
+[32m+[m[32m- Tutorial tracks modal state via `showCreatePostModal` state[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m### Step 3: Leaderboard (Fun Discovery)[m
+[32m+[m
+[32m+[m[32m**User Need:** "What's this rankings thing? Is this serious competition?"[m
+[32m+[m
+[32m+[m[32m**What to highlight:** BestiesLeaderboard component (line 480-483)[m
+[32m+[m
+[32m+[m[32m**Tutorial State:**[m
+[32m+[m[32m- Dark overlay (75% opacity)[m
+[32m+[m[32m- Leaderboard section glowing[m
+[32m+[m[32m- Tabs (Week/Month/Year) are CLICKABLE[m
+[32m+[m[32m- Rankings cards visible (static during tutorial)[m
+[32m+[m
+[32m+[m[32m**Tooltip:**[m
+[32m+[m[32m```[m
+[32m+[m[32mPosition: Above leaderboard title[m
+[32m+[m[32mIcon: 🏆[m
+[32m+[m[32mTitle: "Friendly Rankings"[m
+[32m+[m[32mBody: "See who's most reliable, who responds fastest, and more! It's just for fun - everyone wins when we keep each other safe. Tap the tabs to switch between weekly, monthly, and yearly rankings."[m
+[32m+[m
+[32m+[m[32mProgress dots: ○○●○[m
+[32m+[m[32mButtons:[m
+[32m+[m[32m- "Next" (primary)[m
+[32m+[m[32m- "Skip Tutorial" (text link)[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m**User Actions:**[m
+[32m+[m[32m- Tabs are clickable (user can explore Week/Month/Year)[m
+[32m+[m[32m- Tooltip position stays fixed even if content changes[m
+[32m+[m[32m- Rankings are read-only (cards don't click through during tutorial)[m
+[32m+[m
+[32m+[m[32m**Why this works:**[m
+[32m+[m[32m- Explains it's FUN, not serious competition[m
+[32m+[m[32m- Reinforces "everyone wins" safety message[m
+[32m+[m[32m- Lets them explore tabs (interactive learning)[m
+[32m+[m[32m- Quick, low-pressure step[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m### Step 4: Besties Grid (Your Squad)[m
+[32m+[m
+[32m+[m[32m**User Need:** "How do I see/interact with individual besties?"[m
+[32m+[m
+[32m+[m[32m**What to highlight:** BestiesGrid section (line 486-490, the whole "All Besties" section)[m
+[32m+[m
+[32m+[m[32m**Tutorial State:**[m
+[32m+[m[32m- Dark overlay (75% opacity)[m
+[32m+[m[32m- Besties Grid glowing[m
+[32m+[m[32m- Individual cards NOT clickable (just overview)[m
+[32m+[m[32m- "ℹ️ Symbols" button visible but blocked[m
+[32m+[m
+[32m+[m[32m**Tooltip:**[m
+[32m+[m[32m```[m
+[32m+[m[32mPosition: Above "All Besties" header[m
+[32m+[m[32mIcon: 👥[m
+[32m+[m[32mTitle: "Your Safety Squad"[m
+[32m+[m[32mBody: "All your besties in one place! Tap any bestie card to view their profile, send a message, or check their recent activity. The symbols show who's active, reliable, and more."[m
+[32m+[m
+[32m+[m[32mProgress dots: ○○○●[m
+[32m+[m[32mButtons:[m
+[32m+[m[32m- "Got It!" (primary, with sparkle ✨) → Complete tutorial[m
+[32m+[m[32m- "Skip Tutorial" (text link)[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m**Completion Flow:**[m
+[32m+[m[32m1. User clicks "Got It!"[m
+[32m+[m[32m2. Overlay fades out (300ms)[m
+[32m+[m[32m3. Celebration toast (center-bottom):[m
+[32m+[m[32m   ```[m
+[32m+[m[32m   Icon: 🎉[m
+[32m+[m[32m   Message: "You're all set! Enjoy your Besties space 💜"[m
+[32m+[m[32m   Duration: 4 seconds[m
+[32m+[m[32m   Style: Purple gradient, bounce-in[m
+[32m+[m[32m   ```[m
+[32m+[m[32m4. Save completion state:[m
+[32m+[m[32m   ```javascript[m
+[32m+[m[32m   localStorage: 'besties_tutorial_completed' = true[m
+[32m+[m[32m   Firestore: users/{uid}/settings/tutorials/besties.completed = true[m
+[32m+[m[32m   ```[m
+[32m+[m[32m5. Optional: Light confetti (2 seconds, 20-30 pieces, purple/pink)[m
+[32m+[m
+[32m+[m[32m**Why this works:**[m
+[32m+[m[32m- Shows where to interact with besties[m
+[32m+[m[32m- Explains symbols (active, reliable, etc.)[m
+[32m+[m[32m- Clear endpoint ("Got It!" vs "Next")[m
+[32m+[m[32m- Celebration feels earned[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m## 🎨 Visual Design Specifications[m
+[32m+[m
+[32m+[m[32m### Welcome Card (Pre-Tutorial)[m
+[32m+[m[32m```css[m
+[32m+[m[32m.besties-welcome-card {[m
+[32m+[m[32m  background: linear-gradient(135deg, #fdf2f8, #fae8ff);[m
+[32m+[m[32m  border: 2px solid #e9d5ff;[m
+[32m+[m[32m  border-radius: 16px;[m
+[32m+[m[32m  padding: 24px;[m
+[32m+[m[32m  margin-bottom: 24px;[m
+[32m+[m[32m  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);[m
+[32m+[m[32m  animation: fade-slide-down 400ms ease-out;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m@keyframes fade-slide-down {[m
+[32m+[m[32m  from {[m
+[32m+[m[32m    opacity: 0;[m
+[32m+[m[32m    transform: translateY(-20px);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  to {[m
+[32m+[m[32m    opacity: 1;[m
+[32m+[m[32m    transform: translateY(0);[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Icon */[m
+[32m+[m[32m.icon { font-size: 48px; text-align: center; margin-bottom: 16px; }[m
+[32m+[m
+[32m+[m[32m/* Title */[m
+[32m+[m[32m.title {[m
+[32m+[m[32m  font-size: 24px;[m
+[32m+[m[32m  font-weight: 700;[m
+[32m+[m[32m  text-align: center;[m
+[32m+[m[32m  color: #1f2937;[m
+[32m+[m[32m  margin-bottom: 12px;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Body */[m
+[32m+[m[32m.body {[m
+[32m+[m[32m  font-size: 16px;[m
+[32m+[m[32m  color: #4b5563;[m
+[32m+[m[32m  text-align: center;[m
+[32m+[m[32m  line-height: 1.6;[m
+[32m+[m[32m  margin-bottom: 16px;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Highlight Box */[m
+[32m+[m[32m.highlight-box {[m
+[32m+[m[32m  background: linear-gradient(135deg, #f3e8ff, #fae8ff);[m
+[32m+[m[32m  border: 2px solid #d8b4fe;[m
+[32m+[m[32m  border-radius: 12px;[m
+[32m+[m[32m  padding: 12px 16px;[m
+[32m+[m[32m  text-align: center;[m
+[32m+[m[32m  font-size: 14px;[m
+[32m+[m[32m  font-weight: 600;[m
+[32m+[m[32m  color: #7c3aed;[m
+[32m+[m[32m  margin-bottom: 16px;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Time estimate */[m
+[32m+[m[32m.time {[m
+[32m+[m[32m  font-size: 13px;[m
+[32m+[m[32m  color: #6b7280;[m
+[32m+[m[32m  text-align: center;[m
+[32m+[m[32m  margin-bottom: 20px;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Buttons */[m
+[32m+[m[32m.primary-button {[m
+[32m+[m[32m  background: linear-gradient(135deg, #9333ea, #ec4899);[m
+[32m+[m[32m  color: white;[m
+[32m+[m[32m  font-size: 18px;[m
+[32m+[m[32m  font-weight: 600;[m
+[32m+[m[32m  padding: 14px 32px;[m
+[32m+[m[32m  border-radius: 12px;[m
+[32m+[m[32m  border: none;[m
+[32m+[m[32m  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4);[m
+[32m+[m[32m  cursor: pointer;[m
+[32m+[m[32m  width: 100%;[m
+[32m+[m[32m  max-width: 300px;[m
+[32m+[m[32m  margin: 0 auto 12px;[m
+[32m+[m[32m  display: block;[m
+[32m+[m[32m  transition: all 200ms ease;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.primary-button:hover {[m
+[32m+[m[32m  transform: scale(1.05);[m
+[32m+[m[32m  box-shadow: 0 6px 16px rgba(147, 51, 234, 0.5);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.skip-link {[m
+[32m+[m[32m  background: transparent;[m
+[32m+[m[32m  color: #6b7280;[m
+[32m+[m[32m  font-size: 14px;[m
+[32m+[m[32m  text-decoration: underline;[m
+[32m+[m[32m  border: none;[m
+[32m+[m[32m  cursor: pointer;[m
+[32m+[m[32m  padding: 8px;[m
+[32m+[m[32m  display: block;[m
+[32m+[m[32m  text-align: center;[m
+[32m+[m[32m}[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m### Tutorial Overlay (Steps 1-4)[m
+[32m+[m[32m```css[m
+[32m+[m[32m/* Dark backdrop */[m
+[32m+[m[32m.tutorial-overlay {[m
+[32m+[m[32m  position: fixed;[m
+[32m+[m[32m  inset: 0;[m
+[32m+[m[32m  background: rgba(0, 0, 0, 0.75);[m
+[32m+[m[32m  backdrop-filter: blur(8px);[m
+[32m+[m[32m  z-index: 9998;[m
+[32m+[m[32m  transition: opacity 300ms ease-in-out;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.tutorial-overlay[data-paused="true"] {[m
+[32m+[m[32m  opacity: 0.4; /* Lighter when modal open */[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Highlighted section glow */[m
+[32m+[m[32m.tutorial-highlight {[m
+[32m+[m[32m  position: relative;[m
+[32m+[m[32m  z-index: 10000;[m
+[32m+[m[32m  border-radius: 12px;[m
+[32m+[m[32m  box-shadow:[m
+[32m+[m[32m    0 0 0 4px rgba(147, 51, 234, 0.4),[m
+[32m+[m[32m    0 0 20px rgba(147, 51, 234, 0.6),[m
+[32m+[m[32m    0 0 40px rgba(147, 51, 234, 0.5);[m
+[32m+[m[32m  animation: tutorial-pulse 2s infinite;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m@keyframes tutorial-pulse {[m
+[32m+[m[32m  0%, 100% {[m
+[32m+[m[32m    box-shadow:[m
+[32m+[m[32m      0 0 0 4px rgba(147, 51, 234, 0.4),[m
+[32m+[m[32m      0 0 20px rgba(147, 51, 234, 0.6),[m
+[32m+[m[32m      0 0 40px rgba(147, 51, 234, 0.5);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  50% {[m
+[32m+[m[32m    box-shadow:[m
+[32m+[m[32m      0 0 0 4px rgba(147, 51, 234, 0.6),[m
+[32m+[m[32m      0 0 25px rgba(147, 51, 234, 0.8),[m
+[32m+[m[32m      0 0 50px rgba(147, 51, 234, 0.7);[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Tooltip */[m
+[32m+[m[32m.tutorial-tooltip {[m
+[32m+[m[32m  position: fixed;[m
+[32m+[m[32m  z-index: 10002;[m
+[32m+[m[32m  background: linear-gradient(135deg, #fdf2f8, #fae8ff);[m
+[32m+[m[3
