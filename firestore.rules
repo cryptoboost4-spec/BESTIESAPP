@@ -329,6 +329,13 @@ service cloud.firestore {
       allow write: if false; // Only backend can write
     }
 
+    // Audit logs collection - security event logging
+    // Write: Cloud Functions only (no direct user writes)
+    // Read: Admins only
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions via Admin SDK
+    }
 
     // Default deny
     match /{document=**} {
