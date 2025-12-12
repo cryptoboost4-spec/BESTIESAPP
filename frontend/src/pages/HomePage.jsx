@@ -501,37 +501,41 @@ const HomePage = () => {
     switch (currentTutorialStep) {
       case 'rideshare':
         return {
-          title: 'Rideshare Check-Ins',
-          body: "Use these when getting a ride from Uber, Lyft, or a friend. Share the license plate and arrival time - your bestie will be notified if you don't check in safe.",
-          buttonText: 'Take a look',
+          title: '🚗 Rideshare Safety',
+          body: "Getting an Uber or Lyft? Just tap here! Share the license plate & when you'll arrive. If you don't check in as safe, your bestie gets automatically notified.",
+          buttonText: 'Show me how',
           onNext: () => handleTutorialAction('rideshare'),
+          position: 'left', // Arrow points to left button
           stepNumber,
           totalSteps
         };
       case 'walking':
         return {
-          title: 'Walking Check-Ins',
-          body: "Perfect for walks, runs, or anytime you're out on foot. Set how long you'll be gone.",
-          buttonText: 'Take a look',
+          title: '🚶‍♀️ Walking Alone',
+          body: "Going for a walk or run? Set how long you'll be gone. Your bestie will know if you don't return on time. Perfect for evening jogs or walking to your car!",
+          buttonText: 'Show me how',
           onNext: () => handleTutorialAction('walking'),
+          position: 'auto', // Arrow points down to center button
           stepNumber,
           totalSteps
         };
       case 'quickmeet':
         return {
-          title: 'Quick Meet Check-Ins',
-          body: "Meeting someone new or at a specific location? Share your location so your bestie knows where you are. Great for first dates!",
-          buttonText: 'Take a look',
+          title: '👤 Meeting Someone New',
+          body: "First date? Meeting a marketplace seller? Let your bestie know who you're with and where. They'll get an alert if you don't check in safe.",
+          buttonText: 'Show me how',
           onNext: () => handleTutorialAction('quickmeet'),
+          position: 'right', // Arrow points to right button
           stepNumber,
           totalSteps
         };
       case 'custom':
         return {
-          title: 'Custom Check-Ins',
-          body: "Create your own check-in for any situation! You're all set - ready to create your first real check-in? 💜",
+          title: '✨ You Got This!',
+          body: "You've learned all the quick options! Now try the Custom Check-In for any situation. Job interview, blind date, house viewing - you name it, we've got you covered! 💜",
           buttonText: 'Create My First Check-In',
           onNext: () => handleTutorialAction('custom'),
+          position: 'auto', // Arrow points up to full-width button
           stepNumber,
           totalSteps
         };
