@@ -73,47 +73,50 @@ const TutorialTooltip = ({
   }, [targetElement, position]);
 
   const getPositionStyles = () => {
-    if (!targetElement) return {};
-
-    const rect = targetElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
     // Get tooltip dimensions (use defaults if not yet rendered)
     const tooltipHeight = tooltipRef.current?.offsetHeight || 200;
-    const tooltipWidth = tooltipRef.current?.offsetWidth || 300;
 
-    // Ensure tooltip stays within viewport
-    let left, top, bottom, right;
-    let transform = '';
-
-    switch (calculatedPosition) {
-      case 'above':
-        left = Math.max(10, Math.min(rect.left + rect.width / 2, viewportWidth - 10));
-        bottom = Math.max(tooltipHeight + 20, viewportHeight - rect.top + 10);
-        transform = 'translateX(-50%)';
-        return { bottom: `${bottom}px`, left: `${left}px`, transform, maxWidth: '90vw' };
-      case 'below':
-        left = Math.max(10, Math.min(rect.left + rect.width / 2, viewportWidth - 10));
-        top = Math.min(rect.bottom + 10, viewportHeight - tooltipHeight - 20);
-        transform = 'translateX(-50%)';
-        return { top: `${top}px`, left: `${left}px`, transform, maxWidth: '90vw' };
-      case 'left':
-        right = Math.max(10, viewportWidth - rect.left + 10);
-        top = Math.max(10, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2));
-        transform = 'translateY(-50%)';
-        return { top: `${top}px`, right: `${right}px`, transform, maxWidth: '90vw' };
-      case 'right':
-        left = Math.min(rect.right + 10, viewportWidth - tooltipWidth - 10);
-        top = Math.max(10, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2));
-        transform = 'translateY(-50%)';
-        return { top: `${top}px`, left: `${left}px`, transform, maxWidth: '90vw' };
-      default:
-        left = Math.max(10, Math.min(rect.left + rect.width / 2, viewportWidth - 10));
-        top = Math.min(rect.bottom + 10, viewportHeight - tooltipHeight - 20);
-        transform = 'translateX(-50%)';
-        return { top: `${top}px`, left: `${left}px`, transform, maxWidth: '90vw' };
+    // If no target element (intro step), center in middle of screen
+    if (!targetElement) {
+      return {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        maxWidth: '90vw',
+        width: 'auto'
+      };
     }
+
+    const rect = targetElement.getBoundingClientRect();
+    const spaceAbove = rect.top;
+    const spaceBelow = viewportHeight - rect.bottom;
+    
+    // Position above the button with some spacing
+    const spacing = 20; // Space between tooltip and button
+    let top = rect.top - tooltipHeight - spacing;
+    
+    // If not enough space above, position below instead
+    if (spaceAbove < tooltipHeight + spacing + 20) {
+      top = rect.bottom + spacing;
+      setArrowPosition('top'); // Arrow points up to button
+    } else {
+      setArrowPosition('bottom'); // Arrow points down to button
+    }
+    
+    // Ensure tooltip doesn't go off top or bottom of screen
+    top = Math.max(20, Math.min(top, viewportHeight - tooltipHeight - 20));
+    
+    // Center horizontally on screen
+    return {
+      top: `${top}px`,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      maxWidth: '90vw',
+      width: 'auto'
+    };
   };
 
   const getArrowStyles = () => {
@@ -174,7 +177,7 @@ const TutorialTooltip = ({
     onNext?.();
   };
 
-  if (!targetElement) return null;
+  // Allow rendering without targetElement for intro step
 
   return (
     <div
@@ -182,8 +185,8 @@ const TutorialTooltip = ({
       className="fixed z-[100] max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4"
       style={getPositionStyles()}
     >
-      {/* Arrow */}
-      <div style={getArrowStyles()} />
+      {/* Arrow - only show if we have a target element */}
+      {targetElement && <div style={getArrowStyles()} />}
 
       {/* Content */}
       <div className="space-y-3">

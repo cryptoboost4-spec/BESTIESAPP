@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
-import TutorialTooltip from '../TutorialTooltip';
+import TestModeBadge from '../TestModeBadge';
 
 const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [duration, setDuration] = useState(30); // Default 30 minutes
   const [isClosing, setIsClosing] = useState(false);
-  const [showTutorialTooltip, setShowTutorialTooltip] = useState(false);
   const modalRef = useRef(null);
   const firstInputRef = useRef(null);
-  const locationInfoRef = useRef(null);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -25,11 +23,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
     // Focus first input when modal opens (only if not in tutorial mode)
     if (!isTutorialMode && firstInputRef.current) {
       setTimeout(() => firstInputRef.current?.focus(), 100);
-    }
-    
-    // Show tutorial tooltip after modal opens
-    if (isTutorialMode) {
-      setTimeout(() => setShowTutorialTooltip(true), 300);
     }
 
     // Trap focus within modal
@@ -101,9 +94,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
     });
   };
 
-  const handleTutorialNext = () => {
-    handleClose();
-  };
 
   return (
     <div 
@@ -117,7 +107,7 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
     >
       <div 
         ref={modalRef}
-        className={`bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all duration-200 ${
+        className={`bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all duration-200 max-h-[calc(100vh-2rem)] overflow-y-auto ${
           isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -126,18 +116,11 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
           <span>👤</span> Quick Meet
         </h2>
 
+        {isTutorialMode && <TestModeBadge />}
+
         <p className="text-sm text-text-secondary mb-6">
           Enter who you're meeting and select duration
         </p>
-
-        {/* Location info for tutorial */}
-        {isTutorialMode && (
-          <div ref={locationInfoRef} className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
-            <p className="text-sm text-text-secondary">
-              <strong>📍 Location Sharing:</strong> When you create this check-in, your current location will be shared with your bestie automatically.
-            </p>
-          </div>
-        )}
 
         {/* Name Input */}
         <div className="mb-6">
@@ -152,7 +135,7 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                if (name.trim()) {
+                if (name.trim() || isTutorialMode) {
                   handleStart();
                 } else {
                   e.target.blur(); // Close keyboard if invalid
@@ -162,19 +145,9 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
             placeholder="e.g., Sarah from Marketplace"
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all"
             aria-label="Name of person you're meeting"
-            aria-required="true"
-            disabled={isTutorialMode}
+            aria-required={!isTutorialMode}
           />
         </div>
-        
-        {isTutorialMode && showTutorialTooltip && locationInfoRef.current && (
-          <TutorialTooltip
-            body="Your current location is shared with your bestie. They'll know exactly where to find you if needed."
-            buttonText="Next"
-            onNext={handleTutorialNext}
-            targetElement={locationInfoRef.current}
-          />
-        )}
 
         {/* Duration Selection */}
         <div className="mb-6">
@@ -234,9 +207,9 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false }) => {
             onClick={handleStart}
             disabled={!isTutorialMode && !name.trim()}
             className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            aria-label={isTutorialMode ? "Close tutorial" : "Start quick meet check-in"}
+            aria-label={isTutorialMode ? "Continue tutorial" : "Start quick meet check-in"}
           >
-            {isTutorialMode ? 'Got it!' : 'Start Check-In'}
+            {isTutorialMode ? 'Ready for Next Step' : 'Start Check-In'}
           </button>
         </div>
       </div>

@@ -88,12 +88,15 @@ const AddBestieCard = ({ onBestieAdded }) => {
         {!isExpanded ? (
           // Initial state
           <div className="text-center">
-            <div className="text-5xl mb-4">👋</div>
-            <h3 className="font-display text-xl text-text-primary mb-3">
-              Let's Get You Set Up!
+            <div className="text-5xl mb-4">💜</div>
+            <h3 className="font-display text-2xl text-text-primary mb-3">
+              You're Taking an Important Step
             </h3>
-            <p className="text-text-secondary mb-6">
-              Add your first bestie to start keeping each other safe
+            <p className="text-text-secondary mb-4 leading-relaxed">
+              Adding your first bestie means you'll always have someone looking out for you. It's a smart, protective choice that gives you peace of mind.
+            </p>
+            <p className="text-sm text-text-secondary mb-6 leading-relaxed">
+              Your bestie will only see your location when you're on a check-in - your privacy is always protected. This is completely free and gives you confidence every time you're out.
             </p>
             <button
               onClick={handleExpand}
@@ -105,9 +108,12 @@ const AddBestieCard = ({ onBestieAdded }) => {
         ) : (
           // Expanded state
           <div className="space-y-4">
-            <h3 className="font-display text-lg text-text-primary mb-4 text-center">
+            <h3 className="font-display text-lg text-text-primary mb-2 text-center">
               Choose How to Connect:
             </h3>
+            <p className="text-sm text-text-secondary mb-4 text-center">
+              Both options are secure and give you the same protection. Pick what works best for you!
+            </p>
             
             {/* Messenger Bestie Card */}
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4">
@@ -115,7 +121,7 @@ const AddBestieCard = ({ onBestieAdded }) => {
                 <div className="text-3xl">💬</div>
                 <div className="flex-1">
                   <h4 className="font-display text-lg text-text-primary">Messenger Bestie</h4>
-                  <p className="text-sm text-text-secondary">Chat for 20 hours</p>
+                  <p className="text-sm text-text-secondary">Free & unlimited alerts • Connect when they message you for 20 hours</p>
                 </div>
               </div>
               <button
@@ -132,7 +138,7 @@ const AddBestieCard = ({ onBestieAdded }) => {
                 <div className="text-3xl">📱</div>
                 <div className="flex-1">
                   <h4 className="font-display text-lg text-text-primary">In-App Bestie</h4>
-                  <p className="text-sm text-text-secondary">Telegram (free) • SMS (paid)</p>
+                  <p className="text-sm text-text-secondary">Telegram (free) • SMS (paid) • Always connected</p>
                 </div>
               </div>
               <button

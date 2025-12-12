@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
-import TutorialTooltip from '../TutorialTooltip';
+import TestModeBadge from '../TestModeBadge';
 
 const WalkingModal = ({ onClose, isTutorialMode = false }) => {
   const navigate = useNavigate();
   const [duration, setDuration] = useState(15); // Default 15 minutes
   const [isClosing, setIsClosing] = useState(false);
-  const [showTutorialTooltip, setShowTutorialTooltip] = useState(false);
   const modalRef = useRef(null);
   const firstButtonRef = useRef(null);
   const durationRef = useRef(null);
@@ -24,11 +23,6 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
     // Focus first button when modal opens (only if not in tutorial mode)
     if (!isTutorialMode && firstButtonRef.current) {
       setTimeout(() => firstButtonRef.current?.focus(), 100);
-    }
-    
-    // Show tutorial tooltip after modal opens
-    if (isTutorialMode) {
-      setTimeout(() => setShowTutorialTooltip(true), 300);
     }
 
     // Trap focus within modal
@@ -96,9 +90,6 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
     });
   };
 
-  const handleTutorialNext = () => {
-    handleClose();
-  };
 
   return (
     <div 
@@ -112,7 +103,7 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
     >
       <div 
         ref={modalRef}
-        className={`bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all duration-200 ${
+        className={`bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all duration-200 max-h-[calc(100vh-2rem)] overflow-y-auto ${
           isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -120,6 +111,8 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
         <h2 id="walking-modal-title" className="text-2xl font-display text-text-primary mb-4 flex items-center gap-2">
           <span>🚶‍♀️</span> Walking Alone
         </h2>
+
+        {isTutorialMode && <TestModeBadge />}
 
         <p className="text-sm text-text-secondary mb-6">
           Select duration and start your check-in. You can add location details during your walk.
@@ -169,14 +162,6 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
             <span>10 min</span>
             <span>90 min</span>
           </div>
-          {isTutorialMode && showTutorialTooltip && durationRef.current && (
-            <TutorialTooltip
-              body="Choose how long you'll be walking. Your bestie gets notified if you don't return on time."
-              buttonText="Next"
-              onNext={handleTutorialNext}
-              targetElement={durationRef.current}
-            />
-          )}
         </div>
 
         {/* Buttons */}
@@ -191,9 +176,9 @@ const WalkingModal = ({ onClose, isTutorialMode = false }) => {
           <button
             onClick={handleStart}
             className="flex-1 btn btn-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            aria-label={isTutorialMode ? "Close tutorial" : "Start walking check-in"}
+            aria-label={isTutorialMode ? "Continue tutorial" : "Start walking check-in"}
           >
-            {isTutorialMode ? 'Got it!' : 'Start Check-In'}
+            {isTutorialMode ? 'Ready for Next Step' : 'Start Check-In'}
           </button>
         </div>
       </div>

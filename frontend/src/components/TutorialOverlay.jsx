@@ -15,14 +15,25 @@ const TutorialOverlay = ({
   const overlayRef = useRef(null);
   const [highlightRect, setHighlightRect] = useState(null);
 
-  // Update highlight position when element changes
+  // Lock screen and update highlight position when element changes
   useEffect(() => {
     if (!highlightedElementRef?.current) {
       setHighlightRect(null);
+      // Unlock screen if no element
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
       return;
     }
 
     const element = highlightedElementRef.current;
+    
+    // Lock screen - prevent scrolling
+    const scrollY = window.scrollY;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${scrollY}px`;
     
     // Add class to elevate z-index of highlighted element
     element.classList.add('tutorial-highlighted-element');
@@ -40,8 +51,8 @@ const TutorialOverlay = ({
     };
 
     updateHighlight();
+    // Only listen to resize, not scroll (since we're locking scroll)
     window.addEventListener('resize', updateHighlight);
-    window.addEventListener('scroll', updateHighlight, true);
 
     return () => {
       // Cleanup: remove class and z-index
@@ -49,7 +60,16 @@ const TutorialOverlay = ({
       element.style.zIndex = '';
       element.style.position = '';
       window.removeEventListener('resize', updateHighlight);
-      window.removeEventListener('scroll', updateHighlight, true);
+      
+      // Unlock screen
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     };
   }, [highlightedElementRef]);
 
@@ -122,8 +142,8 @@ const TutorialOverlay = ({
         </>
       )}
 
-      {/* Tooltip */}
-      {tooltipConfig && highlightedElementRef?.current && (
+      {/* Tooltip - show even without highlighted element for intro step */}
+      {tooltipConfig && (
         <TutorialTooltip
           title={tooltipConfig.title}
           body={tooltipConfig.body}
@@ -133,7 +153,7 @@ const TutorialOverlay = ({
           showBack={stepNumber > 1}
           stepNumber={stepNumber}
           totalSteps={totalSteps}
-          targetElement={highlightedElementRef.current}
+          targetElement={highlightedElementRef?.current}
           position={tooltipConfig.position}
         />
       )}

@@ -323,7 +323,7 @@ const HomePage = () => {
 
   // Tutorial handlers
   const handleStartTutorial = () => {
-    setTutorialStep('rideshare');
+    setTutorialStep('intro');
   };
 
   const handleSkipTutorial = () => {
@@ -331,7 +331,7 @@ const HomePage = () => {
   };
 
   const handleTutorialStepComplete = () => {
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
     
     if (currentIndex < steps.length - 1) {
@@ -388,6 +388,8 @@ const HomePage = () => {
     
     try {
       switch (currentTutorialStep) {
+        case 'intro':
+          return null; // No button to highlight for intro
         case 'rideshare':
           return quickCheckInButtonsRef.current.rideshareButton ? { current: quickCheckInButtonsRef.current.rideshareButton } : null;
         case 'walking':
@@ -407,17 +409,28 @@ const HomePage = () => {
 
   // Get tooltip config based on current step
   const getTooltipConfig = () => {
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     const stepIndex = steps.indexOf(currentTutorialStep);
     const stepNumber = stepIndex + 1;
     const totalSteps = steps.length;
 
     switch (currentTutorialStep) {
+      case 'intro':
+        return {
+          title: 'Welcome to Your Safety Tutorial! 💜',
+          body: "All three quick check-ins (Rideshare, Walking, and Quick Meet) automatically map your location when you create them. Don't worry - you can always change or update your location after the check-in is created. Your bestie will know where you are, giving you both peace of mind.",
+          buttonText: "Let's begin",
+          onNext: () => {
+            setTutorialStep('rideshare');
+          },
+          stepNumber,
+          totalSteps
+        };
       case 'rideshare':
         return {
           title: 'Rideshare Check-Ins',
           body: "Use these when getting a ride from Uber, Lyft, or a friend. Share the license plate and arrival time - your bestie will be notified if you don't check in safe.",
-          buttonText: 'Next',
+          buttonText: 'Take a look',
           onNext: () => handleTutorialAction('rideshare'),
           stepNumber,
           totalSteps
@@ -426,7 +439,7 @@ const HomePage = () => {
         return {
           title: 'Walking Check-Ins',
           body: "Perfect for walks, runs, or anytime you're out on foot. Set how long you'll be gone.",
-          buttonText: 'Next',
+          buttonText: 'Take a look',
           onNext: () => handleTutorialAction('walking'),
           stepNumber,
           totalSteps
@@ -435,7 +448,7 @@ const HomePage = () => {
         return {
           title: 'Quick Meet Check-Ins',
           body: "Meeting someone new or at a specific location? Share your location so your bestie knows where you are. Great for first dates!",
-          buttonText: 'Next',
+          buttonText: 'Take a look',
           onNext: () => handleTutorialAction('quickmeet'),
           stepNumber,
           totalSteps
@@ -455,7 +468,7 @@ const HomePage = () => {
   };
 
   const handleTutorialBack = () => {
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
     
     if (currentIndex > 0) {
@@ -464,7 +477,7 @@ const HomePage = () => {
   };
 
   const getStepNumber = () => {
-    const steps = ['rideshare', 'walking', 'quickmeet', 'custom'];
+    const steps = ['intro', 'rideshare', 'walking', 'quickmeet', 'custom'];
     return steps.indexOf(currentTutorialStep) + 1;
   };
 
@@ -806,7 +819,7 @@ const HomePage = () => {
           highlightedElementRef={getHighlightedElementRef()}
           tooltipConfig={getTooltipConfig()}
           stepNumber={getStepNumber()}
-          totalSteps={4}
+          totalSteps={5}
         />
       )}
     </div>
