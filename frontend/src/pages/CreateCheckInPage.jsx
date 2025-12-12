@@ -903,6 +903,8 @@ const CreateCheckInPage = () => {
         break;
     }
   }, [currentCheckInTutorialStep, showTutorial]);
+    }
+  }, [currentCheckInTutorialStep, showTutorial]);
 
   // Handle tutorial step completion
   const handleTutorialStepComplete = async (action) => {
