@@ -28,6 +28,17 @@ const TutorialOverlay = ({
 
     const element = highlightedElementRef.current;
 
+    // Define updateHighlight first (before lockScreen uses it)
+    const updateHighlight = () => {
+      const rect = element.getBoundingClientRect();
+      setHighlightRect({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
     // FIRST: Scroll element into view if it's near/below bottom nav (before locking)
     const rect = element.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
@@ -67,16 +78,6 @@ const TutorialOverlay = ({
 
       updateHighlight();
     }
-
-    const updateHighlight = () => {
-      const rect = element.getBoundingClientRect();
-      setHighlightRect({
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-      });
-    };
 
     // Only listen to resize, not scroll (since we're locking scroll)
     window.addEventListener('resize', updateHighlight);
