@@ -862,11 +862,6 @@ const CreateCheckInPage = () => {
         const bottomNavHeight = 80;
         const safeZone = 100; // Space above bottom nav
         
-        // Calculate desired position (center of viewport, but above bottom nav)
-        const desiredTop = (viewportHeight - bottomNavHeight - safeZone) / 2;
-        const currentTop = elementRect.top;
-        const scrollOffset = currentTop - desiredTop;
-        
         // Scroll element into view with offset for bottom nav
         element.scrollIntoView({
           behavior: 'smooth',
@@ -905,6 +900,9 @@ const CreateCheckInPage = () => {
         break;
       case 'final':
         scrollToElement(submitButtonRef);
+        break;
+      default:
+        // No scroll needed for this step
         break;
     }
   }, [currentCheckInTutorialStep, showTutorial]);
