@@ -21,6 +21,9 @@ const SettingsTutorialOverlay = ({
   useEffect(() => {
     if (!currentStep || !refs) return;
 
+    // Smart step skipping will be handled by the page component
+    // (checking if notifications are already configured)
+
     const configs = {
       1: {
         title: 'Stay Connected',
