@@ -22,6 +22,7 @@ export const useCheckInTutorialState = () => {
   const { currentUser } = useAuth();
   const [checkInTutorialComplete, setCheckInTutorialComplete] = useState(false);
   const [currentCheckInTutorialStep, setCurrentCheckInTutorialStep] = useState(null);
+  const [tutorialStateLoaded, setTutorialStateLoaded] = useState(false);
 
   // Load initial state from localStorage and Firestore
   useEffect(() => {
@@ -39,10 +40,12 @@ export const useCheckInTutorialState = () => {
 
     setCheckInTutorialComplete(localComplete);
     setCurrentCheckInTutorialStep(localStep || null);
+    console.log('[Tutorial] Initial state loaded from localStorage:', { localComplete, localStep });
 
     // Then sync with Firestore (cross-device)
     const syncWithFirestore = async () => {
       try {
+        console.log('[Tutorial] Starting Firestore sync...');
         const userRef = doc(db, 'users', currentUser.uid);
         const userSnap = await getDoc(userRef);
 
@@ -51,20 +54,29 @@ export const useCheckInTutorialState = () => {
           const firestoreComplete = data.checkInTutorialComplete || false;
           let firestoreStep = data.currentCheckInTutorialStep || null;
 
+          console.log('[Tutorial] Firestore state:', { firestoreComplete, firestoreStep });
+
           // Validate Firestore step
           if (firestoreStep && !VALID_STEPS.includes(firestoreStep)) {
+            console.warn('[Tutorial] Invalid Firestore step detected:', firestoreStep, '- cleaning up');
             firestoreStep = null;
             try {
               await updateDoc(userRef, {
                 currentCheckInTutorialStep: null
               });
             } catch (error) {
-              console.error('Error cleaning up invalid step:', error);
+              console.error('[Tutorial] Error cleaning up invalid step:', error);
             }
           }
 
           // Firestore takes precedence if it exists
           if (firestoreComplete !== localComplete || firestoreStep !== localStep) {
+            console.log('[Tutorial] Firestore state differs from localStorage, updating:', {
+              firestoreComplete,
+              firestoreStep,
+              localComplete,
+              localStep
+            });
             setCheckInTutorialComplete(firestoreComplete);
             setCurrentCheckInTutorialStep(firestoreStep);
 
@@ -75,11 +87,21 @@ export const useCheckInTutorialState = () => {
             } else {
               localStorage.removeItem('current_checkInTutorial_step');
             }
+          } else {
+            console.log('[Tutorial] Firestore state matches localStorage, no update needed');
           }
+        } else {
+          console.log('[Tutorial] User document does not exist in Firestore');
         }
+        
+        // Mark sync as complete
+        console.log('[Tutorial] Firestore sync completed');
+        setTutorialStateLoaded(true);
       } catch (error) {
-        console.error('Error syncing check-in tutorial state with Firestore:', error);
+        console.error('[Tutorial] Error syncing check-in tutorial state with Firestore:', error);
         // Continue with localStorage state if Firestore fails
+        // Still mark as loaded so tutorial can proceed
+        setTutorialStateLoaded(true);
       }
     };
 
@@ -112,28 +134,35 @@ export const useCheckInTutorialState = () => {
 
   // Update current tutorial step
   const setCheckInTutorialStep = async (step) => {
+    console.log('[Tutorial] setCheckInTutorialStep called with:', step);
+    
     // Validate step is one of the allowed values
     if (step && !VALID_STEPS.includes(step)) {
-      console.warn('Invalid check-in tutorial step attempted:', step, '- ignoring');
+      console.warn('[Tutorial] Invalid check-in tutorial step attempted:', step, '- ignoring');
       return;
     }
 
     // If setting step, ensure tutorial is not marked complete
     if (step) {
+      console.log('[Tutorial] Setting step, marking tutorial as not complete');
       setCheckInTutorialComplete(false);
     }
 
+    // Update state synchronously (this happens immediately)
+    console.log('[Tutorial] Updating state synchronously - step will be available immediately');
     setCurrentCheckInTutorialStep(step);
 
-    // Update localStorage
+    // Update localStorage (synchronous)
     if (step) {
       localStorage.setItem('current_checkInTutorial_step', step);
       localStorage.setItem('checkInTutorial_complete', 'false');
+      console.log('[Tutorial] Updated localStorage with step:', step);
     } else {
       localStorage.removeItem('current_checkInTutorial_step');
+      console.log('[Tutorial] Removed step from localStorage');
     }
 
-    // Update Firestore
+    // Update Firestore (async, but state is already updated)
     if (currentUser) {
       try {
         const userRef = doc(db, 'users', currentUser.uid);
@@ -141,8 +170,9 @@ export const useCheckInTutorialState = () => {
           currentCheckInTutorialStep: step,
           ...(step ? { checkInTutorialComplete: false } : {})
         });
+        console.log('[Tutorial] Updated Firestore with step:', step);
       } catch (error) {
-        console.error('Error updating check-in tutorial step in Firestore:', error);
+        console.error('[Tutorial] Error updating check-in tutorial step in Firestore:', error);
         // Non-critical - localStorage is updated
       }
     }
@@ -169,12 +199,22 @@ export const useCheckInTutorialState = () => {
     }
   };
 
+  // Log state changes
+  useEffect(() => {
+    console.log('[Tutorial] State changed:', {
+      checkInTutorialComplete,
+      currentCheckInTutorialStep,
+      tutorialStateLoaded
+    });
+  }, [checkInTutorialComplete, currentCheckInTutorialStep, tutorialStateLoaded]);
+
   return {
     checkInTutorialComplete,
     currentCheckInTutorialStep,
     markCheckInTutorialComplete,
     setCheckInTutorialStep,
     resetCheckInTutorial,
+    isTutorialStateLoaded: tutorialStateLoaded,
     validSteps: VALID_STEPS
   };
 };

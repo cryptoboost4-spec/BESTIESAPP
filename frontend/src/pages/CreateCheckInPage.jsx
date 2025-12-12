@@ -75,10 +75,17 @@ const CreateCheckInPage = () => {
     currentCheckInTutorialStep,
     markCheckInTutorialComplete,
     setCheckInTutorialStep,
+    isTutorialStateLoaded,
   } = useCheckInTutorialState();
 
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedForFirstCheckIn, setHasCheckedForFirstCheckIn] = useState(false);
+  const [bestiesLoadingTimeout, setBestiesLoadingTimeout] = useState(false);
+
+  // Log showTutorial changes
+  useEffect(() => {
+    console.log('[Tutorial] showTutorial changed:', showTutorial);
+  }, [showTutorial]);
 
   // Auto-redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -545,15 +552,34 @@ const CreateCheckInPage = () => {
     };
   }, []);
 
+  // Handle besties loading timeout (10 seconds)
+  useEffect(() => {
+    if (!bestiesLoading) return;
+
+    const timeout = setTimeout(() => {
+      console.warn('[Tutorial] Besties loading timeout (10s) - allowing tutorial to proceed');
+      setBestiesLoadingTimeout(true);
+    }, 10000);
+
+    return () => clearTimeout(timeout);
+  }, [bestiesLoading]);
+
   // Check if this is user's first check-in and show tutorial
   // Wait for besties to load before showing tutorial (so bestie selection step works)
+  // Also wait for tutorial state sync to complete
   useEffect(() => {
-    if (!currentUser || authLoading || hasCheckedForFirstCheckIn || bestiesLoading) {
+    // Allow tutorial if besties loading timed out (for location step, besties aren't required)
+    const canProceedWithoutBesties = bestiesLoadingTimeout;
+    const shouldWaitForBesties = bestiesLoading && !canProceedWithoutBesties;
+
+    if (!currentUser || authLoading || hasCheckedForFirstCheckIn || shouldWaitForBesties || !isTutorialStateLoaded) {
       console.log('[Tutorial] Conditions not met:', {
         currentUser: !!currentUser,
         authLoading,
         hasCheckedForFirstCheckIn,
-        bestiesLoading
+        bestiesLoading,
+        bestiesLoadingTimeout,
+        isTutorialStateLoaded
       });
       return;
     }
@@ -611,7 +637,7 @@ const CreateCheckInPage = () => {
     };
 
     checkFirstCheckIn();
-  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading, location.state?.quickType, location.state?.skipLocation]);
+  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading, bestiesLoadingTimeout, isTutorialStateLoaded, location.state?.quickType, location.state?.skipLocation]);
 
   // Scroll submit button into view on final step
   useEffect(() => {
@@ -628,10 +654,27 @@ const CreateCheckInPage = () => {
 
   // Get tutorial config for current step
   const getTutorialConfig = () => {
-    if (!currentCheckInTutorialStep) return null;
+    if (!currentCheckInTutorialStep) {
+      console.warn('[Tutorial] getTutorialConfig called but no step set');
+      return null;
+    }
+
+    // Validate step
+    const VALID_STEPS = ['location', 'whoMeeting', 'socialMedia', 'duration', 'bestieSelection', 'notesPhotos', 'final'];
+    if (!VALID_STEPS.includes(currentCheckInTutorialStep)) {
+      console.error('[Tutorial] Invalid step in getTutorialConfig:', currentCheckInTutorialStep);
+      return null;
+    }
+
+    console.log('[Tutorial] getTutorialConfig called for step:', currentCheckInTutorialStep);
 
     switch (currentCheckInTutorialStep) {
       case 'location':
+        // Check if ref is ready
+        if (!mapRef?.current) {
+          console.warn('[Tutorial] mapRef is not ready for location step');
+          return null;
+        }
         return {
           highlightedElementRef: mapRef,
           overlayOnElement: true,
@@ -646,6 +689,10 @@ const CreateCheckInPage = () => {
         };
 
       case 'whoMeeting':
+        if (!whoMeetingRef?.current) {
+          console.warn('[Tutorial] whoMeetingRef is not ready');
+          return null;
+        }
         return {
           highlightedElementRef: whoMeetingRef,
           overlayOnElement: false,
@@ -659,6 +706,10 @@ const CreateCheckInPage = () => {
         };
 
       case 'socialMedia':
+        if (!socialMediaRef?.current) {
+          console.warn('[Tutorial] socialMediaRef is not ready');
+          return null;
+        }
         return {
           highlightedElementRef: socialMediaRef,
           overlayOnElement: false,
@@ -672,6 +723,10 @@ const CreateCheckInPage = () => {
         };
 
       case 'duration':
+        if (!durationRef?.current) {
+          console.warn('[Tutorial] durationRef is not ready');
+          return null;
+        }
         return {
           highlightedElementRef: durationRef,
           overlayOnElement: false,
@@ -685,6 +740,10 @@ const CreateCheckInPage = () => {
         };
 
       case 'bestieSelection':
+        if (!bestieSelectorRef?.current) {
+          console.warn('[Tutorial] bestieSelectorRef is not ready');
+          return null;
+        }
         return {
           highlightedElementRef: bestieSelectorRef,
           overlayOnElement: false,
@@ -697,6 +756,10 @@ const CreateCheckInPage = () => {
         };
 
       case 'notesPhotos':
+        if (!notesPhotosRef?.current) {
+          console.warn('[Tutorial] notesPhotosRef is not ready');
+          return null;
+        }
         return {
           highlightedElementRef: notesPhotosRef,
           overlayOnElement: false,
@@ -711,6 +774,10 @@ const CreateCheckInPage = () => {
         };
 
       case 'final':
+        if (!submitButtonRef?.current) {
+          console.warn('[Tutorial] submitButtonRef is not ready');
+          return null;
+        }
         return {
           highlightedElementRef: submitButtonRef,
           overlayOnElement: false,
@@ -725,6 +792,7 @@ const CreateCheckInPage = () => {
         };
 
       default:
+        console.error('[Tutorial] Unknown step in getTutorialConfig:', currentCheckInTutorialStep);
         return null;
     }
   };
@@ -1199,9 +1267,39 @@ const CreateCheckInPage = () => {
         </form>
 
         {/* Tutorial Overlay */}
-        {showTutorial && currentCheckInTutorialStep && (() => {
+        {(() => {
+          const shouldRender = showTutorial && currentCheckInTutorialStep;
+          console.log('[Tutorial] Render check:', {
+            showTutorial,
+            currentCheckInTutorialStep,
+            shouldRender
+          });
+
+          if (!shouldRender) {
+            return null;
+          }
+
           const config = getTutorialConfig();
-          if (!config) return null;
+          console.log('[Tutorial] Config result:', config ? 'exists' : 'null', {
+            step: currentCheckInTutorialStep,
+            hasRef: config?.highlightedElementRef?.current ? 'yes' : 'no'
+          });
+
+          if (!config) {
+            console.error('[Tutorial] Config is null for step:', currentCheckInTutorialStep, {
+              step: currentCheckInTutorialStep,
+              refStatus: {
+                mapRef: mapRef?.current ? 'ready' : 'null',
+                whoMeetingRef: whoMeetingRef?.current ? 'ready' : 'null',
+                socialMediaRef: socialMediaRef?.current ? 'ready' : 'null',
+                durationRef: durationRef?.current ? 'ready' : 'null',
+                bestieSelectorRef: bestieSelectorRef?.current ? 'ready' : 'null',
+                notesPhotosRef: notesPhotosRef?.current ? 'ready' : 'null',
+                submitButtonRef: submitButtonRef?.current ? 'ready' : 'null',
+              }
+            });
+            return null;
+          }
 
           return (
             <CheckInTutorialOverlay
