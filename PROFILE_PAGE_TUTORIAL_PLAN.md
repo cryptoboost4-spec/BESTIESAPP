@@ -1,4 +1,4 @@
-# Profile Page Tutorial Plan
+# Profile Page Tutorial Plan (Improved)
 
 ## Overview
 Tutorial to guide users through profile customization, badges, stats, and profile completion features.
@@ -7,6 +7,18 @@ Tutorial to guide users through profile customization, badges, stats, and profil
 - New users setting up their profile
 - Users who haven't customized their profile
 - Users with incomplete profiles
+
+## Prompt Card (Before Tutorial Starts)
+**Component**: TutorialPromptCard (reuse from home tutorial)
+**Content**:
+- Emoji: ✨
+- Title: "Let's Personalize Your Profile"
+- Body: "We'll show you how to customize it, track your progress, and earn badges. Takes about 1.5 minutes."
+- Highlight: "✅ Make it yours - express your unique style"
+- Time estimate: "⏱️ About 1.5 minutes. You can skip anytime."
+- Actions:
+  - "Start Tutorial" button
+  - "Skip - I'll explore on my own" link
 
 ## Tutorial Steps
 
@@ -23,8 +35,9 @@ Tutorial to guide users through profile customization, badges, stats, and profil
 - Title: "Make It Yours"
 - Body: "Customize your profile with different layouts, backgrounds, and themes. Express yourself! Your besties will see your unique style."
 - Actions:
-  - Skip button
-  - "Customize" button (opens customizer, then continues)
+  - "Skip" button
+  - "Try It" button (opens customizer, then continues)
+  - "Continue" button (if skipped)
 
 ### Step 3: Profile Completion
 **Element**: ProfileCompletion component
@@ -81,8 +94,29 @@ Tutorial to guide users through profile customization, badges, stats, and profil
 
 ### Completion
 - Mark tutorial complete after final step
-- Show brief celebration
+- Show celebration toast: "Your profile is looking great! ✨" (with 🎉 icon)
+- Brief confetti animation (optional)
 - Option to restart tutorial from settings
+
+## Additional Features
+
+### Visual Progress Indicator
+- Use progress dots (not numbers) at bottom of tooltip
+- Shows progress visually without being overwhelming
+
+### Back Navigation
+- Add back button (only show on steps > 1)
+- Allows review without restarting
+
+### Context-Aware Messaging
+- Check profile completion before showing completion step
+- Skip customization step if already customized
+- Adapt messages based on completion status
+
+### Error Handling
+- Retry logic for refs
+- Fallback positioning
+- Graceful degradation
 
 ## Files to Create/Modify
 

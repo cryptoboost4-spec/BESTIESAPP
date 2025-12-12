@@ -15,7 +15,7 @@ const CheckInTutorialOverlay = ({
 }) => {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0, rotation: 180 });
-  const [showTooltip, setShowTooltip] = useState(true);
+  const [showTooltip] = useState(true);
 
   // Trigger haptic feedback
   const triggerHaptic = () => {
@@ -78,7 +78,6 @@ const CheckInTutorialOverlay = ({
 
       // Always position above the element with padding
       let top = elementRect.top - tooltipHeight - padding;
-      const arrowRotation = 180; // Always points down
 
       // Ensure doesn't go off top of screen
       if (top < minSpaceFromEdge) {

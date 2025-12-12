@@ -1,4 +1,4 @@
-# Settings Page Tutorial Plan
+# Settings Page Tutorial Plan (Improved)
 
 ## Overview
 Tutorial to guide users through important settings: notifications, privacy, security, and preferences.
@@ -8,14 +8,29 @@ Tutorial to guide users through important settings: notifications, privacy, secu
 - Users who haven't reviewed settings
 - Users with incomplete notification setup
 
+## Prompt Card (Before Tutorial Starts)
+**Component**: TutorialPromptCard (reuse from home tutorial)
+**Content**:
+- Emoji: ⚙️
+- Title: "Let's Set Up Your Settings"
+- Body: "We'll walk you through notifications, privacy, and security. Takes about 2 minutes. You can skip any step."
+- Highlight: "✅ Take control of your privacy and safety"
+- Time estimate: "⏱️ About 2 minutes. You can skip anytime."
+- Actions:
+  - "Start Tutorial" button
+  - "Skip - I'll explore on my own" link
+
 ## Tutorial Steps
 
 ### Step 1: Notification Settings
 **Element**: NotificationSettings section
 **Content**:
 - Title: "Stay Connected"
-- Body: "Enable notifications so your besties can reach you in emergencies. Choose how you want to be notified - email, SMS, or push notifications. Test your alerts to make sure everything works!"
-- Actions: Continue button
+- Body: "Enable notifications so your besties can reach you in emergencies. Choose how you want to be notified - email, SMS, or push notifications."
+- Actions: 
+  - "Skip" button
+  - "Try It" button (opens test alert modal, then continues)
+  - "Continue" button (if skipped)
 
 ### Step 2: Messenger Integration (Conditional)
 **Element**: MessengerLinkDisplay section (if feature enabled)
@@ -34,11 +49,12 @@ Tutorial to guide users through important settings: notifications, privacy, secu
 ### Step 4: Security Passcodes
 **Element**: SecurityPasscodes section
 **Content**:
-- Title: "Add Extra Security"
-- Body: "Set up a safety passcode or duress code for emergencies. These codes can trigger alerts or lock your account. Learn more about how they work."
+- Title: "Extra Security (Optional)"
+- Body: "Want extra protection? You can set up a safety passcode or duress code. These are completely optional - only set them up if you want extra security features."
 - Actions:
-  - Skip button
+  - "Skip" button (emphasized as primary)
   - "Learn More" button (shows info, then continues)
+- **Note**: Make this step feel optional and friendly, not scary
 
 ### Step 5: Preferences
 **Element**: PreferencesAndQuickAccess section
@@ -47,14 +63,7 @@ Tutorial to guide users through important settings: notifications, privacy, secu
 - Body: "Adjust app preferences, quick access settings, and more. Make Besties work exactly how you want it."
 - Actions: Continue button
 
-### Step 6: Test Alert (Optional)
-**Element**: Test Alert button in NotificationSettings
-**Content**:
-- Title: "Test Your Setup"
-- Body: "Tap 'Test Alert' to make sure your notifications are working. It's important to verify everything is set up correctly!"
-- Actions:
-  - Skip button
-  - "Test Alert" button (opens test modal, then continues)
+**Note**: Test Alert step removed - integrated into Step 1 as "Try It" button
 
 ## Implementation Details
 
@@ -84,8 +93,36 @@ Tutorial to guide users through important settings: notifications, privacy, secu
 
 ### Completion
 - Mark tutorial complete after final step
-- Show brief celebration
+- Show celebration toast: "Your settings are all set! ⚙️" (with 🎉 icon)
+- Brief confetti animation (optional)
 - Option to restart tutorial from settings
+
+## Additional Features
+
+### Visual Progress Indicator
+- Use progress dots (not numbers) at bottom of tooltip
+- Shows progress visually without being overwhelming
+
+### Back Navigation
+- Add back button (only show on steps > 1)
+- Allows review without restarting
+
+### Context-Aware Messaging
+- Check notification setup before showing notification step
+- Skip messenger step if feature disabled
+- Skip passcode step if already set up
+- Adapt messages based on completion status
+
+### Error Handling
+- Retry logic for refs
+- Fallback positioning
+- Graceful degradation
+
+### Friendlier Language
+- Use conversational tone
+- Avoid technical jargon
+- Emphasize optional features
+- Make security step feel safe, not scary
 
 ## Files to Create/Modify
 
