@@ -85,9 +85,12 @@ const TutorialTooltip = ({
 
   const getPositionStyles = () => {
     const viewportHeight = window.innerHeight;
-    
+
     // Get tooltip dimensions (use defaults if not yet rendered)
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 200;
+    const tooltipHeight = tooltipRef.current?.offsetHeight || 250;
+
+    // Account for bottom navigation menu (80px) + some padding
+    const bottomNavHeight = 100;
 
     // If no target element, center in middle of screen
     if (!targetElement) {
@@ -95,33 +98,40 @@ const TutorialTooltip = ({
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        maxWidth: '90vw',
+        maxWidth: 'calc(100vw - 2rem)',
         width: 'auto'
       };
     }
 
     const rect = targetElement.getBoundingClientRect();
     const spaceAbove = rect.top;
-    
+    const spaceBelow = viewportHeight - rect.bottom - bottomNavHeight;
+
     // Position above the button with some spacing
     const spacing = 20; // Space between tooltip and button
     let top = rect.top - tooltipHeight - spacing;
-    
+
     // Note: Arrow position is set in useEffect, not here (to avoid setState during render)
-    // If not enough space above, position below instead
+    // If not enough space above, position below instead (but above bottom nav)
     if (spaceAbove < tooltipHeight + spacing + 20) {
-      top = rect.bottom + spacing;
+      // Check if there's enough space below (accounting for bottom nav)
+      if (spaceBelow >= tooltipHeight + spacing) {
+        top = rect.bottom + spacing;
+      } else {
+        // If neither above nor below works, position to avoid bottom nav
+        top = viewportHeight - bottomNavHeight - tooltipHeight - spacing;
+      }
     }
-    
-    // Ensure tooltip doesn't go off top or bottom of screen
-    top = Math.max(20, Math.min(top, viewportHeight - tooltipHeight - 20));
-    
-    // Center horizontally on screen
+
+    // Ensure tooltip doesn't go off top or bottom of screen (accounting for bottom nav)
+    top = Math.max(20, Math.min(top, viewportHeight - bottomNavHeight - tooltipHeight - 20));
+
+    // Center horizontally on screen, accounting for margins
     return {
       top: `${top}px`,
       left: '50%',
       transform: 'translateX(-50%)',
-      maxWidth: '90vw',
+      maxWidth: 'calc(100vw - 2rem)',
       width: 'auto'
     };
   };
@@ -133,6 +143,9 @@ const TutorialTooltip = ({
       height: 0,
     };
 
+    // Match the gradient background color
+    const arrowColor = '#fdf2f8'; // purple-50 to match gradient
+
     switch (arrowPosition) {
       case 'top':
         return {
@@ -142,7 +155,7 @@ const TutorialTooltip = ({
           transform: 'translateX(-50%)',
           borderLeft: '8px solid transparent',
           borderRight: '8px solid transparent',
-          borderBottom: '8px solid white',
+          borderBottom: `8px solid ${arrowColor}`,
         };
       case 'bottom':
         return {
@@ -152,7 +165,7 @@ const TutorialTooltip = ({
           transform: 'translateX(-50%)',
           borderLeft: '8px solid transparent',
           borderRight: '8px solid transparent',
-          borderTop: '8px solid white',
+          borderTop: `8px solid ${arrowColor}`,
         };
       case 'left':
         return {
@@ -162,7 +175,7 @@ const TutorialTooltip = ({
           transform: 'translateY(-50%)',
           borderTop: '8px solid transparent',
           borderBottom: '8px solid transparent',
-          borderRight: '8px solid white',
+          borderRight: `8px solid ${arrowColor}`,
         };
       case 'right':
         return {
@@ -172,7 +185,7 @@ const TutorialTooltip = ({
           transform: 'translateY(-50%)',
           borderTop: '8px solid transparent',
           borderBottom: '8px solid transparent',
-          borderLeft: '8px solid white',
+          borderLeft: `8px solid ${arrowColor}`,
         };
       default:
         return baseStyles;
@@ -189,33 +202,26 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-[100] max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4"
+      className="fixed z-[100] mx-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/90 dark:to-pink-900/90 rounded-2xl shadow-2xl p-5 border-2 border-purple-200 dark:border-purple-700 backdrop-blur-sm"
       style={getPositionStyles()}
     >
       {/* Arrow - only show if we have a target element */}
       {targetElement && <div style={getArrowStyles()} />}
 
       {/* Content */}
-      <div className="space-y-3">
-        {/* Progress indicator */}
-        {stepNumber && totalSteps && (
-          <div className="text-xs text-text-secondary text-center mb-1">
-            Step {stepNumber} of {totalSteps}
-          </div>
-        )}
-        
+      <div className="space-y-4">
         {title && (
-          <h4 className="text-lg font-display text-text-primary">
-            {title}
+          <h4 className="text-xl font-display text-gradient flex items-center gap-2">
+            ✨ {title}
           </h4>
         )}
         {body && (
-          <p className="text-base text-text-secondary leading-relaxed">
+          <p className="text-base text-text-primary dark:text-gray-100 leading-relaxed font-medium">
             {body}
           </p>
         )}
-        
-        <div className="flex gap-2 mt-2">
+
+        <div className="flex gap-2 mt-4">
           {showBack && onBack && (
             <button
               onClick={() => {
@@ -224,14 +230,14 @@ const TutorialTooltip = ({
               }}
               className="flex-1 btn btn-secondary text-sm"
             >
-              Back
+              ← Back
             </button>
           )}
           <button
             onClick={handleNext}
-            className={showBack && onBack ? "flex-1 btn btn-primary" : "w-full btn btn-primary"}
+            className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-primary hover:shadow-lg hover:scale-105 active:scale-95 transition-all text-white font-bold py-3 text-lg shadow-xl animate-pulse-slow`}
           >
-            {buttonText}
+            {buttonText} ✨
           </button>
         </div>
       </div>
