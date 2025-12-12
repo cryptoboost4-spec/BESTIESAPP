@@ -3,7 +3,7 @@ import TutorialOverlay from '../../TutorialOverlay';
 
 /**
  * BestiesTutorialOverlay - Tutorial overlay for Besties page
- * Guides users through: Activity Feed, Create Post, Leaderboard, Besties Grid
+ * Guides users through: Activity Feed, Create Post, Besties Grid
  */
 const BestiesTutorialOverlay = ({
   currentStep,
@@ -40,13 +40,6 @@ const BestiesTutorialOverlay = ({
         highlightedElementRef: refs.postButton
       },
       3: {
-        title: '🏆 Friendly Rankings',
-        body: "See who's most reliable, who responds fastest, and celebrate together! Remember - everyone wins when we keep each other safe. Tap the tabs to explore! 💪",
-        buttonText: 'Next',
-        position: 'auto',
-        highlightedElementRef: refs.leaderboard
-      },
-      4: {
         title: '👥 Your Safety Squad',
         body: "All your besties in one place! Tap any bestie card to view their profile, send a message, or check their recent activity. The symbols show who's active, reliable, and more. 💜",
         buttonText: 'Got It! ✨',
@@ -72,7 +65,7 @@ const BestiesTutorialOverlay = ({
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}
       stepNumber={currentStep}
-      totalSteps={4}
+      totalSteps={3}
       isPaused={isPaused}
     />
   );

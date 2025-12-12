@@ -14,7 +14,6 @@ import StatsSection from '../components/profile/StatsSection';
 import DonationStatus from '../components/profile/DonationStatus';
 import ProfileAuraStyles from '../components/profile/ProfileAuraStyles';
 import RequestSupportSection from '../components/RequestSupportSection';
-import LoadingSkeleton from '../components/LoadingSkeleton';
 import OfflineBanner from '../components/OfflineBanner';
 import { useProfileTutorialState } from '../hooks/useProfileTutorialState';
 import ProfileTutorialWelcome from '../components/tutorials/profile/ProfileTutorialWelcome';
@@ -386,8 +385,11 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern">
-        <LoadingSkeleton type="profile" message="Loading your profile... 💜" />
+      <div className="min-h-screen bg-pattern flex items-center justify-center">
+        <div className="text-center">
+          <div className="spinner mb-4"></div>
+          <p className="text-text-secondary">Loading your profile... 💜</p>
+        </div>
       </div>
     );
   }
