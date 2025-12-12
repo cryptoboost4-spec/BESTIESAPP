@@ -902,6 +902,7 @@ const CreateCheckInPage = () => {
         // No scroll needed for this step
         break;
     }
+    // End of scroll handler
   }, [currentCheckInTutorialStep, showTutorial]);
     }
   }, [currentCheckInTutorialStep, showTutorial]);
