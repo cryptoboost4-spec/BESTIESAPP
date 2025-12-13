@@ -347,11 +347,6 @@ const HomePage = () => {
     markTutorialComplete();
   };
 
-  const handleTutorialStepComplete = () => {
-    // This is now handled by handleTutorialNext
-    handleTutorialNext();
-  };
-
   const handleTutorialAction = (action) => {
     // This function is no longer needed in the new flow
     // Buttons handle their own clicks now
