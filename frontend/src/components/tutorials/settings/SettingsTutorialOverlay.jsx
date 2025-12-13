@@ -29,7 +29,7 @@ const SettingsTutorialOverlay = ({
         title: 'Stay Connected',
         body: "Enable notifications so your besties can reach you in emergencies. Choose how you want to be notified - email, SMS, or push notifications.",
         buttonText: 'Try It',
-        position: 'auto',
+        position: 'below',
         highlightedElementRef: refs.notificationSettings,
         requiresInteraction: true, // Pause tutorial and allow interaction
         onTryIt: () => {

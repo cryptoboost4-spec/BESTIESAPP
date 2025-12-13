@@ -30,7 +30,7 @@ const BestiesTutorialOverlay = ({
           ? "This is where your besties' check-ins and posts will appear. Once you start sharing, it'll get lively! It's like a private timeline for your circle. 💜"
           : "This is where you see everything your besties share - check-ins, posts, milestones. It's like a private timeline just for your circle. Scroll down to see more! ✨",
         buttonText: 'Next',
-        position: 'auto',
+        position: 'below',
         highlightedElementRef: refs.activityFeed
       },
       2: {

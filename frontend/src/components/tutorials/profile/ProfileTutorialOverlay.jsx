@@ -28,7 +28,7 @@ const ProfileTutorialOverlay = ({
         title: 'Your Profile',
         body: "This is how your besties see you. Customize your photo, colors, and style to make it yours. Tap the edit button to get started.",
         buttonText: 'Next',
-        position: 'auto',
+        position: 'below',
         highlightedElementRef: refs.profileCard
       },
       2: {

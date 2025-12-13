@@ -16,8 +16,49 @@ export function useActivityFeed(currentUser, besties, userData) {
     
     // Don't wait for besties - load activity even if no besties yet
     if (besties.length === 0) {
+      // Add mock activity for tutorial/demo purposes
+      const mockActivities = [
+        {
+          id: 'mock-1',
+          type: 'checkin',
+          status: 'active',
+          userName: 'Demo Bestie',
+          userId: 'demo-user',
+          location: 'Coffee Shop',
+          timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+          checkInData: {
+            type: 'walking',
+            duration: 30
+          }
+        },
+        {
+          id: 'mock-2',
+          type: 'checkin',
+          status: 'completed',
+          userName: 'Demo Bestie',
+          userId: 'demo-user',
+          location: 'Home',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+          checkInData: {
+            type: 'rideshare',
+            duration: 20
+          }
+        },
+        {
+          id: 'mock-3',
+          type: 'post',
+          userName: 'Demo Bestie',
+          userId: 'demo-user',
+          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+          postData: {
+            text: 'Just finished a great walk! 🚶‍♀️',
+            createdAt: Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 60 * 1000))
+          }
+        }
+      ];
+      
       setActivityLoading(false);
-      setActivityFeed([]);
+      setActivityFeed(mockActivities);
       setMissedCheckIns([]);
       setRequestsForAttention([]);
       return;
