@@ -11,10 +11,13 @@ Transform the SMS notification system from subscription-based (unlimited SMS for
 ## ⚠️ Critical Requirements
 
 1. **SAFETY FIRST:** If user has 0 credits and only SMS-enabled besties, BLOCK check-in creation entirely
-2. **NO BREAKING CHANGES:** All existing functionality must continue to work
-3. **ATOMIC OPERATIONS:** Credit deduction must be transactional with SMS sending
-4. **AUDIT TRAIL:** Track every SMS sent in separate collection
-5. **STRIPE INTEGRATION:** Support both recurring subscriptions and one-time payments
+2. **EMERGENCY OVERRIDE:** Allow 1 free SMS for emergency SOS even at 0 credits (creates negative balance)
+3. **RATE LIMITING:** Maximum 5 SMS per hour per user to prevent abuse
+4. **NO BREAKING CHANGES:** All existing functionality must continue to work
+5. **ATOMIC OPERATIONS:** Credit deduction must be transactional with SMS sending
+6. **AUDIT TRAIL:** Track every SMS sent in separate collection
+7. **STRIPE INTEGRATION:** Support both recurring subscriptions and one-time payments with retry logic
+8. **TIMEZONE AWARE:** Credits refresh at midnight in user's timezone, not UTC
 
 ---
 
@@ -42,6 +45,14 @@ smsCredits: {
   currentCycleUsed: 0,     // SMS sent this billing cycle
   lastUsedAt: Timestamp | null,
 
+  // Rate limiting (NEW)
+  hourlyCount: 0,          // SMS sent in current hour
+  hourlyResetAt: Timestamp | null,  // When hourly count resets
+
+  // Emergency override (NEW)
+  emergencyOverrideUsed: 0,  // Number of emergency SMS sent at negative balance
+  hasNegativeBalance: false, // Flag if user owes credits
+
   // Extra credit purchases (array of purchases)
   extraPurchases: [
     {
@@ -53,6 +64,9 @@ smsCredits: {
     }
   ]
 }
+
+// User settings (add timezone field)
+timezone: string | null,  // User's timezone (e.g., "America/New_York", "Australia/Sydney")
 
 // Keep existing smsSubscription object (for Stripe management)
 smsSubscription: {
@@ -123,7 +137,8 @@ async function grantFreeCredits(userId, amount)
 
 /**
  * Refresh subscription credits on renewal
- * Called by cron job on subscription anniversary
+ * Called by cron job on subscription anniversary (timezone-aware)
+ * Uses user's timezone to calculate midnight on anniversary
  */
 async function refreshSubscriptionCredits(userId)
 
@@ -165,6 +180,24 @@ async function expireOldCredits()
    - If still fails, log to `admin_alerts` collection for manual review
    - Return `{ success: false, error: 'message' }`
 
+4. **refreshSubscriptionCredits (Timezone-Aware):**
+   - Get user's timezone from `users.timezone` field (default: 'UTC' if not set)
+   - Use moment-timezone or date-fns-tz to calculate next renewal
+   - Calculate "midnight in user's timezone" on subscription anniversary
+   - Set `subscriptionCredits = 15`
+   - Set `currentCycleUsed = 0` (reset monthly counter)
+   - Update `subscriptionRenewsAt` to next month's midnight in user's timezone
+   - Example:
+     - User timezone: "America/New_York" (EST/EDT)
+     - Subscription started: Jan 15, 2025 at 3pm EST
+     - Next renewal: Feb 15, 2025 at 12:00am EST (not UTC!)
+     - This ensures credits appear at midnight user time, not random UTC time
+
+5. **Timezone Detection (Frontend):**
+   - On user signup or first login, detect timezone using `Intl.DateTimeFormat().resolvedOptions().timeZone`
+   - Save to `users.timezone` field
+   - Allow user to change timezone in Settings
+
 ---
 
 ### **2. Modify SMS Sending Function**
@@ -203,12 +236,40 @@ async function sendSMSAlert(phoneNumber, message, metadata = {}) {
     throw new Error('SMS metadata required: userId and recipientId');
   }
 
-  // STEP 2: Check available credits BEFORE sending
+  // STEP 2: Rate limiting check - max 5 SMS per hour
+  const userRef = db.collection('users').doc(userId);
+  const userDoc = await userRef.get();
+  const userData = userDoc.data();
+  const now = Date.now();
+
+  // Check if hourly limit exceeded
+  const hourlyResetAt = userData.smsCredits?.hourlyResetAt?.toMillis() || 0;
+  let hourlyCount = userData.smsCredits?.hourlyCount || 0;
+
+  if (now > hourlyResetAt) {
+    // Reset hourly counter
+    hourlyCount = 0;
+  }
+
+  if (hourlyCount >= 5) {
+    const minutesRemaining = Math.ceil((hourlyResetAt - now) / (1000 * 60));
+    throw new Error(`RATE_LIMIT_EXCEEDED: Maximum 5 SMS per hour. Try again in ${minutesRemaining} minutes.`);
+  }
+
+  // STEP 3: Check available credits BEFORE sending
   const { getAvailableCredits } = require('./smsCredits');
   const availableCredits = await getAvailableCredits(userId);
 
+  let isEmergencyOverride = false;
+
   if (availableCredits < 1) {
-    throw new Error('INSUFFICIENT_SMS_CREDITS');
+    // EMERGENCY OVERRIDE: Allow 1 free SMS for emergency SOS only
+    if (alertType === 'emergency_sos') {
+      isEmergencyOverride = true;
+      functions.logger.warn('Emergency override: Sending SMS with 0 credits', { userId, recipientId });
+    } else {
+      throw new Error('INSUFFICIENT_SMS_CREDITS');
+    }
   }
 
   // STEP 3: Send SMS via Twilio
@@ -231,11 +292,53 @@ async function sendSMSAlert(phoneNumber, message, metadata = {}) {
     throw smsError; // Don't deduct credit if SMS failed
   }
 
-  // STEP 4: Deduct credit AFTER successful send
-  const { deductCredit } = require('./smsCredits');
-  const deductResult = await deductCredit(userId, alertType, recipientId);
+  // STEP 4: Update hourly rate limit counter
+  const newHourlyResetAt = now > hourlyResetAt
+    ? admin.firestore.Timestamp.fromMillis(now + 60 * 60 * 1000)  // Reset in 1 hour
+    : userData.smsCredits?.hourlyResetAt;
 
-  // STEP 5: Log to audit trail
+  await userRef.update({
+    'smsCredits.hourlyCount': admin.firestore.FieldValue.increment(1),
+    'smsCredits.hourlyResetAt': newHourlyResetAt
+  });
+
+  // STEP 5: Deduct credit AFTER successful send (or mark as emergency override)
+  const { deductCredit } = require('./smsCredits');
+  let deductResult;
+
+  if (isEmergencyOverride) {
+    // Emergency override: Create negative balance
+    await userRef.update({
+      'smsCredits.balance': admin.firestore.FieldValue.increment(-1),
+      'smsCredits.subscriptionCredits': admin.firestore.FieldValue.increment(-1),
+      'smsCredits.hasNegativeBalance': true,
+      'smsCredits.emergencyOverrideUsed': admin.firestore.FieldValue.increment(1),
+      'smsCredits.totalUsed': admin.firestore.FieldValue.increment(1),
+      'smsCredits.lastUsedAt': admin.firestore.Timestamp.now()
+    });
+
+    deductResult = {
+      success: true,
+      creditType: 'emergency_override',
+      newBalance: -1
+    };
+
+    // Alert admin about negative balance
+    await db.collection('admin_alerts').add({
+      type: 'emergency_override_used',
+      userId,
+      recipientId,
+      twilioMessageSid: twilioResponse.sid,
+      message: 'User sent emergency SMS with 0 credits (negative balance)',
+      timestamp: admin.firestore.Timestamp.now(),
+      resolved: false
+    });
+  } else {
+    // Normal deduction
+    deductResult = await deductCredit(userId, alertType, recipientId);
+  }
+
+  // STEP 6: Log to audit trail
   const auditData = {
     userId,
     recipientId,
@@ -245,6 +348,7 @@ async function sendSMSAlert(phoneNumber, message, metadata = {}) {
     creditType: deductResult.success ? deductResult.creditType : null,
     creditsDeducted: deductResult.success ? 1 : 0,
     balanceAfter: deductResult.success ? deductResult.newBalance : availableCredits,
+    isEmergencyOverride,
     phoneNumber,
     twilioMessageSid: twilioResponse.sid,
     sentAt: admin.firestore.Timestamp.now(),
@@ -254,8 +358,8 @@ async function sendSMSAlert(phoneNumber, message, metadata = {}) {
 
   await db.collection('sms_usage').add(auditData);
 
-  // STEP 6: If deduction failed, alert admin
-  if (!deductResult.success) {
+  // STEP 7: If deduction failed (and not emergency), alert admin
+  if (!deductResult.success && !isEmergencyOverride) {
     await db.collection('admin_alerts').add({
       type: 'sms_credit_deduction_failed',
       userId,
@@ -541,6 +645,102 @@ case 'customer.subscription.deleted':
       // Existing donation cancellation logic (keep as-is)
       // ...
     }
+  }
+  break;
+```
+
+4. **Handle payment failures and retry logic (NEW):**
+
+```javascript
+case 'invoice.payment_failed':
+  const failedInvoice = event.data.object;
+  const subscriptionId = failedInvoice.subscription;
+
+  // Find user by subscription ID
+  const usersSnapshot = await db.collection('users')
+    .where('smsSubscription.stripeSubscriptionId', '==', subscriptionId)
+    .get();
+
+  if (!usersSnapshot.empty) {
+    const userDoc = usersSnapshot.docs[0];
+    const userId = userDoc.id;
+    const userData = userDoc.data();
+
+    // Get retry count from metadata
+    const retryCount = failedInvoice.attempt_count || 1;
+    const maxRetries = 3;
+
+    if (retryCount >= maxRetries) {
+      // Final retry failed - suspend service
+      await userDoc.ref.update({
+        'smsSubscription.paymentFailed': true,
+        'smsSubscription.paymentFailedAt': admin.firestore.Timestamp.now(),
+        'smsSubscription.gracePeriodEnds': admin.firestore.Timestamp.fromDate(
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)  // 7 day grace period
+        )
+      });
+
+      // Send in-app notification
+      await db.collection('notifications').add({
+        userId: userId,
+        type: 'payment_failed',
+        title: '⚠️ Payment Failed',
+        message: 'Your SMS subscription payment failed. Please update your payment method within 7 days to avoid service interruption.',
+        actionUrl: '/settings',
+        createdAt: admin.firestore.Timestamp.now(),
+        read: false,
+        priority: 'high'
+      });
+
+      functions.logger.warn('SMS subscription payment failed (max retries)', {
+        userId,
+        subscriptionId,
+        retryCount
+      });
+    } else {
+      // Still retrying - send warning notification
+      await db.collection('notifications').add({
+        userId: userId,
+        type: 'payment_retry',
+        title: '⚠️ Payment Retry',
+        message: `We'll retry your payment soon. Please ensure your payment method is valid. (Attempt ${retryCount}/${maxRetries})`,
+        actionUrl: '/settings',
+        createdAt: admin.firestore.Timestamp.now(),
+        read: false
+      });
+
+      functions.logger.info('SMS subscription payment retry', {
+        userId,
+        subscriptionId,
+        retryCount
+      });
+    }
+  }
+  break;
+
+case 'invoice.payment_action_required':
+  const actionInvoice = event.data.object;
+  const actionSubscriptionId = actionInvoice.subscription;
+
+  // Find user and notify them to complete 3D Secure
+  const actionUsersSnapshot = await db.collection('users')
+    .where('smsSubscription.stripeSubscriptionId', '==', actionSubscriptionId)
+    .get();
+
+  if (!actionUsersSnapshot.empty) {
+    const userDoc = actionUsersSnapshot.docs[0];
+    const userId = userDoc.id;
+
+    await db.collection('notifications').add({
+      userId: userId,
+      type: 'payment_action_required',
+      title: '⚠️ Payment Action Required',
+      message: 'Your bank requires additional verification. Please complete the payment to continue your SMS subscription.',
+      actionUrl: actionInvoice.hosted_invoice_url,  // Stripe hosted page for 3DS
+      createdAt: admin.firestore.Timestamp.now(),
+      read: false,
+      priority: 'high'
+    });
   }
   break;
 ```
@@ -1296,6 +1496,8 @@ git push origin claude/sms-credit-brainstorm-01Fcb4R6dgkeCZTQDrUFXhj5
      - `checkout.session.completed`
      - `customer.subscription.deleted`
      - `invoice.payment_succeeded` ← **NEW - add this!**
+     - `invoice.payment_failed` ← **NEW - add this!**
+     - `invoice.payment_action_required` ← **NEW - add this!**
    - [ ] Copy webhook signing secret
    - [ ] Update Firebase config: `firebase functions:config:set stripe.webhook_secret="whsec_..."`
    - [ ] Redeploy functions: `firebase deploy --only functions`
@@ -1528,11 +1730,15 @@ After deployment, monitor these metrics:
 - `functions/core/admin/grantFreeCredits.js` - Admin function
 
 **Critical Requirements:**
-1. Atomic credit deduction (use Firestore transactions)
-2. Block check-in if 0 credits + SMS-only besties
-3. Audit trail in `sms_usage` collection
-4. Retry logic if deduction fails
-5. Support both subscription and one-time payments in Stripe
+1. **Atomic credit deduction** (use Firestore transactions)
+2. **Block check-in** if 0 credits + SMS-only besties
+3. **Audit trail** in `sms_usage` collection
+4. **Retry logic** if deduction fails
+5. **Support both subscription and one-time payments** in Stripe
+6. **Emergency override** - Allow 1 free SMS for SOS at 0 credits (negative balance)
+7. **Rate limiting** - Maximum 5 SMS per hour per user
+8. **Stripe payment retry** - 3 automatic retries with 7-day grace period
+9. **Timezone-aware refresh** - Credits refresh at midnight in user's timezone
 
 **Testing:**
 - Unit tests for credit functions
@@ -1541,7 +1747,10 @@ After deployment, monitor these metrics:
 
 **Deployment:**
 - Deploy backend + frontend together
-- Update Stripe webhook with `invoice.payment_succeeded` event
+- Update Stripe webhook with new events:
+  - `invoice.payment_succeeded`
+  - `invoice.payment_failed`
+  - `invoice.payment_action_required`
 - Run database migration for existing users
 - Grant free credits to first 100 users (optional)
 
