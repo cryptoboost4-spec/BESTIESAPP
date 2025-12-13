@@ -1,4 +1,4 @@
-import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../utils/hapticFeedback';
 import InfoButton from './InfoButton';
@@ -6,7 +6,7 @@ import RideshareModal from './checkin/RideshareModal';
 import WalkingModal from './checkin/WalkingModal';
 import QuickMeetModal from './checkin/QuickMeetModal';
 
-const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction, currentTutorialStep, allowQuickCheckInClick = false, onTutorialModalComplete }, ref) => {
+const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction, currentTutorialStep, allowQuickCheckInClick = false, onTutorialModalComplete, onModalStateChange }, ref) => {
   const navigate = useNavigate();
   const [showRideshareModal, setShowRideshareModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
@@ -14,6 +14,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
   
   // Refs for tutorial highlighting
   const containerRef = useRef(null);
+  const threeButtonsContainerRef = useRef(null);
   const rideshareButtonRef = useRef(null);
   const walkingButtonRef = useRef(null);
   const quickMeetButtonRef = useRef(null);
@@ -22,6 +23,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
   // Expose refs to parent component
   useImperativeHandle(ref, () => ({
     containerRef: containerRef.current,
+    threeButtonsContainer: threeButtonsContainerRef.current,
     rideshareButton: rideshareButtonRef.current,
     walkingButton: walkingButtonRef.current,
     quickMeetButton: quickMeetButtonRef.current,
@@ -32,6 +34,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
   const isGreyedOut = isTutorialMode && currentTutorialStep === 'welcome';
   const isDisabled = isTutorialMode && currentTutorialStep === 'allButtons';
 
+  // Track modal state and notify parent when any modal opens/closes
+  useEffect(() => {
+    const isAnyModalOpen = showRideshareModal || showWalkingModal || showQuickMeetModal;
+    onModalStateChange?.(isAnyModalOpen);
+  }, [showRideshareModal, showWalkingModal, showQuickMeetModal, onModalStateChange]);
+
   return (
     <>
       <div ref={containerRef} className="mb-6 sticky top-0 z-[50] bg-white dark:bg-gray-900 py-2 -mx-4 px-4">
@@ -41,7 +49,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
         </div>
 
         {/* Top row - 3 small buttons */}
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div ref={threeButtonsContainerRef} className="grid grid-cols-3 gap-3 mb-3">
           {/* Rideshare Button */}
           <button
             ref={rideshareButtonRef}

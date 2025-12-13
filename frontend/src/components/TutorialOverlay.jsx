@@ -275,7 +275,7 @@ const TutorialOverlay = ({
       <TutorialTooltip
         title={tooltipConfig.title}
         body={tooltipConfig.body}
-        buttonText={tooltipConfig.buttonText || 'Next'}
+        buttonText={tooltipConfig.buttonText === null ? null : (tooltipConfig.buttonText || 'Next')}
         onNext={handleNext}
         onBack={onStepBack}
         onSkip={tooltipConfig.onSkip || onTutorialComplete}

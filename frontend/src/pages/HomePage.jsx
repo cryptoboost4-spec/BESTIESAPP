@@ -28,6 +28,8 @@ const HomePage = () => {
   // Invite Friends modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
   
+  // Track if tutorial modal is open (to hide tutorial overlay)
+  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
   const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
@@ -379,8 +381,8 @@ const HomePage = () => {
           element = quickCheckInButtonsRef.current.containerRef || null;
           break;
         case 'quickCheckIns':
-          // Highlight container (all 3 quick buttons will be highlighted via CSS)
-          element = quickCheckInButtonsRef.current.containerRef || null;
+          // Highlight only the 3-button grid (not the custom button)
+          element = quickCheckInButtonsRef.current.threeButtonsContainer || null;
           break;
         case 'afterQuickCheckIn':
           // No element highlighted - show message
@@ -424,7 +426,7 @@ const HomePage = () => {
       case 'welcome':
         return {
           title: 'Let\'s Learn Check-Ins! 📍',
-          body: "We're going to teach you how to use check-ins to keep yourself safe. This is your check-in hub where the magic happens!",
+          body: "We're going to teach you how to use check-ins to keep yourself safe.",
           buttonText: 'Let\'s Go',
           onNext: () => handleTutorialNext(),
           onSkip: handleSkipTutorial,
@@ -545,6 +547,7 @@ const HomePage = () => {
               onTutorialAction={handleTutorialAction}
               allowQuickCheckInClick={currentTutorialStep === 'quickCheckIns'}
               onTutorialModalComplete={handleTutorialModalComplete}
+              onModalStateChange={setIsTutorialModalOpen}
             />
 
             {/* Living Circle - DO NOT REMOVE */}
@@ -735,7 +738,7 @@ const HomePage = () => {
 
 
       {/* Tutorial Overlay - NEW FLOW */}
-      {shouldShowTutorial && tooltipConfig && (
+      {shouldShowTutorial && tooltipConfig && !isTutorialModalOpen && (
             <TutorialOverlay
               currentStep={currentTutorialStep}
               onStepComplete={handleTutorialNext}
