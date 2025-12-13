@@ -10,7 +10,6 @@ const NotificationSettings = ({
   pushNotificationsSupported,
   pushNotificationsEnabled,
   loading,
-  smsWeeklyCount,
   onOpenTestModal
 }) => {
   const handleConnectTelegram = () => {
@@ -118,15 +117,12 @@ const NotificationSettings = ({
             <div className="flex items-center gap-2 flex-wrap">
               <div className="font-semibold text-text-primary flex items-center">
                 SMS Alerts
-                <InfoButton message="Text message alerts - currently free during beta (5 per week)." />
+                <InfoButton message="Text message alerts cost 1 credit per message. Subscribe for $2/month to get 15 credits." />
               </div>
-              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-semibold">
-                Free Beta
-              </span>
             </div>
             <div className="text-sm text-text-secondary">
               {userData?.notificationPreferences?.sms
-                ? `Active - ${smsWeeklyCount}/5 this week`
+                ? 'Active - Credits required'
                 : 'Not enabled'}
             </div>
           </div>

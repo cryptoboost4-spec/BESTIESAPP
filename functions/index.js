@@ -1118,11 +1118,15 @@ exports.sendScheduledSMS = functions.pubsub
             
             // Check if bestie has SMS enabled and phone number
             if (bestieData?.phoneNumber && 
-                bestieData?.notificationPreferences?.sms && 
-                bestieData?.smsSubscription?.active) {
+                bestieData?.notificationPreferences?.sms) {
               
               try {
-                await sendSMSAlert(bestieData.phoneNumber, smsMessage);
+                await sendSMSAlert(bestieData.phoneNumber, smsMessage, {
+                  userId: checkinData.userId,
+                  recipientId: bestieId,
+                  alertType: 'check_in',
+                  checkinId: checkinId
+                });
                 smsSent++;
                 functions.logger.info('SMS sent', { 
                   checkinId, 
@@ -1176,6 +1180,69 @@ exports.sendScheduledSMS = functions.pubsub
     }
   });
 
+/**
+ * Runs daily at 2am UTC
+ * Expires old free credits and extra purchased credits
+ */
+exports.expireOldSmsCredits = functions.pubsub
+  .schedule('0 2 * * *')  // 2am daily
+  .timeZone('UTC')
+  .onRun(async (context) => {
+    const { expireOldCredits } = require('./utils/smsCredits');
+    await expireOldCredits();
+    return null;
+  });
+
+/**
+ * Runs every hour
+ * Alerts users with low credit balance (< 5 credits)
+ */
+exports.sendLowCreditAlerts = functions.pubsub
+  .schedule('0 * * * *')  // Every hour
+  .timeZone('UTC')
+  .onRun(async (context) => {
+    const db = admin.firestore();
+    const { getAvailableCredits } = require('./utils/smsCredits');
+    
+    const usersSnapshot = await db.collection('users')
+      .where('smsSubscription.active', '==', true)
+      .get();
+
+    const now = Date.now();
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+
+      // Get available credits
+      const balance = await getAvailableCredits(userId);
+
+      // Check if low balance and hasn't been alerted recently
+      const lastAlerted = userData.smsCredits?.lastLowBalanceAlert?.toMillis() || 0;
+
+      if (balance < 5 && balance > 0 && (now - lastAlerted) > ONE_DAY) {
+        // Send in-app notification
+        await db.collection('notifications').add({
+          userId: userId,
+          type: 'low_sms_credits',
+          title: '⚠️ Low SMS Credits',
+          message: `You have ${balance} SMS credits remaining. Buy more to stay protected.`,
+          actionUrl: '/settings',
+          createdAt: admin.firestore.Timestamp.now(),
+          read: false
+        });
+
+        // Update last alerted timestamp
+        await userDoc.ref.update({
+          'smsCredits.lastLowBalanceAlert': admin.firestore.Timestamp.now()
+        });
+      }
+    }
+
+    return null;
+  });
+
 exports.trackCheckInReaction = trackCheckInReaction;
 exports.trackCheckInComment = trackCheckInComment;
 
@@ -1226,6 +1293,10 @@ exports.generateMilestones = functions.pubsub
 exports.createCheckoutSession = createCheckoutSession;
 exports.createPortalSession = createPortalSession;
 exports.stripeWebhook = stripeWebhook;
+
+// Admin
+const { grantFreeSmsCredits } = require('./core/admin/grantFreeCredits');
+exports.grantFreeSmsCredits = grantFreeSmsCredits;
 
 // Monitoring
 exports.monitorCriticalErrors = monitorCriticalErrors;

@@ -36,21 +36,41 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
     );
   }
 
-  const { amount, type } = data; // type: 'donation' or 'subscription'
+  const { amount, type } = data; // type: 'donation', 'subscription', or 'sms_extra'
 
   if (!amount || !type) {
     throw new functions.https.HttpsError('invalid-argument', 'Missing amount or type');
   }
 
   // Validate amount - only allow specific values
-  const validAmounts = type === 'subscription' ? [1] : [1, 5, 10];
+  const validAmounts = type === 'subscription'
+    ? [2]  // Only $2/month for SMS subscription
+    : type === 'sms_extra'
+      ? [1.50]  // Only $1.50 for extra SMS credits
+      : [1, 5, 10];  // Donation amounts
+
   if (!validAmounts.includes(amount)) {
     throw new functions.https.HttpsError(
       'invalid-argument',
       type === 'subscription'
-        ? 'SMS subscription must be $1/month'
-        : 'Donation amount must be $1, $5, or $10 per month'
+        ? 'SMS subscription must be $2/month'
+        : type === 'sms_extra'
+          ? 'Extra SMS credits must be $1.50'
+          : 'Donation amount must be $1, $5, or $10 per month'
     );
+  }
+
+  // Extra validation: Only active subscribers can buy extra credits
+  if (type === 'sms_extra') {
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    const userData = userDoc.data();
+
+    if (!userData?.smsSubscription?.active) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'You must have an active SMS subscription to purchase extra credits'
+      );
+    }
   }
 
   const userDoc = await db.collection('users').doc(context.auth.uid).get();
@@ -79,38 +99,52 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
       });
     }
 
+    // Determine mode based on type
+    const sessionMode = type === 'sms_extra' ? 'payment' : 'subscription';
+
+    // Product description
+    let productName, productDescription;
+    if (type === 'subscription') {
+      productName = 'SMS Credits Subscription';
+      productDescription = '15 SMS credits per month for safety check-ins';
+    } else if (type === 'sms_extra') {
+      productName = 'Extra SMS Credits';
+      productDescription = '15 additional SMS credits (expires on subscription renewal)';
+    } else {
+      productName = 'Besties Support';
+      productDescription = 'Help keep Besties free for everyone';
+    }
+
     // Create checkout session (with retry)
     const session = await retryApiCall(
       async () => {
         return await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      mode: type === 'subscription' ? 'subscription' : 'subscription', // Both are subscriptions
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: type === 'subscription' ? 'SMS Alerts Subscription' : 'Besties Support',
-              description: type === 'subscription'
-                ? 'Monthly SMS alerts for safety check-ins'
-                : 'Help keep Besties free for everyone',
+          customer: customerId,
+          payment_method_types: ['card'],
+          mode: sessionMode,  // 'payment' for one-time, 'subscription' for recurring
+          line_items: [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: productName,
+                  description: productDescription,
+                },
+                unit_amount: amount * 100, // Convert to cents
+                recurring: sessionMode === 'subscription' ? {
+                  interval: 'month',
+                } : undefined,  // No recurring for one-time payments
+              },
+              quantity: 1,
             },
-            unit_amount: amount * 100, // Convert to cents
-            recurring: {
-              interval: 'month',
-            },
+          ],
+          success_url: `${APP_URL}/subscription-success`,
+          cancel_url: `${APP_URL}/settings`,
+          metadata: {
+            firebaseUID: context.auth.uid,
+            type: type,
           },
-          quantity: 1,
-        },
-      ],
-      success_url: `${APP_URL}/subscription-success`,
-      cancel_url: `${APP_URL}/subscription-cancel`,
-      metadata: {
-        firebaseUID: context.auth.uid,
-        type: type,
-      },
-    });
+        });
       },
       { operationName: 'Create Stripe checkout session' }
     );

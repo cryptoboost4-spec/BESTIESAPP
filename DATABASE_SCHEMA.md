@@ -77,8 +77,47 @@
 | Field Name | Type | Default | Description |
 |------------|------|---------|-------------|
 | `active` | boolean | `false` | Premium SMS subscription active |
-| `plan` | string \| null | `null` | Subscription plan name |
+| `plan` | string \| null | `null` | Subscription plan name (e.g., `'sms_monthly_2'`) |
 | `startedAt` | Timestamp \| null | `null` | Subscription start date |
+| `stripeSubscriptionId` | string \| null | `null` | Stripe subscription ID |
+| `cancelledAt` | Timestamp \| null | `null` | Subscription cancellation date |
+| `paymentFailed` | boolean | `false` | Payment failed flag |
+| `paymentFailedAt` | Timestamp \| null | `null` | Payment failure timestamp |
+| `gracePeriodEnds` | Timestamp \| null | `null` | Grace period end date (7 days after payment failure) |
+
+### Nested: smsCredits
+| Field Name | Type | Default | Description |
+|------------|------|---------|-------------|
+| `balance` | number | `0` | Total available credits (calculated field) |
+| `freeCredits` | number | `0` | Promotional credits (expire after 1 month) |
+| `subscriptionCredits` | number | `0` | From $2/month plan (expire on renewal) |
+| `extraCredits` | number | `0` | From $1.50 purchases (expire on sub renewal) |
+| `freeCreditsGrantedAt` | Timestamp \| null | `null` | When free credits were granted |
+| `freeCreditsExpireAt` | Timestamp \| null | `null` | Free credits expire 1 month after grant |
+| `subscriptionRenewsAt` | Timestamp \| null | `null` | When subscription credits refresh |
+| `totalUsed` | number | `0` | Lifetime SMS count |
+| `currentCycleUsed` | number | `0` | SMS sent this billing cycle |
+| `lastUsedAt` | Timestamp \| null | `null` | Last SMS sent timestamp |
+| `hourlyCount` | number | `0` | SMS sent in current hour (rate limiting) |
+| `hourlyResetAt` | Timestamp \| null | `null` | When hourly count resets |
+| `emergencyOverrideUsed` | number | `0` | Number of emergency SMS sent at negative balance |
+| `hasNegativeBalance` | boolean | `false` | Flag if user owes credits |
+| `lastLowBalanceAlert` | Timestamp \| null | `null` | Last low balance alert timestamp |
+| `extraPurchases` | array | `[]` | Array of extra credit purchases (see below) |
+
+**extraPurchases array items:**
+| Field Name | Type | Description |
+|------------|------|-------------|
+| `creditsGranted` | number | Credits granted in this purchase |
+| `pricePaid` | number | Price paid (typically 1.50) |
+| `purchasedAt` | Timestamp | Purchase timestamp |
+| `expiresAt` | Timestamp | Expiration date (next subscription renewal) |
+| `creditsRemaining` | number | Remaining credits from this purchase |
+
+### User Settings
+| Field Name | Type | Default | Description |
+|------------|------|---------|-------------|
+| `timezone` | string \| null | `null` | User's timezone (e.g., "America/New_York", "Australia/Sydney") |
 
 ### Nested: donationStats
 | Field Name | Type | Default | Description |
@@ -334,6 +373,57 @@
 
 ---
 
+## SMS Usage Collection
+**Collection Path:** `sms_usage/{docId}`
+
+> **Purpose:** Audit trail for all SMS messages sent (credit tracking)
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| `userId` | string | ✅ | Who sent the alert |
+| `recipientId` | string | ✅ | Who received the SMS |
+| `alertType` | string | ✅ | Type: `'check_in'` \| `'emergency_sos'` \| `'duress_code'` |
+| `checkinId` | string \| null | ❌ | Check-in ID (if applicable) |
+| `sosId` | string \| null | ❌ | Emergency SOS ID (if applicable) |
+| `creditType` | string \| null | ❌ | Which pool was used: `'free'` \| `'subscription'` \| `'extra'` \| `'emergency_override'` |
+| `creditsDeducted` | number | ✅ | Credits deducted (typically 1) |
+| `balanceAfter` | number | ✅ | Credit balance after deduction |
+| `isEmergencyOverride` | boolean | ✅ | Whether emergency override was used |
+| `phoneNumber` | string | ✅ | Recipient phone (for debugging) |
+| `twilioMessageSid` | string \| null | ❌ | Twilio message ID |
+| `sentAt` | Timestamp | ✅ | When SMS was sent |
+| `status` | string | ✅ | Status: `'sent'` \| `'failed'` \| `'deduction_failed'` |
+| `errorMessage` | string \| null | ❌ | Error message if failed |
+
+## Admin Actions Collection
+**Collection Path:** `admin_actions/{docId}`
+
+> **Purpose:** Log all admin actions for audit trail
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| `adminId` | string | ✅ | Admin user ID who performed action |
+| `action` | string | ✅ | Action type (e.g., `'grant_free_sms_credits'`) |
+| `targetUserId` | string | ❌ | Target user ID (if applicable) |
+| `amount` | number | ❌ | Amount (if applicable, e.g., credits granted) |
+| `timestamp` | Timestamp | ✅ | When action was performed |
+
+## Admin Alerts Collection
+**Collection Path:** `admin_alerts/{docId}`
+
+> **Purpose:** Alerts for admin review (credit deduction failures, emergency overrides, etc.)
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| `type` | string | ✅ | Alert type (e.g., `'sms_credit_deduction_failed'`, `'emergency_override_used'`) |
+| `userId` | string | ✅ | User ID related to alert |
+| `recipientId` | string | ❌ | Recipient ID (if applicable) |
+| `twilioMessageSid` | string \| null | ❌ | Twilio message ID (if applicable) |
+| `message` | string | ❌ | Alert message |
+| `error` | string | ❌ | Error message (if applicable) |
+| `timestamp` | Timestamp | ✅ | When alert was created |
+| `resolved` | boolean | ✅ | Whether alert has been resolved |
+
 ## Analytics Collections
 
 ### analytics_cache
@@ -418,6 +508,19 @@
 ---
 
 ## 📝 Changelog
+
+### 2025-12-13
+- **Added SMS Credit System:**
+  - Added `smsCredits` nested object to users collection with all credit tracking fields
+  - Added `timezone` field to users collection for timezone-aware credit refresh
+  - Updated `smsSubscription.plan` to support `'sms_monthly_2'` plan
+  - Added `smsSubscription.stripeSubscriptionId`, `cancelledAt`, `paymentFailed`, `paymentFailedAt`, `gracePeriodEnds` fields
+  - Added `sms_usage` collection for SMS audit trail
+  - Added `admin_actions` collection for admin action logging
+  - Added `admin_alerts` collection for admin review alerts
+  - Credit system: $2/month = 15 credits, $1.50 = 15 extra credits
+  - Emergency override: Allows 1 free SMS for SOS at 0 credits
+  - Rate limiting: Maximum 5 SMS per hour per user
 
 ### 2025-11-28
 - **Added Telegram Integration as Notification Preference:**

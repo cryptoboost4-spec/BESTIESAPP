@@ -315,9 +315,15 @@ exports.triggerEmergencySOS = functions.https.onCall(async (data, context) => {
       }
 
       // 6. SMS (paid) - ONLY if free channels didn't work
-      if (!telegramSent && !messengerSent && bestieData.phoneNumber && bestieData.smsSubscription?.active) {
+      // Emergency override allows SMS even at 0 credits
+      if (!telegramSent && !messengerSent && bestieData.phoneNumber && bestieData.notificationPreferences?.sms) {
         try {
-          await sendSMSAlert(bestieData.phoneNumber, shortAlertMessage);
+          await sendSMSAlert(bestieData.phoneNumber, shortAlertMessage, {
+            userId: userId,
+            recipientId: bestieId,
+            alertType: 'emergency_sos',
+            sosId: sosRef.id
+          });
           notificationsSent.push('SMS');
         } catch (smsError) {
           functions.logger.warn('SMS failed for SOS:', smsError.message);

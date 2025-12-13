@@ -45,11 +45,37 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
       const type = session.metadata.type;
 
       if (type === 'subscription') {
-        // Activate SMS subscription
-        await db.collection('users').doc(firebaseUID).update({
+        // Get user data for timezone
+        const userRef = db.collection('users').doc(firebaseUID);
+        const userDoc = await userRef.get();
+        const userData = userDoc.data();
+        const timezone = userData?.timezone || 'UTC';
+
+        // Calculate subscription renewal date (1 month from now, at midnight in user's timezone)
+        const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
+        const now = new Date();
+        const nextMonth = new Date(now);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+        // Get midnight in user's timezone for next month
+        const zonedDate = utcToZonedTime(nextMonth, timezone);
+        zonedDate.setHours(0, 0, 0, 0);
+        const midnightInTimezone = zonedTimeToUtc(zonedDate, timezone);
+
+        const renewsAt = admin.firestore.Timestamp.fromDate(midnightInTimezone);
+
+        // Activate SMS subscription and grant 15 credits
+        await userRef.update({
           'smsSubscription.active': true,
+          'smsSubscription.plan': 'sms_monthly_2',
           'smsSubscription.stripeSubscriptionId': session.subscription,
           'smsSubscription.startedAt': admin.firestore.Timestamp.now(),
+
+          // Grant initial 15 credits
+          'smsCredits.subscriptionCredits': 15,
+          'smsCredits.subscriptionRenewsAt': renewsAt,
+          'smsCredits.balance': admin.firestore.FieldValue.increment(15),
+          'smsCredits.currentCycleUsed': 0  // Reset cycle counter
         });
 
         // Update badges to award subscriber badge
@@ -66,6 +92,23 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
           },
           'info'
         );
+      } else if (type === 'sms_extra') {
+        // Handle extra credit purchase (one-time payment)
+        const userRef = db.collection('users').doc(firebaseUID);
+        const userDoc = await userRef.get();
+        const userData = userDoc.data();
+
+        // Get expiration date (user's next subscription renewal)
+        const expiresAt = userData.smsCredits?.subscriptionRenewsAt ||
+                          admin.firestore.Timestamp.fromDate(
+                            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                          );
+
+        // Add to extraPurchases array
+        const { addExtraCredits } = require('../../utils/smsCredits');
+        await addExtraCredits(firebaseUID, 15, expiresAt);
+
+        functions.logger.info('Extra SMS credits purchased', { userId: firebaseUID });
       } else if (type === 'donation') {
         // Track donation
         const amount = session.amount_total / 100;
@@ -83,6 +126,123 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
         // Update badges to check for donor badges
         await updateUserBadges(firebaseUID);
+      }
+      break;
+
+    case 'invoice.payment_succeeded':
+      const invoice = event.data.object;
+
+      // Check if this is a subscription renewal (not first payment)
+      if (invoice.billing_reason === 'subscription_cycle') {
+        const subscriptionId = invoice.subscription;
+
+        // Find user by subscription ID
+        const usersSnapshot = await db.collection('users')
+          .where('smsSubscription.stripeSubscriptionId', '==', subscriptionId)
+          .get();
+
+        if (!usersSnapshot.empty) {
+          const userDoc = usersSnapshot.docs[0];
+          const userId = userDoc.id;
+
+          // Refresh subscription credits (call helper function)
+          const { refreshSubscriptionCredits } = require('../../utils/smsCredits');
+          await refreshSubscriptionCredits(userId);
+
+          functions.logger.info('Subscription credits refreshed', { userId });
+        }
+      }
+      break;
+
+    case 'invoice.payment_failed':
+      const failedInvoice = event.data.object;
+      const subscriptionId = failedInvoice.subscription;
+
+      // Find user by subscription ID
+      const failedUsersSnapshot = await db.collection('users')
+        .where('smsSubscription.stripeSubscriptionId', '==', subscriptionId)
+        .get();
+
+      if (!failedUsersSnapshot.empty) {
+        const userDoc = failedUsersSnapshot.docs[0];
+        const userId = userDoc.id;
+        const userData = userDoc.data();
+
+        // Get retry count from metadata
+        const retryCount = failedInvoice.attempt_count || 1;
+        const maxRetries = 3;
+
+        if (retryCount >= maxRetries) {
+          // Final retry failed - suspend service
+          await userDoc.ref.update({
+            'smsSubscription.paymentFailed': true,
+            'smsSubscription.paymentFailedAt': admin.firestore.Timestamp.now(),
+            'smsSubscription.gracePeriodEnds': admin.firestore.Timestamp.fromDate(
+              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)  // 7 day grace period
+            )
+          });
+
+          // Send in-app notification
+          await db.collection('notifications').add({
+            userId: userId,
+            type: 'payment_failed',
+            title: '⚠️ Payment Failed',
+            message: 'Your SMS subscription payment failed. Please update your payment method within 7 days to avoid service interruption.',
+            actionUrl: '/settings',
+            createdAt: admin.firestore.Timestamp.now(),
+            read: false,
+            priority: 'high'
+          });
+
+          functions.logger.warn('SMS subscription payment failed (max retries)', {
+            userId,
+            subscriptionId,
+            retryCount
+          });
+        } else {
+          // Still retrying - send warning notification
+          await db.collection('notifications').add({
+            userId: userId,
+            type: 'payment_retry',
+            title: '⚠️ Payment Retry',
+            message: `We'll retry your payment soon. Please ensure your payment method is valid. (Attempt ${retryCount}/${maxRetries})`,
+            actionUrl: '/settings',
+            createdAt: admin.firestore.Timestamp.now(),
+            read: false
+          });
+
+          functions.logger.info('SMS subscription payment retry', {
+            userId,
+            subscriptionId,
+            retryCount
+          });
+        }
+      }
+      break;
+
+    case 'invoice.payment_action_required':
+      const actionInvoice = event.data.object;
+      const actionSubscriptionId = actionInvoice.subscription;
+
+      // Find user and notify them to complete 3D Secure
+      const actionUsersSnapshot = await db.collection('users')
+        .where('smsSubscription.stripeSubscriptionId', '==', actionSubscriptionId)
+        .get();
+
+      if (!actionUsersSnapshot.empty) {
+        const userDoc = actionUsersSnapshot.docs[0];
+        const userId = userDoc.id;
+
+        await db.collection('notifications').add({
+          userId: userId,
+          type: 'payment_action_required',
+          title: '⚠️ Payment Action Required',
+          message: 'Your bank requires additional verification. Please complete the payment to continue your SMS subscription.',
+          actionUrl: actionInvoice.hosted_invoice_url,  // Stripe hosted page for 3DS
+          createdAt: admin.firestore.Timestamp.now(),
+          read: false,
+          priority: 'high'
+        });
       }
       break;
 
@@ -104,6 +264,9 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
           await userDoc.ref.update({
             'smsSubscription.active': false,
             'smsSubscription.cancelledAt': admin.firestore.Timestamp.now(),
+
+            // DO NOT clear extra credits - they remain valid until expiration
+            // Only stop refreshing subscriptionCredits on next renewal
           });
 
           // Update badges to remove subscriber badge

@@ -72,10 +72,18 @@ exports.onDuressCodeUsed = functions.firestore
           }
 
           // SMS (expensive but critical - use short message)
-          try {
-            await sendSMSAlert(bestieData.phoneNumber, shortMessage);
-          } catch (error) {
-            functions.logger.warn('SMS failed for duress alert', { bestieId, error: error.message });
+          // Duress code is treated as emergency_sos for credit override
+          if (bestieData.notificationPreferences?.sms) {
+            try {
+              await sendSMSAlert(bestieData.phoneNumber, shortMessage, {
+                userId: alert.userId,
+                recipientId: bestieId,
+                alertType: 'emergency_sos',
+                sosId: context.params.alertId
+              });
+            } catch (error) {
+              functions.logger.warn('SMS failed for duress alert', { bestieId, error: error.message });
+            }
           }
         }
 

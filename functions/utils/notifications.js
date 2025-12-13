@@ -49,20 +49,161 @@ const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
 const db = admin.firestore();
 
 /**
- * Send SMS alert via Twilio (with retry logic)
+ * Send SMS alert via Twilio (with retry logic and credit management)
+ * @param {string} phoneNumber - Recipient phone number
+ * @param {string} message - SMS message content
+ * @param {object} metadata - Metadata for credit tracking: {userId, recipientId, alertType, checkinId, sosId}
  */
-async function sendSMSAlert(phoneNumber, message) {
+async function sendSMSAlert(phoneNumber, message, metadata = {}) {
+  const { userId, recipientId, alertType, checkinId = null, sosId = null } = metadata;
+
+  // STEP 1: Check if recipient requires credit deduction
+  // (Only deduct if sending to a user who has SMS as notification channel)
+  if (!userId || !recipientId) {
+    throw new Error('SMS metadata required: userId and recipientId');
+  }
+
+  // STEP 2: Rate limiting check - max 5 SMS per hour
+  const userRef = db.collection('users').doc(userId);
+  const userDoc = await userRef.get();
+  const userData = userDoc.data();
+  const now = Date.now();
+
+  // Check if hourly limit exceeded
+  const hourlyResetAt = userData.smsCredits?.hourlyResetAt?.toMillis() || 0;
+  let hourlyCount = userData.smsCredits?.hourlyCount || 0;
+
+  if (now > hourlyResetAt) {
+    // Reset hourly counter
+    hourlyCount = 0;
+  }
+
+  if (hourlyCount >= 5) {
+    const minutesRemaining = Math.ceil((hourlyResetAt - now) / (1000 * 60));
+    throw new Error(`RATE_LIMIT_EXCEEDED: Maximum 5 SMS per hour. Try again in ${minutesRemaining} minutes.`);
+  }
+
+  // STEP 3: Check available credits BEFORE sending
+  const { getAvailableCredits, deductCredit } = require('./smsCredits');
+  const availableCredits = await getAvailableCredits(userId);
+
+  let isEmergencyOverride = false;
+
+  if (availableCredits < 1) {
+    // EMERGENCY OVERRIDE: Allow 1 free SMS for emergency SOS only
+    if (alertType === 'emergency_sos') {
+      isEmergencyOverride = true;
+      functions.logger.warn('Emergency override: Sending SMS with 0 credits', { userId, recipientId });
+    } else {
+      throw new Error('INSUFFICIENT_SMS_CREDITS');
+    }
+  }
+
+  // STEP 4: Send SMS via Twilio
   const { client, phone } = getTwilioClient();
-  return retryApiCall(
-    async () => {
-      return await client.messages.create({
-        body: message,
-        from: phone,
-        to: phoneNumber,
-      });
-    },
-    { operationName: `SMS to ${phoneNumber}` }
-  );
+  let twilioResponse;
+
+  try {
+    twilioResponse = await retryApiCall(
+      async () => {
+        return await client.messages.create({
+          body: message,
+          from: phone,
+          to: phoneNumber,
+        });
+      },
+      { operationName: `SMS to ${phoneNumber}` }
+    );
+  } catch (smsError) {
+    functions.logger.error('Twilio SMS send failed:', smsError);
+    throw smsError; // Don't deduct credit if SMS failed
+  }
+
+  // STEP 5: Update hourly rate limit counter
+  const newHourlyResetAt = now > hourlyResetAt
+    ? admin.firestore.Timestamp.fromMillis(now + 60 * 60 * 1000)  // Reset in 1 hour
+    : userData.smsCredits?.hourlyResetAt;
+
+  await userRef.update({
+    'smsCredits.hourlyCount': admin.firestore.FieldValue.increment(1),
+    'smsCredits.hourlyResetAt': newHourlyResetAt
+  });
+
+  // STEP 6: Deduct credit AFTER successful send (or mark as emergency override)
+  let deductResult;
+
+  if (isEmergencyOverride) {
+    // Emergency override: Create negative balance
+    await userRef.update({
+      'smsCredits.balance': admin.firestore.FieldValue.increment(-1),
+      'smsCredits.subscriptionCredits': admin.firestore.FieldValue.increment(-1),
+      'smsCredits.hasNegativeBalance': true,
+      'smsCredits.emergencyOverrideUsed': admin.firestore.FieldValue.increment(1),
+      'smsCredits.totalUsed': admin.firestore.FieldValue.increment(1),
+      'smsCredits.lastUsedAt': admin.firestore.Timestamp.now()
+    });
+
+    deductResult = {
+      success: true,
+      creditType: 'emergency_override',
+      newBalance: -1
+    };
+
+    // Alert admin about negative balance
+    await db.collection('admin_alerts').add({
+      type: 'emergency_override_used',
+      userId,
+      recipientId,
+      twilioMessageSid: twilioResponse.sid,
+      message: 'User sent emergency SMS with 0 credits (negative balance)',
+      timestamp: admin.firestore.Timestamp.now(),
+      resolved: false
+    });
+  } else {
+    // Normal deduction
+    deductResult = await deductCredit(userId, alertType, recipientId);
+  }
+
+  // STEP 7: Log to audit trail
+  const auditData = {
+    userId,
+    recipientId,
+    alertType,
+    checkinId,
+    sosId,
+    creditType: deductResult.success ? deductResult.creditType : null,
+    creditsDeducted: deductResult.success ? 1 : 0,
+    balanceAfter: deductResult.success ? deductResult.newBalance : availableCredits,
+    isEmergencyOverride,
+    phoneNumber,
+    twilioMessageSid: twilioResponse.sid,
+    sentAt: admin.firestore.Timestamp.now(),
+    status: deductResult.success ? 'sent' : 'deduction_failed',
+    errorMessage: deductResult.success ? null : deductResult.error
+  };
+
+  await db.collection('sms_usage').add(auditData);
+
+  // STEP 8: If deduction failed (and not emergency), alert admin
+  if (!deductResult.success && !isEmergencyOverride) {
+    await db.collection('admin_alerts').add({
+      type: 'sms_credit_deduction_failed',
+      userId,
+      recipientId,
+      twilioMessageSid: twilioResponse.sid,
+      error: deductResult.error,
+      timestamp: admin.firestore.Timestamp.now(),
+      resolved: false
+    });
+
+    functions.logger.error('Credit deduction failed but SMS sent:', {
+      userId,
+      twilioSid: twilioResponse.sid,
+      error: deductResult.error
+    });
+  }
+
+  return twilioResponse;
 }
 
 /**
@@ -312,15 +453,35 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
       } catch (whatsappError) {
         functions.logger.warn('WhatsApp failed, trying SMS...');
         // Fallback to SMS (expensive - use short message)
-        if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber && bestieData.smsSubscription?.active) {
-          await sendSMSAlert(bestieData.phoneNumber, shortMessage);
-          notificationsSent.push('SMS');
+        if (bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
+          try {
+            await sendSMSAlert(bestieData.phoneNumber, shortMessage, {
+              userId: checkIn.userId,
+              recipientId: bestieId,
+              alertType: 'check_in',
+              checkinId: checkInId
+            });
+            notificationsSent.push('SMS');
+          } catch (smsError) {
+            functions.logger.warn('SMS failed for check-in alert:', smsError.message);
+            notificationStatus.channelsFailed.push({ channel: 'SMS', error: smsError.message });
+          }
         }
       }
-    } else if (!telegramSent && !messengerSent && bestieData.notificationPreferences?.sms && bestieData.phoneNumber && bestieData.smsSubscription?.active) {
+    } else if (!telegramSent && !messengerSent && bestieData.notificationPreferences?.sms && bestieData.phoneNumber) {
       // SMS only (expensive - use short message) - only if no free channels available
-      await sendSMSAlert(bestieData.phoneNumber, shortMessage);
-      notificationsSent.push('SMS');
+      try {
+        await sendSMSAlert(bestieData.phoneNumber, shortMessage, {
+          userId: checkIn.userId,
+          recipientId: bestieId,
+          alertType: 'check_in',
+          checkinId: checkInId
+        });
+        notificationsSent.push('SMS');
+      } catch (smsError) {
+        functions.logger.warn('SMS failed for check-in alert:', smsError.message);
+        notificationStatus.channelsFailed.push({ channel: 'SMS', error: smsError.message });
+      }
     }
 
     // Track notification attempts

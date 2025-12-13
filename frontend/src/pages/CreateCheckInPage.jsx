@@ -58,6 +58,7 @@ const CreateCheckInPage = () => {
   const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [socialMediaExpanded, setSocialMediaExpanded] = useState(false);
+  const [showNoChannelModal, setShowNoChannelModal] = useState(false);
 
   // Form validation errors
   const [formErrors, setFormErrors] = useState({
@@ -1145,6 +1146,56 @@ const CreateCheckInPage = () => {
       });
     }
 
+    // Validate notification channels - check if user has credits if all besties only have SMS
+    const validateNotificationChannels = async () => {
+      // Get selected besties' notification preferences
+      const bestieRefs = realSelectedBesties.map(id => doc(db, 'users', id));
+      const bestieSnaps = await Promise.all(bestieRefs.map(ref => getDoc(ref)));
+
+      let hasValidChannel = false;
+      let allOnlySMS = true;
+
+      for (const snap of bestieSnaps) {
+        if (!snap.exists()) continue;
+
+        const bestieData = snap.data();
+        const prefs = bestieData.notificationPreferences || {};
+
+        // Check if bestie has any free channel enabled
+        if (prefs.telegram || prefs.email || prefs.facebook || prefs.push) {
+          hasValidChannel = true;
+          allOnlySMS = false;
+          break;
+        }
+
+        // If bestie has SMS enabled, check if we have credits
+        if (prefs.sms) {
+          // Check user's credit balance
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          const smsCredits = userDoc.data()?.smsCredits || {};
+          const balance = (smsCredits.freeCredits || 0) +
+                         (smsCredits.subscriptionCredits || 0) +
+                         (smsCredits.extraCredits || 0);
+
+          if (balance >= realSelectedBesties.length) {
+            hasValidChannel = true;
+          }
+        }
+      }
+
+      // If all besties only have SMS and user has no credits, block
+      if (allOnlySMS && !hasValidChannel) {
+        // Show detailed error modal
+        setShowNoChannelModal(true);
+        return false;
+      }
+
+      return true;
+    };
+
+    const isValid = await validateNotificationChannels();
+    if (!isValid) return;
+
     // Location is only required for custom check-ins (not quick check-ins)
     const isQuickCheckIn = location.state?.skipLocation || location.state?.quickType;
     if (!isQuickCheckIn && !locationInput.trim()) {
@@ -1545,6 +1596,49 @@ const CreateCheckInPage = () => {
           </div>
         )}
       </div>
+
+      {/* Cannot Create Check-In Modal */}
+      {showNoChannelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-text-primary mb-3">
+              🚫 Cannot Create Check-In
+            </h3>
+            <p className="text-text-secondary mb-4">
+              Your selected besties only have SMS notifications enabled, but you have no SMS credits remaining.
+            </p>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 mb-4">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-3">
+                Choose one of these options:
+              </p>
+              <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-2">
+                <li>• Purchase SMS credits ($2/month for 15 credits)</li>
+                <li>• Ask your besties to enable free channels (Telegram, Email)</li>
+                <li>• Add a bestie who has Telegram or Email enabled</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowNoChannelModal(false);
+                  navigate('/settings');
+                }}
+                className="btn btn-primary flex-1"
+              >
+                Buy SMS Credits
+              </button>
+              <button
+                onClick={() => setShowNoChannelModal(false)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
