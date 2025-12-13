@@ -132,12 +132,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
 
         {/* Name Input */}
         <div className="mb-6 relative" ref={inputContainerRef}>
-          {isTutorialMode && showNameHint && (
-            <div className="absolute left-1/2 -translate-x-1/2 -top-14 bg-purple-600 text-white text-sm px-4 py-2 rounded-lg shadow-xl animate-bounce z-[60] whitespace-nowrap">
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-purple-600"></div>
-              💡 Enter who you're meeting here
-            </div>
-          )}
           <label className="block text-sm font-semibold text-text-primary mb-2">
             Who are you meeting?
           </label>
