@@ -57,7 +57,10 @@ const TutorialTooltip = ({
 
       let arrowPos = 'top';
 
-      if (position === 'left') {
+      if (position === 'below') {
+        // Tooltip below button, arrow points up to button
+        arrowPos = 'top';
+      } else if (position === 'left') {
         // Tooltip above button, arrow points to LEFT side of button
         arrowPos = 'bottom-left';
       } else if (position === 'right') {
@@ -109,28 +112,37 @@ const TutorialTooltip = ({
 
     const rect = targetElement.getBoundingClientRect();
     const buttonTop = rect.top;
+    const buttonBottom = rect.bottom;
 
-    // ALWAYS position tooltip ABOVE the button
+    // Position tooltip based on position prop
     const spacing = 16; // Space between tooltip and button
-    let top = buttonTop - tooltipHeight - spacing;
+    let top;
 
-    // If tooltip would go off top of screen, shift it down slightly
-    // but NEVER let it cover the button
-    const minTop = 20; // Minimum distance from top of screen
-    if (top < minTop) {
-      // Shift down but ensure we don't cover button
-      top = Math.min(minTop, buttonTop - tooltipHeight - 8);
+    if (position === 'below') {
+      // Position tooltip BELOW the button
+      top = buttonBottom + spacing;
+    } else {
+      // ALWAYS position tooltip ABOVE the button (default behavior)
+      top = buttonTop - tooltipHeight - spacing;
+
+      // If tooltip would go off top of screen, shift it down slightly
+      // but NEVER let it cover the button
+      const minTop = 20; // Minimum distance from top of screen
+      if (top < minTop) {
+        // Shift down but ensure we don't cover button
+        top = Math.min(minTop, buttonTop - tooltipHeight - 8);
+      }
+
+      // Ensure tooltip stays above button (failsafe)
+      const maxTop = buttonTop - tooltipHeight - 8;
+      top = Math.min(top, maxTop);
     }
-
-    // Ensure tooltip stays above button (failsafe)
-    const maxTop = buttonTop - tooltipHeight - 8;
-    top = Math.min(top, maxTop);
 
     // Full width on mobile, centered with max-width on larger screens
     const isMobile = viewportWidth < 640; // sm breakpoint
 
     return {
-      top: `${Math.max(minTop, top)}px`,
+      top: `${top}px`,
       left: isMobile ? '1rem' : '50%',
       right: isMobile ? '1rem' : 'auto',
       transform: isMobile ? 'none' : 'translateX(-50%)',
@@ -272,34 +284,36 @@ const TutorialTooltip = ({
         )}
 
         <div className="flex flex-col gap-2 mt-4">
-          <div className="flex gap-3">
-            {showBack && onBack && (
+          {buttonText && (
+            <div className="flex gap-3">
+              {showBack && onBack && (
+                <button
+                  onClick={() => {
+                    haptic.light();
+                    onBack();
+                  }}
+                  className="flex-1 btn btn-secondary py-3 text-base"
+                  aria-label="Go back to previous step"
+                >
+                  ← Back
+                </button>
+              )}
               <button
-                onClick={() => {
-                  haptic.light();
-                  onBack();
+                onClick={handleNext}
+                className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 text-white font-bold py-3 text-base shadow-xl animate-pulse-slow whitespace-nowrap relative overflow-hidden group`}
+                aria-label={`${buttonText} - Step ${stepNumber} of ${totalSteps}`}
+                style={{
+                  backgroundSize: '200% 200%',
+                  animation: 'gradient-shift 3s ease infinite, pulse-slow 2s ease-in-out infinite'
                 }}
-                className="flex-1 btn btn-secondary py-3 text-base"
-                aria-label="Go back to previous step"
               >
-                ← Back
+                <span className="relative z-10">{buttonText} ✨</span>
+                {/* Shine effect on hover */}
+                <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
               </button>
-            )}
-            <button
-              onClick={handleNext}
-              className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 text-white font-bold py-3 text-base shadow-xl animate-pulse-slow whitespace-nowrap relative overflow-hidden group`}
-              aria-label={`${buttonText} - Step ${stepNumber} of ${totalSteps}`}
-              style={{
-                backgroundSize: '200% 200%',
-                animation: 'gradient-shift 3s ease infinite, pulse-slow 2s ease-in-out infinite'
-              }}
-            >
-              <span className="relative z-10">{buttonText} ✨</span>
-              {/* Shine effect on hover */}
-              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            </button>
-          </div>
-          {showSkip && onSkip && (
+            </div>
+          )}
+          {(showSkip || onSkip) && onSkip && (
             <button
               onClick={() => {
                 haptic.light();

@@ -170,8 +170,14 @@ const TutorialOverlay = ({
           isPaused ? 'bg-black/40' : 'bg-black/75'
         }`}
         onClick={(e) => {
-          // Prevent clicks outside highlighted area
-          e.stopPropagation();
+          // During quickCheckIns step, allow clicks through to buttons
+          // Otherwise, prevent clicks outside highlighted area
+          if (currentStep !== 'quickCheckIns') {
+            e.stopPropagation();
+          }
+        }}
+        style={{
+          pointerEvents: currentStep === 'quickCheckIns' ? 'none' : 'auto'
         }}
         aria-hidden="true"
       />
@@ -212,7 +218,7 @@ const TutorialOverlay = ({
         buttonText={tooltipConfig.buttonText || 'Next'}
         onNext={handleNext}
         onBack={onStepBack}
-        onSkip={onTutorialComplete}
+        onSkip={tooltipConfig.onSkip || onTutorialComplete}
         showBack={stepNumber > 1}
         showSkip={true}
         stepNumber={stepNumber}

@@ -28,6 +28,10 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
     customButton: customButtonRef.current,
   }));
 
+  // Determine if buttons should be greyed out (welcome step) or disabled (allButtons step)
+  const isGreyedOut = isTutorialMode && currentTutorialStep === 'welcome';
+  const isDisabled = isTutorialMode && currentTutorialStep === 'allButtons';
+
   return (
     <>
       <div ref={containerRef} className="mb-6 sticky top-0 z-[50] bg-white dark:bg-gray-900 py-2 -mx-4 px-4">
@@ -42,22 +46,32 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
           <button
             ref={rideshareButtonRef}
             onClick={() => {
-              if (isTutorialMode && !allowQuickCheckInClick) {
+              if (isDisabled || (isTutorialMode && !allowQuickCheckInClick)) {
                 return; // Disable during tutorial unless allowed
               }
               haptic.light();
               setShowRideshareModal(true);
             }}
             onKeyDown={(e) => {
+              if (isDisabled || (isTutorialMode && !allowQuickCheckInClick)) {
+                return;
+              }
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 haptic.light();
                 setShowRideshareModal(true);
               }
             }}
-            className={`card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white ${(currentTutorialStep === 'allButtons' || currentTutorialStep === 'quickCheckIns') ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''} ${isTutorialMode && !allowQuickCheckInClick ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isDisabled}
+            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white ${
+              isDisabled 
+                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+                : isGreyedOut 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
+            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create rideshare check-in"
-            tabIndex={0}
+            tabIndex={isDisabled ? -1 : 0}
           >
             <div className="text-3xl mb-2">🚗</div>
             <div className="font-display text-sm">Rideshare</div>
@@ -67,22 +81,32 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
           <button
             ref={walkingButtonRef}
             onClick={() => {
-              if (isTutorialMode && !allowQuickCheckInClick) {
+              if (isDisabled || (isTutorialMode && !allowQuickCheckInClick)) {
                 return; // Disable during tutorial unless allowed
               }
               haptic.light();
               setShowWalkingModal(true);
             }}
             onKeyDown={(e) => {
+              if (isDisabled || (isTutorialMode && !allowQuickCheckInClick)) {
+                return;
+              }
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 haptic.light();
                 setShowWalkingModal(true);
               }
             }}
-            className={`card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white ${(currentTutorialStep === 'allButtons' || currentTutorialStep === 'quickCheckIns') ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''} ${isTutorialMode && !allowQuickCheckInClick ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isDisabled}
+            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white ${
+              isDisabled 
+                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+                : isGreyedOut 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
+            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create walking check-in"
-            tabIndex={0}
+            tabIndex={isDisabled ? -1 : 0}
           >
             <div className="text-3xl mb-2">🚶‍♀️</div>
             <div className="font-display text-sm">Walking</div>
@@ -92,22 +116,32 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
           <button
             ref={quickMeetButtonRef}
             onClick={() => {
-              if (isTutorialMode && !allowQuickCheckInClick) {
+              if (isDisabled || (isTutorialMode && !allowQuickCheckInClick)) {
                 return; // Disable during tutorial unless allowed
               }
               haptic.light();
               setShowQuickMeetModal(true);
             }}
             onKeyDown={(e) => {
+              if (isDisabled || (isTutorialMode && !allowQuickCheckInClick)) {
+                return;
+              }
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 haptic.light();
                 setShowQuickMeetModal(true);
               }
             }}
-            className={`card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white ${(currentTutorialStep === 'allButtons' || currentTutorialStep === 'quickCheckIns') ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''} ${isTutorialMode && !allowQuickCheckInClick ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isDisabled}
+            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white ${
+              isDisabled 
+                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+                : isGreyedOut 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
+            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create quick meet check-in"
-            tabIndex={0}
+            tabIndex={isDisabled ? -1 : 0}
           >
             <div className="text-3xl mb-2">👤</div>
             <div className="font-display text-sm">Quick Meet</div>
@@ -118,26 +152,32 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
         <button
           ref={customButtonRef}
           onClick={() => {
-            if (isTutorialMode && currentTutorialStep === 'quickCheckIns') {
-              return; // Disable during quickCheckIns step
+            if (isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns')) {
+              return; // Disable during allButtons or quickCheckIns step
             }
             haptic.light();
             navigate('/create');
           }}
           onKeyDown={(e) => {
+            if (isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns')) {
+              return;
+            }
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              if (isTutorialMode && currentTutorialStep === 'quickCheckIns') {
-                return; // Disable during quickCheckIns step
-              }
               haptic.light();
               navigate('/create');
             }
           }}
-          disabled={isTutorialMode && currentTutorialStep === 'quickCheckIns'}
-          className={`w-full card p-4 hover:shadow-card-hover transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-rose-400 to-pink-500 text-white ${currentTutorialStep === 'custom' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''} ${isTutorialMode && currentTutorialStep === 'quickCheckIns' ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns')}
+          className={`w-full card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-rose-400 to-pink-500 text-white ${
+            isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns')
+              ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+              : isGreyedOut 
+              ? 'opacity-50 cursor-not-allowed' 
+              : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
+          } ${currentTutorialStep === 'custom' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
           aria-label="Create custom check-in"
-          tabIndex={0}
+          tabIndex={isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns') ? -1 : 0}
         >
           <div className="text-3xl mb-2">✨</div>
           <div className="font-display text-lg">Create Custom Check-In</div>
