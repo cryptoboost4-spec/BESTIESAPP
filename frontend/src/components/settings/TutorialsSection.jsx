@@ -64,7 +64,8 @@ const TutorialsSection = () => {
     };
 
     loadStates();
-  }, [currentUser, location.state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, location.state]); // tutorialStates intentionally excluded - we create fresh state object
 
   const handleRestartTutorial = async (tutorialName) => {
     haptic.light();
