@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import TutorialTooltip from './TutorialTooltip';
 import haptic from '../utils/hapticFeedback';
 
+// Tutorial overlay with improved scrolling behavior
+
 const TutorialOverlay = ({ 
   currentStep, 
   onStepComplete, 
@@ -47,33 +49,97 @@ const TutorialOverlay = ({
       });
     };
 
-    // FIRST: Scroll element into view to position just above bottom nav (before locking)
-    const rect = element.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const bottomNavHeight = 80; // Actual bottom nav height
-    const bufferAboveNav = 20; // Small buffer space above nav
-    const desiredBottomPosition = viewportHeight - bottomNavHeight - bufferAboveNav;
-
-    // Calculate if element bottom is too low (would be hidden/covered by nav)
-    const elementBottom = rect.bottom;
-
-    // If element is too close to or below the safe zone, scroll it up
-    if (elementBottom > desiredBottomPosition) {
-      // Position element so its bottom is at the desired position
-      const targetY = rect.top + window.scrollY - (desiredBottomPosition - rect.height);
-      window.scrollTo({
-        top: Math.max(0, targetY), // Don't scroll negative
-        behavior: 'instant'
-      });
-
-      // Small delay to ensure DOM is settled after scroll
-      requestAnimationFrame(() => {
-        lockScreen();
-      });
-    } else {
-      // Element is already visible in safe zone, lock immediately
-      lockScreen();
-    }
+    // FIRST: Scroll element into view, ensuring it and tooltip are visible
+    const scrollElementIntoView = () => {
+      const rect = element.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const bottomNavHeight = 80; // Bottom nav bar height
+      const tooltipHeight = 300; // Estimated tooltip height (conservative estimate)
+      const spacing = 16; // Space between element and tooltip
+      const topPadding = 20; // Padding from top of screen
+      const bottomPadding = 20; // Padding above nav bar
+      
+      // Calculate safe zone - we need space for both element and tooltip
+      // Tooltip can be above or below, so we need enough space for both scenarios
+      const totalNeededHeight = rect.height + tooltipHeight + spacing + topPadding + bottomPadding;
+      const availableHeight = viewportHeight - bottomNavHeight;
+      
+      // Get element's current position
+      const elementTop = rect.top + window.scrollY;
+      const elementBottom = elementTop + rect.height;
+      const currentScrollY = window.scrollY;
+      
+      // Calculate ideal position: center the element in the safe zone
+      // But ensure tooltip can fit above or below
+      const safeZoneTop = topPadding + tooltipHeight + spacing;
+      const safeZoneBottom = viewportHeight - bottomNavHeight - bottomPadding;
+      const safeZoneCenter = (safeZoneTop + safeZoneBottom) / 2;
+      
+      // Target: position element so its center aligns with safe zone center
+      const elementCenter = elementTop + rect.height / 2;
+      const targetElementCenter = safeZoneCenter;
+      const scrollOffset = targetElementCenter - (rect.top + rect.height / 2);
+      let targetScrollY = currentScrollY + scrollOffset;
+      
+      // But ensure element doesn't go off screen
+      // Minimum: element top should be at least at safeZoneTop
+      const minScrollY = elementTop - safeZoneTop;
+      // Maximum: element bottom should be at most at safeZoneBottom
+      const maxScrollY = elementBottom - safeZoneBottom;
+      
+      // Clamp target scroll
+      if (targetScrollY < minScrollY) {
+        targetScrollY = minScrollY;
+      } else if (targetScrollY > maxScrollY) {
+        targetScrollY = maxScrollY;
+      }
+      
+      // Also ensure we don't scroll beyond document bounds
+      const maxDocumentScroll = Math.max(0, document.documentElement.scrollHeight - viewportHeight);
+      targetScrollY = Math.max(0, Math.min(targetScrollY, maxDocumentScroll));
+      
+      // Only scroll if needed (more than 5px difference)
+      if (Math.abs(targetScrollY - currentScrollY) > 5) {
+        // Use smooth scroll for better UX
+        window.scrollTo({
+          top: targetScrollY,
+          behavior: 'smooth'
+        });
+        
+        // Wait for scroll to complete before locking
+        let scrollCheckCount = 0;
+        const maxChecks = 50; // Max 2.5 seconds (50 * 50ms)
+        
+        const checkScrollComplete = () => {
+          scrollCheckCount++;
+          const currentY = window.scrollY;
+          const scrollDiff = Math.abs(currentY - targetScrollY);
+          
+          // Check if scroll is complete (within 2px) or if we've waited too long
+          if (scrollDiff < 2 || scrollCheckCount >= maxChecks) {
+            // Scroll complete (or timeout), lock screen
+            // Small delay to ensure DOM is settled
+            setTimeout(() => {
+              lockScreen();
+            }, 50);
+          } else {
+            // Still scrolling, check again
+            setTimeout(checkScrollComplete, 50);
+          }
+        };
+        
+        // Start checking after smooth scroll begins
+        setTimeout(checkScrollComplete, 100);
+      } else {
+        // No scroll needed, lock immediately
+        requestAnimationFrame(() => {
+          lockScreen();
+        });
+      }
+    };
+    
+    // Start scrolling
+    scrollElementIntoView();
 
     function lockScreen() {
       // Lock screen - prevent scrolling
