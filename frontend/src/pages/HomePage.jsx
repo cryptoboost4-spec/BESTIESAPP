@@ -17,8 +17,6 @@ import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import InfoButton from '../components/InfoButton';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
-import AddBestieCard from '../components/AddBestieCard';
-import TutorialPromptCard from '../components/TutorialPromptCard';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import TutorialOverlay from '../components/TutorialOverlay';
 import { useTutorialState } from '../hooks/useTutorialState';
@@ -612,113 +610,7 @@ const HomePage = () => {
       <OfflineBanner />
 
       <div className="max-w-4xl mx-auto p-4 pb-20">
-        {/* =================================================================
-            ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
-            Safety Stats Section - Do not modify unless explicitly told by the user
-            ================================================================= */}
-        {/* Stats Card / Add Bestie Card / Tutorial Prompt Card */}
-        {activeCheckIns.length === 0 && (
-          <>
-            {/* Show "Create First Check-In" card when user has no besties and hasn't completed check-in tutorial */}
-            {!hasAnyBestie && !checkInTutorialComplete && (
-              <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50 animate-fade-in">
-                <div className="text-center">
-                  <div className="text-5xl mb-4">🛡️</div>
-                  <h3 className="font-display text-2xl text-text-primary mb-3">
-                    Learn How to Check In
-                  </h3>
-                  <p className="text-text-secondary mb-4 leading-relaxed">
-                    Let's walk you through creating your first check-in! You'll practice with a demo bestie, then add real besties afterward.
-                  </p>
-                  
-                  {/* Green highlight box */}
-                  <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-200 dark:border-green-700 rounded-xl p-4 mb-4">
-                    <p className="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">
-                      🎓 Practice Mode
-                    </p>
-                    <p className="text-xs text-green-700 dark:text-green-300">
-                      We'll guide you step-by-step with a demo bestie. No real alerts will be sent!
-                    </p>
-                  </div>
-                  
-                  {/* Blue highlight box */}
-                  <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 mb-6">
-                    <p className="text-xs text-blue-800 dark:text-blue-200">
-                      ⏱️ Takes about 2 minutes. You'll learn everything you need to know!
-                    </p>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      haptic.light();
-                      navigate('/create-check-in');
-                    }}
-                    className="btn btn-primary text-lg py-3 px-8 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-                  >
-                    Start Tutorial →
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Show Add Bestie Card when user has no besties but has completed check-in tutorial */}
-            {!hasAnyBestie && checkInTutorialComplete && (
-              <AddBestieCard 
-                onBestieAdded={() => {
-                  // BestieCelebrationModal will play automatically via App.jsx
-                  // The card will automatically hide when userData updates via real-time listener
-                  toast.success('Bestie added! 💜');
-                }} 
-              />
-            )}
-
-            {/* Show Tutorial Prompt Card when user has besties but hasn't completed tutorial */}
-            {hasAnyBestie && !tutorialComplete && !hasCompletedFirstCheckIn && (
-              <TutorialPromptCard
-                onStartTutorial={handleStartTutorial}
-                onSkip={handleSkipTutorial}
-              />
-            )}
-
-            {/* Show Stats Card when user has besties and has completed first check-in */}
-            {hasAnyBestie && hasCompletedFirstCheckIn && (
-              <div className="card p-6 mb-6 shadow-lg ring-2 ring-purple-200 dark:ring-purple-800 ring-opacity-50 animate-fade-in">
-                <div className="mb-4 flex items-center">
-                  <h3 className="font-display text-lg text-text-primary">Your Safety Stats</h3>
-                  <InfoButton message="Track your safety journey! These stats show your completed check-ins, bestie connections, and streaks. Keep building those safety habits! 💜" />
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-display text-primary">
-                      {userData?.stats?.completedCheckIns || 0}
-                    </div>
-                    <div className="text-sm text-text-secondary">Check-ins</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-display text-secondary">
-                      {userData?.stats?.totalBesties || 0}
-                    </div>
-                    <div className="text-sm text-text-secondary">Besties</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-display text-orange-500">
-                      {userData?.stats?.currentStreak || 0}
-                    </div>
-                    <div className="text-sm text-text-secondary">Current Streak</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-display text-accent">
-                      {userData?.stats?.longestStreak || 0}
-                    </div>
-                    <div className="text-sm text-text-secondary">Longest Streak</div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Active Alert Banner */}
+        {/* Active Alert Banner - Only thing that shows above check-in buttons */}
         <ActiveAlertBanner />
 
         {/* =================================================================
