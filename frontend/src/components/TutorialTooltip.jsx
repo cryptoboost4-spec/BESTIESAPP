@@ -113,6 +113,9 @@ const TutorialTooltip = ({
     const rect = targetElement.getBoundingClientRect();
     const buttonTop = rect.top;
     const buttonBottom = rect.bottom;
+    const viewportHeight = window.innerHeight;
+    const bottomNavHeight = 80; // Bottom nav bar height
+    const bottomPadding = 20; // Padding above nav bar
 
     // Position tooltip based on position prop
     const spacing = 16; // Space between tooltip and button
@@ -121,21 +124,47 @@ const TutorialTooltip = ({
     if (position === 'below') {
       // Position tooltip BELOW the button
       top = buttonBottom + spacing;
+      
+      // Ensure tooltip doesn't go below nav bar
+      const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
+      if (top + tooltipHeight > maxBottom) {
+        // Tooltip would go below nav, position it above button instead
+        top = buttonTop - tooltipHeight - spacing;
+        // But ensure it doesn't go off top
+        const minTop = 20;
+        if (top < minTop) {
+          top = minTop;
+        }
+      }
     } else {
       // ALWAYS position tooltip ABOVE the button (default behavior)
       top = buttonTop - tooltipHeight - spacing;
 
-      // If tooltip would go off top of screen, shift it down slightly
-      // but NEVER let it cover the button
+      // If tooltip would go off top of screen, try positioning below
       const minTop = 20; // Minimum distance from top of screen
       if (top < minTop) {
-        // Shift down but ensure we don't cover button
-        top = Math.min(minTop, buttonTop - tooltipHeight - 8);
+        // Try positioning below button instead
+        const belowTop = buttonBottom + spacing;
+        const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
+        
+        if (belowTop + tooltipHeight <= maxBottom) {
+          // Can fit below, use that
+          top = belowTop;
+        } else {
+          // Can't fit below either, position as high as possible without covering button
+          top = Math.max(minTop, buttonTop - tooltipHeight - 8);
+        }
       }
 
       // Ensure tooltip stays above button (failsafe)
       const maxTop = buttonTop - tooltipHeight - 8;
       top = Math.min(top, maxTop);
+      
+      // Final check: ensure tooltip doesn't go below nav bar
+      const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
+      if (top + tooltipHeight > maxBottom) {
+        top = maxBottom - tooltipHeight;
+      }
     }
 
     // Full width on mobile, centered with max-width on larger screens
