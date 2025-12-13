@@ -259,9 +259,10 @@ const TutorialOverlay = ({
       />
 
       {/* Highlighted Element Glow - positioned above overlay */}
-      {highlightedElementRef?.current && highlightRect && (
+      {highlightedElementRef?.current && highlightRect && currentStep !== 'quickCheckIns' && (
         <>
           {/* Glow effect around element - Enhanced */}
+          {/* Disabled for quickCheckIns step to prevent shadowing buttons */}
           <div
             className="fixed z-[92] pointer-events-none transition-all duration-500 tutorial-highlight-enhanced"
             style={{

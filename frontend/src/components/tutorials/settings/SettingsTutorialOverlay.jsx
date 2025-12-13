@@ -80,8 +80,7 @@ const SettingsTutorialOverlay = ({
 
       setPreviousNotificationState(currentState);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userData, currentStep, notificationSubStep, previousNotificationState]);
+  }, [userData, currentStep, notificationSubStep, previousNotificationState, onHighlightToggle]);
 
   // Handle toggle tooltip delay
   useEffect(() => {
@@ -103,8 +102,7 @@ const SettingsTutorialOverlay = ({
       }, 2000);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notificationSubStep, currentStep, notificationSettingsRef]);
+  }, [notificationSubStep, currentStep, notificationSettingsRef, onHighlightToggle]);
 
   // Reset notification sub-step when step changes
   useEffect(() => {
@@ -125,8 +123,7 @@ const SettingsTutorialOverlay = ({
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, userData]);
+  }, [currentStep, userData, notificationSubStep, onHighlightToggle]);
 
   // Reset messenger sub-step when step changes
   useEffect(() => {
@@ -299,8 +296,7 @@ const SettingsTutorialOverlay = ({
     setTimeout(() => {
       setTooltipConfig(adjustedConfigs[currentStep] || configs[currentStep]);
     }, 150);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, refs, hasMessenger, onPause]);
+  }, [currentStep, refs, hasMessenger, onPause, onNext]);
 
   if (!currentStep || !tooltipConfig) return null;
 
