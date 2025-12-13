@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import TutorialTooltip from './TutorialTooltip';
 import haptic from '../utils/hapticFeedback';
 
+// Tutorial overlay with improved scrolling behavior
+
 const TutorialOverlay = ({ 
   currentStep, 
   onStepComplete, 
