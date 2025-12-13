@@ -59,11 +59,6 @@ const TutorialOverlay = ({
       const topPadding = 20; // Padding from top of screen
       const bottomPadding = 20; // Padding above nav bar
       
-      // Calculate safe zone - we need space for both element and tooltip
-      // Tooltip can be above or below, so we need enough space for both scenarios
-      const totalNeededHeight = rect.height + tooltipHeight + spacing + topPadding + bottomPadding;
-      const availableHeight = viewportHeight - bottomNavHeight;
-      
       // Get element's current position
       const elementTop = rect.top + window.scrollY;
       const elementBottom = elementTop + rect.height;
@@ -76,7 +71,6 @@ const TutorialOverlay = ({
       const safeZoneCenter = (safeZoneTop + safeZoneBottom) / 2;
       
       // Target: position element so its center aligns with safe zone center
-      const elementCenter = elementTop + rect.height / 2;
       const targetElementCenter = safeZoneCenter;
       const scrollOffset = targetElementCenter - (rect.top + rect.height / 2);
       let targetScrollY = currentScrollY + scrollOffset;
