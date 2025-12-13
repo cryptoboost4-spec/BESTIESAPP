@@ -20,10 +20,13 @@ const TutorialOverlay = ({
   // Add state to track when scroll is complete - prevents tooltip flashing
   const [scrollComplete, setScrollComplete] = useState(false);
 
+
   // Lock screen and update highlight position when element changes
   useEffect(() => {
     // Reset scroll complete state when step changes
     setScrollComplete(false);
+
+
 
     if (!highlightedElementRef?.current) {
       setHighlightRect(null);
