@@ -35,7 +35,6 @@ const SettingsPage = () => {
 
   // SMS popup state
   const [showSMSPopup, setShowSMSPopup] = useState(false);
-  const [smsWeeklyCount, setSmsWeeklyCount] = useState(0);
 
   // Test alert modal state
   const [showTestAlertModal, setShowTestAlertModal] = useState(false);
@@ -132,24 +131,26 @@ const SettingsPage = () => {
     }
   }, [currentUser]);
 
-  // Load SMS weekly count
+  // Timezone detection on mount (if not set)
   useEffect(() => {
-    const loadSmsCount = async () => {
-      if (!currentUser) return;
+    const detectTimezone = async () => {
+      if (!currentUser || !userData) return;
 
-      try {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setSmsWeeklyCount(data.smsWeeklyCount || 0);
+      // Only set if user doesn't have timezone set
+      if (!userData.timezone) {
+        try {
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            timezone: timezone
+          });
+        } catch (error) {
+          console.error('Error setting timezone:', error);
         }
-      } catch (error) {
-        console.error('Error loading SMS count:', error);
       }
     };
 
-    loadSmsCount();
-  }, [currentUser]);
+    detectTimezone();
+  }, [currentUser, userData]);
 
   const toggleNotification = async (type) => {
     if (!currentUser) return;
@@ -164,10 +165,21 @@ const SettingsPage = () => {
         return;
       }
 
-      // Check weekly limit
-      if (!currentValue && smsWeeklyCount >= 5) {
-        toast.error('You\'ve reached the weekly limit of 5 SMS alerts. Limit resets every Monday.', { duration: 6000 });
-        return;
+      // NEW: Check if user has credits
+      if (!currentValue) {
+        // Fetch current credit balance
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const smsCredits = userDoc.data()?.smsCredits || {};
+        const balance = (smsCredits.freeCredits || 0) +
+                       (smsCredits.subscriptionCredits || 0) +
+                       (smsCredits.extraCredits || 0);
+
+        if (balance < 1) {
+          toast.error('You have no SMS credits. Purchase credits in Settings to enable SMS alerts.', {
+            duration: 6000
+          });
+          return;
+        }
       }
     }
 
@@ -336,7 +348,7 @@ const SettingsPage = () => {
   const handleSMSSubscription = async () => {
     setLoading(true);
     try {
-      const result = await apiService.createCheckoutSession({ amount: 1, type: 'subscription' });
+      const result = await apiService.createCheckoutSession({ amount: 2, type: 'subscription' });
 
       if (result.data && result.data.url) {
         window.location.href = result.data.url;
@@ -549,7 +561,6 @@ const SettingsPage = () => {
             pushNotificationsSupported={pushNotificationsSupported}
             pushNotificationsEnabled={pushNotificationsEnabled}
             loading={loading}
-            smsWeeklyCount={smsWeeklyCount}
             onOpenTestModal={() => {
               if (tutorial.tutorialActive && tutorial.currentStep === 1) {
                 tutorial.pauseTutorial();
@@ -772,12 +783,15 @@ const SettingsPage = () => {
                 SMS alerts are currently FREE during beta testing!
               </p>
 
-              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-                <p className="font-semibold mb-1">Free Tier Limits:</p>
-                <ul className="list-disc ml-4 space-y-1">
-                  <li>Up to 5 SMS alerts per week</li>
-                  <li>Resets every Monday</li>
-                  <li>You've used {smsWeeklyCount}/5 this week</li>
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
+                <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                  📱 About SMS Alerts
+                </h3>
+                <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <li>• SMS alerts cost 1 credit per message per bestie</li>
+                  <li>• Subscribe for $2/month to get 15 credits</li>
+                  <li>• Free channels (Telegram, Email) are always free</li>
+                  <li>• SMS is a fallback when free channels fail</li>
                 </ul>
               </div>
 
