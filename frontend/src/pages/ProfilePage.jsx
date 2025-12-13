@@ -517,7 +517,6 @@ const ProfilePage = () => {
             onTaskNavigation={handleTaskNavigation}
             disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 5}
             tutorialStep={tutorial.tutorialActive ? tutorial.currentStep : null}
-            tutorialStep={tutorial.tutorialActive ? tutorial.currentStep : null}
           />
         </div>
 
