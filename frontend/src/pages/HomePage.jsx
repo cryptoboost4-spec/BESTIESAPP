@@ -33,7 +33,7 @@ const HomePage = () => {
   
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
-  const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep, resetTutorial } = useTutorialState();
+  const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const [tutorialModalOpen, setTutorialModalOpen] = useState(false);
   const [tutorialFormStep, setTutorialFormStep] = useState(null);
