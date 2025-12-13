@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { MESSENGER_CONFIG } from '../../config/messenger';
@@ -7,11 +7,24 @@ import MessengerContactsList from './MessengerContactsList';
 import toast from 'react-hot-toast';
 import { isSMSSupported } from '../../utils/smsHelper';
 
-const MessengerLinkDisplay = ({ userId }) => {
+const MessengerLinkDisplay = forwardRef(({ userId, highlightedButton = null }, ref) => {
   const [copied, setCopied] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [activeContactCount, setActiveContactCount] = useState(0);
   const messengerLink = MESSENGER_CONFIG.getLinkForUser(userId);
+
+  const copyButtonRef = useRef(null);
+  const messengerButtonRef = useRef(null);
+  const whatsappButtonRef = useRef(null);
+  const smsButtonRef = useRef(null);
+
+  // Expose button refs to parent
+  useImperativeHandle(ref, () => ({
+    copyButton: copyButtonRef.current,
+    messengerButton: messengerButtonRef.current,
+    whatsappButton: whatsappButtonRef.current,
+    smsButton: smsButtonRef.current
+  }));
 
   // Listen to active contact count
   useEffect(() => {
@@ -30,6 +43,33 @@ const MessengerLinkDisplay = ({ userId }) => {
 
     return () => unsubscribe();
   }, [userId]);
+
+  // Animate highlighted buttons - pulse them in sequence
+  useEffect(() => {
+    const buttonRefs = {
+      messenger: messengerButtonRef.current,
+      whatsapp: whatsappButtonRef.current,
+      sms: smsButtonRef.current,
+      copy: copyButtonRef.current
+    };
+
+    const targetButton = buttonRefs[highlightedButton];
+    if (targetButton && highlightedButton) {
+      // Scale up and pulse
+      targetButton.style.transform = 'scale(1.15)';
+      targetButton.style.transition = 'transform 0.3s ease';
+      targetButton.classList.add('animate-pulse');
+
+      // Add a glowing ring effect
+      targetButton.style.boxShadow = '0 0 0 4px rgba(168, 85, 247, 0.4)';
+
+      return () => {
+        targetButton.classList.remove('animate-pulse');
+        targetButton.style.transform = '';
+        targetButton.style.boxShadow = '';
+      };
+    }
+  }, [highlightedButton]);
 
   const handleCopy = async () => {
     try {
@@ -83,6 +123,7 @@ Why use this?
       {/* Share Icons - Compact */}
       <div className="flex items-center justify-center gap-3 mb-3">
         <button
+          ref={messengerButtonRef}
           onClick={shareViaMessenger}
           className="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors"
           title="Share via Messenger"
@@ -92,6 +133,7 @@ Why use this?
           </svg>
         </button>
         <a
+          ref={whatsappButtonRef}
           href={`https://wa.me/?text=${encodeURIComponent(`Add me as your safety bestie! ${messengerLink}`)}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -103,6 +145,7 @@ Why use this?
           </svg>
         </a>
         <button
+          ref={smsButtonRef}
           onClick={(e) => {
             e.preventDefault();
             const message = `Add me as your safety bestie! ${messengerLink}`;
@@ -121,6 +164,7 @@ Why use this?
           </svg>
         </button>
         <button
+          ref={copyButtonRef}
           onClick={handleCopy}
           className={`w-10 h-10 rounded-full ${copied ? 'bg-green-500' : 'bg-purple-500 hover:bg-purple-600'} text-white flex items-center justify-center transition-colors`}
           title={copied ? 'Copied!' : 'Copy Link'}
@@ -166,6 +210,8 @@ Why use this?
       )}
     </div>
   );
-};
+});
+
+MessengerLinkDisplay.displayName = 'MessengerLinkDisplay';
 
 export default MessengerLinkDisplay;

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import TutorialOverlay from '../../TutorialOverlay';
 import SmallTooltip from '../SmallTooltip';
-import TutorialTooltip from '../../TutorialTooltip';
 
 /**
  * SettingsTutorialOverlay - Tutorial overlay for Settings page
@@ -55,6 +54,7 @@ const SettingsTutorialOverlay = ({
 
       setPreviousNotificationState(currentState);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userData, currentStep, notificationSubStep, previousNotificationState]);
 
   // Handle toggle tooltip delay
@@ -77,6 +77,7 @@ const SettingsTutorialOverlay = ({
       }, 2000);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notificationSubStep, currentStep, notificationSettingsRef]);
 
   // Reset notification sub-step when step changes
@@ -98,6 +99,7 @@ const SettingsTutorialOverlay = ({
         });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, userData]);
 
   useEffect(() => {
@@ -171,6 +173,7 @@ const SettingsTutorialOverlay = ({
     setTimeout(() => {
       setTooltipConfig(adjustedConfigs[currentStep] || configs[currentStep]);
     }, 150);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, refs, hasMessenger, onPause]);
 
   if (!currentStep || !tooltipConfig) return null;

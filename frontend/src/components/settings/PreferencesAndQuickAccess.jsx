@@ -1,7 +1,68 @@
-import React from 'react';
+import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import InfoButton from '../InfoButton';
 
-const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, userData, navigate }) => {
+const PreferencesAndQuickAccess = forwardRef(({ isDark, toggleDarkMode, toggleHoldData, userData, navigate, highlightedElement = null }, ref) => {
+  const darkModeToggleRef = useRef(null);
+  const dataRetentionToggleRef = useRef(null);
+
+  // Expose refs to parent
+  useImperativeHandle(ref, () => ({
+    darkModeToggle: darkModeToggleRef.current,
+    dataRetentionToggle: dataRetentionToggleRef.current
+  }));
+
+  // Animate highlighted toggles
+  useEffect(() => {
+    const toggleRefs = {
+      darkModeToggle: darkModeToggleRef.current,
+      dataRetentionToggle: dataRetentionToggleRef.current
+    };
+
+    const targetToggle = toggleRefs[highlightedElement];
+    if (targetToggle && highlightedElement) {
+      const knob = targetToggle.querySelector('div');
+      if (knob) {
+        let isOn = false;
+        let animationCount = 0;
+        const maxAnimations = 4; // 2 times
+
+        const animationInterval = setInterval(() => {
+          if (animationCount >= maxAnimations) {
+            clearInterval(animationInterval);
+            knob.style.transform = '';
+            targetToggle.style.backgroundColor = '';
+            return;
+          }
+
+          isOn = !isOn;
+          animationCount++;
+
+          if (isOn) {
+            knob.style.transition = 'transform 0.4s ease';
+            knob.style.transform = 'translateX(1.5rem)';
+            targetToggle.style.transition = 'background-color 0.4s ease';
+            targetToggle.style.backgroundColor = '#a855f7';
+          } else {
+            knob.style.transition = 'transform 0.4s ease';
+            knob.style.transform = 'translateX(0.25rem)';
+            targetToggle.style.transition = 'background-color 0.4s ease';
+            targetToggle.style.backgroundColor = '#d1d5db';
+          }
+        }, 800);
+
+        return () => {
+          clearInterval(animationInterval);
+          targetToggle.style.transform = '';
+          targetToggle.style.backgroundColor = '';
+          if (knob) {
+            knob.style.transform = '';
+            knob.style.transition = '';
+          }
+        };
+      }
+    }
+  }, [highlightedElement]);
+
   return (
     <>
       {/* Preferences */}
@@ -20,6 +81,7 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
               </div>
             </div>
             <button
+              ref={darkModeToggleRef}
               onClick={toggleDarkMode}
               className={`w-12 h-6 rounded-full transition-colors ${
                 isDark ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
@@ -52,6 +114,7 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
               </button>
             </div>
             <button
+              ref={dataRetentionToggleRef}
               onClick={toggleHoldData}
               className={`w-12 h-6 rounded-full transition-colors ${
                 userData?.settings?.holdData
@@ -105,6 +168,8 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
       </div>
     </>
   );
-};
+});
+
+PreferencesAndQuickAccess.displayName = 'PreferencesAndQuickAccess';
 
 export default PreferencesAndQuickAccess;
