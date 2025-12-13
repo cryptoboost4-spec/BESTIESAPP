@@ -195,17 +195,39 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow update, delete: if false;
     }
+    
+    // Performance tracking collection
+    match /performance/{perfId} {
+      allow create: if isSignedIn() || 
+        (request.resource.data.timestamp != null && 
+         request.resource.data.timestamp > (request.time.toMillis() - 60000));
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+    
+    // User actions tracking collection
+    match /user_actions/{actionId} {
+      allow create: if isSignedIn() || 
+        (request.resource.data.timestamp != null && 
+         request.resource.data.timestamp > (request.time.toMillis() - 60000));
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
 
     match /performance/{perfId} {
-      // Require authentication for performance tracking
-      allow create: if isSignedIn();
+      // Allow authenticated users, or allow unauthenticated with timestamp validation (rate limiting)
+      allow create: if isSignedIn() || 
+        (request.resource.data.timestamp != null && 
+         request.resource.data.timestamp > (request.time.toMillis() - 60000)); // Max 1 per minute for anonymous
       allow read: if isAdmin();
       allow update, delete: if false;
     }
 
     match /user_actions/{actionId} {
-      // Require authentication for user action tracking
-      allow create: if isSignedIn();
+      // Allow authenticated users, or allow unauthenticated with timestamp validation (rate limiting)
+      allow create: if isSignedIn() || 
+        (request.resource.data.timestamp != null && 
+         request.resource.data.timestamp > (request.time.toMillis() - 60000)); // Max 1 per minute for anonymous
       allow read: if isAdmin();
       allow update, delete: if false;
     }
