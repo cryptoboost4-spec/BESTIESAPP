@@ -237,6 +237,7 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
         <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
           {/* Customize Button */}
           <button
+            id="profile-customizer-button"
             onClick={() => setShowCustomizer(true)}
             className="w-10 h-10 rounded-full bg-gradient-primary text-white backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all text-lg"
             title="Customize your vibe"

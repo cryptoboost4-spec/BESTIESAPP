@@ -26,42 +26,33 @@ const ProfileTutorialOverlay = ({
     const configs = {
       1: {
         title: 'Your Profile',
-        body: "This is how your besties see you. Customize your photo, colors, and style to make it yours. Tap the edit button to get started.",
+        body: "This is how your besties see you - your vibe, your style, your personality. Make it uniquely yours so your friends know it's really you when they check in! 💜",
         buttonText: 'Next',
         position: 'below',
         highlightedElementRef: refs.profileCard
       },
       2: {
-        title: 'Make It Yours',
-        body: "Customize your profile with different layouts, backgrounds, and themes. Express yourself! Your besties will see your unique style.",
-        buttonText: 'Try It',
-        position: 'auto',
-        highlightedElementRef: refs.customizerButton,
-        requiresInteraction: true, // Pause tutorial and allow interaction
-        onTryIt: () => {
-          onPause?.();
-          // The customizer will be opened by the page component
-        }
+        title: 'Customize Your Background',
+        body: "You can change your background from here! Choose from different styles, colors, and themes to make your profile stand out. Express yourself! ✨",
+        buttonText: 'I\'ll do it later',
+        position: 'below',
+        highlightedElementRef: refs.customizerButton
       },
       3: {
         title: 'Complete Your Profile',
         body: isProfileComplete
-          ? "Great job! Your profile is looking good. You can always come back here to see what else you can add."
-          : "See what's left to set up. Complete your profile to unlock badges and get the most out of Besties. Tap any item to jump to that setting.",
+          ? "Great job! Your profile is looking good. Don't worry about the rest - you can always come back here to complete more tasks whenever you're ready! 💪"
+          : "Here's what you can still set up. Don't worry - you can complete these tasks later at your own pace! Tap any item to jump to that setting, or just continue the tutorial. 👍",
         buttonText: 'Next',
         position: 'auto',
         highlightedElementRef: refs.profileCompletion
       },
       4: {
         title: 'Earn Badges',
-        body: "Complete check-ins, add besties, and stay active to earn badges. Show off your achievements! Tap badges to see how to earn them.",
-        buttonText: 'Try It',
+        body: "Complete check-ins, add besties, and stay active to earn badges. Show off your achievements! You can come back later to explore how to earn each one. 🏆",
+        buttonText: 'Next',
         position: 'auto',
-        highlightedElementRef: refs.badgesSection,
-        requiresInteraction: true, // Pause tutorial and allow interaction
-        onTryIt: () => {
-          onPause?.();
-        }
+        highlightedElementRef: refs.badgesSection
       },
       5: {
         title: 'Track Your Progress',
@@ -71,9 +62,9 @@ const ProfileTutorialOverlay = ({
         highlightedElementRef: refs.statsSection
       },
       6: {
-        title: 'Fine-Tune Settings',
-        body: "Tap here to manage notifications, privacy, security, and more. Make Besties work exactly how you want it.",
-        buttonText: 'Got It! ✨',
+        title: 'Settings',
+        body: "Tap the Settings button below to manage notifications, privacy, security, and more - or finish the tutorial now and explore settings later. Your choice! ⚙️",
+        buttonText: 'Finish Tutorial',
         position: 'auto',
         highlightedElementRef: refs.settingsButton
       }

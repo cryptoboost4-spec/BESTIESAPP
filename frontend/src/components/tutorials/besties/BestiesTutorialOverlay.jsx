@@ -37,7 +37,7 @@ const BestiesTutorialOverlay = ({
         title: '✍️ Share with Your Besties',
         body: "Want to post something? Tap this button to share updates, photos, or just say hi. Your besties will see it in their feed. Give it a try! 🎉",
         buttonText: 'Try Posting',
-        position: 'right',
+        position: 'below',
         highlightedElementRef: refs.postButton
       },
       3: {

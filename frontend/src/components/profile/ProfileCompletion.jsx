@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 const ProfileCompletion = ({
   profileCompletion,
   animatedProgress,
-  onTaskNavigation
+  onTaskNavigation,
+  disableInteractions = false
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -117,8 +118,11 @@ const ProfileCompletion = ({
             </div>
             {!task.completed && (task.path || task.action) && (
               <button
-                onClick={() => onTaskNavigation(task)}
-                className="btn btn-sm btn-primary text-xs px-3 py-1"
+                onClick={() => !disableInteractions && onTaskNavigation(task)}
+                disabled={disableInteractions}
+                className={`btn btn-sm btn-primary text-xs px-3 py-1 ${
+                  disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 Go →
               </button>

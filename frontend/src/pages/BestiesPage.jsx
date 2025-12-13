@@ -44,6 +44,9 @@ const BestiesPage = () => {
   // Activity feed - using custom hook
   const { activityFeed, activityLoading, missedCheckIns, requestsForAttention } = useActivityFeed(currentUser, besties, userData);
 
+  // Mock posts for tutorial
+  const [mockTutorialPosts, setMockTutorialPosts] = useState([]);
+
   // Tutorial state
   const tutorial = useBestiesTutorialState();
   
@@ -57,6 +60,43 @@ const BestiesPage = () => {
       });
     }
   }, [location.state, tutorial]);
+
+  // Create mock tutorial posts when tutorial becomes active
+  useEffect(() => {
+    if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+      // Create 2 cute mock welcome messages
+      const mockPosts = [
+        {
+          id: 'mock-1',
+          type: 'post',
+          userId: 'BESTIES_TUTORIAL',
+          userName: 'Besties Team',
+          userPhoto: null,
+          text: "Hey bestie! 💜 Welcome to your private social space! This is where you'll see everything your besties share - check-ins, updates, and all the good stuff. No strangers, no algorithms, just you and your crew!",
+          photoURL: null,
+          createdAt: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
+          timestamp: new Date(Date.now() - 2 * 60 * 1000),
+          isMockTutorial: true
+        },
+        {
+          id: 'mock-2',
+          type: 'post',
+          userId: 'BESTIES_TUTORIAL',
+          userName: 'Besties Team',
+          userPhoto: null,
+          text: "Quick tip: You can react to posts with emojis, leave comments, and keep the conversation going. It's like your own private group chat, but prettier! ✨",
+          photoURL: null,
+          createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+          timestamp: new Date(Date.now() - 5 * 60 * 1000),
+          isMockTutorial: true
+        }
+      ];
+      setMockTutorialPosts(mockPosts);
+    } else {
+      // Clear mock posts when tutorial is not active
+      setMockTutorialPosts([]);
+    }
+  }, [tutorial.tutorialActive, tutorial.currentStep]);
   
   // Refs for highlighted elements
   const activityFeedRef = useRef(null);
@@ -487,16 +527,28 @@ const BestiesPage = () => {
           {/* Activity Feed */}
           {!activityLoading && (
             <ActivityFeed
-              activityFeed={activityFeed.filter(activity => {
-                // Filter out activities that are already shown in Needs Attention section
-                const isInMissedCheckIns = missedCheckIns.some(m => 
-                  m.userId === activity.userId && activity.status === 'alerted'
-                );
-                const isInAttentionRequests = requestsForAttention.some(r => 
-                  r.userId === activity.userId && activity.type === 'checkin'
-                );
-                return !isInMissedCheckIns && !isInAttentionRequests;
-              })}
+              activityFeed={
+                tutorial.tutorialActive && tutorial.currentStep === 1
+                  ? [...mockTutorialPosts, ...activityFeed.filter(activity => {
+                      // Filter out activities that are already shown in Needs Attention section
+                      const isInMissedCheckIns = missedCheckIns.some(m => 
+                        m.userId === activity.userId && activity.status === 'alerted'
+                      );
+                      const isInAttentionRequests = requestsForAttention.some(r => 
+                        r.userId === activity.userId && activity.type === 'checkin'
+                      );
+                      return !isInMissedCheckIns && !isInAttentionRequests;
+                    })]
+                  : activityFeed.filter(activity => {
+                      const isInMissedCheckIns = missedCheckIns.some(m => 
+                        m.userId === activity.userId && activity.status === 'alerted'
+                      );
+                      const isInAttentionRequests = requestsForAttention.some(r => 
+                        r.userId === activity.userId && activity.type === 'checkin'
+                      );
+                      return !isInMissedCheckIns && !isInAttentionRequests;
+                    })
+              }
               reactions={reactions}
               addReaction={addReaction}
               setSelectedCheckIn={setSelectedCheckIn}
@@ -654,7 +706,11 @@ const BestiesPage = () => {
             tutorial.skipTutorial();
           }}
           isPaused={tutorial.isPaused}
-          activityFeedLength={activityFeed.length}
+          activityFeedLength={
+            tutorial.tutorialActive && tutorial.currentStep === 1
+              ? activityFeed.length + mockTutorialPosts.length
+              : activityFeed.length
+          }
           refs={{
             activityFeed: activityFeedRef,
             postButton: postButtonRef,

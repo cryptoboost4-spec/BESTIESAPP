@@ -463,6 +463,7 @@ const ProfilePage = () => {
             profileCompletion={profileCompletion}
             animatedProgress={animatedProgress}
             onTaskNavigation={handleTaskNavigation}
+            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 3}
           />
         </div>
 
@@ -483,6 +484,7 @@ const ProfilePage = () => {
             featuredBadgeIds={featuredBadgeIds}
             setFeaturedBadgeIds={setFeaturedBadgeIds}
             setConfettiTrigger={setConfettiTrigger}
+            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 4}
           />
         </div>
 
@@ -591,10 +593,8 @@ const ProfilePage = () => {
           isPaused={tutorial.isPaused}
           onPause={() => {
             tutorial.pauseTutorial();
-            // For step 2, open customizer
-            if (tutorial.currentStep === 2) {
-              setShowCustomizer(true);
-            }
+            // No longer opening customizer for step 2
+            // Step 4 (badges) doesn't need any action either since we removed requiresInteraction
           }}
           onResume={() => {
             tutorial.resumeTutorial();
@@ -612,12 +612,10 @@ const ProfilePage = () => {
       )}
 
       {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
-      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && (
+      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && tutorial.currentStep !== 2 && (
         <MiniModeTooltip
           message={
-            tutorial.currentStep === 2
-              ? "Try customizing your profile! When you're done, click Continue below."
-              : tutorial.currentStep === 4
+            tutorial.currentStep === 4
               ? "Explore the badges! Tap any badge to see how to earn it. When you're done, click Continue."
               : "Take your time exploring! Click Continue when you're ready."
           }
@@ -627,7 +625,7 @@ const ProfilePage = () => {
           onContinue={() => {
             tutorial.resumeTutorial();
             // Auto-advance after interaction
-            if (tutorial.currentStep === 2 || tutorial.currentStep === 4) {
+            if (tutorial.currentStep === 4) {
               setTimeout(() => {
                 tutorial.nextStep();
               }, 300);

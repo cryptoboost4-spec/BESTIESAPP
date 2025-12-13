@@ -47,7 +47,8 @@ const BadgesSection = ({
   badges,
   featuredBadgeIds,
   setFeaturedBadgeIds,
-  setConfettiTrigger
+  setConfettiTrigger,
+  disableInteractions = false
 }) => {
   const navigate = useNavigate();
   const [showBadgeSelector, setShowBadgeSelector] = useState(false);
@@ -100,8 +101,11 @@ const BadgesSection = ({
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Badges</h2>
           <button
-            onClick={() => navigate('/badges')}
-            className="text-primary font-semibold hover:underline text-sm"
+            onClick={() => !disableInteractions && navigate('/badges')}
+            disabled={disableInteractions}
+            className={`text-primary font-semibold hover:underline text-sm ${
+              disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             View All →
           </button>
@@ -112,8 +116,11 @@ const BadgesSection = ({
             ? `⭐ ${featuredBadgeIds.length} featured badge${featuredBadgeIds.length > 1 ? 's' : ''} shown first • `
             : ''}
           <button
-            onClick={() => setShowBadgeSelector(true)}
-            className="text-primary hover:underline"
+            onClick={() => !disableInteractions && setShowBadgeSelector(true)}
+            disabled={disableInteractions}
+            className={`text-primary hover:underline ${
+              disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             Choose your top 3 to feature
           </button>
@@ -185,8 +192,11 @@ const BadgesSection = ({
               Complete check-ins, invite friends, and stay safe to unlock achievements
             </p>
             <button
-              onClick={() => navigate('/badges')}
-              className="btn btn-primary text-sm"
+              onClick={() => !disableInteractions && navigate('/badges')}
+              disabled={disableInteractions}
+              className={`btn btn-primary text-sm ${
+                disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               See All Available Badges
             </button>
@@ -243,8 +253,11 @@ const BadgesSection = ({
 
             <div className="mt-6 flex justify-center">
               <button
-                onClick={() => navigate('/badges')}
-                className="btn btn-primary"
+                onClick={() => !disableInteractions && navigate('/badges')}
+                disabled={disableInteractions}
+                className={`btn btn-primary ${
+                  disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 See How to Earn Badges →
               </button>
