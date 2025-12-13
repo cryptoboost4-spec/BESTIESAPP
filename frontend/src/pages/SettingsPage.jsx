@@ -83,12 +83,20 @@ const SettingsPage = () => {
   const notificationSettingsRef = useRef(null);
   const notificationSettingsComponentRef = useRef(null); // Ref to NotificationSettings component
   const messengerLinkRef = useRef(null);
+  const messengerLinkComponentRef = useRef(null);
   const privacySettingsRef = useRef(null);
+  const privacySettingsComponentRef = useRef(null);
   const securityPasscodesRef = useRef(null);
+  const securityPasscodesComponentRef = useRef(null);
   const preferencesRef = useRef(null);
+  const preferencesComponentRef = useRef(null);
 
-  // Tutorial state for notifications
-  const [highlightedToggle, setHighlightedToggle] = useState(null);
+  // Tutorial state for highlighted elements in each section
+  const [highlightedToggle, setHighlightedToggle] = useState(null); // Notifications
+  const [highlightedMessengerButton, setHighlightedMessengerButton] = useState(null); // Messenger
+  const [highlightedPrivacyElement, setHighlightedPrivacyElement] = useState(null); // Privacy
+  const [highlightedSecurityElement, setHighlightedSecurityElement] = useState(null); // Security
+  const [highlightedPreferenceElement, setHighlightedPreferenceElement] = useState(null); // Preferences
 
   // Check if push notifications are supported and enabled
   useEffect(() => {
@@ -585,7 +593,11 @@ const SettingsPage = () => {
         {/* Messenger Integration */}
         {FEATURES.messengerAlerts && (
           <div id="messenger" ref={messengerLinkRef}>
-            <MessengerLinkDisplay userId={currentUser?.uid} />
+            <MessengerLinkDisplay
+              ref={messengerLinkComponentRef}
+              userId={currentUser?.uid}
+              highlightedButton={highlightedMessengerButton}
+            />
           </div>
         )}
 
@@ -598,7 +610,12 @@ const SettingsPage = () => {
 
         {/* Privacy Settings */}
         <div id="privacy" ref={privacySettingsRef}>
-          <PrivacySettings userData={userData} currentUser={currentUser} />
+          <PrivacySettings
+            ref={privacySettingsComponentRef}
+            userData={userData}
+            currentUser={currentUser}
+            highlightedElement={highlightedPrivacyElement}
+          />
         </div>
 
 
@@ -606,6 +623,7 @@ const SettingsPage = () => {
         {/* Security - Passcodes */}
         <div id="security" ref={securityPasscodesRef}>
           <SecurityPasscodes
+            ref={securityPasscodesComponentRef}
             userData={userData}
             showPasscodeInfo={showPasscodeInfo}
             setShowPasscodeInfo={setShowPasscodeInfo}
@@ -613,6 +631,7 @@ const SettingsPage = () => {
             setShowPasscodeModal={setShowPasscodeModal}
             handleRemovePasscode={handleRemovePasscode}
             loading={loading}
+            highlightedElement={highlightedSecurityElement}
           />
         </div>
 
@@ -646,11 +665,13 @@ const SettingsPage = () => {
         {/* Preferences */}
         <div ref={preferencesRef}>
           <PreferencesAndQuickAccess
+            ref={preferencesComponentRef}
             isDark={isDark}
             toggleDarkMode={toggleDarkMode}
             toggleHoldData={toggleHoldData}
             userData={userData}
             navigate={navigate}
+            highlightedElement={highlightedPreferenceElement}
           />
         </div>
 
@@ -935,14 +956,34 @@ const SettingsPage = () => {
           }}
           hasMessenger={FEATURES.messengerAlerts}
           notificationSettingsRef={notificationSettingsComponentRef}
+          messengerLinkComponentRef={messengerLinkComponentRef}
+          privacySettingsComponentRef={privacySettingsComponentRef}
+          securityPasscodesComponentRef={securityPasscodesComponentRef}
+          preferencesComponentRef={preferencesComponentRef}
           userData={userData}
           highlightedToggle={highlightedToggle}
+          highlightedMessengerButton={highlightedMessengerButton}
+          highlightedPrivacyElement={highlightedPrivacyElement}
+          highlightedSecurityElement={highlightedSecurityElement}
+          highlightedPreferenceElement={highlightedPreferenceElement}
           onToggleChange={(type) => {
             setHighlightedToggle(null);
             // This will trigger the congrats tooltip in SettingsTutorialOverlay
           }}
           onHighlightToggle={(toggle) => {
             setHighlightedToggle(toggle);
+          }}
+          onHighlightMessengerButton={(button) => {
+            setHighlightedMessengerButton(button);
+          }}
+          onHighlightPrivacyElement={(element) => {
+            setHighlightedPrivacyElement(element);
+          }}
+          onHighlightSecurityElement={(element) => {
+            setHighlightedSecurityElement(element);
+          }}
+          onHighlightPreferenceElement={(element) => {
+            setHighlightedPreferenceElement(element);
           }}
           onOpenTestModal={() => {
             setShowTestAlertModal(true);
