@@ -13,7 +13,9 @@ const MilestoneCelebration = () => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    checkForMilestones();
+    checkForMilestones().catch(() => {
+      // Silently handle errors - already logged in checkForMilestones
+    });
   }, []);
 
   const checkForMilestones = async () => {

@@ -14,6 +14,7 @@ import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
 import TutorialOverlay from '../components/TutorialOverlay';
+import HomePageTutorialOverlay from '../components/tutorials/HomePageTutorialOverlay';
 import { useTutorialState } from '../hooks/useTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
@@ -739,16 +740,28 @@ const HomePage = () => {
 
       {/* Tutorial Overlay - NEW FLOW */}
       {shouldShowTutorial && tooltipConfig && !isTutorialModalOpen && (
-            <TutorialOverlay
-              currentStep={currentTutorialStep}
-              onStepComplete={handleTutorialNext}
-              onTutorialComplete={handleSkipTutorial}
-              onStepBack={handleTutorialBack}
-              highlightedElementRef={getHighlightedElementRef()}
-              tooltipConfig={tooltipConfig}
-              stepNumber={getStepNumber()}
-              totalSteps={5}
-            />
+        currentTutorialStep === 'welcome' ? (
+          <HomePageTutorialOverlay
+            currentStep={currentTutorialStep}
+            onNext={handleTutorialNext}
+            onSkip={handleSkipTutorial}
+            highlightedElementRef={getHighlightedElementRef()}
+            allButtonsRef={quickCheckInButtonsRef}
+            quickCheckInButtonsRef={quickCheckInButtonsRef}
+            customButtonRef={quickCheckInButtonsRef}
+          />
+        ) : (
+          <TutorialOverlay
+            currentStep={currentTutorialStep}
+            onStepComplete={handleTutorialNext}
+            onTutorialComplete={handleSkipTutorial}
+            onStepBack={handleTutorialBack}
+            highlightedElementRef={getHighlightedElementRef()}
+            tooltipConfig={tooltipConfig}
+            stepNumber={getStepNumber()}
+            totalSteps={5}
+          />
+        )
       )}
     </div>
   );
