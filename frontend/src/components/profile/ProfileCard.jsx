@@ -32,7 +32,7 @@ const AURA_OPTIONS = [
   { id: 'rainbow', name: 'Rainbow', emoji: '🌈', description: 'Rainbow border effect' }
 ];
 
-const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustomizer, setShowCustomizer: externalSetShowCustomizer }) => {
+const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustomizer, setShowCustomizer: externalSetShowCustomizer, onCustomizerClose, customizerButtonRef, editProfileButtonRef, onEditProfileClick, tutorialStep }) => {
   const navigate = useNavigate();
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -238,7 +238,14 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
           {/* Customize Button */}
           <button
             id="profile-customizer-button"
-            onClick={() => setShowCustomizer(true)}
+            ref={customizerButtonRef}
+            onClick={() => {
+              if (setShowCustomizer) {
+                setShowCustomizer();
+              } else {
+                setInternalShowCustomizer(true);
+              }
+            }}
             className="w-10 h-10 rounded-full bg-gradient-primary text-white backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all text-lg"
             title="Customize your vibe"
           >
@@ -246,7 +253,14 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
           </button>
           {/* Edit Profile Button */}
           <button
-            onClick={() => navigate('/edit-profile')}
+            ref={editProfileButtonRef}
+            onClick={() => {
+              if (onEditProfileClick) {
+                onEditProfileClick();
+              } else {
+                navigate('/edit-profile');
+              }
+            }}
             className="w-10 h-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-white dark:hover:bg-gray-800 text-xl"
             title="Edit profile"
           >
@@ -487,7 +501,13 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
           <ProfileCustomizer
             currentUser={currentUser}
             userData={userData}
-            onClose={() => setShowCustomizer(false)}
+            onClose={() => {
+              if (onCustomizerClose) {
+                onCustomizerClose();
+              } else {
+                setShowCustomizer(false);
+              }
+            }}
           />
         </Suspense>
       )}

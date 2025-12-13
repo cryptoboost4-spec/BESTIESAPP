@@ -136,30 +136,43 @@ const TutorialTooltip = ({
       // ALWAYS position tooltip ABOVE the button (default behavior)
       top = buttonTop - tooltipHeight - spacing;
 
-      // If tooltip would go off top of screen, try positioning below
+      // CRITICAL: Ensure tooltip never goes off top of screen
       const minTop = 20; // Minimum distance from top of screen
       if (top < minTop) {
-        // Try positioning below button instead
-        const belowTop = buttonBottom + spacing;
-        const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
-        
-        if (belowTop + tooltipHeight <= maxBottom) {
-          // Can fit below, use that
-          top = belowTop;
-        } else {
-          // Can't fit below either, position as high as possible without covering button
-          top = Math.max(minTop, buttonTop - tooltipHeight - 8);
-        }
+        // Tooltip would go off top - position it at minimum top position
+        // This may show less of the highlighted area, but tooltip must be fully visible
+        top = minTop;
       }
 
-      // Ensure tooltip stays above button (failsafe)
+      // Try positioning below button if above doesn't work well
+      const belowTop = buttonBottom + spacing;
+      const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
+      
+      // If positioning above would cut off tooltip, try below
+      if (top < minTop && belowTop + tooltipHeight <= maxBottom) {
+        // Can fit below, use that
+        top = belowTop;
+      } else if (top < minTop) {
+        // Can't fit below either, position at minimum top (may show less highlighted area)
+        top = minTop;
+      }
+
+      // Ensure tooltip stays above button if possible (but prioritize visibility)
       const maxTop = buttonTop - tooltipHeight - 8;
-      top = Math.min(top, maxTop);
+      if (top > maxTop && top >= minTop) {
+        // If we're below the button but tooltip is fully visible, that's okay
+        // Otherwise, ensure we're at least at minTop
+        top = Math.max(minTop, maxTop);
+      }
       
       // Final check: ensure tooltip doesn't go below nav bar
-      const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
       if (top + tooltipHeight > maxBottom) {
         top = maxBottom - tooltipHeight;
+      }
+      
+      // Final safety check: ensure tooltip is never above screen
+      if (top < minTop) {
+        top = minTop;
       }
     }
 

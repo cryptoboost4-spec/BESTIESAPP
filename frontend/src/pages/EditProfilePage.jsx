@@ -3,7 +3,7 @@
    Profile Editor - Do not modify unless explicitly told by the user
    ================================================================= */
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage, authService } from '../services/firebase';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -16,6 +16,7 @@ import ProfileCompletionModal from '../components/ProfileCompletionModal';
 const EditProfilePage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [bio, setBio] = useState(userData?.profile?.bio || '');
@@ -304,9 +305,13 @@ const EditProfilePage = () => {
         setShowCompletionModal(true);
         // Don't navigate yet, let user close the modal first
       } else {
-        // Navigate after a short delay
+        // Navigate after a short delay, preserve tutorial state if present
         setTimeout(() => {
-          navigate('/profile');
+          if (location.state?.fromTutorial) {
+            navigate('/profile', { state: { fromTutorial: true, step: location.state.step } });
+          } else {
+            navigate('/profile');
+          }
         }, 500);
       }
     } catch (error) {
@@ -489,7 +494,13 @@ const EditProfilePage = () => {
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => navigate('/profile')}
+              onClick={() => {
+                if (location.state?.fromTutorial) {
+                  navigate('/profile', { state: { fromTutorial: true, step: location.state.step } });
+                } else {
+                  navigate('/profile');
+                }
+              }}
               className="flex-1 btn btn-secondary"
             >
               Cancel
@@ -577,7 +588,11 @@ const EditProfilePage = () => {
           isOpen={showCompletionModal}
           onClose={() => {
             setShowCompletionModal(false);
-            navigate('/profile');
+            if (location.state?.fromTutorial) {
+              navigate('/profile', { state: { fromTutorial: true, step: location.state.step } });
+            } else {
+              navigate('/profile');
+            }
           }}
         />
       </div>

@@ -36,9 +36,18 @@ const ProfileTutorialOverlay = ({
         body: "You can change your background from here! Choose from different styles, colors, and themes to make your profile stand out. Express yourself! ✨",
         buttonText: 'I\'ll do it later',
         position: 'below',
-        highlightedElementRef: refs.customizerButton
+        highlightedElementRef: refs.customizerButton,
+        requiresInteraction: true
       },
       3: {
+        title: 'Edit Your Profile',
+        body: "You can edit your profile details from here! Add your name, bio, birthday, and more. Make it yours! ✏️",
+        buttonText: 'I\'ll do it later',
+        position: 'below',
+        highlightedElementRef: refs.editProfileButton,
+        requiresInteraction: true
+      },
+      4: {
         title: 'Complete Your Profile',
         body: isProfileComplete
           ? "Great job! Your profile is looking good. Don't worry about the rest - you can always come back here to complete more tasks whenever you're ready! 💪"
@@ -47,21 +56,21 @@ const ProfileTutorialOverlay = ({
         position: 'auto',
         highlightedElementRef: refs.profileCompletion
       },
-      4: {
+      5: {
         title: 'Earn Badges',
         body: "Complete check-ins, add besties, and stay active to earn badges. Show off your achievements! You can come back later to explore how to earn each one. 🏆",
         buttonText: 'Next',
         position: 'auto',
         highlightedElementRef: refs.badgesSection
       },
-      5: {
+      6: {
         title: 'Track Your Progress',
         body: "See your check-in stats, login streak, and more. Watch your numbers grow as you use Besties to stay safe.",
         buttonText: 'Next',
         position: 'auto',
         highlightedElementRef: refs.statsSection
       },
-      6: {
+      7: {
         title: 'Settings',
         body: "Tap the Settings button below to manage notifications, privacy, security, and more - or finish the tutorial now and explore settings later. Your choice! ⚙️",
         buttonText: 'Finish Tutorial',
@@ -99,7 +108,7 @@ const ProfileTutorialOverlay = ({
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}
       stepNumber={currentStep}
-      totalSteps={6}
+      totalSteps={7}
       isPaused={isPaused}
     />
   );

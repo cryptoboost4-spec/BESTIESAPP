@@ -43,6 +43,51 @@ const ProfilePage = () => {
   // Tutorial state
   const tutorial = useProfileTutorialState();
   
+  // Handle customizer button click during tutorial
+  const handleCustomizerClick = () => {
+    if (tutorial.tutorialActive && tutorial.currentStep === 2) {
+      // Pause tutorial and hide tooltip
+      tutorial.pauseTutorial();
+    }
+    setShowCustomizer(true);
+  };
+  
+  // Handle customizer close/save - advance tutorial if on step 2
+  const handleCustomizerClose = () => {
+    setShowCustomizer(false);
+    if (tutorial.tutorialActive && tutorial.currentStep === 2 && tutorial.isPaused) {
+      // Advance to next step after save
+      setTimeout(() => {
+        tutorial.resumeTutorial();
+        tutorial.nextStep();
+      }, 300);
+    }
+  };
+  
+  // Handle edit profile button click during tutorial
+  const handleEditProfileClick = () => {
+    if (tutorial.tutorialActive && tutorial.currentStep === 3) {
+      // Pause tutorial and navigate with state
+      tutorial.pauseTutorial();
+      navigate('/edit-profile', { state: { fromTutorial: true, step: 3 } });
+    } else {
+      navigate('/edit-profile');
+    }
+  };
+  
+  // Check if returning from edit profile page during tutorial
+  useEffect(() => {
+    if (location.state?.fromTutorial && location.state?.step === 3 && tutorial.isPaused) {
+      // User returned from edit profile, advance tutorial
+      setTimeout(() => {
+        tutorial.resumeTutorial();
+        tutorial.nextStep();
+      }, 300);
+      // Clear the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, tutorial]);
+  
   // Handle tutorial restart from navigation state
   useEffect(() => {
     if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
@@ -56,6 +101,8 @@ const ProfilePage = () => {
   
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
+  const customizerButtonRef = useRef(null);
+  const editProfileButtonRef = useRef(null);
   const profileCompletionRef = useRef(null);
   const badgesSectionRef = useRef(null);
   const statsSectionRef = useRef(null);
@@ -453,7 +500,12 @@ const ProfilePage = () => {
             currentUser={currentUser} 
             userData={userData} 
             showCustomizer={showCustomizer}
-            setShowCustomizer={setShowCustomizer}
+            setShowCustomizer={handleCustomizerClick}
+            onCustomizerClose={handleCustomizerClose}
+            customizerButtonRef={customizerButtonRef}
+            editProfileButtonRef={editProfileButtonRef}
+            onEditProfileClick={handleEditProfileClick}
+            tutorialStep={tutorial.tutorialActive ? tutorial.currentStep : null}
           />
         </div>
 
@@ -463,7 +515,9 @@ const ProfilePage = () => {
             profileCompletion={profileCompletion}
             animatedProgress={animatedProgress}
             onTaskNavigation={handleTaskNavigation}
-            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 3}
+            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 5}
+            tutorialStep={tutorial.tutorialActive ? tutorial.currentStep : null}
+            tutorialStep={tutorial.tutorialActive ? tutorial.currentStep : null}
           />
         </div>
 
@@ -484,7 +538,7 @@ const ProfilePage = () => {
             featuredBadgeIds={featuredBadgeIds}
             setFeaturedBadgeIds={setFeaturedBadgeIds}
             setConfettiTrigger={setConfettiTrigger}
-            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 4}
+            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 5}
           />
         </div>
 
@@ -509,7 +563,7 @@ const ProfilePage = () => {
         <div className="space-y-3" ref={settingsButtonRef}>
           <button
             onClick={() => {
-              if (tutorial.tutorialActive && tutorial.currentStep === 6) {
+              if (tutorial.tutorialActive && tutorial.currentStep === 7) {
                 tutorial.completeTutorial().then(() => {
                   navigate('/settings');
                 });
@@ -557,16 +611,16 @@ const ProfilePage = () => {
               window.analytics.track('tutorial_step_completed', {
                 page: 'profile',
                 step: tutorial.currentStep,
-                total_steps: 6
+                total_steps: 7
               });
             }
             
-            if (tutorial.currentStep === 6) {
+            if (tutorial.currentStep === 7) {
               // Last step - complete tutorial
               if (typeof window !== 'undefined' && window.analytics) {
                 window.analytics.track('tutorial_completed', {
                   page: 'profile',
-                  total_steps: 6
+                  total_steps: 7
                 });
               }
               tutorial.completeTutorial().then(() => {
@@ -601,7 +655,8 @@ const ProfilePage = () => {
           }}
           refs={{
             profileCard: profileCardRef,
-            customizerButton: profileCardRef, // Use same ref since customizer is in ProfileCard
+            customizerButton: customizerButtonRef,
+            editProfileButton: editProfileButtonRef,
             profileCompletion: profileCompletionRef,
             badgesSection: badgesSectionRef,
             statsSection: statsSectionRef,
@@ -612,20 +667,20 @@ const ProfilePage = () => {
       )}
 
       {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
-      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && tutorial.currentStep !== 2 && (
+      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && tutorial.currentStep !== 2 && tutorial.currentStep !== 3 && (
         <MiniModeTooltip
           message={
-            tutorial.currentStep === 4
+            tutorial.currentStep === 5
               ? "Explore the badges! Tap any badge to see how to earn it. When you're done, click Continue."
               : "Take your time exploring! Click Continue when you're ready."
           }
-          progressDots={Array.from({ length: 6 }, (_, i) => ({
+          progressDots={Array.from({ length: 7 }, (_, i) => ({
             filled: i < tutorial.currentStep
           }))}
           onContinue={() => {
             tutorial.resumeTutorial();
             // Auto-advance after interaction
-            if (tutorial.currentStep === 4) {
+            if (tutorial.currentStep === 5) {
               setTimeout(() => {
                 tutorial.nextStep();
               }, 300);

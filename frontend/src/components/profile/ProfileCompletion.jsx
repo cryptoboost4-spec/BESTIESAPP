@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const ProfileCompletion = ({
   profileCompletion,
   animatedProgress,
   onTaskNavigation,
-  disableInteractions = false
+  disableInteractions = false,
+  tutorialStep = null
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -118,7 +120,17 @@ const ProfileCompletion = ({
             </div>
             {!task.completed && (task.path || task.action) && (
               <button
-                onClick={() => !disableInteractions && onTaskNavigation(task)}
+                onClick={() => {
+                  if (disableInteractions && tutorialStep === 4) {
+                    // Show feedback message during tutorial
+                    toast('Keep going with the tutorial! You can come back after to complete this task. 💜', {
+                      icon: '💡',
+                      duration: 3000
+                    });
+                  } else if (!disableInteractions) {
+                    onTaskNavigation(task);
+                  }
+                }}
                 disabled={disableInteractions}
                 className={`btn btn-sm btn-primary text-xs px-3 py-1 ${
                   disableInteractions ? 'opacity-50 cursor-not-allowed' : ''

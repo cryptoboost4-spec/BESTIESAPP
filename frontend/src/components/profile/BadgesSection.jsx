@@ -48,7 +48,8 @@ const BadgesSection = ({
   featuredBadgeIds,
   setFeaturedBadgeIds,
   setConfettiTrigger,
-  disableInteractions = false
+  disableInteractions = false,
+  tutorialStep = null
 }) => {
   const navigate = useNavigate();
   const [showBadgeSelector, setShowBadgeSelector] = useState(false);
@@ -101,7 +102,17 @@ const BadgesSection = ({
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-2xl font-display text-gray-800 dark:text-gray-200">Your Badges</h2>
           <button
-            onClick={() => !disableInteractions && navigate('/badges')}
+            onClick={() => {
+              if (disableInteractions && tutorialStep === 5) {
+                // Show feedback message during tutorial
+                toast('Keep going with the tutorial! You can come back after to explore all badges. 💜', {
+                  icon: '💡',
+                  duration: 3000
+                });
+              } else if (!disableInteractions) {
+                navigate('/badges');
+              }
+            }}
             disabled={disableInteractions}
             className={`text-primary font-semibold hover:underline text-sm ${
               disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
@@ -192,7 +203,17 @@ const BadgesSection = ({
               Complete check-ins, invite friends, and stay safe to unlock achievements
             </p>
             <button
-              onClick={() => !disableInteractions && navigate('/badges')}
+              onClick={() => {
+                if (disableInteractions && tutorialStep === 5) {
+                  // Show feedback message during tutorial
+                  toast('Keep going with the tutorial! You can come back after to see all available badges. 💜', {
+                    icon: '💡',
+                    duration: 3000
+                  });
+                } else if (!disableInteractions) {
+                  navigate('/badges');
+                }
+              }}
               disabled={disableInteractions}
               className={`btn btn-primary text-sm ${
                 disableInteractions ? 'opacity-50 cursor-not-allowed' : ''

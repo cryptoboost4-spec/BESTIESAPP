@@ -17,9 +17,13 @@ const TutorialOverlay = ({
 }) => {
   const overlayRef = useRef(null);
   const [highlightRect, setHighlightRect] = useState(null);
+  const [scrollComplete, setScrollComplete] = useState(false);
 
   // Lock screen and update highlight position when element changes
   useEffect(() => {
+    // Reset scroll complete state when step changes
+    setScrollComplete(false);
+    
     if (!highlightedElementRef?.current) {
       setHighlightRect(null);
       // Unlock screen if no element
@@ -100,7 +104,7 @@ const TutorialOverlay = ({
           behavior: 'smooth'
         });
         
-        // Wait for scroll to complete before locking
+        // Wait for scroll to complete before locking and showing tooltip
         let scrollCheckCount = 0;
         const maxChecks = 50; // Max 2.5 seconds (50 * 50ms)
         
@@ -111,11 +115,13 @@ const TutorialOverlay = ({
           
           // Check if scroll is complete (within 2px) or if we've waited too long
           if (scrollDiff < 2 || scrollCheckCount >= maxChecks) {
-            // Scroll complete (or timeout), lock screen
-            // Small delay to ensure DOM is settled
+            // Scroll complete (or timeout), lock screen and show tooltip
+            // Small delay to ensure DOM is settled and user sees the scroll
             setTimeout(() => {
               lockScreen();
-            }, 50);
+              // Signal that scroll is complete and tooltip can show
+              setScrollComplete(true);
+            }, 100);
           } else {
             // Still scrolling, check again
             setTimeout(checkScrollComplete, 50);
@@ -125,9 +131,12 @@ const TutorialOverlay = ({
         // Start checking after smooth scroll begins
         setTimeout(checkScrollComplete, 100);
       } else {
-        // No scroll needed, lock immediately
+        // No scroll needed, lock immediately but still delay tooltip slightly
         requestAnimationFrame(() => {
           lockScreen();
+          setTimeout(() => {
+            setScrollComplete(true);
+          }, 100);
         });
       }
     };
@@ -257,35 +266,26 @@ const TutorialOverlay = ({
               filter: 'brightness(1.15)',
             }}
           />
-          {/* Ensure highlighted element is clickable above overlay */}
-          <div
-            className="fixed z-[93] pointer-events-auto"
-            style={{
-              top: `${highlightRect.top}px`,
-              left: `${highlightRect.left}px`,
-              width: `${highlightRect.width}px`,
-              height: `${highlightRect.height}px`,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
         </>
       )}
 
-      {/* Tooltip */}
-      <TutorialTooltip
-        title={tooltipConfig.title}
-        body={tooltipConfig.body}
-        buttonText={tooltipConfig.buttonText === null ? null : (tooltipConfig.buttonText || 'Next')}
-        onNext={handleNext}
-        onBack={onStepBack}
-        onSkip={tooltipConfig.onSkip || onTutorialComplete}
-        showBack={stepNumber > 1}
-        showSkip={true}
-        stepNumber={stepNumber}
-        totalSteps={totalSteps}
-        targetElement={highlightedElementRef?.current}
-        position={tooltipConfig.position}
-      />
+      {/* Tooltip - only show after scroll completes */}
+      {scrollComplete && (
+        <TutorialTooltip
+          title={tooltipConfig.title}
+          body={tooltipConfig.body}
+          buttonText={tooltipConfig.buttonText === null ? null : (tooltipConfig.buttonText || 'Next')}
+          onNext={handleNext}
+          onBack={onStepBack}
+          onSkip={tooltipConfig.onSkip || onTutorialComplete}
+          showBack={stepNumber > 1}
+          showSkip={true}
+          stepNumber={stepNumber}
+          totalSteps={totalSteps}
+          targetElement={highlightedElementRef?.current}
+          position={tooltipConfig.position}
+        />
+      )}
     </>
   );
 };
