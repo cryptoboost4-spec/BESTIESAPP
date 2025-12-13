@@ -16,7 +16,6 @@ import WeeklySummary from '../components/profile/WeeklySummary';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
-import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import TutorialOverlay from '../components/TutorialOverlay';
 import { useTutorialState } from '../hooks/useTutorialState';
 // FloatingNotificationBell removed per user request
@@ -769,16 +768,16 @@ const HomePage = () => {
 
       {/* Tutorial Overlay - NEW FLOW */}
       {shouldShowTutorial && tooltipConfig && (
-        <TutorialOverlay
-          currentStep={currentTutorialStep}
-          onStepComplete={handleTutorialNext}
-          onTutorialComplete={handleSkipTutorial}
-          onStepBack={handleTutorialBack}
-          highlightedElementRef={getHighlightedElementRef()}
-          tooltipConfig={tooltipConfig}
-          stepNumber={getStepNumber()}
-          totalSteps={5}
-        />
+            <TutorialOverlay
+              currentStep={currentTutorialStep}
+              onStepComplete={handleTutorialNext}
+              onTutorialComplete={handleSkipTutorial}
+              onStepBack={handleTutorialBack}
+              highlightedElementRef={getHighlightedElementRef()}
+              tooltipConfig={tooltipConfig}
+              stepNumber={getStepNumber()}
+              totalSteps={5}
+            />
       )}
     </div>
   );
