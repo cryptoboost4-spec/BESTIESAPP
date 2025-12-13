@@ -1,10 +1,90 @@
-import React from 'react';
+import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
 import InfoButton from '../InfoButton';
 
-const PrivacySettings = ({ userData, currentUser }) => {
+const PrivacySettings = forwardRef(({ userData, currentUser, highlightedElement = null }, ref) => {
+  const statsToggleRef = useRef(null);
+  const radioGroupRef = useRef(null);
+  const circleRadioRef = useRef(null);
+
+  // Expose refs to parent
+  useImperativeHandle(ref, () => ({
+    statsToggle: statsToggleRef.current,
+    radioGroup: radioGroupRef.current,
+    circleRadio: circleRadioRef.current
+  }));
+
+  // Animate highlighted elements
+  useEffect(() => {
+    const elementRefs = {
+      statsToggle: statsToggleRef.current,
+      radioGroup: radioGroupRef.current,
+      circleRadio: circleRadioRef.current
+    };
+
+    const targetElement = elementRefs[highlightedElement];
+    if (targetElement && highlightedElement) {
+      // For toggle - animate on/off
+      if (highlightedElement === 'statsToggle') {
+        const knob = targetElement.querySelector('div');
+        if (knob) {
+          let isOn = false;
+          let animationCount = 0;
+          const maxAnimations = 4; // 2 times
+
+          const animationInterval = setInterval(() => {
+            if (animationCount >= maxAnimations) {
+              clearInterval(animationInterval);
+              knob.style.transform = '';
+              targetElement.style.backgroundColor = '';
+              return;
+            }
+
+            isOn = !isOn;
+            animationCount++;
+
+            if (isOn) {
+              knob.style.transition = 'transform 0.4s ease';
+              knob.style.transform = 'translateX(1.5rem)';
+              targetElement.style.transition = 'background-color 0.4s ease';
+              targetElement.style.backgroundColor = '#a855f7';
+            } else {
+              knob.style.transition = 'transform 0.4s ease';
+              knob.style.transform = 'translateX(0.25rem)';
+              targetElement.style.transition = 'background-color 0.4s ease';
+              targetElement.style.backgroundColor = '#d1d5db';
+            }
+          }, 800);
+
+          return () => {
+            clearInterval(animationInterval);
+            targetElement.style.transform = '';
+            targetElement.style.backgroundColor = '';
+            if (knob) {
+              knob.style.transform = '';
+              knob.style.transition = '';
+            }
+          };
+        }
+      }
+      // For radio buttons - pulse and glow
+      else {
+        targetElement.style.transform = 'scale(1.05)';
+        targetElement.style.transition = 'transform 0.3s ease';
+        targetElement.classList.add('animate-pulse');
+        targetElement.style.boxShadow = '0 0 0 4px rgba(168, 85, 247, 0.3)';
+
+        return () => {
+          targetElement.classList.remove('animate-pulse');
+          targetElement.style.transform = '';
+          targetElement.style.boxShadow = '';
+        };
+      }
+    }
+  }, [highlightedElement]);
+
   return (
     <div className="card p-6 mb-6">
       <h2 className="text-xl font-display text-text-primary mb-2">Privacy</h2>
@@ -24,6 +104,7 @@ const PrivacySettings = ({ userData, currentUser }) => {
             </div>
           </div>
           <button
+            ref={statsToggleRef}
             onClick={async () => {
               try {
                 const newValue = !(userData?.privacySettings?.showStatsToBesties !== false);
@@ -63,7 +144,7 @@ const PrivacySettings = ({ userData, currentUser }) => {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div ref={radioGroupRef} className="space-y-2">
             {/* Option 1: All Besties */}
             <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
               style={{
@@ -96,7 +177,7 @@ const PrivacySettings = ({ userData, currentUser }) => {
             </label>
 
             {/* Option 2: Circle Only */}
-            <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            <label ref={circleRadioRef} className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
               style={{
                 borderColor: (userData?.privacySettings?.checkInVisibility || 'all_besties') === 'circle' ? '#FF6B9D' : '#e5e7eb'
               }}>
@@ -161,6 +242,8 @@ const PrivacySettings = ({ userData, currentUser }) => {
       </div>
     </div>
   );
-};
+});
+
+PrivacySettings.displayName = 'PrivacySettings';
 
 export default PrivacySettings;

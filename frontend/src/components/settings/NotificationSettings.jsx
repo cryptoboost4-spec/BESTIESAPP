@@ -25,7 +25,7 @@ const NotificationSettings = forwardRef(({
     smsToggle: smsToggleRef.current
   }));
 
-  // Animate highlighted toggle
+  // Animate highlighted toggle - make it visually turn on and off
   useEffect(() => {
     const toggleRefs = {
       telegram: telegramToggleRef.current,
@@ -35,18 +35,66 @@ const NotificationSettings = forwardRef(({
 
     const targetToggle = toggleRefs[highlightedToggle];
     if (targetToggle && highlightedToggle) {
-      // Add pulsing animation
-      targetToggle.classList.add('animate-pulse');
+      // Scale up the toggle
       targetToggle.style.transform = 'scale(1.1)';
       targetToggle.style.transition = 'transform 0.3s ease';
-      
+
       // Scroll into view if needed
       targetToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      return () => {
-        targetToggle.classList.remove('animate-pulse');
-        targetToggle.style.transform = '';
-      };
+      // Animate the toggle switching on and off
+      const knob = targetToggle.querySelector('div'); // The inner knob element
+      if (knob) {
+        let isOn = false;
+        let animationCount = 0;
+        const maxAnimations = 6; // Switch on/off 3 times (6 transitions total)
+
+        // Create animation interval
+        const animationInterval = setInterval(() => {
+          if (animationCount >= maxAnimations) {
+            clearInterval(animationInterval);
+            // End in the "off" state
+            knob.style.transform = 'translateX(0.25rem)';
+            targetToggle.style.backgroundColor = '';
+            return;
+          }
+
+          isOn = !isOn;
+          animationCount++;
+
+          if (isOn) {
+            // Animate to "on" state
+            knob.style.transition = 'transform 0.4s ease';
+            knob.style.transform = 'translateX(1.5rem)'; // translate-x-6 = 1.5rem
+            targetToggle.style.transition = 'background-color 0.4s ease';
+            targetToggle.style.backgroundColor = '#a855f7'; // primary color
+          } else {
+            // Animate to "off" state
+            knob.style.transition = 'transform 0.4s ease';
+            knob.style.transform = 'translateX(0.25rem)'; // translate-x-1 = 0.25rem
+            targetToggle.style.transition = 'background-color 0.4s ease';
+            targetToggle.style.backgroundColor = '#d1d5db'; // gray-300
+          }
+        }, 800); // Switch every 800ms
+
+        return () => {
+          clearInterval(animationInterval);
+          targetToggle.style.transform = '';
+          targetToggle.style.backgroundColor = '';
+          targetToggle.style.transition = '';
+          if (knob) {
+            knob.style.transform = '';
+            knob.style.transition = '';
+          }
+        };
+      } else {
+        // Fallback if knob not found - just pulse
+        targetToggle.classList.add('animate-pulse');
+        return () => {
+          targetToggle.classList.remove('animate-pulse');
+          targetToggle.style.transform = '';
+        };
+      }
     }
   }, [highlightedToggle]);
 

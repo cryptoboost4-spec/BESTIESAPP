@@ -515,7 +515,7 @@ const ProfilePage = () => {
             profileCompletion={profileCompletion}
             animatedProgress={animatedProgress}
             onTaskNavigation={handleTaskNavigation}
-            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 5}
+            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 4}
             tutorialStep={tutorial.tutorialActive ? tutorial.currentStep : null}
           />
         </div>

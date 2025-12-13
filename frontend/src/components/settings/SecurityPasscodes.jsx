@@ -1,20 +1,56 @@
-import React from 'react';
+import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import InfoButton from '../InfoButton';
 
-const SecurityPasscodes = ({
+const SecurityPasscodes = forwardRef(({
   userData,
   showPasscodeInfo,
   setShowPasscodeInfo,
   setPasscodeType,
   setShowPasscodeModal,
   handleRemovePasscode,
-  loading
-}) => {
+  loading,
+  highlightedElement = null
+}, ref) => {
+  const learnMoreButtonRef = useRef(null);
+  const safetyPasscodeCardRef = useRef(null);
+  const duressCodeCardRef = useRef(null);
+
+  // Expose refs to parent
+  useImperativeHandle(ref, () => ({
+    learnMoreButton: learnMoreButtonRef.current,
+    safetyPasscodeCard: safetyPasscodeCardRef.current,
+    duressCodeCard: duressCodeCardRef.current
+  }));
+
+  // Animate highlighted elements
+  useEffect(() => {
+    const elementRefs = {
+      learnMoreButton: learnMoreButtonRef.current,
+      safetyPasscodeCard: safetyPasscodeCardRef.current,
+      duressCodeCard: duressCodeCardRef.current
+    };
+
+    const targetElement = elementRefs[highlightedElement];
+    if (targetElement && highlightedElement) {
+      targetElement.style.transform = 'scale(1.03)';
+      targetElement.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+      targetElement.classList.add('animate-pulse');
+      targetElement.style.boxShadow = '0 0 0 4px rgba(168, 85, 247, 0.3)';
+
+      return () => {
+        targetElement.classList.remove('animate-pulse');
+        targetElement.style.transform = '';
+        targetElement.style.boxShadow = '';
+      };
+    }
+  }, [highlightedElement]);
+
   return (
     <div className="card p-6 mb-6">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-xl font-display text-text-primary">Security Passcodes</h2>
         <button
+          ref={learnMoreButtonRef}
           onClick={() => setShowPasscodeInfo(!showPasscodeInfo)}
           className="text-primary text-sm font-semibold hover:underline"
         >
@@ -39,7 +75,7 @@ const SecurityPasscodes = ({
 
       <div className="space-y-4">
         {/* Safety Passcode */}
-        <div className="border-2 border-gray-200 dark:border-gray-600 rounded-lg p-4">
+        <div ref={safetyPasscodeCardRef} className="border-2 border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="font-semibold text-text-primary flex items-center">
@@ -87,7 +123,7 @@ const SecurityPasscodes = ({
         </div>
 
         {/* Duress Code */}
-        <div className="border-2 border-red-200 dark:border-red-600 rounded-lg p-4 bg-red-50/50 dark:bg-red-900/10">
+        <div ref={duressCodeCardRef} className="border-2 border-red-200 dark:border-red-600 rounded-lg p-4 bg-red-50/50 dark:bg-red-900/10">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="font-semibold text-text-primary flex items-center">
@@ -136,6 +172,8 @@ const SecurityPasscodes = ({
       </div>
     </div>
   );
-};
+});
+
+SecurityPasscodes.displayName = 'SecurityPasscodes';
 
 export default SecurityPasscodes;

@@ -72,12 +72,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             }}
             disabled={isDisabled}
             className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white ${
-              isDisabled 
-                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
-                : isGreyedOut 
-                ? 'opacity-50 cursor-not-allowed' 
+              isDisabled
+                ? 'opacity-50 cursor-not-allowed pointer-events-none'
+                : isGreyedOut
+                ? 'opacity-50 cursor-not-allowed'
                 : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
-            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
+            }`}
             aria-label="Create rideshare check-in"
             tabIndex={isDisabled ? -1 : 0}
           >
@@ -107,12 +107,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             }}
             disabled={isDisabled}
             className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white ${
-              isDisabled 
-                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
-                : isGreyedOut 
-                ? 'opacity-50 cursor-not-allowed' 
+              isDisabled
+                ? 'opacity-50 cursor-not-allowed pointer-events-none'
+                : isGreyedOut
+                ? 'opacity-50 cursor-not-allowed'
                 : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
-            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
+            }`}
             aria-label="Create walking check-in"
             tabIndex={isDisabled ? -1 : 0}
           >
@@ -142,12 +142,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             }}
             disabled={isDisabled}
             className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white ${
-              isDisabled 
-                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
-                : isGreyedOut 
-                ? 'opacity-50 cursor-not-allowed' 
+              isDisabled
+                ? 'opacity-50 cursor-not-allowed pointer-events-none'
+                : isGreyedOut
+                ? 'opacity-50 cursor-not-allowed'
                 : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
-            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
+            }`}
             aria-label="Create quick meet check-in"
             tabIndex={isDisabled ? -1 : 0}
           >

@@ -4,16 +4,17 @@ import haptic from '../utils/hapticFeedback';
 
 // Tutorial overlay with improved scrolling behavior
 
-const TutorialOverlay = ({ 
-  currentStep, 
-  onStepComplete, 
+const TutorialOverlay = ({
+  currentStep,
+  onStepComplete,
   onTutorialComplete,
   onStepBack,
   highlightedElementRef,
   tooltipConfig,
   stepNumber,
   totalSteps,
-  isPaused = false
+  isPaused = false,
+  lightOverlay = false
 }) => {
   const overlayRef = useRef(null);
   const [highlightRect, setHighlightRect] = useState(null);
@@ -23,13 +24,15 @@ const TutorialOverlay = ({
   useEffect(() => {
     // Reset scroll complete state when step changes
     setScrollComplete(false);
-    
+
     if (!highlightedElementRef?.current) {
       setHighlightRect(null);
       // Unlock screen if no element
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
+      // No highlighted element - show tooltip immediately
+      setScrollComplete(true);
       return;
     }
 
@@ -236,10 +239,10 @@ const TutorialOverlay = ({
       <div
         ref={overlayRef}
         className={`fixed inset-0 backdrop-blur-sm z-[90] transition-opacity duration-300 ${
-          currentStep === 'quickCheckIns' 
-            ? 'bg-black/20' // Lighter overlay for quickCheckIns so buttons aren't shadowed
-            : isPaused 
-              ? 'bg-black/40' 
+          currentStep === 'quickCheckIns' || lightOverlay
+            ? 'bg-black/20' // Lighter overlay for quickCheckIns/lightOverlay so buttons aren't shadowed
+            : isPaused
+              ? 'bg-black/40'
               : 'bg-black/75'
         }`}
         onClick={(e) => {

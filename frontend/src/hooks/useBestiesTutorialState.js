@@ -58,7 +58,7 @@ export const useBestiesTutorialState = () => {
   };
 
   const nextStep = () => {
-    if (currentStep === 3) {
+    if (currentStep === 4) {
       completeTutorial();
     } else {
       setCurrentStep(currentStep + 1);
