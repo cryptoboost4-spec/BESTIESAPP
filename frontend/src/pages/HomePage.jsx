@@ -15,7 +15,6 @@ import WeeklySummary from '../components/profile/WeeklySummary';
 // EmergencySOSButton removed per user request
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
-import InfoButton from '../components/InfoButton';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import TutorialOverlay from '../components/TutorialOverlay';
@@ -36,7 +35,6 @@ const HomePage = () => {
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
   const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep, resetTutorial } = useTutorialState();
-  const { checkInTutorialComplete } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const [tutorialModalOpen, setTutorialModalOpen] = useState(false);
   const [tutorialFormStep, setTutorialFormStep] = useState(null);
@@ -332,72 +330,6 @@ const HomePage = () => {
   };
 
   const weeklySummary = getWeeklySummary();
-
-  // Real-time bestie detection - check both stats and actual besties collection
-  const [hasAnyBestie, setHasAnyBestie] = useState((userData?.stats?.totalBesties || 0) > 0);
-  
-  useEffect(() => {
-    if (!currentUser?.uid) {
-      setHasAnyBestie(false);
-      return;
-    }
-
-    // First check stats (fast, updated via real-time listener in AuthContext)
-    const statsBesties = (userData?.stats?.totalBesties || 0) > 0;
-    if (statsBesties) {
-      setHasAnyBestie(true);
-    }
-
-    // Also set up real-time listener on besties collection for immediate updates
-    // This catches besties even if stats haven't updated yet
-    const bestiesQuery1 = query(
-      collection(db, 'besties'),
-      where('requesterId', '==', currentUser.uid),
-      where('status', '==', 'accepted'),
-      limit(1)
-    );
-    const bestiesQuery2 = query(
-      collection(db, 'besties'),
-      where('recipientId', '==', currentUser.uid),
-      where('status', '==', 'accepted'),
-      limit(1)
-    );
-
-    const unsubscribe1 = onSnapshot(bestiesQuery1, (snapshot) => {
-      const hasBesties = snapshot.size > 0 || statsBesties;
-      setHasAnyBestie(hasBesties);
-    }, (error) => {
-      console.error('Error in besties listener:', error);
-      setHasAnyBestie(statsBesties);
-    });
-
-    const unsubscribe2 = onSnapshot(bestiesQuery2, (snapshot) => {
-      const hasBesties = snapshot.size > 0 || statsBesties;
-      setHasAnyBestie(hasBesties);
-    }, (error) => {
-      console.error('Error in besties listener:', error);
-      setHasAnyBestie(statsBesties);
-    });
-
-    return () => {
-      unsubscribe1();
-      unsubscribe2();
-    };
-  }, [currentUser?.uid, userData?.stats?.totalBesties]);
-
-  const hasCompletedFirstCheckIn = (userData?.stats?.completedCheckIns || 0) > 0;
-
-  // Tutorial handlers - NEW FLOW
-  const handleStartTutorial = () => {
-    // First, reset any existing tutorial state to ensure clean start
-    resetTutorial();
-    setPreviousCheckInCount(activeCheckIns.length); // Track current count
-    
-    // Small delay to ensure state is cleared, then set to welcome
-    setTimeout(() => {
-      setTutorialStep('welcome');
-    }, 50);
-  };
   
   const handleTutorialNext = () => {
     const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
