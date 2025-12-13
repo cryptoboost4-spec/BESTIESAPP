@@ -102,7 +102,15 @@ const BestiesPage = () => {
   const activityFeedRef = useRef(null);
   const postButtonRef = useRef(null);
   const bestiesGridRef = useRef(null);
+  const addBestieFabRef = useRef(null);
+  const activityFeedComponentRef = useRef(null);
+  const bestiesGridComponentRef = useRef(null);
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // State for highlighted elements in tutorial
+  const [highlightedReactionButton, setHighlightedReactionButton] = useState(null);
+  const [highlightedAddButton, setHighlightedAddButton] = useState(null);
+  const [highlightedBestieCard, setHighlightedBestieCard] = useState(null);
 
   // Modal state
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
@@ -598,8 +606,11 @@ const BestiesPage = () => {
 
       {/* Floating Action Button - Add Bestie */}
       <button
+        ref={addBestieFabRef}
         onClick={() => setShowAddModal(true)}
-        className="fixed bottom-6 right-6 md:bottom-8 md:right-8 w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-primary to-pink-500 text-white shadow-2xl hover:shadow-3xl transform hover:scale-110 active:scale-95 transition-all z-40 flex items-center justify-center text-3xl md:text-4xl font-bold animate-pulse-slow hover:animate-none"
+        className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-primary to-pink-500 text-white shadow-2xl hover:shadow-3xl transform hover:scale-110 active:scale-95 transition-all z-40 flex items-center justify-center text-3xl md:text-4xl font-bold ${
+          highlightedAddButton ? 'ring-4 ring-purple-500 ring-offset-2' : 'animate-pulse-slow hover:animate-none'
+        }`}
         title="Add a bestie"
       >
         <span className="drop-shadow-lg">+</span>
@@ -673,16 +684,16 @@ const BestiesPage = () => {
               window.analytics.track('tutorial_step_completed', {
                 page: 'besties',
                 step: tutorial.currentStep,
-                total_steps: 3
+                total_steps: 4
               });
             }
-            
-            if (tutorial.currentStep === 3) {
+
+            if (tutorial.currentStep === 4) {
               // Last step - complete tutorial
               if (typeof window !== 'undefined' && window.analytics) {
                 window.analytics.track('tutorial_completed', {
                   page: 'besties',
-                  total_steps: 3
+                  total_steps: 4
                 });
               }
               tutorial.completeTutorial();
@@ -714,8 +725,18 @@ const BestiesPage = () => {
           refs={{
             activityFeed: activityFeedRef,
             postButton: postButtonRef,
+            addBestieFab: addBestieFabRef,
             bestiesGrid: bestiesGridRef
           }}
+          activityFeedComponentRef={activityFeedComponentRef}
+          addBestieFabRef={addBestieFabRef}
+          bestiesGridComponentRef={bestiesGridComponentRef}
+          onHighlightReactionButton={setHighlightedReactionButton}
+          onHighlightAddButton={setHighlightedAddButton}
+          onHighlightBestieCard={setHighlightedBestieCard}
+          highlightedReactionButton={highlightedReactionButton}
+          highlightedAddButton={highlightedAddButton}
+          highlightedBestieCard={highlightedBestieCard}
         />
       )}
 
