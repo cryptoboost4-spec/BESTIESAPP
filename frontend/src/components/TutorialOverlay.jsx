@@ -4,9 +4,9 @@ import haptic from '../utils/hapticFeedback';
 
 // Tutorial overlay with improved scrolling behavior
 
-const TutorialOverlay = ({ 
-  currentStep, 
-  onStepComplete, 
+const TutorialOverlay = ({
+  currentStep,
+  onStepComplete,
   onTutorialComplete,
   onStepBack,
   highlightedElementRef,
@@ -17,20 +17,27 @@ const TutorialOverlay = ({
 }) => {
   const overlayRef = useRef(null);
   const [highlightRect, setHighlightRect] = useState(null);
+  // Add state to track when scroll is complete - prevents tooltip flashing
+  const [scrollComplete, setScrollComplete] = useState(false);
 
   // Lock screen and update highlight position when element changes
   useEffect(() => {
+    // Reset scroll complete state when step changes
+    setScrollComplete(false);
+
     if (!highlightedElementRef?.current) {
       setHighlightRect(null);
       // Unlock screen if no element
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
+      // No highlighted element - show tooltip immediately
+      setScrollComplete(true);
       return;
     }
 
     const element = highlightedElementRef.current;
-    
+
     // Enhanced error handling: Verify element is in DOM
     if (!document.body.contains(element)) {
       console.warn('[Tutorial] Highlighted element is not in DOM, skipping highlight');
@@ -58,40 +65,40 @@ const TutorialOverlay = ({
       const spacing = 16; // Space between element and tooltip
       const topPadding = 20; // Padding from top of screen
       const bottomPadding = 20; // Padding above nav bar
-      
+
       // Get element's current position
       const elementTop = rect.top + window.scrollY;
       const elementBottom = elementTop + rect.height;
       const currentScrollY = window.scrollY;
-      
+
       // Calculate ideal position: center the element in the safe zone
       // But ensure tooltip can fit above or below
       const safeZoneTop = topPadding + tooltipHeight + spacing;
       const safeZoneBottom = viewportHeight - bottomNavHeight - bottomPadding;
       const safeZoneCenter = (safeZoneTop + safeZoneBottom) / 2;
-      
+
       // Target: position element so its center aligns with safe zone center
       const targetElementCenter = safeZoneCenter;
       const scrollOffset = targetElementCenter - (rect.top + rect.height / 2);
       let targetScrollY = currentScrollY + scrollOffset;
-      
+
       // But ensure element doesn't go off screen
       // Minimum: element top should be at least at safeZoneTop
       const minScrollY = elementTop - safeZoneTop;
       // Maximum: element bottom should be at most at safeZoneBottom
       const maxScrollY = elementBottom - safeZoneBottom;
-      
+
       // Clamp target scroll
       if (targetScrollY < minScrollY) {
         targetScrollY = minScrollY;
       } else if (targetScrollY > maxScrollY) {
         targetScrollY = maxScrollY;
       }
-      
+
       // Also ensure we don't scroll beyond document bounds
       const maxDocumentScroll = Math.max(0, document.documentElement.scrollHeight - viewportHeight);
       targetScrollY = Math.max(0, Math.min(targetScrollY, maxDocumentScroll));
-      
+
       // Only scroll if needed (more than 5px difference)
       if (Math.abs(targetScrollY - currentScrollY) > 5) {
         // Use smooth scroll for better UX
@@ -99,39 +106,44 @@ const TutorialOverlay = ({
           top: targetScrollY,
           behavior: 'smooth'
         });
-        
-        // Wait for scroll to complete before locking
+
+        // Wait for scroll to complete before locking and showing tooltip
         let scrollCheckCount = 0;
         const maxChecks = 50; // Max 2.5 seconds (50 * 50ms)
-        
+
         const checkScrollComplete = () => {
           scrollCheckCount++;
           const currentY = window.scrollY;
           const scrollDiff = Math.abs(currentY - targetScrollY);
-          
+
           // Check if scroll is complete (within 2px) or if we've waited too long
           if (scrollDiff < 2 || scrollCheckCount >= maxChecks) {
-            // Scroll complete (or timeout), lock screen
-            // Small delay to ensure DOM is settled
+            // Scroll complete (or timeout), lock screen and show tooltip
+            // Small delay to ensure DOM is settled and user sees the scroll
             setTimeout(() => {
               lockScreen();
-            }, 50);
+              // Signal that scroll is complete and tooltip can show
+              setScrollComplete(true);
+            }, 100);
           } else {
             // Still scrolling, check again
             setTimeout(checkScrollComplete, 50);
           }
         };
-        
+
         // Start checking after smooth scroll begins
         setTimeout(checkScrollComplete, 100);
       } else {
-        // No scroll needed, lock immediately
+        // No scroll needed, lock immediately but still delay tooltip slightly
         requestAnimationFrame(() => {
           lockScreen();
+          setTimeout(() => {
+            setScrollComplete(true);
+          }, 100);
         });
       }
     };
-    
+
     // Start scrolling
     scrollElementIntoView();
 
@@ -160,7 +172,7 @@ const TutorialOverlay = ({
       element.style.zIndex = '';
       element.style.position = '';
       window.removeEventListener('resize', updateHighlight);
-      
+
       // Unlock screen
       const scrollY = document.body.style.top;
       document.body.style.overflow = '';
@@ -226,9 +238,8 @@ const TutorialOverlay = ({
       {/* Dark Overlay - full screen, highlighted element will be above it */}
       <div
         ref={overlayRef}
-        className={`fixed inset-0 backdrop-blur-sm z-[90] transition-opacity duration-300 ${
-          isPaused ? 'bg-black/40' : 'bg-black/75'
-        }`}
+        className={`fixed inset-0 backdrop-blur-sm z-[90] transition-opacity duration-300 ${isPaused ? 'bg-black/40' : 'bg-black/75'
+          }`}
         onClick={(e) => {
           // During quickCheckIns step, allow clicks through to buttons
           // Otherwise, prevent clicks outside highlighted area
@@ -271,21 +282,23 @@ const TutorialOverlay = ({
         </>
       )}
 
-      {/* Tooltip */}
-      <TutorialTooltip
-        title={tooltipConfig.title}
-        body={tooltipConfig.body}
-        buttonText={tooltipConfig.buttonText || 'Next'}
-        onNext={handleNext}
-        onBack={onStepBack}
-        onSkip={tooltipConfig.onSkip || onTutorialComplete}
-        showBack={stepNumber > 1}
-        showSkip={true}
-        stepNumber={stepNumber}
-        totalSteps={totalSteps}
-        targetElement={highlightedElementRef?.current}
-        position={tooltipConfig.position}
-      />
+      {/* Tooltip - only show after scroll completes */}
+      {scrollComplete && (
+        <TutorialTooltip
+          title={tooltipConfig.title}
+          body={tooltipConfig.body}
+          buttonText={tooltipConfig.buttonText || 'Next'}
+          onNext={handleNext}
+          onBack={onStepBack}
+          onSkip={tooltipConfig.onSkip || onTutorialComplete}
+          showBack={stepNumber > 1}
+          showSkip={true}
+          stepNumber={stepNumber}
+          totalSteps={totalSteps}
+          targetElement={highlightedElementRef?.current}
+          position={tooltipConfig.position}
+        />
+      )}
     </>
   );
 };
