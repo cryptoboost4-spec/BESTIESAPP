@@ -371,8 +371,8 @@ const HomePage = () => {
       let element = null;
       switch (currentTutorialStep) {
         case 'welcome':
-          // Highlight container so tooltip can be positioned below it
-          element = quickCheckInButtonsRef.current.containerRef || null;
+          // DON'T highlight the buttons during welcome step
+          element = null;
           break;
         case 'allButtons':
           // Highlight entire container

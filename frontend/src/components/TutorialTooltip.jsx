@@ -122,19 +122,15 @@ const TutorialTooltip = ({
     let top;
 
     if (position === 'below') {
-      // Position tooltip BELOW the button
+      // Position tooltip BELOW the button - ALWAYS stay below
       top = buttonBottom + spacing;
       
-      // Ensure tooltip doesn't go below nav bar
+      // If tooltip would overlap bottom nav, just position it as close as possible
+      // but still below the button
       const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
       if (top + tooltipHeight > maxBottom) {
-        // Tooltip would go below nav, position it above button instead
-        top = buttonTop - tooltipHeight - spacing;
-        // But ensure it doesn't go off top
-        const minTop = 20;
-        if (top < minTop) {
-          top = minTop;
-        }
+        // Instead of moving above button, just position higher but still below button
+        top = Math.max(buttonBottom + 8, maxBottom - tooltipHeight);
       }
     } else {
       // ALWAYS position tooltip ABOVE the button (default behavior)
