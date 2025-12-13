@@ -31,9 +31,6 @@ const BestiesTutorialOverlay = ({
   // Step 1: Activity Feed sub-steps
   const [activitySubStep, setActivitySubStep] = useState('initial'); // 'initial', 'showing-reactions', 'reacted'
 
-  // Step 2: Post button (already handled by modal)
-  const [postSubStep, setPostSubStep] = useState('initial');
-
   // Step 3: Add Bestie sub-steps
   const [addBestieSubStep, setAddBestieSubStep] = useState('initial'); // 'initial', 'showing-button'
 
@@ -45,13 +42,6 @@ const BestiesTutorialOverlay = ({
     if (currentStep !== 1) {
       setActivitySubStep('initial');
       onHighlightReactionButton?.(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]);
-
-  useEffect(() => {
-    if (currentStep !== 2) {
-      setPostSubStep('initial');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
