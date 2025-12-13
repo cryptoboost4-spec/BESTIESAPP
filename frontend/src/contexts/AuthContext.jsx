@@ -288,6 +288,9 @@ export const AuthProvider = ({ children }) => {
             email: user.email,
             phoneNumber: user.phoneNumber || null,
             photoURL: user.photoURL || null,
+            profile: {
+              backgroundId: 'monstera-dream', // Default background for new users
+            },
             stats: {
               joinedAt: Timestamp.now(),
               totalCheckIns: 0,

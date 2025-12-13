@@ -35,17 +35,19 @@ const ProfileTutorialOverlay = ({
         title: 'Customize Your Background',
         body: "You can change your background from here! Choose from different styles, colors, and themes to make your profile stand out. Express yourself! ✨",
         buttonText: 'I\'ll do it later',
-        position: 'below',
+        position: 'right',
         highlightedElementRef: refs.customizerButton,
-        requiresInteraction: true
+        requiresInteraction: true,
+        lightOverlay: true
       },
       3: {
         title: 'Edit Your Profile',
         body: "You can edit your profile details from here! Add your name, bio, birthday, and more. Make it yours! ✏️",
         buttonText: 'I\'ll do it later',
-        position: 'below',
+        position: 'right',
         highlightedElementRef: refs.editProfileButton,
-        requiresInteraction: true
+        requiresInteraction: true,
+        lightOverlay: true
       },
       4: {
         title: 'Complete Your Profile',
@@ -60,7 +62,7 @@ const ProfileTutorialOverlay = ({
         title: 'Earn Badges',
         body: "Complete check-ins, add besties, and stay active to earn badges. Show off your achievements! You can come back later to explore how to earn each one. 🏆",
         buttonText: 'Next',
-        position: 'auto',
+        position: 'below',
         highlightedElementRef: refs.badgesSection
       },
       6: {
@@ -110,6 +112,7 @@ const ProfileTutorialOverlay = ({
       stepNumber={currentStep}
       totalSteps={7}
       isPaused={isPaused}
+      lightOverlay={tooltipConfig.lightOverlay}
     />
   );
 };
