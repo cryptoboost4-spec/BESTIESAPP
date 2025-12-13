@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import TutorialOverlay from '../../TutorialOverlay';
 import SmallTooltip from '../SmallTooltip';
-import TutorialTooltip from '../../TutorialTooltip';
 
 /**
  * SettingsTutorialOverlay - Tutorial overlay for Settings page
@@ -55,7 +54,7 @@ const SettingsTutorialOverlay = ({
 
       setPreviousNotificationState(currentState);
     }
-  }, [userData, currentStep, notificationSubStep, previousNotificationState]);
+  }, [userData, currentStep, notificationSubStep, previousNotificationState, onHighlightToggle]);
 
   // Handle toggle tooltip delay
   useEffect(() => {
@@ -77,7 +76,7 @@ const SettingsTutorialOverlay = ({
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [notificationSubStep, currentStep, notificationSettingsRef]);
+  }, [notificationSubStep, currentStep, notificationSettingsRef, onHighlightToggle]);
 
   // Reset notification sub-step when step changes
   useEffect(() => {
@@ -98,7 +97,7 @@ const SettingsTutorialOverlay = ({
         });
       }
     }
-  }, [currentStep, userData]);
+  }, [currentStep, userData, notificationSubStep, onHighlightToggle]);
 
   useEffect(() => {
     if (!currentStep || !refs) return;
@@ -171,7 +170,7 @@ const SettingsTutorialOverlay = ({
     setTimeout(() => {
       setTooltipConfig(adjustedConfigs[currentStep] || configs[currentStep]);
     }, 150);
-  }, [currentStep, refs, hasMessenger, onPause]);
+  }, [currentStep, refs, hasMessenger, onPause, onNext]);
 
   if (!currentStep || !tooltipConfig) return null;
 

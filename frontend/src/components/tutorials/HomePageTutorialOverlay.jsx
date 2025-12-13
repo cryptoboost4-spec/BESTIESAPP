@@ -1,7 +1,6 @@
 import React from 'react';
 import TutorialOverlay from '../TutorialOverlay';
 import TutorialTooltip from '../TutorialTooltip';
-import haptic from '../../utils/hapticFeedback';
 
 /**
  * New Home Page Tutorial Flow:
