@@ -81,10 +81,14 @@ const SettingsPage = () => {
   
   // Refs for highlighted elements
   const notificationSettingsRef = useRef(null);
+  const notificationSettingsComponentRef = useRef(null); // Ref to NotificationSettings component
   const messengerLinkRef = useRef(null);
   const privacySettingsRef = useRef(null);
   const securityPasscodesRef = useRef(null);
   const preferencesRef = useRef(null);
+
+  // Tutorial state for notifications
+  const [highlightedToggle, setHighlightedToggle] = useState(null);
 
   // Check if push notifications are supported and enabled
   useEffect(() => {
@@ -554,6 +558,7 @@ const SettingsPage = () => {
         {/* Notification Preferences */}
         <div id="notifications" ref={notificationSettingsRef}>
           <NotificationSettings
+            ref={notificationSettingsComponentRef}
             userData={userData}
             currentUserId={currentUser.uid}
             toggleNotification={toggleNotification}
@@ -561,6 +566,13 @@ const SettingsPage = () => {
             pushNotificationsSupported={pushNotificationsSupported}
             pushNotificationsEnabled={pushNotificationsEnabled}
             loading={loading}
+            highlightedToggle={highlightedToggle}
+            onToggleChange={(type) => {
+              // Track which notification was toggled for tutorial
+              if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+                setHighlightedToggle(null); // Remove highlight after toggle
+              }
+            }}
             onOpenTestModal={() => {
               if (tutorial.tutorialActive && tutorial.currentStep === 1) {
                 tutorial.pauseTutorial();
@@ -831,8 +843,12 @@ const SettingsPage = () => {
       <TestAlertModal
         isOpen={showTestAlertModal}
         onClose={() => {
-          if (tutorial.tutorialActive && tutorial.isPaused) {
+          if (tutorial.tutorialActive && tutorial.isPaused && tutorial.currentStep === 1) {
+            // After test modal closes, continue to next step
             tutorial.resumeTutorial();
+            setTimeout(() => {
+              tutorial.nextStep();
+            }, 300);
           }
           setShowTestAlertModal(false);
         }}
@@ -918,8 +934,20 @@ const SettingsPage = () => {
             preferences: preferencesRef
           }}
           hasMessenger={FEATURES.messengerAlerts}
+          notificationSettingsRef={notificationSettingsComponentRef}
+          userData={userData}
+          highlightedToggle={highlightedToggle}
+          onToggleChange={(type) => {
+            setHighlightedToggle(null);
+            // This will trigger the congrats tooltip in SettingsTutorialOverlay
+          }}
+          onHighlightToggle={(toggle) => {
+            setHighlightedToggle(toggle);
+          }}
+          onOpenTestModal={() => {
+            setShowTestAlertModal(true);
+          }}
         />
-      )}
 
       {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
       {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && (

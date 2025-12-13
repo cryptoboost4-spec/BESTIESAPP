@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { TELEGRAM_CONFIG } from '../../config/telegram';
 import InfoButton from '../InfoButton';
 
-const NotificationSettings = ({
+const NotificationSettings = forwardRef(({
   userData,
   currentUserId,
   toggleNotification,
@@ -10,11 +10,56 @@ const NotificationSettings = ({
   pushNotificationsSupported,
   pushNotificationsEnabled,
   loading,
-  onOpenTestModal
-}) => {
+  onOpenTestModal,
+  highlightedToggle = null, // 'telegram', 'push', 'sms', or null
+  onToggleChange
+}, ref) => {
+  const telegramToggleRef = useRef(null);
+  const pushToggleRef = useRef(null);
+  const smsToggleRef = useRef(null);
+
+  // Expose toggle refs to parent
+  useImperativeHandle(ref, () => ({
+    telegramToggle: telegramToggleRef.current,
+    pushToggle: pushToggleRef.current,
+    smsToggle: smsToggleRef.current
+  }));
+
+  // Animate highlighted toggle
+  useEffect(() => {
+    const toggleRefs = {
+      telegram: telegramToggleRef.current,
+      push: pushToggleRef.current,
+      sms: smsToggleRef.current
+    };
+
+    const targetToggle = toggleRefs[highlightedToggle];
+    if (targetToggle && highlightedToggle) {
+      // Add pulsing animation
+      targetToggle.classList.add('animate-pulse');
+      targetToggle.style.transform = 'scale(1.1)';
+      targetToggle.style.transition = 'transform 0.3s ease';
+      
+      // Scroll into view if needed
+      targetToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      return () => {
+        targetToggle.classList.remove('animate-pulse');
+        targetToggle.style.transform = '';
+      };
+    }
+  }, [highlightedToggle]);
+
   const handleConnectTelegram = () => {
     const telegramLink = TELEGRAM_CONFIG.getLinkForUser(currentUserId);
     window.open(telegramLink, '_blank');
+  };
+
+  const handleToggle = (type, handler) => {
+    handler();
+    if (onToggleChange) {
+      onToggleChange(type);
+    }
   };
 
   return (
@@ -51,12 +96,13 @@ const NotificationSettings = ({
               </div>
             </div>
             <button
+              ref={telegramToggleRef}
               onClick={async () => {
                 if (!userData?.telegramChatId) {
                   // Auto-connect when toggling on
                   handleConnectTelegram();
                 }
-                toggleNotification('telegram');
+                handleToggle('telegram', () => toggleNotification('telegram'));
               }}
               className={`w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${
                 !userData?.telegramChatId
@@ -91,7 +137,8 @@ const NotificationSettings = ({
             </div>
           </div>
           <button
-            onClick={togglePushNotifications}
+            ref={pushToggleRef}
+            onClick={() => handleToggle('push', togglePushNotifications)}
             disabled={!pushNotificationsSupported || loading}
             className={`w-12 h-6 rounded-full transition-colors ${
               !pushNotificationsSupported
@@ -127,7 +174,8 @@ const NotificationSettings = ({
             </div>
           </div>
           <button
-            onClick={() => toggleNotification('sms')}
+            ref={smsToggleRef}
+            onClick={() => handleToggle('sms', () => toggleNotification('sms'))}
             className={`w-12 h-6 rounded-full transition-colors ${
               userData?.notificationPreferences?.sms
                 ? 'bg-primary'
@@ -160,6 +208,8 @@ const NotificationSettings = ({
       </div>
     </div>
   );
-};
+});
+
+NotificationSettings.displayName = 'NotificationSettings';
 
 export default NotificationSettings;
