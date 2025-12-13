@@ -948,6 +948,7 @@ const SettingsPage = () => {
             setShowTestAlertModal(true);
           }}
         />
+      )}
 
       {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
       {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && (
