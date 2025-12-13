@@ -83,6 +83,20 @@ const HomePage = () => {
     }
   }, [userData, authLoading, navigate]);
 
+  // Auto-start tutorial when user first lands after onboarding
+  useEffect(() => {
+    if (authLoading) return;
+    if (!userData) return;
+    
+    // Check if onboarding was just completed (user has completed onboarding but tutorial not started)
+    if (userData.onboardingCompleted && !tutorialComplete && !currentTutorialStep) {
+      // Small delay to ensure page is fully rendered
+      setTimeout(() => {
+        setTutorialStep('welcome');
+      }, 300);
+    }
+  }, [userData, authLoading, tutorialComplete, currentTutorialStep, setTutorialStep]);
+
   // Redirect to login if there's a pending invite and user is not logged in
   useEffect(() => {
     if (authLoading) return;
@@ -439,8 +453,8 @@ const HomePage = () => {
       let element = null;
       switch (currentTutorialStep) {
         case 'welcome':
-          // No element highlighted - full screen overlay
-          element = null;
+          // Highlight container so tooltip can be positioned below it
+          element = quickCheckInButtonsRef.current.containerRef || null;
           break;
         case 'allButtons':
           // Highlight entire container
@@ -495,25 +509,26 @@ const HomePage = () => {
           body: "Let's show you around! This is where you'll create check-ins to keep yourself safe. Ready to learn?",
           buttonText: 'Show Me Around',
           onNext: () => handleTutorialNext(),
-          position: 'auto',
+          onSkip: handleSkipTutorial,
+          position: 'below',
           stepNumber,
           totalSteps
         };
       case 'allButtons':
         return {
           title: 'Your Check-In Hub',
-          body: "These are your check-in buttons! You have 3 quick options (rideshare, walking, meeting) and one custom option. This is where you'll create all your safety check-ins.",
+          body: "This is where you create check-ins, and what check-ins do.",
           buttonText: 'Got It',
           onNext: () => handleTutorialNext(),
-          position: 'auto',
+          position: 'below',
           stepNumber,
           totalSteps
         };
       case 'quickCheckIns':
         return {
           title: 'Quick Check-Ins',
-          body: "These 3 buttons are quick check-ins - each one is slightly different:\n\n🚗 Rideshare - For Uber/Lyft rides\n🚶‍♀️ Walking - When walking alone\n💬 Quick Meet - Meeting someone new\n\nPick any one to try it out!",
-          buttonText: 'I\'ll Pick One',
+          body: "Pick one and try it out! We'll see you back here when you're done.",
+          buttonText: null, // No button - user must click a quick check-in
           onNext: () => {
             // Don't advance - wait for them to click a button
             // This step stays active until they click
@@ -931,37 +946,16 @@ const HomePage = () => {
 
       {/* Tutorial Overlay - NEW FLOW */}
       {shouldShowTutorial && tooltipConfig && (
-        <>
-          {/* For welcome step, show full-screen dark overlay */}
-          {currentTutorialStep === 'welcome' ? (
-            <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-              <div className="max-w-md w-full">
-                <TutorialTooltip
-                  title={tooltipConfig.title}
-                  body={tooltipConfig.body}
-                  buttonText={tooltipConfig.buttonText}
-                  onNext={tooltipConfig.onNext}
-                  onSkip={handleSkipTutorial}
-                  stepNumber={tooltipConfig.stepNumber}
-                  totalSteps={tooltipConfig.totalSteps}
-                  targetElement={null}
-                  position="auto"
-                />
-              </div>
-            </div>
-          ) : (
-            <TutorialOverlay
-              currentStep={currentTutorialStep}
-              onStepComplete={handleTutorialNext}
-              onTutorialComplete={handleSkipTutorial}
-              onStepBack={handleTutorialBack}
-              highlightedElementRef={getHighlightedElementRef()}
-              tooltipConfig={tooltipConfig}
-              stepNumber={getStepNumber()}
-              totalSteps={5}
-            />
-          )}
-        </>
+        <TutorialOverlay
+          currentStep={currentTutorialStep}
+          onStepComplete={handleTutorialNext}
+          onTutorialComplete={handleSkipTutorial}
+          onStepBack={handleTutorialBack}
+          highlightedElementRef={getHighlightedElementRef()}
+          tooltipConfig={tooltipConfig}
+          stepNumber={getStepNumber()}
+          totalSteps={5}
+        />
       )}
     </div>
   );
