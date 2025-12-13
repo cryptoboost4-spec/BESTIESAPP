@@ -42,7 +42,7 @@ const ProfileTutorialOverlay = ({
         title: 'Complete Your Profile',
         body: isProfileComplete
           ? "Great job! Your profile is looking good. Don't worry about the rest - you can always come back here to complete more tasks whenever you're ready! 💪"
-          : "Here's what you can still set up. Don't worry - you can complete these tasks later at your own pace! Tap any item to jump to that setting, or just continue the tutorial. 👍",
+          : "Here's what you can still set up. Don't worry - you can complete these tasks later at your own pace! You can come back here anytime to finish them. 👍",
         buttonText: 'Next',
         position: 'auto',
         highlightedElementRef: refs.profileCompletion
