@@ -23,13 +23,15 @@ const TutorialOverlay = ({
   useEffect(() => {
     // Reset scroll complete state when step changes
     setScrollComplete(false);
-    
+
     if (!highlightedElementRef?.current) {
       setHighlightRect(null);
       // Unlock screen if no element
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
+      // No highlighted element - show tooltip immediately
+      setScrollComplete(true);
       return;
     }
 
