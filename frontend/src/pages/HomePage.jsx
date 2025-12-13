@@ -6,9 +6,6 @@ import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs, limit } from 'firebase/firestore';
 import CheckInCard from '../components/CheckInCard';
 import QuickCheckInButtons from '../components/QuickCheckInButtons';
-import RideshareModal from '../components/checkin/RideshareModal';
-import WalkingModal from '../components/checkin/WalkingModal';
-import QuickMeetModal from '../components/checkin/QuickMeetModal';
 import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
@@ -35,8 +32,6 @@ const HomePage = () => {
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
   const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
   const quickCheckInButtonsRef = useRef(null);
-  const [tutorialModalOpen, setTutorialModalOpen] = useState(false);
-  const [tutorialFormStep, setTutorialFormStep] = useState(null);
   const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
 
   // Validate tutorial state and clean up invalid states
@@ -363,11 +358,11 @@ const HomePage = () => {
     haptic.light();
   };
 
-  const handleTutorialFormClose = () => {
-    setTutorialModalOpen(false);
-    setTutorialFormStep(null);
-    // Advance tutorial to next step when modal closes
-    handleTutorialStepComplete();
+  const handleTutorialModalComplete = () => {
+    // Called when user completes a quick check-in in tutorial mode
+    if (currentTutorialStep === 'quickCheckIns') {
+      setTutorialStep('afterQuickCheckIn');
+    }
   };
 
   // Get highlighted element ref based on current step - NEW FLOW
@@ -433,9 +428,9 @@ const HomePage = () => {
     switch (currentTutorialStep) {
       case 'welcome':
         return {
-          title: 'Welcome to Besties! 🛡️',
-          body: "Let's show you around! This is where you'll create check-ins to keep yourself safe. Ready to learn?",
-          buttonText: 'Show Me Around',
+          title: 'Let\'s Learn Check-Ins! 📍',
+          body: "We're going to teach you how to use check-ins to keep yourself safe. This is your check-in hub where the magic happens!",
+          buttonText: 'Let\'s Go',
           onNext: () => handleTutorialNext(),
           onSkip: handleSkipTutorial,
           position: 'below',
@@ -445,7 +440,7 @@ const HomePage = () => {
       case 'allButtons':
         return {
           title: 'Your Check-In Hub',
-          body: "This is where you create check-ins, and what check-ins do.",
+          body: "Check-ins are safety timers that alert your besties if you don't check back in on time. Perfect for dates, rideshares, walking alone, or any time you want someone watching your back. 💜",
           buttonText: 'Got It',
           onNext: () => handleTutorialNext(),
           position: 'below',
@@ -455,21 +450,18 @@ const HomePage = () => {
       case 'quickCheckIns':
         return {
           title: 'Quick Check-Ins',
-          body: "Pick one and try it out! We'll see you back here when you're done.",
+          body: "Pick one and try it out! We'll guide you through it.",
           buttonText: null, // No button - user must click a quick check-in
-          onNext: () => {
-            // Don't advance - wait for them to click a button
-            // This step stays active until they click
-          },
-          position: 'auto',
+          onNext: () => {}, // No-op - they must click a button
+          position: 'below', // Show below buttons
           stepNumber,
           totalSteps
         };
       case 'afterQuickCheckIn':
         return {
           title: 'Great Job! 🎉',
-          body: "You just created your first check-in! Now let's learn about the custom check-in option. It gives you full control over all the details.",
-          buttonText: 'Show Me Custom',
+          body: "You just created your first check-in! That's how easy it is to stay safe. Ready to see what else you can do?",
+          buttonText: 'What\'s Next?',
           onNext: () => handleTutorialNext(),
           position: 'auto',
           stepNumber,
@@ -533,7 +525,7 @@ const HomePage = () => {
   // Calculate tutorial overlay visibility before return
   const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
   const isValidStep = currentTutorialStep && validSteps.includes(currentTutorialStep);
-  const shouldShowTutorial = isValidStep && !tutorialComplete && !tutorialModalOpen;
+  const shouldShowTutorial = isValidStep && !tutorialComplete;
   const tooltipConfig = shouldShowTutorial ? getTooltipConfig() : null;
 
   return (
@@ -554,30 +546,11 @@ const HomePage = () => {
             <QuickCheckInButtons
               currentTutorialStep={currentTutorialStep} 
               ref={quickCheckInButtonsRef}
-              isTutorialMode={!!currentTutorialStep && !tutorialModalOpen}
+              isTutorialMode={!!currentTutorialStep}
               onTutorialAction={handleTutorialAction}
               allowQuickCheckInClick={currentTutorialStep === 'quickCheckIns'}
+              onTutorialModalComplete={handleTutorialModalComplete}
             />
-
-            {/* Tutorial Modals */}
-            {tutorialModalOpen && tutorialFormStep === 'rideshare' && (
-              <RideshareModal 
-                onClose={handleTutorialFormClose}
-                isTutorialMode={true}
-              />
-            )}
-            {tutorialModalOpen && tutorialFormStep === 'walking' && (
-              <WalkingModal 
-                onClose={handleTutorialFormClose}
-                isTutorialMode={true}
-              />
-            )}
-            {tutorialModalOpen && tutorialFormStep === 'quickmeet' && (
-              <QuickMeetModal 
-                onClose={handleTutorialFormClose}
-                isTutorialMode={true}
-              />
-            )}
 
             {/* Living Circle - DO NOT REMOVE */}
             <LivingCircle userId={currentUser?.uid} />

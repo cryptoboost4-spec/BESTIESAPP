@@ -6,7 +6,7 @@ import RideshareModal from './checkin/RideshareModal';
 import WalkingModal from './checkin/WalkingModal';
 import QuickMeetModal from './checkin/QuickMeetModal';
 
-const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction, currentTutorialStep, allowQuickCheckInClick = false }, ref) => {
+const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction, currentTutorialStep, allowQuickCheckInClick = false, onTutorialModalComplete }, ref) => {
   const navigate = useNavigate();
   const [showRideshareModal, setShowRideshareModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
@@ -189,18 +189,21 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
         <RideshareModal 
           onClose={() => setShowRideshareModal(false)} 
           isTutorialMode={isTutorialMode}
+          onTutorialComplete={onTutorialModalComplete}
         />
       )}
       {showWalkingModal && (
         <WalkingModal 
           onClose={() => setShowWalkingModal(false)} 
           isTutorialMode={isTutorialMode}
+          onTutorialComplete={onTutorialModalComplete}
         />
       )}
       {showQuickMeetModal && (
         <QuickMeetModal 
           onClose={() => setShowQuickMeetModal(false)} 
           isTutorialMode={isTutorialMode}
+          onTutorialComplete={onTutorialModalComplete}
         />
       )}
     </>
