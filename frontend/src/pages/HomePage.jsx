@@ -21,7 +21,6 @@ import AddBestieCard from '../components/AddBestieCard';
 import TutorialPromptCard from '../components/TutorialPromptCard';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import TutorialOverlay from '../components/TutorialOverlay';
-import TutorialTooltip from '../components/TutorialTooltip';
 import { useTutorialState } from '../hooks/useTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
