@@ -16,17 +16,43 @@ const SettingsTutorialOverlay = ({
   onResume,
   refs,
   hasMessenger = false,
-  notificationSettingsRef = null, // Ref to NotificationSettings component
+  notificationSettingsRef = null,
+  messengerLinkComponentRef = null,
+  privacySettingsComponentRef = null,
+  securityPasscodesComponentRef = null,
+  preferencesComponentRef = null,
   userData = null,
-  highlightedToggle = null, // Which toggle to highlight
-  onToggleChange = null, // Callback when user toggles a notification
-  onHighlightToggle = null, // Callback to set highlighted toggle
-  onOpenTestModal = null // Callback to open test modal
+  highlightedToggle = null,
+  highlightedMessengerButton = null,
+  highlightedPrivacyElement = null,
+  highlightedSecurityElement = null,
+  highlightedPreferenceElement = null,
+  onToggleChange = null,
+  onHighlightToggle = null,
+  onHighlightMessengerButton = null,
+  onHighlightPrivacyElement = null,
+  onHighlightSecurityElement = null,
+  onHighlightPreferenceElement = null,
+  onOpenTestModal = null
 }) => {
   const [tooltipConfig, setTooltipConfig] = useState(null);
-  const [notificationSubStep, setNotificationSubStep] = useState('initial'); // 'initial', 'ready-for-toggle-hint', 'showing-toggle-hint', 'congrats', 'test-prompt'
+
+  // Step 1: Notifications sub-steps
+  const [notificationSubStep, setNotificationSubStep] = useState('initial');
   const [previousNotificationState, setPreviousNotificationState] = useState(null);
   const [showToggleTooltip, setShowToggleTooltip] = useState(false);
+
+  // Step 2: Messenger sub-steps
+  const [messengerSubStep, setMessengerSubStep] = useState('initial'); // 'initial', 'showing-copy-hint', 'copied'
+
+  // Step 3: Privacy sub-steps
+  const [privacySubStep, setPrivacySubStep] = useState('initial'); // 'initial', 'showing-toggle-hint', 'showing-radio-hint'
+
+  // Step 4: Security sub-steps
+  const [securitySubStep, setSecuritySubStep] = useState('initial'); // 'initial', 'showing-learn-more', 'showing-passcode-card'
+
+  // Step 5: Preferences sub-steps
+  const [preferencesSubStep, setPreferencesSubStep] = useState('initial'); // 'initial', 'showing-dark-mode', 'showing-data-retention'
 
   // Track notification state changes to detect when user toggles
   useEffect(() => {
@@ -102,6 +128,78 @@ const SettingsTutorialOverlay = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, userData]);
 
+  // Reset messenger sub-step when step changes
+  useEffect(() => {
+    if (currentStep !== 2) {
+      setMessengerSubStep('initial');
+      onHighlightMessengerButton?.(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+  // Reset privacy sub-step when step changes
+  useEffect(() => {
+    if (currentStep !== 3) {
+      setPrivacySubStep('initial');
+      onHighlightPrivacyElement?.(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+  // Reset security sub-step when step changes
+  useEffect(() => {
+    if (currentStep !== 4) {
+      setSecuritySubStep('initial');
+      onHighlightSecurityElement?.(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+  // Reset preferences sub-step when step changes
+  useEffect(() => {
+    if (currentStep !== 5) {
+      setPreferencesSubStep('initial');
+      onHighlightPreferenceElement?.(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+  // Handle Messenger copy button highlight
+  useEffect(() => {
+    if (currentStep === 2 && messengerSubStep === 'showing-copy-hint') {
+      setTimeout(() => {
+        onHighlightMessengerButton?.('copy');
+      }, 500);
+    }
+  }, [currentStep, messengerSubStep, onHighlightMessengerButton]);
+
+  // Handle Privacy toggle highlight
+  useEffect(() => {
+    if (currentStep === 3 && privacySubStep === 'showing-toggle-hint') {
+      setTimeout(() => {
+        onHighlightPrivacyElement?.('statsToggle');
+      }, 500);
+    }
+  }, [currentStep, privacySubStep, onHighlightPrivacyElement]);
+
+  // Handle Security learn more button highlight
+  useEffect(() => {
+    if (currentStep === 4 && securitySubStep === 'showing-learn-more') {
+      setTimeout(() => {
+        onHighlightSecurityElement?.('learnMoreButton');
+      }, 500);
+    }
+  }, [currentStep, securitySubStep, onHighlightSecurityElement]);
+
+  // Handle Preferences dark mode toggle highlight
+  useEffect(() => {
+    if (currentStep === 5 && preferencesSubStep === 'showing-dark-mode') {
+      setTimeout(() => {
+        onHighlightPreferenceElement?.('darkModeToggle');
+      }, 500);
+    }
+  }, [currentStep, preferencesSubStep, onHighlightPreferenceElement]);
+
   useEffect(() => {
     if (!currentStep || !refs) return;
 
@@ -127,32 +225,60 @@ const SettingsTutorialOverlay = ({
         }
       },
       2: {
-        title: 'Connect Messenger',
-        body: "Link your Facebook Messenger to get free alerts. Share your link with besties to connect via Messenger - it's free and unlimited!",
-        buttonText: 'Next',
+        title: 'Share Your Safety Link',
+        body: "Copy and share your personal Messenger link with trusted contacts. When they message you, they'll be connected for 20 hours and can receive your safety alerts.",
+        buttonText: 'Okay',
+        secondaryButtonText: 'Skip This',
         position: 'auto',
-        highlightedElementRef: refs.messengerLink
+        highlightedElementRef: refs.messengerLink,
+        onOkay: () => {
+          setMessengerSubStep('showing-copy-hint');
+        },
+        onSkip: () => {
+          onNext();
+        }
       },
       3: {
         title: 'Control Your Privacy',
-        body: "Decide who can see your check-ins and profile. Set default privacy levels and control what information is shared. Your privacy matters.",
-        buttonText: 'Next',
+        body: "Decide who can see your check-ins. You can share with all besties, just your circle, or keep them private until alerts.",
+        buttonText: 'Okay',
+        secondaryButtonText: 'Skip This',
         position: 'auto',
-        highlightedElementRef: refs.privacySettings
+        highlightedElementRef: refs.privacySettings,
+        onOkay: () => {
+          setPrivacySubStep('showing-toggle-hint');
+        },
+        onSkip: () => {
+          onNext();
+        }
       },
       4: {
         title: 'Extra Security (Optional)',
         body: "Want extra protection? You can set up a safety passcode or duress code. These are completely optional - only set them up if you want extra security features.",
-        buttonText: 'Skip',
+        buttonText: 'Okay',
+        secondaryButtonText: 'Skip This',
         position: 'auto',
-        highlightedElementRef: refs.securityPasscodes
+        highlightedElementRef: refs.securityPasscodes,
+        onOkay: () => {
+          setSecuritySubStep('showing-learn-more');
+        },
+        onSkip: () => {
+          onNext();
+        }
       },
       5: {
         title: 'Customize Your Experience',
-        body: "Adjust app preferences, quick access settings, and more. Make Besties work exactly how you want it.",
-        buttonText: 'Got It! ⚙️',
+        body: "Adjust dark mode, data retention, and more. Make Besties work exactly how you want it.",
+        buttonText: 'Okay',
+        secondaryButtonText: 'Finish Tutorial',
         position: 'auto',
-        highlightedElementRef: refs.preferences
+        highlightedElementRef: refs.preferences,
+        onOkay: () => {
+          setPreferencesSubStep('showing-dark-mode');
+        },
+        onSkip: () => {
+          onNext();
+        }
       }
     };
 
@@ -322,7 +448,295 @@ const SettingsTutorialOverlay = ({
     );
   }
 
-  // Normal flow for other steps
+  // Custom render for step 2: Messenger with sub-steps
+  if (currentStep === 2) {
+    const handleMessengerAction = (action) => {
+      if (action === 'okay' && tooltipConfig.onOkay) {
+        tooltipConfig.onOkay();
+      } else if (action === 'skip' && tooltipConfig.onSkip) {
+        tooltipConfig.onSkip();
+      } else if (action === 'continue') {
+        onNext();
+      }
+    };
+
+    const getCopyButtonRef = () => {
+      if (!messengerLinkComponentRef?.current) return null;
+      return messengerLinkComponentRef.current.copyButton;
+    };
+
+    return (
+      <>
+        <TutorialOverlay
+          currentStep={currentStep}
+          onStepComplete={() => handleMessengerAction('okay')}
+          onStepBack={onBack}
+          onTutorialComplete={onSkip}
+          highlightedElementRef={tooltipConfig.highlightedElementRef}
+          tooltipConfig={tooltipConfig}
+          stepNumber={currentStep}
+          totalSteps={totalSteps}
+          isPaused={isPaused || messengerSubStep !== 'initial'}
+        />
+
+        {messengerSubStep === 'initial' && (
+          <div className="fixed z-[10002] bottom-4 left-1/2 transform -translate-x-1/2">
+            <button
+              onClick={() => handleMessengerAction('skip')}
+              className="btn btn-secondary px-6 py-2 text-sm"
+            >
+              Skip This
+            </button>
+          </div>
+        )}
+
+        {messengerSubStep === 'showing-copy-hint' && getCopyButtonRef() && (
+          <SmallTooltip
+            message="Click to copy your link, then share it with trusted contacts!"
+            targetElement={getCopyButtonRef()}
+            position="auto"
+            showAction={true}
+            actionText="Got It"
+            onAction={() => handleMessengerAction('continue')}
+            delay={0}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Custom render for step 3: Privacy with sub-steps
+  if (currentStep === 3) {
+    const handlePrivacyAction = (action) => {
+      if (action === 'okay' && tooltipConfig.onOkay) {
+        tooltipConfig.onOkay();
+      } else if (action === 'skip' && tooltipConfig.onSkip) {
+        tooltipConfig.onSkip();
+      } else if (action === 'show-radio') {
+        setPrivacySubStep('showing-radio-hint');
+        onHighlightPrivacyElement?.('circleRadio');
+      } else if (action === 'continue') {
+        onNext();
+      }
+    };
+
+    const getStatsToggleRef = () => {
+      if (!privacySettingsComponentRef?.current) return null;
+      return privacySettingsComponentRef.current.statsToggle;
+    };
+
+    const getCircleRadioRef = () => {
+      if (!privacySettingsComponentRef?.current) return null;
+      return privacySettingsComponentRef.current.circleRadio;
+    };
+
+    return (
+      <>
+        <TutorialOverlay
+          currentStep={currentStep}
+          onStepComplete={() => handlePrivacyAction('okay')}
+          onStepBack={onBack}
+          onTutorialComplete={onSkip}
+          highlightedElementRef={tooltipConfig.highlightedElementRef}
+          tooltipConfig={tooltipConfig}
+          stepNumber={currentStep}
+          totalSteps={totalSteps}
+          isPaused={isPaused || privacySubStep !== 'initial'}
+        />
+
+        {privacySubStep === 'initial' && (
+          <div className="fixed z-[10002] bottom-4 left-1/2 transform -translate-x-1/2">
+            <button
+              onClick={() => handlePrivacyAction('skip')}
+              className="btn btn-secondary px-6 py-2 text-sm"
+            >
+              Skip This
+            </button>
+          </div>
+        )}
+
+        {privacySubStep === 'showing-toggle-hint' && getStatsToggleRef() && (
+          <SmallTooltip
+            message="Control whether besties can see your stats and check-in history"
+            targetElement={getStatsToggleRef()}
+            position="auto"
+            showAction={true}
+            actionText="Next"
+            onAction={() => handlePrivacyAction('show-radio')}
+            delay={0}
+          />
+        )}
+
+        {privacySubStep === 'showing-radio-hint' && getCircleRadioRef() && (
+          <SmallTooltip
+            message="We recommend 'Bestie Circle Only' for the best balance of privacy and connection"
+            targetElement={getCircleRadioRef()}
+            position="auto"
+            showAction={true}
+            actionText="Got It"
+            onAction={() => handlePrivacyAction('continue')}
+            delay={0}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Custom render for step 4: Security with sub-steps
+  if (currentStep === 4) {
+    const handleSecurityAction = (action) => {
+      if (action === 'okay' && tooltipConfig.onOkay) {
+        tooltipConfig.onOkay();
+      } else if (action === 'skip' && tooltipConfig.onSkip) {
+        tooltipConfig.onSkip();
+      } else if (action === 'show-passcode') {
+        setSecuritySubStep('showing-passcode-card');
+        onHighlightSecurityElement?.('safetyPasscodeCard');
+      } else if (action === 'continue') {
+        onNext();
+      }
+    };
+
+    const getLearnMoreButtonRef = () => {
+      if (!securityPasscodesComponentRef?.current) return null;
+      return securityPasscodesComponentRef.current.learnMoreButton;
+    };
+
+    const getSafetyPasscodeCardRef = () => {
+      if (!securityPasscodesComponentRef?.current) return null;
+      return securityPasscodesComponentRef.current.safetyPasscodeCard;
+    };
+
+    return (
+      <>
+        <TutorialOverlay
+          currentStep={currentStep}
+          onStepComplete={() => handleSecurityAction('okay')}
+          onStepBack={onBack}
+          onTutorialComplete={onSkip}
+          highlightedElementRef={tooltipConfig.highlightedElementRef}
+          tooltipConfig={tooltipConfig}
+          stepNumber={currentStep}
+          totalSteps={totalSteps}
+          isPaused={isPaused || securitySubStep !== 'initial'}
+        />
+
+        {securitySubStep === 'initial' && (
+          <div className="fixed z-[10002] bottom-4 left-1/2 transform -translate-x-1/2">
+            <button
+              onClick={() => handleSecurityAction('skip')}
+              className="btn btn-secondary px-6 py-2 text-sm"
+            >
+              Skip This
+            </button>
+          </div>
+        )}
+
+        {securitySubStep === 'showing-learn-more' && getLearnMoreButtonRef() && (
+          <SmallTooltip
+            message="Click to learn how passcodes protect you from coercion"
+            targetElement={getLearnMoreButtonRef()}
+            position="auto"
+            showAction={true}
+            actionText="Next"
+            onAction={() => handleSecurityAction('show-passcode')}
+            delay={0}
+          />
+        )}
+
+        {securitySubStep === 'showing-passcode-card' && getSafetyPasscodeCardRef() && (
+          <SmallTooltip
+            message="Set this up anytime to prevent others from canceling your alerts"
+            targetElement={getSafetyPasscodeCardRef()}
+            position="auto"
+            showAction={true}
+            actionText="Got It"
+            onAction={() => handleSecurityAction('continue')}
+            delay={0}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Custom render for step 5: Preferences with sub-steps
+  if (currentStep === 5) {
+    const handlePreferencesAction = (action) => {
+      if (action === 'okay' && tooltipConfig.onOkay) {
+        tooltipConfig.onOkay();
+      } else if (action === 'skip' && tooltipConfig.onSkip) {
+        tooltipConfig.onSkip();
+      } else if (action === 'show-data-retention') {
+        setPreferencesSubStep('showing-data-retention');
+        onHighlightPreferenceElement?.('dataRetentionToggle');
+      } else if (action === 'continue') {
+        onNext();
+      }
+    };
+
+    const getDarkModeToggleRef = () => {
+      if (!preferencesComponentRef?.current) return null;
+      return preferencesComponentRef.current.darkModeToggle;
+    };
+
+    const getDataRetentionToggleRef = () => {
+      if (!preferencesComponentRef?.current) return null;
+      return preferencesComponentRef.current.dataRetentionToggle;
+    };
+
+    return (
+      <>
+        <TutorialOverlay
+          currentStep={currentStep}
+          onStepComplete={() => handlePreferencesAction('okay')}
+          onStepBack={onBack}
+          onTutorialComplete={onSkip}
+          highlightedElementRef={tooltipConfig.highlightedElementRef}
+          tooltipConfig={tooltipConfig}
+          stepNumber={currentStep}
+          totalSteps={totalSteps}
+          isPaused={isPaused || preferencesSubStep !== 'initial'}
+        />
+
+        {preferencesSubStep === 'initial' && (
+          <div className="fixed z-[10002] bottom-4 left-1/2 transform -translate-x-1/2">
+            <button
+              onClick={() => handlePreferencesAction('skip')}
+              className="btn btn-secondary px-6 py-2 text-sm"
+            >
+              Finish Tutorial
+            </button>
+          </div>
+        )}
+
+        {preferencesSubStep === 'showing-dark-mode' && getDarkModeToggleRef() && (
+          <SmallTooltip
+            message="Toggle between light and dark themes - try it now!"
+            targetElement={getDarkModeToggleRef()}
+            position="auto"
+            showAction={true}
+            actionText="Next"
+            onAction={() => handlePreferencesAction('show-data-retention')}
+            delay={0}
+          />
+        )}
+
+        {preferencesSubStep === 'showing-data-retention' && getDataRetentionToggleRef() && (
+          <SmallTooltip
+            message="Choose whether to keep all your check-in history or auto-delete after 7 days for privacy"
+            targetElement={getDataRetentionToggleRef()}
+            position="auto"
+            showAction={true}
+            actionText="Finish"
+            onAction={() => handlePreferencesAction('continue')}
+            delay={0}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Normal flow fallback (shouldn't reach here with current design)
   return (
     <TutorialOverlay
       currentStep={currentStep}
