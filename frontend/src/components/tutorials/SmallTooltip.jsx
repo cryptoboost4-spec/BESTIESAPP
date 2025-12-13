@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import haptic from '../utils/hapticFeedback';
+import haptic from '../../utils/hapticFeedback';
 
 /**
  * SmallTooltip - Small tooltip that points at specific elements
