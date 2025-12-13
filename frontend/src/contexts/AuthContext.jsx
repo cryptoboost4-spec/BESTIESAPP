@@ -383,9 +383,15 @@ export const AuthProvider = ({ children }) => {
           }
           setLoading(false);
         }, (error) => {
-          console.error('❌ Firestore listener error:', error);
-          console.error('Error code:', error.code);
-          console.error('Error message:', error.message);
+          // Only log permission-denied errors at debug level to reduce console noise
+          // These are often expected (e.g., trying to read another user's private data)
+          if (error.code === 'permission-denied') {
+            console.debug('⚠️ Firestore permission denied (this may be expected):', error.message);
+          } else {
+            console.error('❌ Firestore listener error:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+          }
           setLoading(false);
         });
       } else {

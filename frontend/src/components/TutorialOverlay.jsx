@@ -236,7 +236,11 @@ const TutorialOverlay = ({
       <div
         ref={overlayRef}
         className={`fixed inset-0 backdrop-blur-sm z-[90] transition-opacity duration-300 ${
-          isPaused ? 'bg-black/40' : 'bg-black/75'
+          currentStep === 'quickCheckIns' 
+            ? 'bg-black/20' // Lighter overlay for quickCheckIns so buttons aren't shadowed
+            : isPaused 
+              ? 'bg-black/40' 
+              : 'bg-black/75'
         }`}
         onClick={(e) => {
           // During quickCheckIns step, allow clicks through to buttons
