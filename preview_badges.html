@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            gap: 40px;
+            padding: 50px;
+            font-family: sans-serif;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h3 {
+            color: #333;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- DEFINITIONS (Filters from BadgeBase.jsx) -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <!-- GOLD METALLIC GRADIENT -->
+            <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFE082" />
+                <stop offset="25%" stopColor="#FFCA28" />
+                <stop offset="50%" stopColor="#FF6F00" />
+                <stop offset="75%" stopColor="#FFCA28" />
+                <stop offset="100%" stopColor="#FFE082" />
+            </linearGradient>
+
+            <!-- THICK OUTLINE FILTER -->
+            <filter id="gold-outline" x="-50%" y="-50%" width="200%" height="200%">
+                <feMorphology operator="dilate" radius="4" in="SourceAlpha" result="outline_shape" />
+                <feFlood flood-color="#FFB300" result="gold_color" />
+                <feComposite in="gold_color" in2="outline_shape" operator="in" result="gold_outline" />
+                <feGaussianBlur in="gold_outline" stdDeviation="1" result="blurred_outline" />
+                <feSpecularLighting in="blurred_outline" surfaceScale="2" specularConstant="1" specularExponent="10"
+                    lighting-color="#FFF" result="specular">
+                    <fePointLight x="-5000" y="-10000" z="20000" />
+                </feSpecularLighting>
+                <feComposite in="specular" in2="outline_shape" operator="in" result="specular_out" />
+                <feMerge>
+                    <feMergeNode in="gold_outline" />
+                    <feMergeNode in="specular_out" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+
+            <!-- DROP SHADOW -->
+            <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+                <feOffset dx="0" dy="4" result="offsetblur" />
+                <feComponentTransfer>
+                    <feFuncA type="linear" slope="0.3" />
+                </feComponentTransfer>
+                <feMerge>
+                    <feMergeNode />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+
+            <!-- GLASS SHINE GRADIENT -->
+            <linearGradient id="glass-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="white" stopOpacity="0.7" />
+                <stop offset="40%" stopColor="white" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="white" stopOpacity="0" />
+            </linearGradient>
+
+            <!-- FLAME GRADIENT (From ActivityIcons.jsx) -->
+            <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="#FF5722" />
+                <stop offset="50%" stopColor="#FF9800" />
+                <stop offset="100%" stopColor="#FFEB3B" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- BADGE 1: SAFETY STARTER (Green + Checkmark) -->
+    <div class="container">
+        <svg width="200" height="200" viewBox="0 0 200 200" style="overflow:visible">
+            <g filter="url(#drop-shadow)">
+                <g filter="url(#gold-outline)">
+                    <!-- ICON CONTENT (SafeStarterIcon) -->
+                    <!-- Shield -->
+                    <path d="M80 35 L40 50 V80 C40 105 80 125 80 125 C80 125 120 105 120 80 V50 L80 35 Z" fill="#4CAF50"
+                        stroke="white" stroke-width="3" />
+                    <!-- Checkmark (Updated) -->
+                    <path d="M65 80 L75 95 L100 65" fill="none" stroke="white" stroke-width="6" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </g>
+            </g>
+            <!-- Glossy Overlay -->
+            <path d="M 20 20 Q 100 0 180 20 Q 180 90 100 90 Q 20 90 20 20 Z" fill="url(#glass-gradient)"
+                style="mix-blend-mode: overlay; pointer-events: none;" />
+            <ellipse cx="100" cy="170" rx="60" ry="10" fill="white" fill-opacity="0.2" filter="blur(5px)" />
+        </svg>
+        <h3>Safety Starter<br>(New Checkmark)</h3>
+    </div>
+
+    <!-- BADGE 2: STREAK MASTER (High Energy) -->
+    <div class="container">
+        <svg width="200" height="200" viewBox="0 0 200 200" style="overflow:visible">
+            <g filter="url(#drop-shadow)">
+                <g filter="url(#gold-outline)">
+                    <!-- ICON CONTENT (StreakMasterIcon) -->
+                    <g transform="translate(30, 30)"> <!-- Aligning to inner box usually handled by Icon props -->
+                        <!-- Outer Flame (Animated) -->
+                        <path d="M50 95 Q20 80 15 50 Q10 20 50 5 Q90 20 85 50 Q80 80 50 95" fill="url(#flame)"
+                            opacity="0.3">
+                            <animate attributeName="d"
+                                values="M50 95 Q20 80 15 50 Q10 20 50 5 Q90 20 85 50 Q80 80 50 95; M50 93 Q22 82 17 52 Q12 22 50 7 Q88 22 83 52 Q78 82 50 93; M50 95 Q20 80 15 50 Q10 20 50 5 Q90 20 85 50 Q80 80 50 95"
+                                dur="1s" repeatCount="indefinite" />
+                        </path>
+
+                        <!-- Speed lines -->
+                        <path d="M10 80 L30 70 M90 80 L70 70" stroke="#FFCA28" stroke-width="3"
+                            stroke-linecap="round" />
+
+                        <!-- Core Flame -->
+                        <path d="M50 85 Q30 70 30 50 Q30 20 50 10 Q70 20 70 50 Q70 70 50 85 Z" fill="url(#flame)"
+                            stroke="white" stroke-width="2" />
+                        <!-- Inner white hot core -->
+                        <path d="M50 75 Q40 65 40 50 Q40 35 50 25 Q60 35 60 50 Q60 65 50 75" fill="white"
+                            fill-opacity="0.8" />
+                    </g>
+                </g>
+            </g>
+            <!-- Glossy Overlay -->
+            <path d="M 20 20 Q 100 0 180 20 Q 180 90 100 90 Q 20 90 20 20 Z" fill="url(#glass-gradient)"
+                style="mix-blend-mode: overlay; pointer-events: none;" />
+            <ellipse cx="100" cy="170" rx="60" ry="10" fill="white" fill-opacity="0.2" filter="blur(5px)" />
+        </svg>
+        <h3>Streak Master<br>(High Energy)</h3>
+    </div>
+
+</body>
+
+</html>
