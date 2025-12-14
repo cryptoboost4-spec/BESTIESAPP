@@ -1,0 +1,30 @@
+[33m9784547[m[33m ([m[1;31morigin/add-notifications-tooltip[m[33m, [m[1;32madd-notifications-tooltip[m[33m)[m Restore critical fixes: Google Sign-In CSP, Tutorial Scroll Logic, Settings Security Rules
+[33m0b40c17[m feat: Introduce core application functionality, including new frontend pages, extensive backend functions with comprehensive tests, and maintenance scripts.
+[33mf2405e3[m after google made it better
+[33mef7dbb6[m after google
+[33mbe638b4[m[33m ([m[1;35mrefs/stash[m[33m)[m On add-notifications-tooltip: Stashing changes before reset to 66a4a9a
+[33m5c76086[m index on add-notifications-tooltip: 099bb24 Trigger deployment
+[33m099bb24[m Trigger deployment
+[33mf284f22[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Claude/add notifications tooltip 012 cjd86 nln8a jm jss hsctb s (#167)
+[33mcbd3619[m Claude/add notifications tooltip 012 cjd86 nln8a jm jss hsctb s (#166)
+[33m58f5ec5[m Claude/add notifications tooltip 012 cjd86 nln8a jm jss hsctb s (#165)
+[33me83a670[m[33m ([m[1;32mmain[m[33m)[m d
+[33m0a126b9[m Complete interactive tutorial flows for all settings sections
+[33mcce9000[m Update SettingsPage to support interactive tutorial for all sections
+[33mbfab423[m Add interactive animations to all settings tutorial sections
+[33m44c680e[m Add animated toggle demonstration in settings tutorial
+[33m98342f5[m Merge branch 'main' of https://github.com/cryptoboost4-spec/BESTIESAPP
+[33m922ba98[m s
+[33mc787765[m Fix Firebase permissions error for tutorial settings (#164)
+[33m2391825[m d
+[33m179ddb3[m k
+[33m804e821[m k
+[33mbd8672b[m[33m ([m[1;31morigin/claude/debug-firebase-permissions-01NLb3FwduUXNkpN4x9peTYe[m[33m)[m Fix Firebase permissions error for tutorial settings
+[33mc45849d[m t
+[33m334c6d3[m J
+[33m57491ba[m C
+[33maf25d0e[m d
+[33m66a4a9a[m[33m ([m[1;36mHEAD[m[33m, [m[1;31morigin/claude/add-notifications-tooltip-012CJD86NLN8aJmJssHsctbS[m[33m)[m d
+[33m38390f1[m s
+[33m9f5825c[m s
+[33m1e106ea[m s

@@ -224,28 +224,76 @@ const TutorialOverlay = ({
   return (
     <>
       {/* Dark Overlay - full screen, highlighted element will be above it */}
-      <div
-        ref={overlayRef}
-        className={`fixed inset-0 backdrop-blur-sm z-[90] transition-opacity duration-300 ${
-          isPaused ? 'bg-black/40' : 'bg-black/75'
-        }`}
-        onClick={(e) => {
-          // During quickCheckIns step, allow clicks through to buttons
-          // Otherwise, prevent clicks outside highlighted area
-          if (currentStep !== 'quickCheckIns') {
+      {/* During quickCheckIns or custom, use multiple overlay divs to cover areas around buttons (matching purple ring exactly) */}
+      {(currentStep === 'quickCheckIns' || currentStep === 'custom') && highlightedElementRef?.current && highlightRect ? (
+        <>
+          {/* Top overlay */}
+          <div
+            className="fixed backdrop-blur-sm z-[90] bg-black/75"
+            style={{
+              top: 0,
+              left: 0,
+              right: 0,
+              height: `${Math.max(0, highlightRect.top)}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            aria-hidden="true"
+          />
+          {/* Bottom overlay */}
+          <div
+            className="fixed backdrop-blur-sm z-[90] bg-black/75"
+            style={{
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: `${Math.max(0, window.innerHeight - highlightRect.top - highlightRect.height)}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            aria-hidden="true"
+          />
+          {/* Left overlay */}
+          <div
+            className="fixed backdrop-blur-sm z-[90] bg-black/75"
+            style={{
+              top: `${Math.max(0, highlightRect.top)}px`,
+              left: 0,
+              bottom: `${Math.max(0, window.innerHeight - highlightRect.top - highlightRect.height)}px`,
+              width: `${Math.max(0, highlightRect.left)}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            aria-hidden="true"
+          />
+          {/* Right overlay */}
+          <div
+            className="fixed backdrop-blur-sm z-[90] bg-black/75"
+            style={{
+              top: `${Math.max(0, highlightRect.top)}px`,
+              right: 0,
+              bottom: `${Math.max(0, window.innerHeight - highlightRect.top - highlightRect.height)}px`,
+              width: `${Math.max(0, window.innerWidth - highlightRect.left - highlightRect.width)}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            aria-hidden="true"
+          />
+        </>
+      ) : (
+        <div
+          ref={overlayRef}
+          className={`fixed inset-0 backdrop-blur-sm z-[90] transition-opacity duration-300 ${
+            isPaused ? 'bg-black/40' : 'bg-black/75'
+          }`}
+          onClick={(e) => {
             e.stopPropagation();
-          }
-        }}
-        style={{
-          pointerEvents: currentStep === 'quickCheckIns' ? 'none' : 'auto'
-        }}
-        aria-hidden="true"
-      />
+          }}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Highlighted Element Glow - positioned above overlay */}
       {highlightedElementRef?.current && highlightRect && (
         <>
           {/* Glow effect around element - Enhanced */}
+          {/* During quickCheckIns or custom, use stronger brightness to make buttons stand out against dark overlay */}
           <div
             className="fixed z-[92] pointer-events-none transition-all duration-500 tutorial-highlight-enhanced"
             style={{
@@ -254,19 +302,26 @@ const TutorialOverlay = ({
               width: `${highlightRect.width + 8}px`,
               height: `${highlightRect.height + 8}px`,
               borderRadius: '16px',
-              filter: 'brightness(1.15)',
+              filter: (currentStep === 'quickCheckIns' || currentStep === 'custom') ? 'brightness(2.5)' : 'brightness(1.15)',
             }}
           />
           {/* Ensure highlighted element is clickable above overlay */}
+          {/* During quickCheckIns or custom, make sure clicks pass through to buttons */}
           <div
-            className="fixed z-[93] pointer-events-auto"
+            className={`fixed z-[93] ${
+              (currentStep === 'quickCheckIns' || currentStep === 'custom') ? 'pointer-events-none' : 'pointer-events-auto'
+            }`}
             style={{
               top: `${highlightRect.top}px`,
               left: `${highlightRect.left}px`,
               width: `${highlightRect.width}px`,
               height: `${highlightRect.height}px`,
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              if (currentStep !== 'quickCheckIns' && currentStep !== 'custom') {
+                e.stopPropagation();
+              }
+            }}
           />
         </>
       )}

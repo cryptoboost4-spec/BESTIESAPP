@@ -50,10 +50,32 @@ const CheckInMap = ({
   setShowLocationDropdown,
   loading,
   setLoading,
-  onLocationSet
+  onLocationSet,
+  onGPSRequested,
+  searchInputRef,
+  isInTutorial = false,
+  disableAutoLocation = false,
+  triggerGPSRef
 }) => {
   // Essential refs only
   const locationInputRef = useRef(null);
+  
+  // Expose ref to parent if provided
+  useEffect(() => {
+    if (searchInputRef) {
+      // Use a callback to update the ref when the input is available
+      const updateRef = () => {
+        if (locationInputRef.current && searchInputRef) {
+          searchInputRef.current = locationInputRef.current;
+        }
+      };
+      // Update immediately if ref is already available
+      updateRef();
+      // Also update after a short delay to ensure DOM is ready
+      const timeout = setTimeout(updateRef, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [searchInputRef]);
   const autocompleteRef = useRef(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -238,8 +260,9 @@ const CheckInMap = ({
   }, [setLocationInput, setGpsCoords, onLocationSet]);
   
   // Try to get location automatically on mount if GPS is enabled and no location set
+  // Skip automatic location request if in tutorial mode or auto-location is disabled (let tutorial handle it)
   useEffect(() => {
-    if (!mapInitialized || gpsCoords || !isEnabled('gpsLocation') || !navigator.geolocation) return;
+    if (!mapInitialized || gpsCoords || !isEnabled('gpsLocation') || !navigator.geolocation || isInTutorial || disableAutoLocation) return;
     
     // Try to get location silently (non-blocking)
     navigator.geolocation.getCurrentPosition(
@@ -265,7 +288,7 @@ const CheckInMap = ({
         maximumAge: 300000 // 5 minutes
       }
     );
-  }, [mapInitialized, gpsCoords, geocodeLocation, setGpsCoords]);
+  }, [mapInitialized, gpsCoords, geocodeLocation, setGpsCoords, isInTutorial, disableAutoLocation]);
   
   // Initialize map (simplified - no retry logic)
   useEffect(() => {
@@ -446,6 +469,11 @@ const CheckInMap = ({
   
   // Simple GPS handler - just get location once
   const handleGetLocation = useCallback(() => {
+    // Notify parent that GPS was requested (for tutorial)
+    if (onGPSRequested) {
+      onGPSRequested();
+    }
+    
     if (!isEnabled('gpsLocation')) {
       setSubtleError('GPS location is not enabled');
       return;
@@ -500,7 +528,14 @@ const CheckInMap = ({
         maximumAge: 0
       }
     );
-  }, [setLoading, setGpsCoords, geocodeLocation]);
+  }, [setLoading, setGpsCoords, geocodeLocation, onGPSRequested]);
+
+  // Expose GPS handler via ref if provided
+  useEffect(() => {
+    if (triggerGPSRef) {
+      triggerGPSRef.current = handleGetLocation;
+    }
+  }, [triggerGPSRef, handleGetLocation]);
   
   // Handle favorite selection
   const handleFavoriteSelect = useCallback((favorite) => {
