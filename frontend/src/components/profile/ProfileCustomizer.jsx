@@ -3,6 +3,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
 import { BACKGROUNDS, getCategoryName, BACKGROUND_CATEGORIES } from './themes/backgrounds';
+import { ILLUSTRATED_BACKGROUNDS, getIllustratedBackgroundStyle } from './themes/illustratedBackgrounds';
 import { getLayoutById } from './layouts';
 import './themes/backgroundPatterns.css';
 
@@ -106,10 +107,29 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
 
   const getBackgroundById = (id) => {
     const allBackgrounds = Object.values(BACKGROUNDS).flat();
-    return allBackgrounds.find(bg => bg.id === id);
+    const allIllustrated = Object.values(ILLUSTRATED_BACKGROUNDS).flat();
+    return allBackgrounds.find(bg => bg.id === id) || allIllustrated.find(bg => bg.id === id);
   };
 
   const currentBackground = getBackgroundById(selectedBackground);
+
+  // Calculate style for current background
+  const getBackgroundStyle = (bg) => {
+    if (!bg) return { background: '#fff' };
+    if (bg.image) {
+      return {
+        backgroundImage: `url(${bg.image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      };
+    }
+    if (bg.svg) {
+      return getIllustratedBackgroundStyle(bg);
+    }
+    return { background: bg.gradient || '#fff' };
+  };
+
+  const currentBackgroundStyle = getBackgroundStyle(currentBackground);
   const LayoutComponent = getLayoutById('magazine');
 
   const nameSizeClass = FONT_SIZES.find(s => s.id === nameSize)?.nameClass || 'text-4xl';
@@ -147,7 +167,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           <div className="max-w-sm w-full">
             <div
               className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'}`}
-              style={{ background: currentBackground?.gradient || '#fff' }}
+              style={currentBackgroundStyle}
             >
               <LayoutComponent {...layoutProps} />
             </div>
@@ -162,7 +182,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
             <h3 className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-3 text-center">Preview</h3>
             <div
               className={`profile-card-pattern pattern-${currentBackground?.pattern || 'none'} rounded-2xl overflow-hidden shadow-xl`}
-              style={{ background: currentBackground?.gradient || '#fff' }}
+              style={currentBackgroundStyle}
             >
               <LayoutComponent {...layoutProps} />
             </div>
@@ -195,11 +215,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-primary text-white shadow-lg'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id
+                      ? 'bg-gradient-primary text-white shadow-lg'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                      }`}
                   >
                     {tab.emoji} {tab.label}
                   </button>
@@ -218,7 +237,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                 </p>
                 {BACKGROUND_CATEGORIES.map(category => {
                   const backgrounds = BACKGROUNDS[category] || [];
-                  if (backgrounds.length === 0) return null;
+                  const illustrated = ILLUSTRATED_BACKGROUNDS[category] || [];
+                  const allCategoryBackgrounds = [...backgrounds, ...illustrated];
+
+                  if (allCategoryBackgrounds.length === 0) return null;
 
                   return (
                     <div key={category} className="mb-6">
@@ -226,17 +248,16 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                         {getCategoryName(category)}
                       </h3>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {backgrounds.map(bg => (
+                        {allCategoryBackgrounds.map(bg => (
                           <button
                             key={bg.id}
                             onClick={() => setSelectedBackground(bg.id)}
-                            className={`relative overflow-hidden rounded-xl transition-all hover:scale-105 ${
-                              selectedBackground === bg.id ? 'ring-4 ring-purple-500' : ''
-                            }`}
+                            className={`relative overflow-hidden rounded-xl transition-all hover:scale-105 ${selectedBackground === bg.id ? 'ring-4 ring-purple-500' : ''
+                              }`}
                           >
                             <div
                               className="h-24 flex items-center justify-center relative"
-                              style={{ background: bg.gradient }}
+                              style={getBackgroundStyle(bg)}
                             >
                               <div className="flex flex-col items-center">
                                 <div className="w-8 h-8 rounded-full bg-white/80 mb-1"></div>
@@ -290,11 +311,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                         <button
                           key={size.id}
                           onClick={() => setNameSize(size.id)}
-                          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-all ${
-                            nameSize === size.id
-                              ? 'bg-gradient-primary text-white shadow-lg'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                          }`}
+                          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-all ${nameSize === size.id
+                            ? 'bg-gradient-primary text-white shadow-lg'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            }`}
                         >
                           {size.label}
                         </button>
@@ -339,11 +359,10 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                         <button
                           key={size.id}
                           onClick={() => setBioSize(size.id)}
-                          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-all ${
-                            bioSize === size.id
-                              ? 'bg-gradient-primary text-white shadow-lg'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                          }`}
+                          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-all ${bioSize === size.id
+                            ? 'bg-gradient-primary text-white shadow-lg'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            }`}
                         >
                           {size.label}
                         </button>

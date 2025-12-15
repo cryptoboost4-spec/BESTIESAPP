@@ -140,6 +140,42 @@ export const ILLUSTRATED_BACKGROUNDS = {
       description: 'Cute cat silhouettes'
     },
     {
+      id: 'cute-cartoon-cats',
+      name: 'Cute Cartoon Cats',
+      category: 'catLover',
+      baseColor: '#FFF5F7',
+      accentColor: '#FFB7B2',
+      svg: `<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="cartoonCats" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+            <!-- Cat 1 (Center) -->
+            <g transform="translate(50, 50)">
+              <path d="M-12,-8 L-15,-20 L-5,-10 Z" fill="#ffb7b2"/>
+              <path d="M12,-8 L15,-20 L5,-10 Z" fill="#ffb7b2"/>
+              <circle cx="0" cy="0" r="14" fill="#ffdac1"/>
+              <circle cx="-5" cy="-2" r="1.5" fill="#555"/>
+              <circle cx="5" cy="-2" r="1.5" fill="#555"/>
+              <path d="M-2,3 Q0,5 2,3" stroke="#555" stroke-width="1" fill="none"/>
+              <circle cx="0" cy="1.5" r="1" fill="#faa"/>
+              <line x1="-10" y1="2" x2="-18" y2="2" stroke="#555" stroke-width="0.5" opacity="0.5"/>
+              <line x1="10" y1="2" x2="18" y2="2" stroke="#555" stroke-width="0.5" opacity="0.5"/>
+            </g>
+
+            <!-- Cat 2 (Corner) -->
+            <g transform="translate(0, 0)">
+              <path d="M-12,-8 L-15,-20 L-5,-10 Z" fill="#e2f0cb"/>
+              <path d="M12,-8 L15,-20 L5,-10 Z" fill="#e2f0cb"/>
+              <circle cx="0" cy="0" r="14" fill="#ffffff" stroke="#e2f0cb" stroke-width="1"/>
+              <circle cx="-5" cy="-2" r="1.5" fill="#555"/>
+              <circle cx="5" cy="-2" r="1.5" fill="#555"/>
+            </g>
+          </pattern>
+        </defs>
+        <rect width="200" height="200" fill="url(#cartoonCats)"/>
+      </svg>`,
+      description: 'Kawaii cartoon cats'
+    },
+    {
       id: 'paw-prints',
       name: 'Paw Prints',
       category: 'catLover',

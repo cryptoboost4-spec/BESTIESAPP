@@ -27,7 +27,7 @@ const HomePage = () => {
 
   // Invite Friends modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
-  
+
   // Track if tutorial modal is open (to hide tutorial overlay)
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
 
@@ -39,13 +39,13 @@ const HomePage = () => {
   // Validate tutorial state and clean up invalid states
   useEffect(() => {
     const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
-    
+
     // If tutorial is marked complete but has a step, clear the step
     if (tutorialComplete && currentTutorialStep) {
       setTutorialStep(null);
       return;
     }
-    
+
     // If we have an invalid step, reset to null
     if (currentTutorialStep && !validSteps.includes(currentTutorialStep)) {
       console.warn('Invalid tutorial step detected:', currentTutorialStep, '- resetting');
@@ -78,7 +78,7 @@ const HomePage = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!userData) return;
-    
+
     // Check if onboarding was just completed (user has completed onboarding but tutorial not started)
     if (userData.onboardingCompleted && !tutorialComplete && !currentTutorialStep) {
       // Small delay to ensure page is fully rendered
@@ -117,7 +117,7 @@ const HomePage = () => {
         snapshot.forEach((doc) => {
           checkIns.push({ id: doc.id, ...doc.data() });
         });
-        
+
         // Detect check-in creation during tutorial
         if (currentTutorialStep === 'quickCheckIns' && checkIns.length > previousCheckInCount) {
           // Check-in was just created - advance tutorial
@@ -125,7 +125,7 @@ const HomePage = () => {
             setTutorialStep('afterQuickCheckIn');
           }, 1000); // Small delay to let user see their check-in
         }
-        
+
         setPreviousCheckInCount(checkIns.length);
         setActiveCheckIns(checkIns);
         setLoading(false);
@@ -154,7 +154,7 @@ const HomePage = () => {
       async (snapshot) => {
         const alertedCheckIns = [];
         const userIds = new Set();
-        
+
         // Collect all unique user IDs first
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
@@ -175,7 +175,7 @@ const HomePage = () => {
               return { userId, userDoc: null };
             }
           });
-          
+
           const userResults = await Promise.all(userPromises);
           userResults.forEach(({ userId, userDoc }) => {
             if (userDoc?.exists()) {
@@ -197,7 +197,7 @@ const HomePage = () => {
             userName
           });
         });
-        
+
         setAlertedBestieCheckIns(alertedCheckIns);
       },
       (error) => {
@@ -326,11 +326,11 @@ const HomePage = () => {
   };
 
   const weeklySummary = getWeeklySummary();
-  
+
   const handleTutorialNext = () => {
     const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
-    
+
     if (currentIndex < steps.length - 1) {
       haptic.success();
       setTutorialStep(steps[currentIndex + 1]);
@@ -368,7 +368,7 @@ const HomePage = () => {
     if (!quickCheckInButtonsRef.current) {
       return { current: null };
     }
-    
+
     try {
       let element = null;
       switch (currentTutorialStep) {
@@ -405,20 +405,20 @@ const HomePage = () => {
   const getTooltipConfig = () => {
     // If no step or invalid step, return null
     if (!currentTutorialStep) return null;
-    
+
     // If tutorial is marked complete, don't show tooltip
     if (tutorialComplete) return null;
-    
+
     const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const stepIndex = steps.indexOf(currentTutorialStep);
-    
+
     // If step is not in valid steps, return null and reset
     if (stepIndex === -1) {
       console.warn('Invalid tutorial step in getTooltipConfig:', currentTutorialStep);
       setTutorialStep(null);
       return null;
     }
-    
+
     const stepNumber = stepIndex + 1;
     const totalSteps = steps.length;
 
@@ -449,7 +449,7 @@ const HomePage = () => {
           title: 'Quick Check-Ins',
           body: "Pick one and try it out! We'll guide you through it.",
           buttonText: null, // No button - user must click a quick check-in
-          onNext: () => {}, // No-op - they must click a button
+          onNext: () => { }, // No-op - they must click a button
           position: 'below', // Show below buttons
           stepNumber,
           totalSteps
@@ -476,7 +476,7 @@ const HomePage = () => {
               icon: '🎉'
             });
           },
-          position: 'auto',
+          position: 'below',
           stepNumber,
           totalSteps
         };
@@ -488,7 +488,7 @@ const HomePage = () => {
   const handleTutorialBack = () => {
     const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);
-    
+
     if (currentIndex > 0) {
       setTutorialStep(steps[currentIndex - 1]);
     }
@@ -541,7 +541,7 @@ const HomePage = () => {
         {activeCheckIns.length === 0 && (
           <>
             <QuickCheckInButtons
-              currentTutorialStep={currentTutorialStep} 
+              currentTutorialStep={currentTutorialStep}
               ref={quickCheckInButtonsRef}
               isTutorialMode={!!currentTutorialStep}
               onTutorialAction={handleTutorialAction}
@@ -739,16 +739,16 @@ const HomePage = () => {
 
       {/* Tutorial Overlay - NEW FLOW */}
       {shouldShowTutorial && tooltipConfig && !isTutorialModalOpen && (
-            <TutorialOverlay
-              currentStep={currentTutorialStep}
-              onStepComplete={handleTutorialNext}
-              onTutorialComplete={handleSkipTutorial}
-              onStepBack={handleTutorialBack}
-              highlightedElementRef={getHighlightedElementRef()}
-              tooltipConfig={tooltipConfig}
-              stepNumber={getStepNumber()}
-              totalSteps={5}
-            />
+        <TutorialOverlay
+          currentStep={currentTutorialStep}
+          onStepComplete={handleTutorialNext}
+          onTutorialComplete={handleSkipTutorial}
+          onStepBack={handleTutorialBack}
+          highlightedElementRef={getHighlightedElementRef()}
+          tooltipConfig={tooltipConfig}
+          stepNumber={getStepNumber()}
+          totalSteps={5}
+        />
       )}
     </div>
   );

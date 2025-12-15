@@ -277,7 +277,8 @@ export const BACKGROUNDS = {
       category: 'travel',
       gradient: 'linear-gradient(135deg, #5D8AA8 0%, #F0F8FF 100%)',
       pattern: 'mountains',
-      description: 'Blue mountain ranges'
+      description: 'Blue mountain ranges',
+      image: '/backgrounds/mountain-peaks-cat.png'
     },
     {
       id: 'tropical-escape',
@@ -285,7 +286,8 @@ export const BACKGROUNDS = {
       category: 'travel',
       gradient: 'linear-gradient(135deg, #00CED1 0%, #FFD700 100%)',
       pattern: 'palm',
-      description: 'Turquoise and gold'
+      description: 'Turquoise and gold',
+      image: '/backgrounds/tropical-escape-cat.png'
     },
   ],
 
@@ -297,7 +299,8 @@ export const BACKGROUNDS = {
       category: 'mystical',
       gradient: 'linear-gradient(135deg, #4A148C 0%, #1A237E 100%)',
       pattern: 'constellation',
-      description: 'Deep purple galaxy'
+      description: 'Deep purple galaxy',
+      image: '/backgrounds/mystical-cat-scene.png'
     },
     {
       id: 'moon-child',

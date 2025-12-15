@@ -11,7 +11,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
   const [showRideshareModal, setShowRideshareModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
   const [showQuickMeetModal, setShowQuickMeetModal] = useState(false);
-  
+
   // Refs for tutorial highlighting
   const containerRef = useRef(null);
   const threeButtonsContainerRef = useRef(null);
@@ -42,7 +42,7 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
 
   return (
     <>
-      <div ref={containerRef} className="mb-6 sticky top-0 z-[50] bg-white dark:bg-gray-900 py-2 -mx-4 px-4">
+      <div ref={containerRef} className={`mb-6 py-2 -mx-4 px-4 bg-white dark:bg-gray-900 ${isTutorialMode ? 'relative' : 'sticky top-0 z-[50]'}`}>
         <div className="flex items-center mb-4">
           <h2 className="text-xl font-display text-text-primary">Quick Check-In</h2>
           <InfoButton message="Start a quick safety check-in! Choose a preset (rideshare, walking, or meeting someone) or create a custom check-in. Your selected besties will be notified if you don't check back in. ✨" />
@@ -71,13 +71,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
               }
             }}
             disabled={isDisabled}
-            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white ${
-              isDisabled 
-                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
-                : isGreyedOut 
-                ? 'opacity-50 cursor-not-allowed' 
+            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white ${isDisabled
+              ? 'cursor-not-allowed pointer-events-none'
+              : isGreyedOut
+                ? 'opacity-50 cursor-not-allowed'
                 : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
-            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
+              } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create rideshare check-in"
             tabIndex={isDisabled ? -1 : 0}
           >
@@ -106,13 +105,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
               }
             }}
             disabled={isDisabled}
-            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white ${
-              isDisabled 
-                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
-                : isGreyedOut 
-                ? 'opacity-50 cursor-not-allowed' 
+            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-blue-400 to-cyan-500 text-white ${isDisabled
+              ? 'cursor-not-allowed pointer-events-none'
+              : isGreyedOut
+                ? 'opacity-50 cursor-not-allowed'
                 : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
-            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
+              } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create walking check-in"
             tabIndex={isDisabled ? -1 : 0}
           >
@@ -141,13 +139,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
               }
             }}
             disabled={isDisabled}
-            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white ${
-              isDisabled 
-                ? 'opacity-50 cursor-not-allowed pointer-events-none' 
-                : isGreyedOut 
-                ? 'opacity-50 cursor-not-allowed' 
+            className={`card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-purple-400 to-indigo-500 text-white ${isDisabled
+              ? 'cursor-not-allowed pointer-events-none'
+              : isGreyedOut
+                ? 'opacity-50 cursor-not-allowed'
                 : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
-            } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
+              } ${currentTutorialStep === 'quickCheckIns' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
             aria-label="Create quick meet check-in"
             tabIndex={isDisabled ? -1 : 0}
           >
@@ -177,13 +174,12 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             }
           }}
           disabled={isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns')}
-          className={`w-full card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-rose-400 to-pink-500 text-white ${
-            isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns')
-              ? 'opacity-50 cursor-not-allowed pointer-events-none' 
-              : isGreyedOut 
-              ? 'opacity-50 cursor-not-allowed' 
-              : 'hover:shadow-card-hover hover:scale-105 active:scale-95'
-          } ${currentTutorialStep === 'custom' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''}`}
+          className={`w-full card p-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gradient-to-br from-rose-400 to-pink-500 text-white ${isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns')
+            ? 'cursor-not-allowed pointer-events-none'
+            : isGreyedOut
+              ? 'opacity-50 cursor-not-allowed'
+              : `hover:shadow-card-hover ${isTutorialMode ? '' : 'hover:scale-105 active:scale-95'}`
+            } ${currentTutorialStep === 'custom' ? 'ring-4 ring-primary ring-opacity-50' : ''}`}
           aria-label="Create custom check-in"
           tabIndex={isDisabled || (isTutorialMode && currentTutorialStep === 'quickCheckIns') ? -1 : 0}
         >
@@ -194,22 +190,22 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
 
       {/* Modals */}
       {showRideshareModal && (
-        <RideshareModal 
-          onClose={() => setShowRideshareModal(false)} 
+        <RideshareModal
+          onClose={() => setShowRideshareModal(false)}
           isTutorialMode={isTutorialMode}
           onTutorialComplete={onTutorialModalComplete}
         />
       )}
       {showWalkingModal && (
-        <WalkingModal 
-          onClose={() => setShowWalkingModal(false)} 
+        <WalkingModal
+          onClose={() => setShowWalkingModal(false)}
           isTutorialMode={isTutorialMode}
           onTutorialComplete={onTutorialModalComplete}
         />
       )}
       {showQuickMeetModal && (
-        <QuickMeetModal 
-          onClose={() => setShowQuickMeetModal(false)} 
+        <QuickMeetModal
+          onClose={() => setShowQuickMeetModal(false)}
           isTutorialMode={isTutorialMode}
           onTutorialComplete={onTutorialModalComplete}
         />

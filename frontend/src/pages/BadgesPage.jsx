@@ -13,18 +13,18 @@ const BadgesPage = () => {
   const [loading, setLoading] = useState(true);
 
   const allBadges = [
-    { id: 'safety_starter', name: 'Safety Starter', description: 'Complete 5 check-ins', icon: '🛡️', color: '#4CAF50', requirement: 5, stat: 'completedCheckIns' },
-    { id: 'safety_pro', name: 'Safety Pro', description: 'Complete 25 check-ins', icon: '⭐', color: '#2196F3', requirement: 25, stat: 'completedCheckIns' },
-    { id: 'safety_master', name: 'Safety Master', description: 'Complete 50 check-ins', icon: '👑', color: '#9C27B0', requirement: 50, stat: 'completedCheckIns' },
-    { id: 'friend_squad', name: 'Friend Squad', description: 'Add 3 besties', icon: '👥', color: '#FF9800', requirement: 3, stat: 'totalBesties' },
-    { id: 'safety_circle', name: 'Safety Circle', description: 'Add 5 besties', icon: '🤝', color: '#E91E63', requirement: 5, stat: 'totalBesties' },
-    { id: 'safety_network', name: 'Safety Network', description: 'Add 10 besties', icon: '🌐', color: '#00BCD4', requirement: 10, stat: 'totalBesties' },
+    { id: 'safety_starter', name: 'Safety Starter', description: 'Complete 5 check-ins', icon: '🛡️', image: '/badges/safety_2_heart.png', color: '#4CAF50', requirement: 5, stat: 'completedCheckIns' },
+    { id: 'safety_pro', name: 'Safety Pro', description: 'Complete 25 check-ins', icon: '⭐', image: '/badges/safety_3.png', color: '#2196F3', requirement: 25, stat: 'completedCheckIns' },
+    { id: 'safety_master', name: 'Safety Master', description: 'Complete 50 check-ins', icon: '👑', image: '/badges/safety_7.png', color: '#9C27B0', requirement: 50, stat: 'completedCheckIns' },
+    { id: 'friend_squad', name: 'Friend Squad', description: 'Add 3 besties', icon: '👥', image: '/badges/social_2.png', color: '#FF9800', requirement: 3, stat: 'totalBesties' },
+    { id: 'safety_circle', name: 'Safety Circle', description: 'Add 5 besties', icon: '🤝', image: '/badges/social_3.png', color: '#E91E63', requirement: 5, stat: 'totalBesties' },
+    { id: 'safety_network', name: 'Safety Network', description: 'Add 10 besties', icon: '🌐', image: '/badges/social_4.png', color: '#00BCD4', requirement: 10, stat: 'totalBesties' },
     { id: 'night_owl', name: 'Night Owl', description: 'Check-in after midnight', icon: '🦉', color: '#673AB7', requirement: 1, stat: 'nightOwl' },
     { id: 'early_bird', name: 'Early Bird', description: 'Check-in before 6 AM', icon: '🐦', color: '#FFC107', requirement: 1, stat: 'earlyBird' },
-    { id: 'streak_master', name: 'Streak Master', description: '7 days in a row', icon: '🔥', color: '#FF5722', requirement: 7, stat: 'streak' },
-    { id: 'active_donor', name: 'Active Donor', description: 'SMS subscription', icon: '💜', color: '#E91E63', requirement: 1, stat: 'donation' },
+    { id: 'streak_master', name: 'Streak Master', description: '7 days in a row', icon: '🔥', image: '/badges/activity_5.png', color: '#FF5722', requirement: 7, stat: 'streak' },
+    { id: 'active_donor', name: 'Active Donor', description: 'SMS subscription', icon: '💜', image: '/badges/extras_2.png', color: '#E91E63', requirement: 1, stat: 'donation' },
     { id: 'location_lover', name: 'Location Lover', description: '5 favorite locations', icon: '📍', color: '#8BC34A', requirement: 5, stat: 'locations' },
-    { id: 'template_master', name: 'Template Master', description: '3 templates created', icon: '📋', color: '#FF9800', requirement: 3, stat: 'templates' },
+    { id: 'template_master', name: 'Template Master', description: '3 templates created', icon: '📋', image: '/badges/extras_6.png', color: '#FF9800', requirement: 3, stat: 'templates' },
   ];
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const BadgesPage = () => {
 
   const loadBadges = async () => {
     if (!currentUser) return;
-    
+
     try {
       const badgeDoc = await getDoc(doc(db, 'badges', currentUser.uid));
       if (badgeDoc.exists()) {
@@ -160,8 +160,12 @@ const BadgesPage = () => {
                     : `linear-gradient(135deg, ${badge.color}15, ${badge.color}05)`
                 }}
               >
-                <div className="text-[3.5rem] flex-shrink-0 leading-none" style={{ color: badge.color }}>
-                  {badge.icon}
+                <div className="flex-shrink-0 leading-none" style={{ color: badge.color }}>
+                  {badge.image ? (
+                    <img src={badge.image} alt={badge.name} className="w-16 h-16 object-contain drop-shadow-md" />
+                  ) : (
+                    <span className="text-[3.5rem]">{badge.icon}</span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <h3 className="m-0 mb-2 text-xl" style={{ color: badge.color }}>{badge.name}</h3>
@@ -186,7 +190,13 @@ const BadgesPage = () => {
 
               return (
                 <div key={badge.id} className="bg-white dark:bg-gray-800 border-[3px] border-gray-200 dark:border-gray-600 rounded-2xl p-6 flex gap-5 items-center transition-all duration-300 opacity-40 grayscale-[0.8]">
-                  <div className="text-[3.5rem] flex-shrink-0 leading-none text-gray-600 dark:text-gray-400">{badge.icon}</div>
+                  <div className="flex-shrink-0 leading-none text-gray-600 dark:text-gray-400">
+                    {badge.image ? (
+                      <img src={badge.image} alt={badge.name} className="w-16 h-16 object-contain grayscale opacity-70" />
+                    ) : (
+                      <span className="text-[3.5rem]">{badge.icon}</span>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <h3 className="m-0 mb-2 text-xl text-gray-800 dark:text-gray-200">{badge.name}</h3>
                     <p className="m-0 text-gray-600 dark:text-gray-400 text-[0.95rem]">{badge.description}</p>

@@ -1,0 +1,59 @@
+<svg width="200" height="200" viewBox="0 0 200 200" style="overflow:visible">
+    <defs>
+        <!-- Gold Gradient -->
+        <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FFE082" />
+            <stop offset="25%" stopColor="#FFCA28" />
+            <stop offset="50%" stopColor="#FF6F00" />
+            <stop offset="75%" stopColor="#FFCA28" />
+            <stop offset="100%" stopColor="#FFE082" />
+        </linearGradient>
+        <!-- Gold Outline Filter -->
+        <filter id="gold-outline" x="-50%" y="-50%" width="200%" height="200%">
+            <feMorphology operator="dilate" radius="4" in="SourceAlpha" result="outline_shape" />
+            <feFlood flood-color="#FFB300" result="gold_color" />
+            <feComposite in="gold_color" in2="outline_shape" operator="in" result="gold_outline" />
+            <feGaussianBlur in="gold_outline" stdDeviation="1" result="blurred_outline" />
+            <feSpecularLighting in="blurred_outline" surfaceScale="2" specularConstant="1" specularExponent="10"
+                lighting-color="#FFF" result="specular">
+                <fePointLight x="-5000" y="-10000" z="20000" />
+            </feSpecularLighting>
+            <feComposite in="specular" in2="outline_shape" operator="in" result="specular_out" />
+            <feMerge>
+                <feMergeNode in="gold_outline" />
+                <feMergeNode in="specular_out" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <!-- Drop Shadow -->
+        <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+            <feOffset dx="0" dy="4" result="offsetblur" />
+            <feComponentTransfer>
+                <feFuncA type="linear" slope="0.3" />
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <!-- Glass Gradient -->
+        <linearGradient id="glass-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.7" />
+            <stop offset="40%" stopColor="white" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+    </defs>
+    
+    <!-- Main Group -->
+    <g filter="url(#drop-shadow)">
+        <g filter="url(#gold-outline)">
+            <!-- STAR ICON -->
+            <path d="M100 25 L125 80 L185 80 L140 115 L155 170 L100 135 L45 170 L60 115 L15 80 L75 80 Z" fill="#FFC107" stroke="white" stroke-width="3" />
+        </g>
+    </g>
+    
+    <!-- Glossy Overlay -->
+    <path d="M 20 20 Q 100 0 180 20 Q 180 90 100 90 Q 20 90 20 20 Z" fill="url(#glass-gradient)" style="mix-blend-mode: overlay; pointer-events: none;" />
+    <ellipse cx="100" cy="170" rx="60" ry="10" fill="white" fill-opacity="0.2" filter="blur(5px)" />
+</svg>

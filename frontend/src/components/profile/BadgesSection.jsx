@@ -31,15 +31,19 @@ const BADGE_DEFINITIONS = {
   checkin_50: { id: 'checkin_50', name: 'Safety Pro', icon: '✅⭐' },
   checkin_100: { id: 'checkin_100', name: 'Safety Master', icon: '👑✅' },
   // Additional badges from BadgesPage
-  safety_starter: { id: 'safety_starter', name: 'Safety Starter', icon: '🛡️' },
-  safety_pro: { id: 'safety_pro', name: 'Safety Pro', icon: '⭐' },
-  safety_master: { id: 'safety_master', name: 'Safety Master', icon: '👑' },
+  safety_starter: { id: 'safety_starter', name: 'Safety Starter', icon: '🛡️', image: '/badges/safety_2_heart.png' },
+  safety_pro: { id: 'safety_pro', name: 'Safety Pro', icon: '⭐', image: '/badges/safety_3.png' },
+  safety_master: { id: 'safety_master', name: 'Safety Master', icon: '👑', image: '/badges/safety_7.png' },
   night_owl: { id: 'night_owl', name: 'Night Owl', icon: '🦉' },
   early_bird: { id: 'early_bird', name: 'Early Bird', icon: '🐦' },
-  streak_master: { id: 'streak_master', name: 'Streak Master', icon: '🔥' },
-  active_donor: { id: 'active_donor', name: 'Active Donor', icon: '💜' },
+  streak_master: { id: 'streak_master', name: 'Streak Master', icon: '🔥', image: '/badges/activity_5.png' },
+  active_donor: { id: 'active_donor', name: 'Active Donor', icon: '💜', image: '/badges/extras_2.png' },
   location_lover: { id: 'location_lover', name: 'Location Lover', icon: '📍' },
-  template_master: { id: 'template_master', name: 'Template Master', icon: '📋' },
+  template_master: { id: 'template_master', name: 'Template Master', icon: '📋', image: '/badges/extras_6.png' },
+  // Mapped social
+  friend_squad: { id: 'friend_squad', name: 'Friend Squad', icon: '👥', image: '/badges/social_2.png' },
+  safety_circle: { id: 'safety_circle', name: 'Safety Circle', icon: '🤝', image: '/badges/social_3.png' },
+  safety_network: { id: 'safety_network', name: 'Safety Network', icon: '🌐', image: '/badges/social_4.png' },
 };
 
 const BadgesSection = ({
@@ -103,9 +107,8 @@ const BadgesSection = ({
           <button
             onClick={() => !disableInteractions && navigate('/badges')}
             disabled={disableInteractions}
-            className={`text-primary font-semibold hover:underline text-sm ${
-              disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`text-primary font-semibold hover:underline text-sm ${disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
           >
             View All →
           </button>
@@ -118,9 +121,8 @@ const BadgesSection = ({
           <button
             onClick={() => !disableInteractions && setShowBadgeSelector(true)}
             disabled={disableInteractions}
-            className={`text-primary hover:underline ${
-              disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`text-primary hover:underline ${disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
           >
             Choose your top 3 to feature
           </button>
@@ -139,7 +141,13 @@ const BadgesSection = ({
                         key={badge.id}
                         className="text-center flex-shrink-0"
                       >
-                        <div className="text-4xl mb-1">{badge.icon}</div>
+                        <div className="mb-1">
+                          {badge.image ? (
+                            <img src={badge.image} alt={badge.name} className="w-12 h-12 object-contain mx-auto drop-shadow-sm" />
+                          ) : (
+                            <span className="text-4xl">{badge.icon}</span>
+                          )}
+                        </div>
                         <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
                       </div>
                     ))}
@@ -160,7 +168,13 @@ const BadgesSection = ({
                           key={badge.id}
                           className="p-4 rounded-2xl text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-32 shadow-md pointer-events-none select-none"
                         >
-                          <div className="text-4xl mb-2">{badge.icon}</div>
+                          <div className="mb-2">
+                            {badge.image ? (
+                              <img src={badge.image} alt={badge.name} className="w-12 h-12 object-contain mx-auto" />
+                            ) : (
+                              <span className="text-4xl">{badge.icon}</span>
+                            )}
+                          </div>
                           <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
                         </div>
                       ))}
@@ -173,7 +187,13 @@ const BadgesSection = ({
                         key={badge.id}
                         className="p-4 rounded-2xl text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 shadow-md pointer-events-none select-none"
                       >
-                        <div className="text-4xl mb-2">{badge.icon}</div>
+                        <div className="mb-2">
+                          {badge.image ? (
+                            <img src={badge.image} alt={badge.name} className="w-12 h-12 object-contain mx-auto" />
+                          ) : (
+                            <span className="text-4xl">{badge.icon}</span>
+                          )}
+                        </div>
                         <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
                       </div>
                     ))}
@@ -194,9 +214,8 @@ const BadgesSection = ({
             <button
               onClick={() => !disableInteractions && navigate('/badges')}
               disabled={disableInteractions}
-              className={`btn btn-primary text-sm ${
-                disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`btn btn-primary text-sm ${disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               See All Available Badges
             </button>
@@ -231,13 +250,18 @@ const BadgesSection = ({
                     <button
                       key={badge.id}
                       onClick={() => handleToggleFeaturedBadge(badge.id)}
-                      className={`p-4 rounded-xl text-center transition-all ${
-                        isSelected
+                      className={`p-4 rounded-xl text-center transition-all ${isSelected
                           ? 'bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-primary shadow-lg scale-105'
                           : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent'
-                      }`}
+                        }`}
                     >
-                      <div className="text-4xl mb-2">{badge.icon}</div>
+                      <div className="mb-2">
+                        {badge.image ? (
+                          <img src={badge.image} alt={badge.name} className="w-12 h-12 object-contain mx-auto" />
+                        ) : (
+                          <span className="text-4xl">{badge.icon}</span>
+                        )}
+                      </div>
                       <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
                       {isSelected && <div className="text-xs text-primary mt-1">✓ Featured</div>}
                     </button>
@@ -255,9 +279,8 @@ const BadgesSection = ({
               <button
                 onClick={() => !disableInteractions && navigate('/badges')}
                 disabled={disableInteractions}
-                className={`btn btn-primary ${
-                  disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`btn btn-primary ${disableInteractions ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
                 See How to Earn Badges →
               </button>
