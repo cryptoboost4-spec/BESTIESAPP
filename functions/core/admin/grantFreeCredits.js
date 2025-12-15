@@ -51,3 +51,4 @@ exports.grantFreeSmsCredits = functions.https.onCall(async (data, context) => {
   return { success: true, message: `Granted ${amount} free SMS credits to ${userId}` };
 });
 
+

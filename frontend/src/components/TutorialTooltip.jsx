@@ -106,7 +106,9 @@ const TutorialTooltip = ({
         left: '50%',
         transform: 'translate(-50%, -50%)',
         width: '90%',
-        maxWidth: '400px'
+        maxWidth: '400px',
+        maxHeight: '80vh',
+        overflowY: 'auto'
       };
     }
 
@@ -114,54 +116,69 @@ const TutorialTooltip = ({
     const buttonTop = rect.top;
     const buttonBottom = rect.bottom;
     const viewportHeight = window.innerHeight;
-    const bottomNavHeight = 80; // Bottom nav bar height
-    const bottomPadding = 20; // Padding above nav bar
+    const bottomNavHeight = 84; // Bottom nav bar height + safe area buffer
+    const headerHeight = 80; // Approximate header height + buffer
+    const bottomPadding = 12; // Reduced padding
+    const minHeight = 150; // Minimum usable tooltip height
 
     // Position tooltip based on position prop
-    const spacing = 16; // Space between tooltip and button
+    const spacing = 12; // Space between tooltip and button
     let top;
+    let maxHeight;
 
     if (position === 'below') {
       // Position tooltip BELOW the button - ALWAYS stay below
       top = buttonBottom + spacing;
+
+      // Calculate max height available below
+      maxHeight = viewportHeight - top - bottomNavHeight - bottomPadding;
 
       // If tooltip would overlap bottom nav, just position it as close as possible
       // but still below the button
       const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
       if (top + tooltipHeight > maxBottom) {
         // Instead of moving above button, just position higher but still below button
-        top = Math.max(buttonBottom + 8, maxBottom - tooltipHeight);
+        // But respect the button bottom!
+        // If we can't fit it, we MUST shrink it.
       }
     } else {
       // ALWAYS position tooltip ABOVE the button (default behavior)
       top = buttonTop - tooltipHeight - spacing;
 
+      // Calculate safe boundaries
+      const safeTop = headerHeight + 10;
+      const safeBottom = viewportHeight - bottomNavHeight - bottomPadding;
+
       // If tooltip would go off top of screen, try positioning below
-      const minTop = 20; // Minimum distance from top of screen
-      if (top < minTop) {
+      if (top < safeTop) {
         // Try positioning below button instead
         const belowTop = buttonBottom + spacing;
-        const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
 
-        if (belowTop + tooltipHeight <= maxBottom) {
-          // Can fit below, use that
+        // Check if there's more space below than above
+        const spaceBelow = safeBottom - belowTop;
+        const spaceAbove = buttonTop - safeTop - spacing;
+
+        if (spaceBelow > spaceAbove && spaceBelow > minHeight) {
+          // Position BELOW
           top = belowTop;
+          maxHeight = spaceBelow;
         } else {
-          // Can't fit below either, position as high as possible without covering button
-          top = Math.max(minTop, buttonTop - tooltipHeight - 8);
+          // Position ABOVE (cramped but better than nothing)
+          // align bottom of tooltip with top of button
+          // top is calculated such that (top + height) = buttonTop - spacing
+          // so top = buttonTop - spacing - height
+          // BUT if we constrain height, we set top = safeTop
+          top = safeTop;
+          maxHeight = Math.max(minHeight, buttonTop - safeTop - spacing);
         }
-      }
-
-      // Ensure tooltip stays above button (failsafe)
-      const maxTop = buttonTop - tooltipHeight - 8;
-      top = Math.min(top, maxTop);
-
-      // Final check: ensure tooltip doesn't go below nav bar
-      const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
-      if (top + tooltipHeight > maxBottom) {
-        top = maxBottom - tooltipHeight;
+      } else {
+        // It fits above initially, but let's set a max height just in case
+        maxHeight = Math.max(minHeight, buttonTop - safeTop - spacing);
       }
     }
+
+    // Ensure we don't return negative values or weird floats
+    maxHeight = Math.floor(maxHeight || viewportHeight * 0.5);
 
     // Full width on mobile, centered with max-width on larger screens
     const isMobile = viewportWidth < 640; // sm breakpoint
@@ -172,7 +189,9 @@ const TutorialTooltip = ({
       right: isMobile ? '1rem' : 'auto',
       transform: isMobile ? 'none' : 'translateX(-50%)',
       width: isMobile ? 'auto' : '90%',
-      maxWidth: isMobile ? 'none' : '400px'
+      maxWidth: isMobile ? 'none' : '400px',
+      maxHeight: `${maxHeight}px`,
+      overflowY: 'auto'
     };
   };
 
@@ -269,7 +288,7 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-[100] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20"
+      className="fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20"
       style={{
         ...getPositionStyles(),
       }}
@@ -308,8 +327,8 @@ const TutorialTooltip = ({
               <div
                 key={i}
                 className={`transition-all duration-300 rounded-full ${i < stepNumber
-                    ? 'w-6 h-2 bg-gradient-to-r from-pink-500 to-purple-500 shadow-md scale-100'
-                    : 'w-2 h-2 bg-pink-200 dark:bg-pink-800'
+                  ? 'w-6 h-2 bg-gradient-to-r from-pink-500 to-purple-500 shadow-md scale-100'
+                  : 'w-2 h-2 bg-pink-200 dark:bg-pink-800'
                   }`}
                 aria-label={`Step ${i + 1} of ${totalSteps}`}
               />
