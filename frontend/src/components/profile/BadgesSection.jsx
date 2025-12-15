@@ -30,18 +30,16 @@ const BADGE_DEFINITIONS = {
   checkin_100: { id: 'checkin_100', name: 'Safety Master', icon: '👑✅' },
   // Additional badges from BadgesPage
   safety_starter: { id: 'safety_starter', name: 'Safety Starter', icon: '🛡️', image: '/badges/safety_starter.png' },
-  safety_pro: { id: 'safety_pro', name: 'Safety Pro', icon: '⭐', image: '/badges/safety_3.png' },
-  safety_master: { id: 'safety_master', name: 'Safety Master', icon: '👑', image: '/badges/safety_7.png' },
-  night_owl: { id: 'night_owl', name: 'Night Owl', icon: '🦉' },
-  early_bird: { id: 'early_bird', name: 'Early Bird', icon: '🐦' },
-  streak_master: { id: 'streak_master', name: 'Streak Master', icon: '🔥', image: '/badges/activity_5.png' },
-  active_donor: { id: 'active_donor', name: 'Active Donor', icon: '💜', image: '/badges/extras_2.png' },
-  location_lover: { id: 'location_lover', name: 'Location Lover', icon: '📍' },
-  template_master: { id: 'template_master', name: 'Template Master', icon: '📋', image: '/badges/extras_6.png' },
+  safety_pro: { id: 'safety_pro', name: 'Safety Pro', icon: '⭐', image: '/badges/safety_pro.png' },
+  safety_master: { id: 'safety_master', name: 'Safety Master', icon: '👑', image: '/badges/safety_master.png' },
+  night_owl: { id: 'night_owl', name: 'Night Owl', icon: '🦉', image: '/badges/night_owl.png' },
+  early_bird: { id: 'early_bird', name: 'Early Bird', icon: '🐦', image: '/badges/early_bird.png' },
+  streak_master: { id: 'streak_master', name: 'Streak Master', icon: '🔥', image: '/badges/streak_master.png' },
+  active_donor: { id: 'active_donor', name: 'Active Donor', icon: '💜', image: '/badges/active_donor.png' },
   // Mapped social
-  friend_squad: { id: 'friend_squad', name: 'Friend Squad', icon: '👥', image: '/badges/social_2.png' },
-  safety_circle: { id: 'safety_circle', name: 'Safety Circle', icon: '🤝', image: '/badges/social_3.png' },
-  safety_network: { id: 'safety_network', name: 'Safety Network', icon: '🌐', image: '/badges/social_4.png' },
+  friend_squad: { id: 'friend_squad', name: 'Friend Squad', icon: '👥', image: '/badges/friend_squad.png' },
+  safety_circle: { id: 'safety_circle', name: 'Safety Circle', icon: '🤝', image: '/badges/safety_circle.png' },
+  safety_network: { id: 'safety_network', name: 'Safety Network', icon: '🌐', image: '/badges/safety_network.png' },
 };
 
 const BadgesSection = ({
