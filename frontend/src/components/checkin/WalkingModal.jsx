@@ -12,7 +12,6 @@ const WalkingModal = ({ onClose, isTutorialMode = false, onTutorialComplete }) =
   const durationRef = useRef(null);
 
   // Tutorial hint state
-  const [showTimeHint, setShowTimeHint] = useState(false);
   const [showButtonHint, setShowButtonHint] = useState(false);
   const [hasChangedDuration, setHasChangedDuration] = useState(false);
 
@@ -79,27 +78,14 @@ const WalkingModal = ({ onClose, isTutorialMode = false, onTutorialComplete }) =
   useEffect(() => {
     if (!isTutorialMode) return;
 
-    // Hint 1: Show time hint after 2 seconds
-    const timeHintTimer = setTimeout(() => {
-      setShowTimeHint(true);
-    }, 2000);
-
-    return () => clearTimeout(timeHintTimer);
-  }, [isTutorialMode]);
-
-  useEffect(() => {
-    if (!isTutorialMode) return;
-
-    // Hint 2: Show button hint after duration changed OR after 10 seconds
+    // Show button hint after duration changed OR after 10 seconds
     const buttonHintTimer = setTimeout(() => {
       setShowButtonHint(true);
-      setShowTimeHint(false);
     }, 10000);
 
     if (hasChangedDuration) {
       clearTimeout(buttonHintTimer);
       setShowButtonHint(true);
-      setShowTimeHint(false);
     }
 
     return () => clearTimeout(buttonHintTimer);

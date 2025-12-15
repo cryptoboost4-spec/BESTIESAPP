@@ -362,6 +362,17 @@ const HomePage = () => {
     }
   };
 
+  const handleCustomButtonClick = () => {
+    // Called when user clicks custom button during tutorial
+    if (currentTutorialStep === 'custom') {
+      markTutorialComplete();
+      toast.success("You're all set! Your besties are ready to keep you safe. 💜", {
+        duration: 4000,
+        icon: '🎉'
+      });
+    }
+  };
+
   // Get highlighted element ref based on current step - NEW FLOW
   const getHighlightedElementRef = () => {
     // Always return consistent structure: { current: element | null }
@@ -468,14 +479,8 @@ const HomePage = () => {
         return {
           title: 'Custom Check-In',
           body: "This is the custom check-in button! Use it when you need full control - set your own location, duration, notes, and more. Perfect for unique situations.",
-          buttonText: 'Got It',
-          onNext: () => {
-            markTutorialComplete();
-            toast.success("You're all set! Your besties are ready to keep you safe. 💜", {
-              duration: 4000,
-              icon: '🎉'
-            });
-          },
+          buttonText: null, // No button - user must click the custom button itself
+          onNext: null,
           position: 'below',
           stepNumber,
           totalSteps
@@ -548,6 +553,7 @@ const HomePage = () => {
               allowQuickCheckInClick={currentTutorialStep === 'quickCheckIns'}
               onTutorialModalComplete={handleTutorialModalComplete}
               onModalStateChange={setIsTutorialModalOpen}
+              onCustomButtonClick={handleCustomButtonClick}
             />
 
             {/* Living Circle - DO NOT REMOVE */}
