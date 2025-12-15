@@ -42,7 +42,7 @@ const ProfilePage = () => {
 
   // Tutorial state
   const tutorial = useProfileTutorialState();
-  
+
   // Handle tutorial restart from navigation state
   useEffect(() => {
     if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
@@ -53,7 +53,7 @@ const ProfilePage = () => {
       });
     }
   }, [location.state, tutorial]);
-  
+
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
   const profileCompletionRef = useRef(null);
@@ -72,7 +72,7 @@ const ProfilePage = () => {
 
     const alertedBestieQuery = query(
       collection(db, 'checkins'),
-      where('bestieUserIds', 'array-contains', currentUser.uid),
+      where('bestieIds', 'array-contains', currentUser.uid),
       where('status', '==', 'alerted'),
       limit(20) // Reasonable limit for alerted check-ins
     );
@@ -81,7 +81,7 @@ const ProfilePage = () => {
       alertedBestieQuery,
       async (snapshot) => {
         const alertedCheckIns = [];
-        
+
         // Batch fetch all user documents at once to avoid N+1 queries
         const userIds = [...new Set(snapshot.docs.map(doc => doc.data().userId))];
         const userDocPromises = userIds.map(id => getDoc(doc(db, 'users', id)));
@@ -449,9 +449,9 @@ const ProfilePage = () => {
 
         {/* Profile Card */}
         <div ref={profileCardRef}>
-          <ProfileCard 
-            currentUser={currentUser} 
-            userData={userData} 
+          <ProfileCard
+            currentUser={currentUser}
+            userData={userData}
             showCustomizer={showCustomizer}
             setShowCustomizer={setShowCustomizer}
           />
@@ -560,7 +560,7 @@ const ProfilePage = () => {
                 total_steps: 6
               });
             }
-            
+
             if (tutorial.currentStep === 6) {
               // Last step - complete tutorial
               if (typeof window !== 'undefined' && window.analytics) {

@@ -258,7 +258,7 @@ service cloud.firestore {
       allow read: if isAdmin() || isOwner(resource.data.userId);
       allow create: if false; // Only Cloud Functions
       allow update: if isOwner(resource.data.userId);
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
     }
 
     // Emergency SOS collection

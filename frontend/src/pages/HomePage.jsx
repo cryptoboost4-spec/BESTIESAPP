@@ -144,7 +144,7 @@ const HomePage = () => {
     // ALSO listen to alerted check-ins where current user is a selected bestie
     const alertedBestieQuery = query(
       collection(db, 'checkins'),
-      where('bestieUserIds', 'array-contains', currentUser.uid),
+      where('bestieIds', 'array-contains', currentUser.uid),
       where('status', '==', 'alerted'),
       limit(20) // Reasonable limit for alerted check-ins
     );
