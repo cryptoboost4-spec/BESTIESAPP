@@ -31,7 +31,7 @@ const BADGE_DEFINITIONS = {
   checkin_50: { id: 'checkin_50', name: 'Safety Pro', icon: '✅⭐' },
   checkin_100: { id: 'checkin_100', name: 'Safety Master', icon: '👑✅' },
   // Additional badges from BadgesPage
-  safety_starter: { id: 'safety_starter', name: 'Safety Starter', icon: '🛡️', image: '/badges/safety_2_heart.png' },
+  safety_starter: { id: 'safety_starter', name: 'Safety Starter', icon: '🛡️', image: '/badges/safety_starter.png' },
   safety_pro: { id: 'safety_pro', name: 'Safety Pro', icon: '⭐', image: '/badges/safety_3.png' },
   safety_master: { id: 'safety_master', name: 'Safety Master', icon: '👑', image: '/badges/safety_7.png' },
   night_owl: { id: 'night_owl', name: 'Night Owl', icon: '🦉' },
@@ -251,8 +251,8 @@ const BadgesSection = ({
                       key={badge.id}
                       onClick={() => handleToggleFeaturedBadge(badge.id)}
                       className={`p-4 rounded-xl text-center transition-all ${isSelected
-                          ? 'bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-primary shadow-lg scale-105'
-                          : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent'
+                        ? 'bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-primary shadow-lg scale-105'
+                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent'
                         }`}
                     >
                       <div className="mb-2">

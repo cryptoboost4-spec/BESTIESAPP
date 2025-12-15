@@ -13,7 +13,7 @@ const BadgesPage = () => {
   const [loading, setLoading] = useState(true);
 
   const allBadges = [
-    { id: 'safety_starter', name: 'Safety Starter', description: 'Complete 5 check-ins', icon: '🛡️', image: '/badges/safety_2_heart.png', color: '#4CAF50', requirement: 5, stat: 'completedCheckIns' },
+    { id: 'safety_starter', name: 'Safety Starter', description: 'Complete 5 check-ins', icon: '🛡️', image: '/badges/safety_starter.png', color: '#4CAF50', requirement: 5, stat: 'completedCheckIns' },
     { id: 'safety_pro', name: 'Safety Pro', description: 'Complete 25 check-ins', icon: '⭐', image: '/badges/safety_3.png', color: '#2196F3', requirement: 25, stat: 'completedCheckIns' },
     { id: 'safety_master', name: 'Safety Master', description: 'Complete 50 check-ins', icon: '👑', image: '/badges/safety_7.png', color: '#9C27B0', requirement: 50, stat: 'completedCheckIns' },
     { id: 'friend_squad', name: 'Friend Squad', description: 'Add 3 besties', icon: '👥', image: '/badges/social_2.png', color: '#FF9800', requirement: 3, stat: 'totalBesties' },
@@ -146,33 +146,37 @@ const BadgesPage = () => {
       </div>
 
       {earned.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-3xl mb-5 pl-2.5 text-gray-800 dark:text-gray-200">✨ Earned ({earned.length})</h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+        <div className="mb-20">
+          <h2 className="text-3xl mb-12 text-center font-display text-gray-800 dark:text-gray-200">✨ Earned Badges</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
             {earned.map(badge => (
               <div
                 key={badge.id}
-                className="bg-white dark:bg-gray-800 border-[3px] rounded-2xl p-6 flex gap-5 items-center transition-all duration-300 shadow-lg hover:shadow-xl transform -translate-y-0.5"
-                style={{
-                  borderColor: badge.color,
-                  background: isDark
-                    ? `linear-gradient(135deg, ${badge.color}20, ${badge.color}10), rgb(31 41 55)`
-                    : `linear-gradient(135deg, ${badge.color}15, ${badge.color}05)`
-                }}
+                className="flex flex-col items-center text-center group"
               >
-                <div className="flex-shrink-0 leading-none" style={{ color: badge.color }}>
+                <div className="relative mb-6 transition-transform duration-300 transform group-hover:scale-105">
                   {badge.image ? (
-                    <img src={badge.image} alt={badge.name} className="w-16 h-16 object-contain drop-shadow-md" />
+                    <img
+                      src={badge.image}
+                      alt={badge.name}
+                      className="w-48 h-48 sm:w-56 sm:h-56 object-contain drop-shadow-xl filter"
+                    />
                   ) : (
-                    <span className="text-[3.5rem]">{badge.icon}</span>
+                    <div className="w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full text-[6rem] shadow-inner">
+                      {badge.icon}
+                    </div>
                   )}
+
                 </div>
-                <div className="flex-1">
-                  <h3 className="m-0 mb-2 text-xl" style={{ color: badge.color }}>{badge.name}</h3>
-                  <p className="m-0 text-gray-600 dark:text-gray-400 text-[0.95rem]">{badge.description}</p>
-                  <span className="inline-block py-1.5 px-3.5 rounded-full text-white text-[0.85rem] mt-2.5 font-semibold" style={{ background: badge.color }}>
-                    ✓ Earned
-                  </span>
+
+                <div className="max-w-[240px]">
+                  {/* Name hidden as requested since it's in the image, but kept for accessibility if image fails or for screen readers */}
+                  <span className="sr-only">{badge.name}</span>
+                  {!badge.image && <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200">{badge.name}</h3>}
+
+                  <p className="text-lg text-gray-700 dark:text-gray-300 font-medium leading-normal mt-2">
+                    {badge.description}
+                  </p>
                 </div>
               </div>
             ))}
@@ -181,39 +185,46 @@ const BadgesPage = () => {
       )}
 
       {locked.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-3xl mb-5 pl-2.5 text-gray-800 dark:text-gray-200">🔒 Locked ({locked.length})</h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+        <div className="mb-16">
+          <h2 className="text-3xl mb-12 text-center font-display text-gray-600 dark:text-gray-400 opacity-90">🔒 Locked Badges</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
             {locked.map(badge => {
               const progress = getProgress(badge);
               const progressText = getProgressText(badge);
 
               return (
-                <div key={badge.id} className="bg-white dark:bg-gray-800 border-[3px] border-gray-200 dark:border-gray-600 rounded-2xl p-6 flex gap-5 items-center transition-all duration-300 opacity-40 grayscale-[0.8]">
-                  <div className="flex-shrink-0 leading-none text-gray-600 dark:text-gray-400">
+                <div key={badge.id} className="flex flex-col items-center text-center opacity-50 hover:opacity-100 transition-all duration-300 group">
+                  <div className="relative mb-6 grayscale group-hover:grayscale-0 transition-all duration-300">
                     {badge.image ? (
-                      <img src={badge.image} alt={badge.name} className="w-16 h-16 object-contain grayscale opacity-70" />
+                      <img
+                        src={badge.image}
+                        alt={badge.name}
+                        className="w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-lg"
+                      />
                     ) : (
-                      <span className="text-[3.5rem]">{badge.icon}</span>
+                      <div className="w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full text-[5rem]">
+                        {badge.icon}
+                      </div>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="m-0 mb-2 text-xl text-gray-800 dark:text-gray-200">{badge.name}</h3>
-                    <p className="m-0 text-gray-600 dark:text-gray-400 text-[0.95rem]">{badge.description}</p>
+
+                  <div className="max-w-[240px]">
+                    <span className="sr-only">{badge.name}</span>
+                    {!badge.image && <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200">{badge.name}</h3>}
+
+                    <p className="text-base text-gray-600 dark:text-gray-400 mb-4">{badge.description}</p>
 
                     {/* Progress bar */}
-                    <div className="mt-3">
-                      <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-xl overflow-hidden mb-1.5">
-                        <div
-                          className="h-full transition-all duration-300 rounded-xl"
-                          style={{
-                            width: `${progress}%`,
-                            backgroundColor: badge.color
-                          }}
-                        />
-                      </div>
-                      <span className="text-[0.85rem] text-gray-600 dark:text-gray-400 font-semibold">{progressText}</span>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner mb-2">
+                      <div
+                        className="h-full transition-all duration-500 ease-out rounded-full"
+                        style={{
+                          width: `${progress}%`,
+                          backgroundColor: badge.color
+                        }}
+                      />
                     </div>
+                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 block">{progressText}</span>
                   </div>
                 </div>
               );
