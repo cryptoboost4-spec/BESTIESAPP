@@ -21,7 +21,7 @@ const BestieSelector = ({
   const navigate = useNavigate();
   const [expandedBestieShare, setExpandedBestieShare] = useState(null);
   const [showNoContactBesties, setShowNoContactBesties] = useState(false);
-  const [copied, setCopied] = useState(false);
+  // Removed unused copied state
   const [showMessengerModal, setShowMessengerModal] = useState(false);
 
   // Filter active messenger contacts
@@ -66,13 +66,7 @@ const BestieSelector = ({
     }
   };
 
-  const toggleMessengerContact = (contactId) => {
-    if (selectedMessengerContacts.includes(contactId)) {
-      setSelectedMessengerContacts(selectedMessengerContacts.filter(id => id !== contactId));
-    } else {
-      setSelectedMessengerContacts([...selectedMessengerContacts, contactId]);
-    }
-  };
+  // Removed unused toggleMessengerContact function
 
   // Check if bestie has ANY contact method
   const hasContactMethod = (bestie) => {
@@ -94,20 +88,12 @@ const BestieSelector = ({
     return result;
   };
 
-  const getTimeRemaining = (expiresAt) => {
-    const remaining = expiresAt?.toMillis() - now;
-    if (remaining <= 0) return null;
-    const hours = Math.floor(remaining / (1000 * 60 * 60));
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-    if (hours > 0) return `${hours}h ${minutes}m left`;
-    return `${minutes}m left`;
-  };
+  // Removed unused getTimeRemaining function
 
   const copyMessengerLink = () => {
     const link = MESSENGER_CONFIG.getLinkForUser(userId);
     navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    // Removed unused copied state updates
     toast.success('Link copied!');
   };
 

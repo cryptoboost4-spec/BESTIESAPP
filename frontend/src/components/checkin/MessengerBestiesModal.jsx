@@ -51,35 +51,7 @@ const MessengerBestiesModal = ({
     }
   };
 
-  const handleShare = (platform) => {
-    if (shareMessengerLink) {
-      shareMessengerLink(platform);
-    } else {
-      const link = MESSENGER_CONFIG.getLinkForUser(userId);
-      const message = `Hey! Can you please click this link to be added as my emergency contact on Besties? ❤️\n\n${link}`;
-      const encoded = encodeURIComponent(message);
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      if (platform === 'whatsapp') {
-        if (isMobile) {
-          window.location.href = `whatsapp://send?text=${encoded}`;
-        } else {
-          window.open(`https://wa.me/?text=${encoded}`, '_blank');
-        }
-        toast.success('Opening WhatsApp...');
-      } else if (platform === 'messenger') {
-        if (isMobile) {
-          window.location.href = `fb-messenger://share?link=${encodeURIComponent(link)}`;
-          setTimeout(() => {
-            window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(link)}&app_id=&redirect_uri=${encodeURIComponent(window.location.origin)}`, '_blank');
-          }, 1500);
-        } else {
-          window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(link)}&app_id=&redirect_uri=${encodeURIComponent(window.location.origin)}`, '_blank', 'width=600,height=400');
-        }
-        toast.success('Opening Messenger...');
-      }
-    }
-  };
+  // Removed unused handleShare function
 
   const tooltipMessage = "Messenger Besties are free & unlimited! Share your link → They message you → Auto-connected for 20hrs to receive alerts. Benefits: No SMS costs, unlimited contacts, easy to add, auto-expires for privacy.";
 
