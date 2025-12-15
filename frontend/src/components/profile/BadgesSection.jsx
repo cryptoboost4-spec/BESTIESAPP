@@ -16,9 +16,7 @@ const BADGE_DEFINITIONS = {
   besties_5: { id: 'besties_5', name: 'Friend Circle', icon: '💜' },
   besties_10: { id: 'besties_10', name: 'Squad Goals', icon: '💜✨' },
   besties_20: { id: 'besties_20', name: 'Community Leader', icon: '💜⭐' },
-  friend_squad: { id: 'friend_squad', name: 'Friend Squad', icon: '👥' },
-  safety_circle: { id: 'safety_circle', name: 'Safety Circle', icon: '🤝' },
-  safety_network: { id: 'safety_network', name: 'Safety Network', icon: '🌐' },
+
   // Subscriber badge
   subscriber_active: { id: 'subscriber_active', name: 'SMS Supporter', icon: '⭐💝' },
   // Donor badges
@@ -130,71 +128,75 @@ const BadgesSection = ({
 
         {allBadgesToShow.length > 0 ? (
           <>
-            {/* Featured Badges - Single full-width card with up to 3 badges */}
+            {/* Featured Badges - Clean, large display */}
             {featuredBadges.length > 0 && (
-              <div className="mb-4">
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-400 dark:border-yellow-600 shadow-lg">
-                  <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-3 text-center font-semibold">⭐ Featured Badges</div>
-                  <div className="flex justify-center items-center gap-6">
-                    {featuredBadges.slice(0, 3).map((badge) => (
-                      <div
-                        key={badge.id}
-                        className="text-center flex-shrink-0"
-                      >
-                        <div className="mb-1">
-                          {badge.image ? (
-                            <img src={badge.image} alt={badge.name} className="w-12 h-12 object-contain mx-auto drop-shadow-sm" />
-                          ) : (
-                            <span className="text-4xl">{badge.icon}</span>
-                          )}
-                        </div>
-                        <div className="font-semibold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>
+              <div className="mb-6">
+                <div className="flex justify-center items-center gap-4">
+                  {featuredBadges.slice(0, 3).map((badge) => (
+                    <div
+                      key={badge.id}
+                      className="text-center flex flex-col items-center"
+                    >
+                      <div className="mb-2 transition-transform duration-300 hover:scale-110">
+                        {badge.image ? (
+                          <img src={badge.image} alt={badge.name} className="w-28 h-28 object-contain drop-shadow-lg filter" />
+                        ) : (
+                          <div className="w-24 h-24 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full text-[3rem]">
+                            {badge.icon}
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                      {/* Name hidden if image exists as per request, consistent with main page */}
+                      {!badge.image && <div className="font-bold text-xs text-gray-800 dark:text-gray-200">{badge.name}</div>}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Other Badges - Scrollable horizontal list if many */}
+            {/* Other Badges - Scrollable horizontal list if many, now just icons */}
             {otherBadges.length > 0 && (
               <div>
                 {otherBadges.length > 6 ? (
                   <>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Scroll to see all badges →</p>
-                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 ml-2">Other badges:</p>
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide pl-2">
                       {otherBadges.map((badge) => (
                         <div
                           key={badge.id}
-                          className="p-4 rounded-2xl text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 flex-shrink-0 w-32 shadow-md pointer-events-none select-none"
+                          className="flex-shrink-0 text-center opacity-80 hover:opacity-100 transition-opacity"
                         >
-                          <div className="mb-2">
+                          <div className="mb-1">
                             {badge.image ? (
-                              <img src={badge.image} alt={badge.name} className="w-12 h-12 object-contain mx-auto" />
+                              <img src={badge.image} alt={badge.name} className="w-20 h-20 object-contain drop-shadow-md" />
                             ) : (
-                              <span className="text-4xl">{badge.icon}</span>
+                              <div className="w-16 h-16 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-full text-3xl">
+                                {badge.icon}
+                              </div>
                             )}
                           </div>
-                          <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
+                          {!badge.image && <div className="text-[10px] text-gray-600 dark:text-gray-400 max-w-[60px] truncate mx-auto">{badge.name}</div>}
                         </div>
                       ))}
                     </div>
                   </>
                 ) : (
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-4">
                     {otherBadges.map((badge) => (
                       <div
                         key={badge.id}
-                        className="p-4 rounded-2xl text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700 shadow-md pointer-events-none select-none"
+                        className="text-center flex flex-col items-center opacity-90 hover:opacity-100"
                       >
-                        <div className="mb-2">
+                        <div className="mb-1">
                           {badge.image ? (
-                            <img src={badge.image} alt={badge.name} className="w-12 h-12 object-contain mx-auto" />
+                            <img src={badge.image} alt={badge.name} className="w-20 h-20 object-contain drop-shadow-md" />
                           ) : (
-                            <span className="text-4xl">{badge.icon}</span>
+                            <div className="w-16 h-16 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-full text-3xl">
+                              {badge.icon}
+                            </div>
                           )}
                         </div>
-                        <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">{badge.name}</div>
+                        {!badge.image && <div className="text-[10px] text-gray-600 dark:text-gray-400">{badge.name}</div>}
                       </div>
                     ))}
                   </div>

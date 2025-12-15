@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
+
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 const BadgesPage = () => {
   const navigate = useNavigate();
   const { currentUser, userData } = useAuth();
-  const { isDark } = useDarkMode();
+
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [loading, setLoading] = useState(true);
 
