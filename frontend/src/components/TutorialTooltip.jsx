@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import haptic from '../utils/hapticFeedback';
 
-const TutorialTooltip = ({ 
-  title, 
-  body, 
+const TutorialTooltip = ({
+  title,
+  body,
   buttonText = 'Next',
   onNext,
   onBack,
@@ -106,7 +106,7 @@ const TutorialTooltip = ({
         left: '50%',
         transform: 'translate(-50%, -50%)',
         width: '90%',
-        maxWidth: '500px'
+        maxWidth: '400px'
       };
     }
 
@@ -124,7 +124,7 @@ const TutorialTooltip = ({
     if (position === 'below') {
       // Position tooltip BELOW the button - ALWAYS stay below
       top = buttonBottom + spacing;
-      
+
       // If tooltip would overlap bottom nav, just position it as close as possible
       // but still below the button
       const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
@@ -142,7 +142,7 @@ const TutorialTooltip = ({
         // Try positioning below button instead
         const belowTop = buttonBottom + spacing;
         const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
-        
+
         if (belowTop + tooltipHeight <= maxBottom) {
           // Can fit below, use that
           top = belowTop;
@@ -155,7 +155,7 @@ const TutorialTooltip = ({
       // Ensure tooltip stays above button (failsafe)
       const maxTop = buttonTop - tooltipHeight - 8;
       top = Math.min(top, maxTop);
-      
+
       // Final check: ensure tooltip doesn't go below nav bar
       const maxBottom = viewportHeight - bottomNavHeight - bottomPadding;
       if (top + tooltipHeight > maxBottom) {
@@ -172,7 +172,7 @@ const TutorialTooltip = ({
       right: isMobile ? '1rem' : 'auto',
       transform: isMobile ? 'none' : 'translateX(-50%)',
       width: isMobile ? 'auto' : '90%',
-      maxWidth: isMobile ? 'none' : '500px'
+      maxWidth: isMobile ? 'none' : '400px'
     };
   };
 
@@ -181,12 +181,13 @@ const TutorialTooltip = ({
       position: 'absolute',
       width: 0,
       height: 0,
+      zIndex: 50
     };
 
     // Match the gradient background color based on color scheme
-    // Check if dark mode is active
+    // We'll use the pink-50 for light and pink-900 for dark to blend with the container
     const isDark = document.documentElement.classList.contains('dark');
-    const arrowColor = isDark ? '#581c87' : '#fdf2f8'; // purple-900 for dark, purple-50 for light
+    const arrowColor = isDark ? '#831843' : '#fdf2f8'; // pink-900 / pink-50
 
     switch (arrowPosition) {
       case 'top':
@@ -195,9 +196,10 @@ const TutorialTooltip = ({
           bottom: '100%',
           left: '50%',
           transform: 'translateX(-50%)',
-          borderLeft: '8px solid transparent',
-          borderRight: '8px solid transparent',
-          borderBottom: `8px solid ${arrowColor}`,
+          borderLeft: '12px solid transparent',
+          borderRight: '12px solid transparent',
+          borderBottom: `12px solid ${arrowColor}`,
+          filter: 'drop-shadow(0 -4px 3px rgba(0,0,0,0.05))'
         };
       case 'bottom':
         return {
@@ -205,31 +207,32 @@ const TutorialTooltip = ({
           top: '100%',
           left: '50%',
           transform: 'translateX(-50%)',
-          borderLeft: '8px solid transparent',
-          borderRight: '8px solid transparent',
-          borderTop: `8px solid ${arrowColor}`,
+          borderLeft: '12px solid transparent',
+          borderRight: '12px solid transparent',
+          borderTop: `12px solid ${arrowColor}`,
+          filter: 'drop-shadow(0 4px 3px rgba(0,0,0,0.05))'
         };
       case 'bottom-left':
-        // Arrow pointing down-left (for rideshare button on left)
         return {
           ...baseStyles,
           top: '100%',
-          left: '20%', // Position arrow toward left side
+          left: '20%',
           transform: 'translateX(-50%)',
-          borderLeft: '10px solid transparent',
-          borderRight: '10px solid transparent',
-          borderTop: `10px solid ${arrowColor}`,
+          borderLeft: '12px solid transparent',
+          borderRight: '12px solid transparent',
+          borderTop: `12px solid ${arrowColor}`,
+          filter: 'drop-shadow(0 4px 3px rgba(0,0,0,0.05))'
         };
       case 'bottom-right':
-        // Arrow pointing down-right (for quick meet button on right)
         return {
           ...baseStyles,
           top: '100%',
-          right: '20%', // Position arrow toward right side
+          right: '20%',
           transform: 'translateX(50%)',
-          borderLeft: '10px solid transparent',
-          borderRight: '10px solid transparent',
-          borderTop: `10px solid ${arrowColor}`,
+          borderLeft: '12px solid transparent',
+          borderRight: '12px solid transparent',
+          borderTop: `12px solid ${arrowColor}`,
+          filter: 'drop-shadow(0 4px 3px rgba(0,0,0,0.05))'
         };
       case 'left':
         return {
@@ -237,9 +240,10 @@ const TutorialTooltip = ({
           right: '100%',
           top: '50%',
           transform: 'translateY(-50%)',
-          borderTop: '8px solid transparent',
-          borderBottom: '8px solid transparent',
-          borderRight: `8px solid ${arrowColor}`,
+          borderTop: '12px solid transparent',
+          borderBottom: '12px solid transparent',
+          borderRight: `12px solid ${arrowColor}`,
+          filter: 'drop-shadow(-4px 0 3px rgba(0,0,0,0.05))'
         };
       case 'right':
         return {
@@ -247,9 +251,10 @@ const TutorialTooltip = ({
           left: '100%',
           top: '50%',
           transform: 'translateY(-50%)',
-          borderTop: '8px solid transparent',
-          borderBottom: '8px solid transparent',
-          borderLeft: `8px solid ${arrowColor}`,
+          borderTop: '12px solid transparent',
+          borderBottom: '12px solid transparent',
+          borderLeft: `12px solid ${arrowColor}`,
+          filter: 'drop-shadow(4px 0 3px rgba(0,0,0,0.05))'
         };
       default:
         return baseStyles;
@@ -261,54 +266,58 @@ const TutorialTooltip = ({
     onNext?.();
   };
 
-  // Allow rendering without targetElement
-
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-[100] bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/95 dark:via-pink-900/95 dark:to-purple-900/95 rounded-2xl shadow-2xl p-6 border-2 border-purple-200 dark:border-purple-700 backdrop-blur-md animate-step-transition"
+      className="fixed z-[100] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20"
       style={{
         ...getPositionStyles(),
-        boxShadow: '0 20px 60px rgba(147, 51, 234, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
       }}
       role="dialog"
       aria-labelledby="tutorial-title"
       aria-describedby="tutorial-body"
     >
+      {/* Decorative sparkle background */}
+      <div className="absolute top-0 right-0 p-4 opacity-20 pointer-events-none select-none">
+        <span className="text-4xl animate-pulse-slow">✨</span>
+      </div>
+      <div className="absolute bottom-0 left-0 p-4 opacity-20 pointer-events-none select-none">
+        <span className="text-3xl animate-bounce-gentle" style={{ animationDelay: '1s' }}>💖</span>
+      </div>
+
       {/* Arrow - only show if we have a target element */}
       {targetElement && <div style={getArrowStyles()} />}
 
       {/* Content */}
-      <div className="space-y-4">
+      <div className="space-y-4 relative z-10">
         {title && (
-          <h4 id="tutorial-title" className="text-xl font-display text-gradient flex items-center gap-2 font-bold">
-            {title}
+          <h4 id="tutorial-title" className="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 dark:from-pink-300 dark:to-purple-300 flex items-center gap-2 drop-shadow-sm">
+            <span className="animate-wiggle text-2xl">🌸</span> {title}
           </h4>
         )}
         {body && (
-          <p id="tutorial-body" className="text-base text-text-primary dark:text-gray-100 leading-relaxed font-medium">
+          <p id="tutorial-body" className="text-md text-gray-700 dark:text-pink-100 leading-relaxed font-medium tracking-wide">
             {body}
           </p>
         )}
 
-        {/* Progress dots */}
+        {/* Progress dots - Cute style */}
         {stepNumber && totalSteps && (
-          <div className="flex gap-2 justify-center mt-4">
+          <div className="flex gap-2 justify-center mt-6">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div
                 key={i}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i < stepNumber
-                    ? 'bg-purple-600 dark:bg-purple-400 scale-110'
-                    : 'bg-gray-300 dark:bg-gray-600'
-                }`}
+                className={`transition-all duration-300 rounded-full ${i < stepNumber
+                    ? 'w-6 h-2 bg-gradient-to-r from-pink-500 to-purple-500 shadow-md scale-100'
+                    : 'w-2 h-2 bg-pink-200 dark:bg-pink-800'
+                  }`}
                 aria-label={`Step ${i + 1} of ${totalSteps}`}
               />
             ))}
           </div>
         )}
 
-        <div className="flex flex-col gap-2 mt-4">
+        <div className="flex flex-col gap-3 mt-6">
           {buttonText && (
             <div className="flex gap-3">
               {showBack && onBack && (
@@ -317,24 +326,22 @@ const TutorialTooltip = ({
                     haptic.light();
                     onBack();
                   }}
-                  className="flex-1 btn btn-secondary py-3 text-base"
+                  className="px-4 py-3 rounded-full font-bold text-pink-600 dark:text-pink-300 bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/30 transition-all border-2 border-transparent hover:border-pink-200"
                   aria-label="Go back to previous step"
                 >
-                  ← Back
+                  Back
                 </button>
               )}
               <button
                 onClick={handleNext}
-                className={`${showBack && onBack ? "flex-1" : "w-full"} btn bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 text-white font-bold py-3 text-base shadow-xl animate-pulse-slow whitespace-nowrap relative overflow-hidden group`}
+                className={`${showBack && onBack ? "flex-1" : "w-full"} group relative px-8 py-3.5 rounded-full font-bold text-white shadow-lg shadow-pink-500/30 overflow-hidden transform transition-all hover:scale-[1.02] active:scale-95`}
                 aria-label={`${buttonText} - Step ${stepNumber} of ${totalSteps}`}
-                style={{
-                  backgroundSize: '200% 200%',
-                  animation: 'gradient-shift 3s ease infinite, pulse-slow 2s ease-in-out infinite'
-                }}
               >
-                <span className="relative z-10">{buttonText} ✨</span>
-                {/* Shine effect on hover */}
-                <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-gradient-x"></div>
+                <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                <span className="relative flex items-center justify-center gap-2">
+                  {buttonText} {stepNumber === totalSteps ? '🎉' : '➜'}
+                </span>
               </button>
             </div>
           )}
@@ -344,10 +351,10 @@ const TutorialTooltip = ({
                 haptic.light();
                 onSkip();
               }}
-              className="text-sm text-text-secondary hover:text-text-primary underline transition-colors text-center"
+              className="text-sm font-semibold text-pink-400 dark:text-pink-300 hover:text-pink-600 dark:hover:text-pink-100 transition-colors py-1"
               aria-label="Skip tutorial"
             >
-              Skip Tutorial
+              Skip this for now
             </button>
           )}
         </div>
