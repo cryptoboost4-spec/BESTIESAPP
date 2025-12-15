@@ -178,10 +178,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
 
         {isTutorialMode && <TestModeBadge />}
 
-        <p className="text-sm text-text-secondary mb-6">
-          Enter who you're meeting and select duration
-        </p>
-
         {/* Name Input */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
@@ -296,20 +292,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
         </div>
 
         {/* Tutorial Hints */}
-        {isTutorialMode && showNameHint && (
-          <div className="absolute top-[180px] left-1/2 -translate-x-1/2 bg-purple-600 text-white text-sm px-4 py-2 rounded-lg shadow-xl animate-bounce z-[60] whitespace-nowrap">
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-purple-600"></div>
-            💡 Enter who you're meeting here
-          </div>
-        )}
-
-        {isTutorialMode && showTimeHint && (
-          <div className="absolute top-[280px] left-1/2 -translate-x-1/2 bg-purple-600 text-white text-sm px-4 py-2 rounded-lg shadow-xl animate-bounce z-[60] max-w-[280px] text-center">
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-purple-600"></div>
-            ⏱️ Press a preset or use the slider to set your time
-          </div>
-        )}
-
         {isTutorialMode && showButtonHint && (
           <div className="absolute bottom-[70px] left-1/2 -translate-x-1/2 bg-purple-600 text-white text-sm px-4 py-2 rounded-lg shadow-xl animate-bounce z-[60] whitespace-nowrap">
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-purple-600"></div>
