@@ -6,7 +6,7 @@ import RideshareModal from './checkin/RideshareModal';
 import WalkingModal from './checkin/WalkingModal';
 import QuickMeetModal from './checkin/QuickMeetModal';
 
-const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction, currentTutorialStep, allowQuickCheckInClick = false, onTutorialModalComplete, onModalStateChange }, ref) => {
+const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialAction, currentTutorialStep, allowQuickCheckInClick = false, onTutorialModalComplete, onModalStateChange, onCustomButtonClick }, ref) => {
   const navigate = useNavigate();
   const [showRideshareModal, setShowRideshareModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
@@ -161,6 +161,10 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
               return; // Disable during allButtons or quickCheckIns step
             }
             haptic.light();
+            // If in tutorial mode at 'custom' step, call the tutorial completion handler
+            if (isTutorialMode && currentTutorialStep === 'custom' && onCustomButtonClick) {
+              onCustomButtonClick();
+            }
             navigate('/create');
           }}
           onKeyDown={(e) => {
@@ -170,6 +174,10 @@ const QuickCheckInButtons = forwardRef(({ isTutorialMode = false, onTutorialActi
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               haptic.light();
+              // If in tutorial mode at 'custom' step, call the tutorial completion handler
+              if (isTutorialMode && currentTutorialStep === 'custom' && onCustomButtonClick) {
+                onCustomButtonClick();
+              }
               navigate('/create');
             }
           }}

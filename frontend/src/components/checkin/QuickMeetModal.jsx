@@ -12,12 +12,8 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
   const firstInputRef = useRef(null);
 
   // Tutorial hint state
-  const [showNameHint, setShowNameHint] = useState(false);
-  const [showTimeHint, setShowTimeHint] = useState(false);
   const [showButtonHint, setShowButtonHint] = useState(false);
-  const [hasTypedName, setHasTypedName] = useState(false);
   const [hasChangedDuration, setHasChangedDuration] = useState(false);
-  const [hasClosedKeyboard, setHasClosedKeyboard] = useState(false);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -82,43 +78,14 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
   useEffect(() => {
     if (!isTutorialMode) return;
 
-    // Hint 1: Show name hint after 2 seconds if user hasn't typed
-    const nameHintTimer = setTimeout(() => {
-      if (!hasTypedName) {
-        setShowNameHint(true);
-      }
-    }, 2000);
-
-    return () => clearTimeout(nameHintTimer);
-  }, [isTutorialMode, hasTypedName]);
-
-  useEffect(() => {
-    if (!isTutorialMode) return;
-
-    // Hint 2: Show time hint 2 seconds after keyboard closes
-    if (hasClosedKeyboard && !showTimeHint) {
-      const timeHintTimer = setTimeout(() => {
-        setShowTimeHint(true);
-        setShowNameHint(false); // Hide previous hint
-      }, 2000);
-
-      return () => clearTimeout(timeHintTimer);
-    }
-  }, [isTutorialMode, hasClosedKeyboard, showTimeHint]);
-
-  useEffect(() => {
-    if (!isTutorialMode) return;
-
-    // Hint 3: Show button hint after duration changed OR after 10 seconds
+    // Show button hint after duration changed OR after 10 seconds
     const buttonHintTimer = setTimeout(() => {
       setShowButtonHint(true);
-      setShowTimeHint(false); // Hide previous hint
     }, 10000);
 
     if (hasChangedDuration) {
       clearTimeout(buttonHintTimer);
       setShowButtonHint(true);
-      setShowTimeHint(false);
     }
 
     return () => clearTimeout(buttonHintTimer);
@@ -178,10 +145,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
 
         {isTutorialMode && <TestModeBadge />}
 
-        <p className="text-sm text-text-secondary mb-6">
-          Enter who you're meeting and select duration
-        </p>
-
         {/* Name Input */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-text-primary mb-2">
@@ -193,15 +156,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
             value={name}
             onChange={(e) => {
               setName(e.target.value);
-              if (!hasTypedName && e.target.value.length > 0) {
-                setHasTypedName(true);
-                setShowNameHint(false);
-              }
-            }}
-            onBlur={() => {
-              if (isTutorialMode && !hasClosedKeyboard) {
-                setHasClosedKeyboard(true);
-              }
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -296,20 +250,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
         </div>
 
         {/* Tutorial Hints */}
-        {isTutorialMode && showNameHint && (
-          <div className="absolute top-[180px] left-1/2 -translate-x-1/2 bg-purple-600 text-white text-sm px-4 py-2 rounded-lg shadow-xl animate-bounce z-[60] whitespace-nowrap">
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-purple-600"></div>
-            💡 Enter who you're meeting here
-          </div>
-        )}
-
-        {isTutorialMode && showTimeHint && (
-          <div className="absolute top-[280px] left-1/2 -translate-x-1/2 bg-purple-600 text-white text-sm px-4 py-2 rounded-lg shadow-xl animate-bounce z-[60] max-w-[280px] text-center">
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-purple-600"></div>
-            ⏱️ Press a preset or use the slider to set your time
-          </div>
-        )}
-
         {isTutorialMode && showButtonHint && (
           <div className="absolute bottom-[70px] left-1/2 -translate-x-1/2 bg-purple-600 text-white text-sm px-4 py-2 rounded-lg shadow-xl animate-bounce z-[60] whitespace-nowrap">
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-purple-600"></div>

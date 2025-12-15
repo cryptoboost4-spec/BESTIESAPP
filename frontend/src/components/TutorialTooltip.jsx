@@ -17,6 +17,7 @@ const TutorialTooltip = ({
 }) => {
   const tooltipRef = useRef(null);
   const [arrowPosition, setArrowPosition] = useState('top');
+  const [isPositioned, setIsPositioned] = useState(false);
 
   // Keyboard navigation
   useEffect(() => {
@@ -46,12 +47,15 @@ const TutorialTooltip = ({
 
   useEffect(() => {
     if (!targetElement || !tooltipRef.current) {
-      // If no target element, set default arrow position
+      // If no target element, set default arrow position and mark as positioned
       setArrowPosition('top');
+      setIsPositioned(true);
       return;
     }
 
     const calculatePosition = () => {
+      if (!tooltipRef.current) return;
+
       const rect = targetElement.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
 
@@ -81,13 +85,19 @@ const TutorialTooltip = ({
       }
 
       setArrowPosition(arrowPos);
+      setIsPositioned(true);
     };
 
-    calculatePosition();
+    // Use requestAnimationFrame to ensure DOM is fully rendered before calculating position
+    const rafId = requestAnimationFrame(() => {
+      calculatePosition();
+    });
+
     window.addEventListener('resize', calculatePosition);
     window.addEventListener('scroll', calculatePosition, true);
 
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('resize', calculatePosition);
       window.removeEventListener('scroll', calculatePosition, true);
     };
@@ -288,7 +298,9 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20"
+      className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-200 ${
+        isPositioned ? 'opacity-100' : 'opacity-0'
+      }`}
       style={{
         ...getPositionStyles(),
       }}
