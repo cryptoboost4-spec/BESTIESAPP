@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import haptic from '../utils/hapticFeedback';
 
 const TutorialTooltip = ({
@@ -18,6 +18,7 @@ const TutorialTooltip = ({
   const tooltipRef = useRef(null);
   const [arrowPosition, setArrowPosition] = useState('top');
   const [isPositioned, setIsPositioned] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Keyboard navigation
   useEffect(() => {
@@ -45,11 +46,14 @@ const TutorialTooltip = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onNext, onBack, onSkip, showBack]);
 
-  useEffect(() => {
+  // Use useLayoutEffect to calculate position before paint (prevents flash)
+  useLayoutEffect(() => {
     if (!targetElement || !tooltipRef.current) {
       // If no target element, set default arrow position and mark as positioned
       setArrowPosition('top');
       setIsPositioned(true);
+      // Small delay to ensure content is rendered
+      setTimeout(() => setIsVisible(true), 50);
       return;
     }
 
@@ -86,11 +90,15 @@ const TutorialTooltip = ({
 
       setArrowPosition(arrowPos);
       setIsPositioned(true);
+      // Make visible after position is calculated
+      setIsVisible(true);
     };
 
-    // Use requestAnimationFrame to ensure DOM is fully rendered before calculating position
+    // Use double requestAnimationFrame to ensure layout is complete
     const rafId = requestAnimationFrame(() => {
-      calculatePosition();
+      requestAnimationFrame(() => {
+        calculatePosition();
+      });
     });
 
     window.addEventListener('resize', calculatePosition);
@@ -298,11 +306,12 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-200 ${
-        isPositioned ? 'opacity-100' : 'opacity-0'
+      className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-300 ${
+        isPositioned && isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
         ...getPositionStyles(),
+        visibility: isPositioned ? 'visible' : 'hidden'
       }}
       role="dialog"
       aria-labelledby="tutorial-title"
