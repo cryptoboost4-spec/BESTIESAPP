@@ -13,12 +13,8 @@ const RideshareModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
   const durationRef = useRef(null);
 
   // Tutorial hint state
-  const [showNumberPlateHint, setShowNumberPlateHint] = useState(false);
-  const [showTimeHint, setShowTimeHint] = useState(false);
   const [showButtonHint, setShowButtonHint] = useState(false);
-  const [hasTypedRego, setHasTypedRego] = useState(false);
   const [hasChangedDuration, setHasChangedDuration] = useState(false);
-  const [hasClosedKeyboard, setHasClosedKeyboard] = useState(false);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -83,43 +79,14 @@ const RideshareModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
   useEffect(() => {
     if (!isTutorialMode) return;
 
-    // Hint 1: Show number plate hint after 2 seconds if user hasn't typed
-    const numberPlateTimer = setTimeout(() => {
-      if (!hasTypedRego) {
-        setShowNumberPlateHint(true);
-      }
-    }, 2000);
-
-    return () => clearTimeout(numberPlateTimer);
-  }, [isTutorialMode, hasTypedRego]);
-
-  useEffect(() => {
-    if (!isTutorialMode) return;
-
-    // Hint 2: Show time hint 2 seconds after keyboard closes
-    if (hasClosedKeyboard && !showTimeHint) {
-      const timeHintTimer = setTimeout(() => {
-        setShowTimeHint(true);
-        setShowNumberPlateHint(false); // Hide previous hint
-      }, 2000);
-
-      return () => clearTimeout(timeHintTimer);
-    }
-  }, [isTutorialMode, hasClosedKeyboard, showTimeHint]);
-
-  useEffect(() => {
-    if (!isTutorialMode) return;
-
-    // Hint 3: Show button hint after duration changed OR after 10 seconds
+    // Show button hint after duration changed OR after 10 seconds
     const buttonHintTimer = setTimeout(() => {
       setShowButtonHint(true);
-      setShowTimeHint(false); // Hide previous hint
     }, 10000);
 
     if (hasChangedDuration) {
       clearTimeout(buttonHintTimer);
       setShowButtonHint(true);
-      setShowTimeHint(false);
     }
 
     return () => clearTimeout(buttonHintTimer);
@@ -192,18 +159,7 @@ const RideshareModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
             <input
               type="text"
               value={rego}
-              onChange={(e) => {
-                setRego(e.target.value.toUpperCase());
-                if (!hasTypedRego && e.target.value.length > 0) {
-                  setHasTypedRego(true);
-                  setShowNumberPlateHint(false);
-                }
-              }}
-              onBlur={() => {
-                if (isTutorialMode && !hasClosedKeyboard) {
-                  setHasClosedKeyboard(true);
-                }
-              }}
+              onChange={(e) => setRego(e.target.value.toUpperCase())}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
