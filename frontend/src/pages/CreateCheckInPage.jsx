@@ -1466,18 +1466,22 @@ const CreateCheckInPage = () => {
           });
 
           if (!config) {
-            console.error('[Tutorial] Config is null for step:', currentCheckInTutorialStep, {
-              step: currentCheckInTutorialStep,
-              refStatus: {
-                mapRef: mapRef?.current ? 'ready' : 'null',
-                whoMeetingRef: whoMeetingRef?.current ? 'ready' : 'null',
-                socialMediaRef: socialMediaRef?.current ? 'ready' : 'null',
-                durationRef: durationRef?.current ? 'ready' : 'null',
-                bestieSelectorRef: bestieSelectorRef?.current ? 'ready' : 'null',
-                notesPhotosRef: notesPhotosRef?.current ? 'ready' : 'null',
-                submitButtonRef: submitButtonRef?.current ? 'ready' : 'null',
-              }
-            });
+            // checkedIn and afterSafe steps are handled in other components, so null is expected
+            const expectedNullSteps = ['checkedIn', 'afterSafe'];
+            if (!expectedNullSteps.includes(currentCheckInTutorialStep)) {
+              console.error('[Tutorial] Config is null for step:', currentCheckInTutorialStep, {
+                step: currentCheckInTutorialStep,
+                refStatus: {
+                  mapRef: mapRef?.current ? 'ready' : 'null',
+                  whoMeetingRef: whoMeetingRef?.current ? 'ready' : 'null',
+                  socialMediaRef: socialMediaRef?.current ? 'ready' : 'null',
+                  durationRef: durationRef?.current ? 'ready' : 'null',
+                  bestieSelectorRef: bestieSelectorRef?.current ? 'ready' : 'null',
+                  notesPhotosRef: notesPhotosRef?.current ? 'ready' : 'null',
+                  submitButtonRef: submitButtonRef?.current ? 'ready' : 'null',
+                }
+              });
+            }
             return null;
           }
 

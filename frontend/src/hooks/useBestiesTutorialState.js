@@ -43,7 +43,13 @@ export const useBestiesTutorialState = () => {
           }
         }
       } catch (error) {
-        console.error('Error loading Besties tutorial state:', error);
+        // Firestore permissions error is expected if user hasn't set up besties yet
+        // This is non-critical - tutorial will work with localStorage only
+        if (error.code === 'permission-denied') {
+          console.debug('Besties tutorial state not available in Firestore (permissions) - using localStorage only');
+        } else {
+          console.warn('Error loading Besties tutorial state:', error);
+        }
       }
 
       setIsLoading(false);
