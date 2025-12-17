@@ -761,22 +761,24 @@ const CheckInMap = ({
           )}
         </div>
 
-        {/* Fixed center pin */}
-        <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-10 pointer-events-none"
-        >
-          <span 
-            ref={pinAnimationRef}
-            className="material-symbols-outlined icon-gradient-text text-5xl drop-shadow-lg block"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-            aria-hidden="true"
+        {/* Fixed center pin - only show after map loads */}
+        {mapInitialized && (
+          <div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-10 pointer-events-none"
           >
-            place
-          </span>
-        </div>
+            <span
+              ref={pinAnimationRef}
+              className="material-symbols-outlined icon-gradient-text text-5xl drop-shadow-lg block"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+              aria-hidden="true"
+            >
+              place
+            </span>
+          </div>
+        )}
 
-        {/* GPS button */}
-        {isEnabled('gpsLocation') && (
+        {/* GPS button - only show after map loads */}
+        {isEnabled('gpsLocation') && mapInitialized && (
           <button
             type="button"
             onClick={handleGetLocation}
@@ -789,7 +791,7 @@ const CheckInMap = ({
             {loading ? (
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <span 
+              <span
                 className="material-symbols-outlined icon-gradient-text text-2xl"
                 style={{ fontVariationSettings: "'FILL' 1" }}
               >
