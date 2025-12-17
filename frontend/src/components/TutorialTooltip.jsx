@@ -46,11 +46,26 @@ const TutorialTooltip = ({
   }, [onNext, onBack, onSkip, showBack]);
 
   useEffect(() => {
+    // Reset positioned state when dependencies change
+    setIsPositioned(false);
+
+    // Track RAF IDs for cleanup
+    let rafId1 = null;
+    let rafId2 = null;
+
     if (!targetElement || !tooltipRef.current) {
-      // If no target element, set default arrow position and mark as positioned
-      setArrowPosition('top');
-      setIsPositioned(true);
-      return;
+      // If no target element, use double RAF to ensure smooth appearance
+      rafId1 = requestAnimationFrame(() => {
+        setArrowPosition('top');
+        rafId2 = requestAnimationFrame(() => {
+          setIsPositioned(true);
+        });
+      });
+
+      return () => {
+        if (rafId1) cancelAnimationFrame(rafId1);
+        if (rafId2) cancelAnimationFrame(rafId2);
+      };
     }
 
     const calculatePosition = () => {
@@ -85,19 +100,26 @@ const TutorialTooltip = ({
       }
 
       setArrowPosition(arrowPos);
-      setIsPositioned(true);
+
+      // Use second RAF to ensure browser has painted the position before showing
+      requestAnimationFrame(() => {
+        setIsPositioned(true);
+      });
     };
 
-    // Use requestAnimationFrame to ensure DOM is fully rendered before calculating position
-    const rafId = requestAnimationFrame(() => {
-      calculatePosition();
+    // Use double requestAnimationFrame to ensure DOM is fully rendered and painted
+    rafId1 = requestAnimationFrame(() => {
+      rafId2 = requestAnimationFrame(() => {
+        calculatePosition();
+      });
     });
 
     window.addEventListener('resize', calculatePosition);
     window.addEventListener('scroll', calculatePosition, true);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      if (rafId1) cancelAnimationFrame(rafId1);
+      if (rafId2) cancelAnimationFrame(rafId2);
       window.removeEventListener('resize', calculatePosition);
       window.removeEventListener('scroll', calculatePosition, true);
     };
