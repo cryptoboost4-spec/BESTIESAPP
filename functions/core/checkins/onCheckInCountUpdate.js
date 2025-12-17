@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { updateUserBadges } = require('../../utils/badges');
 
 const db = admin.firestore();
 
@@ -30,29 +31,6 @@ exports.onCheckInCountUpdate = functions.firestore
         activeCheckIns: admin.firestore.FieldValue.increment(-1),
         lastUpdated: admin.firestore.Timestamp.now(),
       }, { merge: true });
-
-      const count = await db.collection('checkins')
-        .where('userId', '==', newData.userId)
-        .where('status', '==', 'completed')
-        .get();
-      
-      // Filter out test check-ins for badge calculation
-      const nonTestCheckIns = count.docs.filter(doc => !doc.data().isTest);
-
-      const total = nonTestCheckIns.length;
-      const badgesRef = db.collection('badges').doc(newData.userId);
-      const badgesDoc = await badgesRef.get();
-      const badges = badgesDoc.exists ? badgesDoc.data().badges || [] : [];
-
-      if (total >= 5 && !badges.includes('safety_starter')) badges.push('safety_starter');
-      if (total >= 25 && !badges.includes('safety_pro')) badges.push('safety_pro');
-      if (total >= 50 && !badges.includes('safety_master')) badges.push('safety_master');
-
-      if (badgesDoc.exists) {
-        await badgesRef.update({ badges });
-      } else {
-        await badgesRef.set({ userId: newData.userId, badges, createdAt: admin.firestore.Timestamp.now() });
-      }
 
       // Update streak tracking
       const userDoc = await userRef.get();
@@ -103,17 +81,10 @@ exports.onCheckInCountUpdate = functions.firestore
           'stats.currentStreak': newStreak,
           'stats.longestStreak': newLongestStreak
         });
-
-        // Award streak badge if 7+ days
-        if (newStreak >= 7 && !badges.includes('streak_master')) {
-          badges.push('streak_master');
-          if (badgesDoc.exists) {
-            await badgesRef.update({ badges });
-          } else {
-            await badgesRef.set({ userId: newData.userId, badges, createdAt: admin.firestore.Timestamp.now() });
-          }
-        }
       }
+
+      // Update all badges based on new stats
+      await updateUserBadges(newData.userId);
     }
 
     // Update stats when status changes to 'alerted'

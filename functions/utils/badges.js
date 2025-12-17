@@ -10,6 +10,7 @@ const BADGE_TIERS = {
     { id: 'guardian_50', name: 'Safety Queen', requirement: 50, icon: '👑' }
   ],
   besties: [
+    { id: 'besties_3', name: 'Friend Squad', requirement: 3, icon: '💜' },
     { id: 'besties_5', name: 'Friend Circle', requirement: 5, icon: '💜' },
     { id: 'besties_10', name: 'Squad Goals', requirement: 10, icon: '💜✨' },
     { id: 'besties_20', name: 'Community Leader', requirement: 20, icon: '💜⭐' }
@@ -23,10 +24,22 @@ const BADGE_TIERS = {
     { id: 'donor_50', name: 'Hero', requirement: 50, icon: '💝⭐' },
     { id: 'donor_100', name: 'Legend', requirement: 100, icon: '👑💝' }
   ],
+  activeDonor: [
+    { id: 'active_donor', name: 'Active Donor', description: 'Active monthly donor', requirement: 1, icon: '💜' }
+  ],
   checkins: [
+    { id: 'checkin_5', name: 'Safety Starter', requirement: 5, icon: '🛡️' },
     { id: 'checkin_10', name: 'Safety First', requirement: 10, icon: '✅' },
-    { id: 'checkin_50', name: 'Safety Pro', requirement: 50, icon: '✅⭐' },
+    { id: 'checkin_25', name: 'Safety Pro', requirement: 25, icon: '⭐' },
+    { id: 'checkin_50', name: 'Safety Champion', requirement: 50, icon: '✅⭐' },
     { id: 'checkin_100', name: 'Safety Master', requirement: 100, icon: '👑✅' }
+  ],
+  streak: [
+    { id: 'streak_7', name: 'Streak Master', description: '7 days in a row', requirement: 7, icon: '🔥' }
+  ],
+  timeBased: [
+    { id: 'early_bird', name: 'Early Bird', description: 'Check-in before 6 AM', requirement: 1, icon: '🐦' },
+    { id: 'night_owl', name: 'Night Owl', description: 'Check-in after midnight', requirement: 1, icon: '🦉' }
   ]
 };
 
@@ -56,8 +69,15 @@ async function updateUserBadges(userId) {
       hasActiveSubscription: userData.smsSubscription?.active || false,
       // Donations: Total amount donated
       donationTotal: userData.donationStats?.totalDonated || 0,
+      // Active Donor: Has active donation subscription
+      hasActiveDonation: userData.donationStats?.isActive || false,
       // Check-ins: Completed check-ins
-      checkinCount: await countCompletedCheckIns(userId)
+      checkinCount: await countCompletedCheckIns(userId),
+      // Streak: Current check-in streak
+      currentStreak: userData.stats?.currentStreak || 0,
+      // Time-based: Early bird and night owl
+      hasEarlyBird: userData.stats?.earlyBird || false,
+      hasNightOwl: userData.stats?.nightOwl || false
     };
 
     // Calculate earned badges
@@ -91,10 +111,34 @@ async function updateUserBadges(userId) {
       }
     }
 
+    // Active Donor badge
+    if (stats.hasActiveDonation) {
+      for (const badge of BADGE_TIERS.activeDonor) {
+        earnedBadges.push({ ...badge, category: 'activeDonor', earnedAt: new Date() });
+      }
+    }
+
     // Check-in badges
     for (const badge of BADGE_TIERS.checkins) {
       if (stats.checkinCount >= badge.requirement) {
         earnedBadges.push({ ...badge, category: 'checkins', earnedAt: new Date() });
+      }
+    }
+
+    // Streak badges
+    for (const badge of BADGE_TIERS.streak) {
+      if (stats.currentStreak >= badge.requirement) {
+        earnedBadges.push({ ...badge, category: 'streak', earnedAt: new Date() });
+      }
+    }
+
+    // Time-based badges
+    for (const badge of BADGE_TIERS.timeBased) {
+      if (badge.id === 'early_bird' && stats.hasEarlyBird) {
+        earnedBadges.push({ ...badge, category: 'timeBased', earnedAt: new Date() });
+      }
+      if (badge.id === 'night_owl' && stats.hasNightOwl) {
+        earnedBadges.push({ ...badge, category: 'timeBased', earnedAt: new Date() });
       }
     }
 

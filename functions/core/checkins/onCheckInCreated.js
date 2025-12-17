@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { notifyBestiesAboutCheckIn } = require('../../utils/checkInNotifications');
+const { updateUserBadges } = require('../../utils/badges');
 
 const db = admin.firestore();
 
@@ -49,6 +50,24 @@ exports.onCheckInCreated = functions.firestore
 
       // Increment total check-in count in user stats (and set firstCheckInDate if needed)
       await userRef.update(statsUpdate);
+
+      // Track time-based badges
+      const checkInTime = checkIn.createdAt ? checkIn.createdAt.toDate() : new Date();
+      const hour = checkInTime.getHours();
+
+      // Early Bird: 4 AM - 6 AM
+      if (hour >= 4 && hour < 6 && !userData?.stats?.earlyBird) {
+        await userRef.update({ 'stats.earlyBird': true });
+        // Update badges after setting earlyBird
+        await updateUserBadges(checkIn.userId);
+      }
+
+      // Night Owl: 10 PM - 4 AM (22:00 - 04:00)
+      if ((hour >= 22 || hour < 4) && !userData?.stats?.nightOwl) {
+        await userRef.update({ 'stats.nightOwl': true });
+        // Update badges after setting nightOwl
+        await updateUserBadges(checkIn.userId);
+      }
 
       // Update analytics cache (real-time global stats)
       const cacheRef = db.collection('analytics_cache').doc('realtime');
