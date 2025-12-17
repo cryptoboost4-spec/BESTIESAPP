@@ -54,6 +54,9 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [nameSize, setNameSize] = useState(userData?.profile?.customization?.nameSize || 'md');
   const [bioSize, setBioSize] = useState(userData?.profile?.customization?.bioSize || 'md');
 
+  // Background position customization (0-100, where 50 is center)
+  const [backgroundPositionY, setBackgroundPositionY] = useState(userData?.profile?.customization?.backgroundPositionY ?? 50);
+
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -89,6 +92,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           bioFont,
           nameSize,
           bioSize,
+          backgroundPositionY,
           // Keep old fields for backward compatibility
           typography: 'elegant',
           photoShape: 'circle',
@@ -120,7 +124,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       return {
         backgroundImage: `url(${bg.image})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: `center ${backgroundPositionY}%`
       };
     }
     if (bg.svg) {
@@ -383,22 +387,79 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           </div>
 
           {/* Footer - Sticky */}
-          <div className="flex-shrink-0 p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex gap-2">
-            {/* Mobile Preview Button */}
-            <button
-              onClick={() => setShowPreview(true)}
-              className="md:hidden flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg font-semibold text-sm"
-            >
-              👁️ Preview
-            </button>
-            {/* Save Button */}
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1 bg-gradient-primary text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : '💾 Save'}
-            </button>
+          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            {/* Background Position Control - Only show for image backgrounds */}
+            {currentBackground?.image && (
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                    🎯 Adjust Image Position
+                  </h3>
+                  <button
+                    onClick={() => setBackgroundPositionY(50)}
+                    className="text-xs text-purple-600 dark:text-purple-400 hover:underline font-semibold"
+                  >
+                    Reset to Center
+                  </button>
+                </div>
+
+                {/* Preview showing actual cropped result */}
+                <div className="mb-3">
+                  <div
+                    className="h-32 rounded-lg overflow-hidden border-2 border-purple-300 dark:border-purple-600 shadow-lg"
+                    style={{
+                      backgroundImage: `url(${currentBackground.image})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: `center ${backgroundPositionY}%`
+                    }}
+                  >
+                    <div className="h-full bg-black/20 flex items-center justify-center">
+                      <div className="text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full">
+                        Profile Preview
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slider */}
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={backgroundPositionY}
+                    onChange={(e) => setBackgroundPositionY(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  />
+                  <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                    <span>⬆️ Top of image</span>
+                    <span className="font-bold text-purple-600 dark:text-purple-400">
+                      {backgroundPositionY}%
+                    </span>
+                    <span>⬇️ Bottom of image</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="p-3 flex gap-2">
+              {/* Mobile Preview Button */}
+              <button
+                onClick={() => setShowPreview(true)}
+                className="md:hidden flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg font-semibold text-sm"
+              >
+                👁️ Preview
+              </button>
+              {/* Save Button */}
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-gradient-primary text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : '💾 Save'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

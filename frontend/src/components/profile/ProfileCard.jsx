@@ -70,12 +70,15 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Get background position Y (0-100, default 50 = center)
+  const backgroundPositionY = customization.backgroundPositionY ?? 50;
+
   const backgroundStyle = selectedBackground
     ? (selectedBackground.image
       ? {
         backgroundImage: `url(${isDesktop && selectedBackground.desktopImage ? selectedBackground.desktopImage : selectedBackground.image})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: `center ${backgroundPositionY}%`
       }
       : { background: selectedBackground.gradient })
     : { background: currentGradient };
