@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProfileWithBubble from '../ProfileWithBubble';
 import SharePromptButtons from './SharePromptButtons';
@@ -19,7 +18,6 @@ const BestieSelector = ({
   showMessenger = true,
   isTutorial = false
 }) => {
-  const navigate = useNavigate();
   const [expandedBestieShare, setExpandedBestieShare] = useState(null);
   const [showNoContactBesties, setShowNoContactBesties] = useState(false);
   // Removed unused copied state
