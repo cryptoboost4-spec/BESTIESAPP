@@ -13,16 +13,19 @@ const BadgesPage = () => {
   const [loading, setLoading] = useState(true);
 
   const allBadges = [
-    { id: 'safety_starter', name: 'Safety Starter', description: 'Complete 5 check-ins', icon: '🛡️', image: '/badges/safety_starter.png', color: '#4CAF50', requirement: 5, stat: 'completedCheckIns' },
-    { id: 'safety_pro', name: 'Safety Pro', description: 'Complete 25 check-ins', icon: '⭐', image: '/badges/safety_pro.png', color: '#2196F3', requirement: 25, stat: 'completedCheckIns' },
-    { id: 'safety_master', name: 'Safety Master', description: 'Complete 50 check-ins', icon: '👑', image: '/badges/safety_master.png', color: '#9C27B0', requirement: 50, stat: 'completedCheckIns' },
-    { id: 'friend_squad', name: 'Friend Squad', description: 'Add 3 besties', icon: '👥', image: '/badges/friend_squad.png', color: '#FF9800', requirement: 3, stat: 'totalBesties' },
-    { id: 'safety_circle', name: 'Safety Circle', description: 'Add 5 besties', icon: '🤝', image: '/badges/safety_circle.png', color: '#E91E63', requirement: 5, stat: 'totalBesties' },
-    { id: 'safety_network', name: 'Safety Network', description: 'Add 10 besties', icon: '🌐', image: '/badges/safety_network.png', color: '#00BCD4', requirement: 10, stat: 'totalBesties' },
-    { id: 'night_owl', name: 'Night Owl', description: 'Check-in after midnight', icon: '🦉', image: '/badges/night_owl.png', color: '#673AB7', requirement: 1, stat: 'nightOwl' },
+    { id: 'checkin_5', name: 'Safety Starter', description: 'Complete 5 check-ins', icon: '🛡️', image: '/badges/safety_starter.png', color: '#4CAF50', requirement: 5, stat: 'completedCheckIns' },
+    { id: 'checkin_10', name: 'Safety First', description: 'Complete 10 check-ins', icon: '✅', image: '/badges/safety_first.png', color: '#8BC34A', requirement: 10, stat: 'completedCheckIns' },
+    { id: 'checkin_25', name: 'Safety Pro', description: 'Complete 25 check-ins', icon: '⭐', image: '/badges/safety_pro.png', color: '#2196F3', requirement: 25, stat: 'completedCheckIns' },
+    { id: 'checkin_50', name: 'Safety Champion', description: 'Complete 50 check-ins', icon: '✅⭐', image: '/badges/safety_champion.png', color: '#9C27B0', requirement: 50, stat: 'completedCheckIns' },
+    { id: 'checkin_100', name: 'Safety Master', description: 'Complete 100 check-ins', icon: '👑✅', image: '/badges/safety_master.png', color: '#673AB7', requirement: 100, stat: 'completedCheckIns' },
+    { id: 'besties_3', name: 'Friend Squad', description: 'Add 3 besties', icon: '💜', image: '/badges/friend_squad.png', color: '#FF9800', requirement: 3, stat: 'totalBesties' },
+    { id: 'besties_5', name: 'Friend Circle', description: 'Add 5 besties', icon: '💜', image: '/badges/friend_circle.png', color: '#E91E63', requirement: 5, stat: 'totalBesties' },
+    { id: 'besties_10', name: 'Squad Goals', description: 'Add 10 besties', icon: '💜✨', image: '/badges/squad_goals.png', color: '#9C27B0', requirement: 10, stat: 'totalBesties' },
+    { id: 'besties_20', name: 'Community Leader', description: 'Add 20 besties', icon: '💜⭐', image: '/badges/community_leader.png', color: '#00BCD4', requirement: 20, stat: 'totalBesties' },
+    { id: 'streak_7', name: 'Streak Master', description: '7 days in a row', icon: '🔥', image: '/badges/streak_master.png', color: '#FF5722', requirement: 7, stat: 'streak' },
     { id: 'early_bird', name: 'Early Bird', description: 'Check-in before 6 AM', icon: '🐦', image: '/badges/early_bird.png', color: '#FFC107', requirement: 1, stat: 'earlyBird' },
-    { id: 'streak_master', name: 'Streak Master', description: '7 days in a row', icon: '🔥', image: '/badges/streak_master.png', color: '#FF5722', requirement: 7, stat: 'streak' },
-    { id: 'active_donor', name: 'Active Donor', description: 'SMS subscription', icon: '💜', image: '/badges/active_donor.png', color: '#E91E63', requirement: 1, stat: 'donation' },
+    { id: 'night_owl', name: 'Night Owl', description: 'Check-in after 10 PM', icon: '🦉', image: '/badges/night_owl.png', color: '#673AB7', requirement: 1, stat: 'nightOwl' },
+    { id: 'active_donor', name: 'Active Donor', description: 'Active monthly donor', icon: '💜', image: '/badges/active_donor.png', color: '#E91E63', requirement: 1, stat: 'donation' },
   ];
 
   useEffect(() => {
@@ -119,8 +122,16 @@ const BadgesPage = () => {
     );
   }
 
-  const earned = allBadges.filter(b => earnedBadges.includes(b.id));
-  const locked = allBadges.filter(b => !earnedBadges.includes(b.id));
+  // Check if badge is earned - handle both string format (legacy) and object format (new)
+  const isBadgeEarned = (badgeId) => {
+    return earnedBadges.some(b =>
+      (typeof b === 'string' && b === badgeId) ||
+      (typeof b === 'object' && b.id === badgeId)
+    );
+  };
+
+  const earned = allBadges.filter(b => isBadgeEarned(b.id));
+  const locked = allBadges.filter(b => !isBadgeEarned(b.id));
 
   return (
     <div className="p-5 max-w-7xl mx-auto">
