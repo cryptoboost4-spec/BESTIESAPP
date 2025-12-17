@@ -51,6 +51,7 @@ const TutorialTooltip = ({
     if (!tooltipRef.current) return;
 
     const measureDimensions = () => {
+      if (!tooltipRef.current) return; // Check again in case unmounted
       const rect = tooltipRef.current.getBoundingClientRect();
       setTooltipDimensions({
         width: rect.width,
@@ -58,11 +59,21 @@ const TutorialTooltip = ({
       });
     };
 
+    // Wait longer if we have a target element to allow TutorialOverlay's
+    // scroll lock to complete (which shifts body position)
+    // TutorialOverlay can take up to 100ms + scroll time + 50ms to lock
+    // Using 400ms to be safe and ensure smooth scroll completes
+    const delay = targetElement ? 400 : 0;
+
     // Wait for DOM to render, then measure
-    requestAnimationFrame(() => {
-      requestAnimationFrame(measureDimensions);
-    });
-  }, [title, body, stepNumber, totalSteps]); // Re-measure if content changes
+    const timeoutId = setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(measureDimensions);
+      });
+    }, delay);
+
+    return () => clearTimeout(timeoutId);
+  }, [title, body, stepNumber, totalSteps, targetElement]); // Re-measure if content changes
 
   // Second useEffect: Calculate position and show tooltip after dimensions are known
   useEffect(() => {
