@@ -752,7 +752,7 @@ const CreateCheckInPage = () => {
 
       case 'final':
         // No tooltip for final step - user can just click the button
-        return null;
+          return null;
 
       default:
         console.error('[Tutorial] Unknown step in getTutorialConfig:', currentCheckInTutorialStep);
@@ -841,7 +841,7 @@ const CreateCheckInPage = () => {
                   attempt++;
                   retry();
                 }, retries[attempt] - (attempt > 0 ? retries[attempt - 1] : 0));
-              } else {
+      } else {
                 // All retries failed - fallback to finding button manually
                 console.warn('[Tutorial] Could not trigger GPS via ref. Falling back to button click.');
                 const mapGPSButton = document.querySelector('button[aria-label="Get my current location"]');
@@ -854,16 +854,16 @@ const CreateCheckInPage = () => {
                       duration: 3000
                     });
                   }
-                } else {
+      } else {
                   toast.error('Location button not found. Please try clicking it manually.', {
                     duration: 3000
-                  });
+        });
                 }
               }
             };
             
             retry();
-          }
+      }
         }, 100); // Small initial delay to ensure DOM is ready
         return; // Don't continue with normal flow
       } else if (action === 'enterManually') {
