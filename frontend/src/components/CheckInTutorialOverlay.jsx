@@ -174,7 +174,7 @@ const CheckInTutorialOverlay = ({
         window.removeEventListener('orientationchange', calculatePositions);
       }
     };
-  }, [highlightedElementRef, tooltipConfig.overlayOnElement]);
+  }, [highlightedElementRef, tooltipConfig]);
 
   // Handle tooltip dismiss/continue (for map section)
   const handleDismissTooltip = () => {

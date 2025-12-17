@@ -235,7 +235,7 @@ const HomePage = () => {
       unsubscribeCheckIns();
       unsubscribeAlerted();
     };
-  }, [currentUser, currentTutorialStep, previousCheckInCount, setTutorialStep]);
+  }, [currentUser, currentTutorialStep, previousCheckInCount, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
 
   // Load alerts for featured circle besties
   useEffect(() => {

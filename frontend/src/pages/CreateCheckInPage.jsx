@@ -84,7 +84,6 @@ const CreateCheckInPage = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedForFirstCheckIn, setHasCheckedForFirstCheckIn] = useState(false);
   const [bestiesLoadingTimeout, setBestiesLoadingTimeout] = useState(false);
-  const [locationStepCompleted, setLocationStepCompleted] = useState(false);
   const [locationTooltipDismissed, setLocationTooltipDismissed] = useState(false);
 
   // Log showTutorial changes
@@ -678,7 +677,6 @@ const CreateCheckInPage = () => {
   // Reset location step state when leaving location step
   useEffect(() => {
     if (currentCheckInTutorialStep !== 'location') {
-      setLocationStepCompleted(false);
       setLocationTooltipDismissed(false);
     }
   }, [currentCheckInTutorialStep]);
