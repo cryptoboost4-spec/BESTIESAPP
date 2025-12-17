@@ -11,9 +11,8 @@ const BADGE_TIERS = {
   ],
   besties: [
     { id: 'besties_3', name: 'Friend Squad', requirement: 3, icon: '💜' },
-    { id: 'besties_5', name: 'Friend Circle', requirement: 5, icon: '💜' },
-    { id: 'besties_10', name: 'Squad Goals', requirement: 10, icon: '💜✨' },
-    { id: 'besties_20', name: 'Community Leader', requirement: 20, icon: '💜⭐' }
+    { id: 'besties_5', name: 'Safety Circle', requirement: 5, icon: '💜' },
+    { id: 'besties_10', name: 'Safety Network', requirement: 10, icon: '💜✨' }
   ],
   subscriber: [
     { id: 'subscriber_active', name: 'SMS Supporter', requirement: 1, icon: '⭐💝' }
@@ -29,9 +28,7 @@ const BADGE_TIERS = {
   ],
   checkins: [
     { id: 'checkin_5', name: 'Safety Starter', requirement: 5, icon: '🛡️' },
-    { id: 'checkin_10', name: 'Safety First', requirement: 10, icon: '✅' },
     { id: 'checkin_25', name: 'Safety Pro', requirement: 25, icon: '⭐' },
-    { id: 'checkin_50', name: 'Safety Champion', requirement: 50, icon: '✅⭐' },
     { id: 'checkin_100', name: 'Safety Master', requirement: 100, icon: '👑✅' }
   ],
   streak: [
