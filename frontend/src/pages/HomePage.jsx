@@ -15,6 +15,7 @@ import InviteFriendsModal from '../components/InviteFriendsModal';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
 import TutorialOverlay from '../components/TutorialOverlay';
 import { useTutorialState } from '../hooks/useTutorialState';
+import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
@@ -33,6 +34,7 @@ const HomePage = () => {
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
   const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
+  const { setCheckInTutorialStep } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
 
@@ -365,11 +367,10 @@ const HomePage = () => {
   const handleCustomButtonClick = () => {
     // Called when user clicks custom button during tutorial
     if (currentTutorialStep === 'custom') {
+      // Complete the homepage tutorial
       markTutorialComplete();
-      toast.success("You're all set! Your besties are ready to keep you safe. 💜", {
-        duration: 4000,
-        icon: '🎉'
-      });
+      // Start the check-in tutorial at the location step
+      setCheckInTutorialStep('location');
     }
   };
 

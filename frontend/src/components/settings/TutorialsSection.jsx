@@ -101,10 +101,12 @@ const TutorialsSection = () => {
             const userRef = doc(db, 'users', currentUser.uid);
             await updateDoc(userRef, {
               checkInTutorialComplete: false,
-              currentCheckInTutorialStep: null
+              currentCheckInTutorialStep: 'location'
             });
           }
-          navigate('/create-check-in', { state: { showTutorial: true, restartTutorial: true } });
+          // Set tutorial step in localStorage before navigating
+          localStorage.setItem('current_checkInTutorial_step', 'location');
+          navigate('/create', { state: { showTutorial: true, restartTutorial: true } });
           toast.success('Check-in tutorial restarted! 🛡️', { duration: 2000 });
           break;
         case 'besties':
@@ -183,7 +185,7 @@ const TutorialsSection = () => {
       name: 'Check-In Tutorial',
       description: 'Practice creating your first check-in',
       emoji: '🛡️',
-      route: '/create-check-in',
+      route: '/create',
       completed: tutorialStates.checkIn.completed
     },
     {

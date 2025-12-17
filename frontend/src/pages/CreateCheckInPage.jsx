@@ -614,9 +614,18 @@ const CreateCheckInPage = () => {
       try {
         console.log('[Tutorial] Checking first check-in:', {
           checkInTutorialComplete,
+          currentCheckInTutorialStep,
           currentUser: currentUser.uid
         });
-        
+
+        // If tutorial step is already set (e.g., from homepage tutorial), show tutorial
+        if (currentCheckInTutorialStep && !checkInTutorialComplete) {
+          console.log('[Tutorial] Tutorial step already set from homepage, showing tutorial');
+          setShowTutorial(true);
+          setHasCheckedForFirstCheckIn(true);
+          return;
+        }
+
         // If tutorial is already complete, don't show it
         if (checkInTutorialComplete) {
           console.log('[Tutorial] Tutorial already complete, skipping');
@@ -649,7 +658,7 @@ const CreateCheckInPage = () => {
         setHasCheckedForFirstCheckIn(true);
       } catch (error) {
         console.error('[Tutorial] Error checking for first check-in:', error);
-        
+
         // If permission error, show tutorial anyway (assume first check-in)
         // This handles cases where Firestore rules prevent checking check-ins
         if (error.code === 'permission-denied' && !checkInTutorialComplete) {
@@ -657,13 +666,13 @@ const CreateCheckInPage = () => {
           setShowTutorial(true);
           setCheckInTutorialStep('location');
         }
-        
+
         setHasCheckedForFirstCheckIn(true);
       }
     };
 
     checkFirstCheckIn();
-  }, [currentUser, authLoading, checkInTutorialComplete, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading, bestiesLoadingTimeout, isTutorialStateLoaded, location.state?.quickType, location.state?.skipLocation]);
+  }, [currentUser, authLoading, checkInTutorialComplete, currentCheckInTutorialStep, hasCheckedForFirstCheckIn, setCheckInTutorialStep, bestiesLoading, bestiesLoadingTimeout, isTutorialStateLoaded, location.state?.quickType, location.state?.skipLocation]);
 
   // Reset location step state when leaving location step
   useEffect(() => {
