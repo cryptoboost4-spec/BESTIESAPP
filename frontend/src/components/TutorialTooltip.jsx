@@ -18,6 +18,7 @@ const TutorialTooltip = ({
   const tooltipRef = useRef(null);
   const [arrowPosition, setArrowPosition] = useState('top');
   const [isPositioned, setIsPositioned] = useState(false);
+  const [tooltipDimensions, setTooltipDimensions] = useState(null);
 
   // Keyboard navigation
   useEffect(() => {
@@ -45,9 +46,31 @@ const TutorialTooltip = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onNext, onBack, onSkip, showBack]);
 
+  // First useEffect: Measure tooltip dimensions after it renders
+  useEffect(() => {
+    if (!tooltipRef.current) return;
+
+    const measureDimensions = () => {
+      const rect = tooltipRef.current.getBoundingClientRect();
+      setTooltipDimensions({
+        width: rect.width,
+        height: rect.height
+      });
+    };
+
+    // Wait for DOM to render, then measure
+    requestAnimationFrame(() => {
+      requestAnimationFrame(measureDimensions);
+    });
+  }, [title, body, stepNumber, totalSteps]); // Re-measure if content changes
+
+  // Second useEffect: Calculate position and show tooltip after dimensions are known
   useEffect(() => {
     // Reset positioned state when dependencies change
     setIsPositioned(false);
+
+    // Don't calculate position until we have dimensions
+    if (!tooltipDimensions) return;
 
     // Track RAF IDs for cleanup
     let rafId1 = null;
@@ -72,7 +95,6 @@ const TutorialTooltip = ({
       if (!tooltipRef.current) return;
 
       const rect = targetElement.getBoundingClientRect();
-      const tooltipRect = tooltipRef.current.getBoundingClientRect();
 
       let arrowPos = 'top';
 
@@ -90,7 +112,7 @@ const TutorialTooltip = ({
         const spaceAbove = rect.top;
 
         // Determine arrow position based on where tooltip will be positioned
-        if (spaceAbove < tooltipRect.height + 20) {
+        if (spaceAbove < tooltipDimensions.height + 20) {
           // Not enough space above, position below
           arrowPos = 'top'; // Arrow points up to button
         } else {
@@ -114,22 +136,29 @@ const TutorialTooltip = ({
       });
     });
 
-    window.addEventListener('resize', calculatePosition);
-    window.addEventListener('scroll', calculatePosition, true);
+    const handleResize = () => {
+      setIsPositioned(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(calculatePosition);
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleResize, true);
 
     return () => {
       if (rafId1) cancelAnimationFrame(rafId1);
       if (rafId2) cancelAnimationFrame(rafId2);
-      window.removeEventListener('resize', calculatePosition);
-      window.removeEventListener('scroll', calculatePosition, true);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleResize, true);
     };
-  }, [targetElement, position]);
+  }, [targetElement, position, tooltipDimensions]);
 
   const getPositionStyles = () => {
     const viewportWidth = window.innerWidth;
 
-    // Get tooltip dimensions (use defaults if not yet rendered)
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 280;
+    // Use measured dimensions, not fallback
+    const tooltipHeight = tooltipDimensions?.height || 0;
 
     // If no target element, center in middle of screen
     if (!targetElement) {
@@ -320,7 +349,7 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl animate-step-transition ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-200 ${
+      className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-300 ${
         isPositioned ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
