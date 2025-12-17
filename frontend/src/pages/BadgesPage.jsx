@@ -14,14 +14,11 @@ const BadgesPage = () => {
 
   const allBadges = [
     { id: 'checkin_5', name: 'Safety Starter', description: 'Complete 5 check-ins', icon: '🛡️', image: '/badges/safety_starter.png', color: '#4CAF50', requirement: 5, stat: 'completedCheckIns' },
-    { id: 'checkin_10', name: 'Safety First', description: 'Complete 10 check-ins', icon: '✅', color: '#8BC34A', requirement: 10, stat: 'completedCheckIns' },
     { id: 'checkin_25', name: 'Safety Pro', description: 'Complete 25 check-ins', icon: '⭐', image: '/badges/safety_pro.png', color: '#2196F3', requirement: 25, stat: 'completedCheckIns' },
-    { id: 'checkin_50', name: 'Safety Champion', description: 'Complete 50 check-ins', icon: '✅⭐', color: '#9C27B0', requirement: 50, stat: 'completedCheckIns' },
     { id: 'checkin_100', name: 'Safety Master', description: 'Complete 100 check-ins', icon: '👑✅', image: '/badges/safety_master.png', color: '#673AB7', requirement: 100, stat: 'completedCheckIns' },
     { id: 'besties_3', name: 'Friend Squad', description: 'Add 3 besties', icon: '💜', image: '/badges/friend_squad.png', color: '#FF9800', requirement: 3, stat: 'totalBesties' },
     { id: 'besties_5', name: 'Safety Circle', description: 'Add 5 besties', icon: '💜', image: '/badges/safety_circle.png', color: '#E91E63', requirement: 5, stat: 'totalBesties' },
     { id: 'besties_10', name: 'Safety Network', description: 'Add 10 besties', icon: '💜✨', image: '/badges/safety_network.png', color: '#9C27B0', requirement: 10, stat: 'totalBesties' },
-    { id: 'besties_20', name: 'Community Leader', description: 'Add 20 besties', icon: '💜⭐', color: '#00BCD4', requirement: 20, stat: 'totalBesties' },
     { id: 'streak_7', name: 'Streak Master', description: '7 days in a row', icon: '🔥', image: '/badges/streak_master.png', color: '#FF5722', requirement: 7, stat: 'streak' },
     { id: 'early_bird', name: 'Early Bird', description: 'Check-in before 6 AM', icon: '🐦', image: '/badges/early_bird.png', color: '#FFC107', requirement: 1, stat: 'earlyBird' },
     { id: 'night_owl', name: 'Night Owl', description: 'Check-in after 10 PM', icon: '🦉', image: '/badges/night_owl.png', color: '#673AB7', requirement: 1, stat: 'nightOwl' },
