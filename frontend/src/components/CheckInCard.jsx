@@ -16,6 +16,8 @@ import SafeLoader from './checkin/SafeLoader';
 import CheckInNotes from './checkin/CheckInNotes';
 import PasscodeModal from './checkin/PasscodeModal';
 import EditTimeModal from './checkin/EditTimeModal';
+import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
+import CheckInTutorialOverlay from './CheckInTutorialOverlay';
 
 const CheckInCard = ({ checkIn }) => {
   const { currentUser, userData } = useAuth();
@@ -47,6 +49,12 @@ const CheckInCard = ({ checkIn }) => {
   
   // File input ref for photo upload
   const fileInputRef = useRef(null);
+  
+  // Tutorial state
+  const { currentCheckInTutorialStep, setCheckInTutorialStep } = useCheckInTutorialState();
+  const cardRef = useRef(null);
+  const safeButtonRef = useRef(null);
+  const [tooltipDismissed, setTooltipDismissed] = useState(false);
 
   // Sync photo URLs when checkIn prop changes
   useEffect(() => {
@@ -421,7 +429,7 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   return (
-    <div className={`flex flex-col overflow-hidden rounded-xl bg-surface-light/80 dark:bg-gray-800/80 shadow-soft backdrop-blur-sm ${isAlerted ? 'border-2 border-danger' : ''}`}>
+    <div ref={cardRef} className={`flex flex-col overflow-hidden rounded-xl bg-surface-light/80 dark:bg-gray-800/80 shadow-soft backdrop-blur-sm ${isAlerted ? 'border-2 border-danger' : ''}`}>
       <div className="flex w-full grow flex-col items-stretch justify-center gap-4 p-5">
         {/* Header with title and timer */}
         <div className="flex items-center justify-between">
@@ -540,10 +548,24 @@ const CheckInCard = ({ checkIn }) => {
           </label>
         </div>
         <button
+          ref={safeButtonRef}
           onClick={isAlerted ? () => {
             haptic.warning();
             handleComplete(true);
-          } : handleComplete}
+          } : async () => {
+            // If in checkedIn tutorial step, show next steps info
+            if (currentCheckInTutorialStep === 'checkedIn') {
+              // Show next steps information
+              toast.success('Great job! 🎉\n\nNext steps:\n• You\'ll see a success screen\n• Then you\'ll return to the home page\n• We\'ll show you how to continue learning about the app!', {
+                duration: 6000,
+                icon: '💜'
+              });
+              await handleComplete();
+              // The step will advance in SafeLoader/HomePage after check-in completes
+            } else {
+              await handleComplete();
+            }
+          }}
           disabled={loading}
           className="flex min-w-[84px] max-w-[480px] flex-1 cursor-pointer items-center justify-center gap-2.5 overflow-hidden rounded-lg h-12 px-4 bg-gradient-to-br from-green-300 to-cyan-300 dark:from-green-500 dark:to-cyan-500 text-green-900 dark:text-green-100 text-base font-bold leading-normal shadow-md transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -649,6 +671,31 @@ const CheckInCard = ({ checkIn }) => {
         onTimeUpdated={(newTime) => setOptimisticAlertTime(newTime)}
         isDark={isDark}
       />
+
+      {/* Tutorial Overlay for checkedIn step */}
+      {currentCheckInTutorialStep === 'checkedIn' && cardRef.current && !tooltipDismissed && (
+        <CheckInTutorialOverlay
+          currentStep="checkedIn"
+          onStepComplete={(action) => {
+            if (action === 'continue') {
+              // User clicked "Got it" - dismiss tooltip but keep tutorial state
+              setTooltipDismissed(true);
+            }
+          }}
+          onSkipTutorial={() => {
+            setCheckInTutorialStep(null);
+          }}
+          highlightedElementRef={cardRef}
+          tooltipConfig={{
+            title: 'Your Active Check-In',
+            body: `This is your active check-in page! Here you can:\n• Add notes about your situation\n• Add photos for your besties\n• Add more time if you need longer\n• Update your location\n\nWhen you're ready to complete your check-in, click the "I'm Safe" button. This will mark your check-in as complete and let your besties know you're safe! 💜`,
+            overlayOnElement: false,
+            buttons: [
+              { text: 'Got it', action: 'continue', primary: true }
+            ]
+          }}
+        />
+      )}
     </div>
   );
 };

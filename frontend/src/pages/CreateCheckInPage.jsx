@@ -28,6 +28,7 @@ const CreateCheckInPage = () => {
 
   // Tutorial refs for each section
   const mapRef = useRef(null);
+  const checkInMapRef = useRef(null);
   const whoMeetingRef = useRef(null);
   const socialMediaRef = useRef(null);
   const durationRef = useRef(null);
@@ -83,8 +84,8 @@ const CreateCheckInPage = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedForFirstCheckIn, setHasCheckedForFirstCheckIn] = useState(false);
   const [bestiesLoadingTimeout, setBestiesLoadingTimeout] = useState(false);
-  const [showScrollDownMessage, setShowScrollDownMessage] = useState(false);
   const [locationStepCompleted, setLocationStepCompleted] = useState(false);
+  const [locationTooltipDismissed, setLocationTooltipDismissed] = useState(false);
 
   // Log showTutorial changes
   useEffect(() => {
@@ -677,10 +678,21 @@ const CreateCheckInPage = () => {
   // Reset location step state when leaving location step
   useEffect(() => {
     if (currentCheckInTutorialStep !== 'location') {
-      setShowScrollDownMessage(false);
       setLocationStepCompleted(false);
+      setLocationTooltipDismissed(false);
     }
   }, [currentCheckInTutorialStep]);
+
+  // Show tooltip again if location is not set after dismissing
+  useEffect(() => {
+    if (locationTooltipDismissed && currentCheckInTutorialStep === 'location' && locationInput.trim() === '') {
+      // If tooltip was dismissed but location not set, show it again after a delay
+      const timer = setTimeout(() => {
+        setLocationTooltipDismissed(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [locationTooltipDismissed, currentCheckInTutorialStep, locationInput]);
 
   // Get tutorial config for current step
   const getTutorialConfig = () => {
@@ -689,10 +701,16 @@ const CreateCheckInPage = () => {
       return null;
     }
 
-    // Validate step
-    const VALID_STEPS = ['location', 'whoMeeting', 'socialMedia', 'duration', 'bestieSelection', 'notesPhotos', 'final'];
+    // Validate step (checkedIn and afterSafe are handled in other components)
+    // Removed steps: whoMeeting, socialMedia, duration, bestieSelection, notesPhotos (form sections still functional, just no tooltips)
+    const VALID_STEPS = ['location', 'final', 'checkedIn', 'afterSafe'];
     if (!VALID_STEPS.includes(currentCheckInTutorialStep)) {
       console.error('[Tutorial] Invalid step in getTutorialConfig:', currentCheckInTutorialStep);
+      return null;
+    }
+    
+    // checkedIn and afterSafe steps are handled in CheckInCard and HomePage respectively
+    if (currentCheckInTutorialStep === 'checkedIn' || currentCheckInTutorialStep === 'afterSafe') {
       return null;
     }
 
@@ -704,23 +722,6 @@ const CreateCheckInPage = () => {
         if (!mapRef?.current) {
           console.warn('[Tutorial] mapRef is not ready for location step');
           return null;
-        }
-        
-        // If location is entered but step not completed, show scroll message
-        if (locationInput.trim() !== '' && !locationStepCompleted) {
-          return {
-            highlightedElementRef: mapRef,
-            overlayOnElement: true,
-            dismissible: false,
-            tooltipConfig: {
-              title: '📍 Location Added!',
-              body: `Great! Your location is set.\n\nScroll down when you're done to continue.`,
-              overlayOnElement: true,
-              dismissible: false,
-              canDismiss: false,
-              showScrollMessage: true,
-            },
-          };
         }
         
         // Initial location explanation
@@ -749,111 +750,9 @@ const CreateCheckInPage = () => {
           },
         };
 
-      case 'whoMeeting':
-        if (!whoMeetingRef?.current) {
-          console.warn('[Tutorial] whoMeetingRef is not ready');
-          return null;
-        }
-        return {
-          highlightedElementRef: whoMeetingRef,
-          overlayOnElement: false,
-          tooltipConfig: {
-            body: `Add a name if you'd like. Examples: 'Sarah from Hinge', 'Mike - new friend', or 'Marketplace seller'.\n\nTotally optional - skip if you prefer privacy.`,
-            buttons: [
-              { text: 'Skip', action: 'skip', primary: false },
-              { text: 'Continue', action: 'continue', primary: true },
-            ],
-          },
-        };
-
-      case 'socialMedia':
-        if (!socialMediaRef?.current) {
-          console.warn('[Tutorial] socialMediaRef is not ready');
-          return null;
-        }
-        return {
-          highlightedElementRef: socialMediaRef,
-          overlayOnElement: false,
-          tooltipConfig: {
-            body: `Want to add their Instagram or Facebook?\n\nThis gives your bestie more info if they need to verify who you're with.`,
-            buttons: [
-              { text: 'Skip', action: 'skip', primary: false },
-              { text: 'Add Social', action: 'addSocial', primary: true },
-            ],
-          },
-        };
-
-      case 'duration':
-        if (!durationRef?.current) {
-          console.warn('[Tutorial] durationRef is not ready');
-          return null;
-        }
-        return {
-          highlightedElementRef: durationRef,
-          overlayOnElement: false,
-          tooltipConfig: {
-            body: `How long will you be gone?\n\nDefault is 30 minutes. Adjust if you need more time - your bestie will be notified if you don't check in by then.`,
-            buttons: [
-              { text: 'Use Default', action: 'useDefault', primary: false },
-              { text: 'Set Custom Time', action: 'setCustom', primary: true },
-            ],
-          },
-        };
-
-      case 'bestieSelection':
-        if (!bestieSelectorRef?.current) {
-          console.warn('[Tutorial] bestieSelectorRef is not ready');
-          return null;
-        }
-        const hasRealBesties = besties.some(b => !isMockBestie(b));
-        const hasMockBestie = besties.some(b => isMockBestie(b));
-        
-        return {
-          highlightedElementRef: bestieSelectorRef,
-          overlayOnElement: false,
-          tooltipConfig: {
-            title: 'Who should know?',
-            body: hasMockBestie && !hasRealBesties
-              ? `This is a demo bestie for practice! Select it to see how check-ins work.\n\nAfter you complete this tutorial, you'll add real besties who can actually help keep you safe. 💜`
-              : `Select at least one bestie who'll get notifications about this check-in.\n\nChoose whoever you trust and who's most likely to notice if something's wrong.`,
-          },
-        };
-
-      case 'notesPhotos':
-        if (!notesPhotosRef?.current) {
-          console.warn('[Tutorial] notesPhotosRef is not ready');
-          return null;
-        }
-        return {
-          highlightedElementRef: notesPhotosRef,
-          overlayOnElement: false,
-          tooltipConfig: {
-            title: 'Any extra details?',
-            body: `Want to add notes or photos? Completely optional.\n\nExamples: what they're wearing, car details, meeting spot specifics, or any other info your bestie might need.`,
-            buttons: [
-              { text: 'Skip to Submit', action: 'skip', primary: false },
-              { text: 'Add Details', action: 'addDetails', primary: true },
-            ],
-          },
-        };
-
       case 'final':
-        if (!submitButtonRef?.current) {
-          console.warn('[Tutorial] submitButtonRef is not ready');
-          return null;
-        }
-        return {
-          highlightedElementRef: submitButtonRef,
-          overlayOnElement: false,
-          tooltipConfig: {
-            icon: '💜',
-            title: "You're Ready!",
-            body: `Everything looks good! Tap the '🛡️ Start Check-In' button below to create your check-in.\n\nYour bestie will get a notification and your timer starts. You're in control. You're prepared. We've got your back.`,
-            buttons: [
-              { text: 'Got it', action: 'continue', primary: true },
-            ],
-          },
-        };
+        // No tooltip for final step - user can just click the button
+        return null;
 
       default:
         console.error('[Tutorial] Unknown step in getTutorialConfig:', currentCheckInTutorialStep);
@@ -861,28 +760,8 @@ const CreateCheckInPage = () => {
     }
   };
 
-  // Handle location input changes - show scroll message when location is entered
-  useEffect(() => {
-    if (currentCheckInTutorialStep === 'location' && locationInput.trim() !== '' && !locationStepCompleted) {
-      setShowScrollDownMessage(true);
-    }
-  }, [locationInput, currentCheckInTutorialStep, locationStepCompleted]);
-
-  // Handle scroll detection for location step
-  useEffect(() => {
-    if (!showScrollDownMessage || currentCheckInTutorialStep !== 'location') return;
-
-    const handleScroll = () => {
-      // If user has scrolled down significantly, hide message and mark step as ready to complete
-      if (window.scrollY > 200) {
-        setShowScrollDownMessage(false);
-        setLocationStepCompleted(true);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [showScrollDownMessage, currentCheckInTutorialStep]);
+  // Note: We no longer auto-advance when location is set
+  // The user clicks "Use My Location" or "Enter Manually" to advance to final step
 
   // Scroll sections into view for each tutorial step
   useEffect(() => {
@@ -916,24 +795,6 @@ const CreateCheckInPage = () => {
       case 'location':
         scrollToElement(mapRef, 500); // Longer delay for map to load
         break;
-      case 'whoMeeting':
-        scrollToElement(whoMeetingRef);
-        break;
-      case 'socialMedia':
-        scrollToElement(socialMediaRef);
-        break;
-      case 'duration':
-        scrollToElement(durationRef);
-        break;
-      case 'bestieSelection':
-        scrollToElement(bestieSelectorRef);
-        break;
-      case 'notesPhotos':
-        scrollToElement(notesPhotosRef);
-        break;
-      case 'final':
-        scrollToElement(submitButtonRef);
-        break;
       default:
         // No scroll needed for other steps
         break;
@@ -942,86 +803,100 @@ const CreateCheckInPage = () => {
 
   // Handle tutorial step completion
   const handleTutorialStepComplete = async (action) => {
-    const stepOrder = ['location', 'whoMeeting', 'socialMedia', 'duration', 'bestieSelection', 'notesPhotos', 'final'];
+    const stepOrder = ['location', 'final'];
     const currentIndex = stepOrder.indexOf(currentCheckInTutorialStep);
 
     // Handle location step actions
     if (currentCheckInTutorialStep === 'location') {
       if (action === 'useLocation') {
-        // Trigger location request from map component
-        // The map component will handle this via its GPS button
-        // We'll wait for locationInput to be set
-        const mapElement = mapRef.current?.querySelector('[aria-label*="location" i], button[class*="gps"], .gps-button');
-        if (mapElement) {
-          mapElement.click();
-        } else {
-          // Fallback: try to find and click GPS button
-          const gpsButton = document.querySelector('button[aria-label*="location" i], .gps-button, [class*="gps"]');
-          if (gpsButton) {
-            gpsButton.click();
-          } else {
-            toast.info('Please use the location button on the map or enter location manually.');
+        // Hide location tooltip and advance to final step (show Create Check-In button tooltip)
+        setLocationTooltipDismissed(true);
+        setCheckInTutorialStep('final');
+        
+        // Trigger location request using exposed method from CheckInMap
+        // This is more reliable than trying to find and click the button
+        const triggerGPS = () => {
+          if (checkInMapRef.current?.triggerGPS) {
+            const success = checkInMapRef.current.triggerGPS();
+            if (success) {
+              return true;
+            }
           }
-        }
-        return; // Don't advance yet, wait for location to be set
+          return false;
+        };
+        
+        // Try immediately, then retry if map isn't ready
+        setTimeout(() => {
+          if (!triggerGPS()) {
+            // Map might not be initialized yet, retry with delays
+            const retries = [100, 300, 500, 1000];
+            let attempt = 0;
+            
+            const retry = () => {
+              if (attempt < retries.length) {
+                setTimeout(() => {
+                  if (triggerGPS()) {
+                    return; // Success
+                  }
+                  attempt++;
+                  retry();
+                }, retries[attempt] - (attempt > 0 ? retries[attempt - 1] : 0));
+              } else {
+                // All retries failed - fallback to finding button manually
+                console.warn('[Tutorial] Could not trigger GPS via ref. Falling back to button click.');
+                const mapGPSButton = document.querySelector('button[aria-label="Get my current location"]');
+                if (mapGPSButton) {
+                  const icon = mapGPSButton.querySelector('.material-symbols-outlined');
+                  if (icon && icon.textContent.trim() === 'my_location') {
+                    mapGPSButton.click();
+                  } else {
+                    toast.error('Location button not ready. Please try again in a moment.', {
+                      duration: 3000
+                    });
+                  }
+                } else {
+                  toast.error('Location button not found. Please try clicking it manually.', {
+                    duration: 3000
+                  });
+                }
+              }
+            };
+            
+            retry();
+          }
+        }, 100); // Small initial delay to ensure DOM is ready
+        return; // Don't continue with normal flow
       } else if (action === 'enterManually') {
-        // User will enter manually, just dismiss the popup
-        // They can tap map or use search
-        return; // Don't advance yet
-      } else if (action === 'continue') {
-        // User clicked continue after seeing scroll message
-        setShowScrollDownMessage(false);
-        setLocationStepCompleted(false);
-        setCheckInTutorialStep('whoMeeting');
-        return;
+        // Hide location tooltip and advance to final step (show Create Check-In button tooltip)
+        setLocationTooltipDismissed(true);
+        setCheckInTutorialStep('final');
+        
+        // Focus and highlight the location input field
+        setTimeout(() => {
+          const locationInput = mapRef.current?.querySelector('input[placeholder*="Search for a place" i]');
+          if (locationInput) {
+            // Ensure input is visible and focusable
+            locationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Small delay to ensure scroll completes before focus
+            setTimeout(() => {
+              locationInput.focus();
+              // On mobile, ensure keyboard opens by clicking the input
+              if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                locationInput.click();
+              }
+              // Add highlight class temporarily
+              locationInput.classList.add('ring-4', 'ring-primary', 'ring-opacity-50');
+              setTimeout(() => {
+                locationInput.classList.remove('ring-4', 'ring-primary', 'ring-opacity-50');
+              }, 2000);
+            }, 300);
+          }
+        }, 50);
+        return; // Don't continue with normal flow
       }
     }
 
-    if (action === 'skip' && currentCheckInTutorialStep === 'whoMeeting') {
-      // Skip to social media
-      setCheckInTutorialStep('socialMedia');
-    } else if (action === 'skip' && currentCheckInTutorialStep === 'socialMedia') {
-      // Skip to duration
-      setCheckInTutorialStep('duration');
-    } else if (action === 'useDefault' && currentCheckInTutorialStep === 'duration') {
-      // Use default duration, move to bestie selection
-      setCheckInTutorialStep('bestieSelection');
-    } else if (action === 'setCustom' && currentCheckInTutorialStep === 'duration') {
-      // Let them adjust, then move to bestie selection
-      setCheckInTutorialStep('bestieSelection');
-    } else if (action === 'skip' && currentCheckInTutorialStep === 'notesPhotos') {
-      // Skip to final - but validate first
-      const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
-      const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
-      
-      if (hasAddress && hasBestie) {
-        setCheckInTutorialStep('final');
-      } else {
-        // Can't proceed to final without required fields
-        toast.error('Please add a location and select at least one bestie before continuing.', {
-          duration: 4000
-        });
-        return;
-      }
-    } else if (action === 'addDetails' && currentCheckInTutorialStep === 'notesPhotos') {
-      // Expand notes/photos, then move to final - but validate first
-      const hasAddress = locationInput.trim() !== '' || location.state?.skipLocation;
-      const hasBestie = selectedBesties.length > 0 || selectedMessengerContacts.length > 0;
-      
-      if (hasAddress && hasBestie) {
-        setNotesExpanded(true);
-        setCheckInTutorialStep('final');
-      } else {
-        toast.error('Please add a location and select at least one bestie before continuing.', {
-          duration: 4000
-        });
-        return;
-      }
-    } else if (action === 'addSocial' && currentCheckInTutorialStep === 'socialMedia') {
-      // Expand social media, then move to duration
-      setSocialMediaExpanded(true);
-      setCheckInTutorialStep('duration');
-    } else if (action === 'continue') {
+    if (action === 'continue') {
       // Move to next step, but validate before final
       if (currentIndex < stepOrder.length - 1) {
         const nextStep = stepOrder[currentIndex + 1];
@@ -1100,8 +975,9 @@ const CreateCheckInPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Filter out mock besties before validation and submission
+    // Filter out mock besties and tutorial fake bestie before validation and submission
     const realSelectedBesties = selectedBesties.filter(bestieId => {
+      if (bestieId === 'TUTORIAL_FAKE_BESTIE') return false; // Filter out fake tutorial bestie
       const bestie = besties.find(b => b.id === bestieId);
       return !isMockBestie(bestie);
     });
@@ -1110,13 +986,17 @@ const CreateCheckInPage = () => {
     const hasRegularBesties = realSelectedBesties.length > 0;
     const hasMessengerContacts = selectedMessengerContacts.length > 0;
     
-    // During tutorial, allow mock bestie selection
+    // During tutorial, allow mock bestie or fake bestie selection
     const hasMockBestieSelected = selectedBesties.some(bestieId => {
+      if (bestieId === 'TUTORIAL_FAKE_BESTIE') return true; // Fake bestie counts as mock
       const bestie = besties.find(b => b.id === bestieId);
       return isMockBestie(bestie);
     });
     
-    if (!hasRegularBesties && !hasMessengerContacts && !hasMockBestieSelected) {
+    // During tutorial, allow check-ins without besties
+    const isTutorialMode = showTutorial && !!currentCheckInTutorialStep;
+    
+    if (!hasRegularBesties && !hasMessengerContacts && !hasMockBestieSelected && !isTutorialMode) {
       errorTracker.trackFunnelStep('checkin', 'error_no_besties');
       setFormErrors(prev => ({ ...prev, besties: 'Please select at least one bestie or messenger contact to notify' }));
       return;
@@ -1157,6 +1037,15 @@ const CreateCheckInPage = () => {
 
     // Validate notification channels - check if user has credits if all besties only have SMS
     const validateNotificationChannels = async () => {
+      // Skip validation during tutorial mode (for fake bestie or mock bestie)
+      const isTutorialMode = showTutorial && !!currentCheckInTutorialStep;
+      const hasFakeBestie = selectedBesties.includes('TUTORIAL_FAKE_BESTIE');
+      
+      if (isTutorialMode && (hasFakeBestie || hasMockBestieSelected)) {
+        // Skip SMS credit validation during tutorial
+        return true;
+      }
+
       // Get selected besties' notification preferences
       const bestieRefs = realSelectedBesties.map(id => doc(db, 'users', id));
       const bestieSnaps = await Promise.all(bestieRefs.map(ref => getDoc(ref)));
@@ -1270,8 +1159,19 @@ const CreateCheckInPage = () => {
           const privacyLevel = userData?.privacySettings?.checkInVisibility || 'all_besties';
           const circleSnapshot = userData?.featuredCircle || [];
 
-          // Filter out mock besties before saving
+          // Filter out mock besties, but keep fake tutorial bestie as placeholder to satisfy Firestore rules
+          // We'll filter it out later in cloud functions/backend processing
           const finalBestieIds = selectedBesties.filter(bestieId => {
+            // Keep TUTORIAL_FAKE_BESTIE as placeholder if no real besties (satisfies Firestore rules)
+            if (bestieId === 'TUTORIAL_FAKE_BESTIE') {
+              // Only keep it if we have no other real besties
+              const hasRealBesties = selectedBesties.some(id => {
+                if (id === 'TUTORIAL_FAKE_BESTIE') return false;
+                const bestie = besties.find(b => b.id === id);
+                return bestie && !isMockBestie(bestie);
+              });
+              return !hasRealBesties; // Keep fake bestie only if no real ones
+            }
             const bestie = besties.find(b => b.id === bestieId);
             return !isMockBestie(bestie);
           });
@@ -1282,7 +1182,7 @@ const CreateCheckInPage = () => {
             gpsCoords: gpsCoords || null,
             duration: duration,
             alertTime: Timestamp.fromDate(alertTime),
-            bestieIds: finalBestieIds, // Only real besties
+            bestieIds: finalBestieIds, // May include TUTORIAL_FAKE_BESTIE as placeholder
             notes: notes || null,
             meetingWith: meetingWith || null,
             socialMediaLinks: socialMediaLinks || null,
@@ -1292,7 +1192,7 @@ const CreateCheckInPage = () => {
             createdAt: Timestamp.now(),
             lastUpdate: Timestamp.now(),
             isTest: userData?.testMode || false,
-            isTutorial: hasMockBestieSelected && showTutorial, // Mark as tutorial check-in
+            isTutorial: (hasMockBestieSelected || selectedBesties.includes('TUTORIAL_FAKE_BESTIE')) && showTutorial, // Mark as tutorial check-in
           };
 
           // Add Messenger contact IDs if any are selected
@@ -1332,14 +1232,17 @@ const CreateCheckInPage = () => {
             throw new Error('There was a problem saving your check-in. Please try again.');
           }
 
-          // Verify besties were saved correctly (only check real besties, not mock)
-          if (!savedData.bestieIds || savedData.bestieIds.length !== finalBestieIds.length) {
+          // Verify besties were saved correctly (filter out fake tutorial bestie for comparison)
+          const savedBestieIds = (savedData.bestieIds || []).filter(id => id !== 'TUTORIAL_FAKE_BESTIE');
+          const expectedBestieIds = finalBestieIds.filter(id => id !== 'TUTORIAL_FAKE_BESTIE');
+          
+          if (savedBestieIds.length !== expectedBestieIds.length) {
             throw new Error('Your besties weren\'t saved correctly. Please try again.');
           }
 
-          // Verify all bestie IDs match exactly (only real besties)
-          const bestiesMatch = finalBestieIds.every(id => savedData.bestieIds.includes(id));
-          if (!bestiesMatch) {
+          // Verify all bestie IDs match exactly (excluding fake tutorial bestie)
+          const bestiesMatch = expectedBestieIds.every(id => savedBestieIds.includes(id));
+          if (!bestiesMatch && expectedBestieIds.length > 0) {
             throw new Error('There was a problem saving your bestie list. Please try again.');
           }
 
@@ -1408,15 +1311,12 @@ const CreateCheckInPage = () => {
           {/* Location with Map */}
           <div ref={mapRef}>
             <CheckInMap
+              ref={checkInMapRef}
               locationInput={locationInput}
               setLocationInput={(value) => {
                 setLocationInput(value);
                 if (value.trim()) {
                   setFormErrors(prev => ({ ...prev, location: '' }));
-                  // If in tutorial and location just entered, show scroll message
-                  if (currentCheckInTutorialStep === 'location' && !locationStepCompleted) {
-                    setShowScrollDownMessage(true);
-                  }
                 }
               }}
               gpsCoords={gpsCoords}
@@ -1430,9 +1330,7 @@ const CreateCheckInPage = () => {
               setLoading={setLoading}
               onLocationSet={(value) => {
                 // When location is set via GPS, update locationInput
-                if (value && currentCheckInTutorialStep === 'location') {
-                  setShowScrollDownMessage(true);
-                }
+                // Tutorial will automatically advance when locationInput is set
               }}
             />
           </div>
@@ -1479,6 +1377,7 @@ const CreateCheckInPage = () => {
           )}
           <div ref={bestieSelectorRef}>
             <BestieSelector
+              isTutorial={showTutorial && !!currentCheckInTutorialStep}
               besties={besties}
               selectedBesties={selectedBesties}
               setSelectedBesties={(besties) => {
@@ -1529,10 +1428,8 @@ const CreateCheckInPage = () => {
             ref={submitButtonRef}
             type="submit"
             id="create-checkin-submit-btn"
-            disabled={loading || (selectedBesties.length === 0 && selectedMessengerContacts.length === 0) || (showTutorial && selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
-            className={`w-full btn btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98] ${
-              currentCheckInTutorialStep === 'final' ? 'animate-pulse ring-4 ring-primary ring-opacity-50' : ''
-            }`}
+            disabled={loading || (!showTutorial && selectedBesties.length === 0 && selectedMessengerContacts.length === 0)}
+            className="w-full btn btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transform transition-all hover:scale-[1.02] active:scale-[0.98]"
             aria-label="Start safety check-in"
             aria-busy={loading}
           >
@@ -1549,11 +1446,15 @@ const CreateCheckInPage = () => {
 
         {/* Tutorial Overlay */}
         {(() => {
-          const shouldRender = showTutorial && currentCheckInTutorialStep;
+          // Don't show tooltip if it was dismissed for location step
+          const shouldHideTooltip = currentCheckInTutorialStep === 'location' && locationTooltipDismissed && locationInput.trim() === '';
+          const shouldRender = showTutorial && currentCheckInTutorialStep && !shouldHideTooltip;
           console.log('[Tutorial] Render check:', {
             showTutorial,
             currentCheckInTutorialStep,
-            shouldRender
+            shouldRender,
+            locationTooltipDismissed,
+            locationInput: locationInput.trim()
           });
 
           if (!shouldRender) {
@@ -1594,16 +1495,6 @@ const CreateCheckInPage = () => {
           );
         })()}
         
-        {/* Scroll Down Message - shown after location is entered */}
-        {showScrollDownMessage && currentCheckInTutorialStep === 'location' && (
-          <div className="fixed bottom-24 left-0 right-0 z-[10003] flex justify-center pointer-events-none">
-            <div className="bg-primary text-white px-6 py-4 rounded-xl shadow-2xl animate-pulse max-w-sm mx-4">
-              <p className="text-center font-semibold text-lg">
-                📍 Scroll down when you're done
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Cannot Create Check-In Modal */}

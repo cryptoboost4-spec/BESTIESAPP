@@ -11,7 +11,9 @@ const VALID_STEPS = [
   'duration',
   'bestieSelection',
   'notesPhotos',
-  'final'
+  'final',
+  'checkedIn',
+  'afterSafe'
 ];
 
 /**

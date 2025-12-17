@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import TutorialOverlay from '../../TutorialOverlay';
 
 /**
- * BestiesTutorialOverlay - Tutorial overlay for Besties page
- * Guides users through: Activity Feed, Create Post, Besties Grid
+ * BestiesTutorialOverlay - Simplified tutorial for Besties page
+ * Shows mock posts and tells users to click profile button
  */
 const BestiesTutorialOverlay = ({
   currentStep,
@@ -11,52 +11,26 @@ const BestiesTutorialOverlay = ({
   onBack,
   onSkip,
   isPaused,
-  refs,
-  activityFeedLength = 0
+  refs
 }) => {
   const [tooltipConfig, setTooltipConfig] = useState(null);
 
   useEffect(() => {
-    if (!currentStep || !refs) return;
+    if (!currentStep || currentStep !== 1) return;
 
-    // Check if activity feed is empty
-    const activityFeedEmpty = activityFeedLength === 0;
-
-    // World-class: Context-aware, delightful messaging
-    const configs = {
-      1: {
-        title: '📱 Your Social Feed',
-        body: activityFeedEmpty
-          ? "This is where your besties' check-ins and posts will appear. Once you start sharing, it'll get lively! It's like a private timeline for your circle. 💜"
-          : "This is where you see everything your besties share - check-ins, posts, milestones. It's like a private timeline just for your circle. Scroll down to see more! ✨",
-        buttonText: 'Next',
-        position: 'below',
-        highlightedElementRef: refs.activityFeed
-      },
-      2: {
-        title: '✍️ Share with Your Besties',
-        body: "Want to post something? Tap this button to share updates, photos, or just say hi. Your besties will see it in their feed. Give it a try! 🎉",
-        buttonText: 'Try Posting',
-        position: 'below',
-        highlightedElementRef: refs.postButton
-      },
-      3: {
-        title: '👥 Your Safety Squad',
-        body: "All your besties in one place! Tap any bestie card to view their profile, send a message, or check their recent activity. The symbols show who's active, reliable, and more. 💜",
-        buttonText: 'Got It! ✨',
-        position: 'auto',
-        highlightedElementRef: refs.bestiesGrid
-      }
+    // Single step tutorial - just show info about the page
+    const config = {
+      title: '💜 Welcome to Your Besties Page!',
+      body: `This is your private social space where you'll see check-ins and posts from your besties.\n\nScroll through the mock posts above to see how it works. When you're ready, click the Profile button below to continue learning about the app!`,
+      buttonText: 'Got it',
+      position: 'auto',
+      highlightedElementRef: refs?.activityFeed || { current: null }
     };
 
-    // Smooth transition animation
-    setTooltipConfig(null);
-    setTimeout(() => {
-      setTooltipConfig(configs[currentStep]);
-    }, 150);
-  }, [currentStep, refs, activityFeedLength]);
+    setTooltipConfig(config);
+  }, [currentStep, refs]);
 
-  if (!currentStep || !tooltipConfig) return null;
+  if (!currentStep || currentStep !== 1 || !tooltipConfig) return null;
 
   return (
     <TutorialOverlay
@@ -66,8 +40,8 @@ const BestiesTutorialOverlay = ({
       onTutorialComplete={onSkip}
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}
-      stepNumber={currentStep}
-      totalSteps={3}
+      stepNumber={1}
+      totalSteps={1}
       isPaused={isPaused}
     />
   );

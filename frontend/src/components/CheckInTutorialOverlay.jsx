@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * CheckInTutorialOverlay - Guides users through their first check-in
@@ -13,7 +14,7 @@ const CheckInTutorialOverlay = ({
   tooltipConfig,
   isFirstStep = false,
 }) => {
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, width: '400px' });
   const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0, rotation: 180 });
   const [showTooltip] = useState(true);
 
@@ -27,8 +28,13 @@ const CheckInTutorialOverlay = ({
   // Store scroll position for mobile calculations
   const scrollYRef = useRef(0);
 
-  // Lock body scroll when tutorial is active
+  // Lock body scroll when tutorial is active (but not for 'final' step)
   useEffect(() => {
+    // Don't lock scroll for 'final' step - user should be able to scroll and fill out form
+    if (currentStep === 'final') {
+      return;
+    }
+
     // Save current scroll position BEFORE locking
     scrollYRef.current = window.scrollY;
     
@@ -54,7 +60,7 @@ const CheckInTutorialOverlay = ({
         window.scrollTo(0, savedScrollY);
       });
     };
-  }, []);
+  }, [currentStep]);
 
   // Calculate tooltip and arrow positions
   useEffect(() => {
@@ -62,6 +68,7 @@ const CheckInTutorialOverlay = ({
 
     // Detect mobile device (outside function so it can be used in cleanup)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const screenWidth = window.innerWidth;
 
     const calculatePositions = () => {
       const element = highlightedElementRef.current;
@@ -73,62 +80,82 @@ const CheckInTutorialOverlay = ({
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
 
-      // For map overlay, center the tooltip on screen
+      // For map overlay, position tooltip on top of the map element
       if (tooltipConfig.overlayOnElement) {
         const tooltipWidth = Math.min(screenWidth - 40, 320);
+        const tooltipHeight = 200; // Approximate tooltip height
+        const padding = 20;
+        
+        // Position tooltip centered over the map element
+        const elementTop = elementRect.top;
+        const elementLeft = elementRect.left;
+        const elementWidth = elementRect.width;
+        const elementHeight = elementRect.height;
+        
+        // Center tooltip horizontally over map, position near top of map
+        const left = elementLeft + (elementWidth / 2) - (tooltipWidth / 2);
+        // Ensure tooltip doesn't go off screen
+        const constrainedLeft = Math.max(20, Math.min(left, screenWidth - tooltipWidth - 20));
+        
+        // Position tooltip near the top of the map, but ensure it's visible
+        const top = elementTop + padding;
+        const constrainedTop = Math.max(20, Math.min(top, screenHeight - tooltipHeight - 20));
+        
         setTooltipPosition({
-          top: screenHeight / 2 - 100, // Roughly centered
-          left: (screenWidth - tooltipWidth) / 2,
+          top: constrainedTop,
+          left: constrainedLeft,
+          width: `${tooltipWidth}px`,
         });
         setArrowPosition({ top: -1000, left: -1000, rotation: 0 }); // Hide arrow
         return;
       }
 
-      // For all other sections, always position ABOVE (except map which can be centered)
-      const tooltipWidth = Math.min(screenWidth - 40, Math.min(320, screenWidth - 40));
-      const tooltipHeight = 180; // Approximate height
+      // For all other sections, position centered on screen (especially for checkedIn step)
+      const bottomNavHeight = 84; // Bottom nav bar height + safe area
+      const headerHeight = 80; // Header height + buffer
       const padding = 20;
       const minSpaceFromEdge = 20;
-
-      // Always center horizontally
-      const left = (screenWidth - tooltipWidth) / 2;
-
-      // On mobile, elementRect.top might be wrong after scroll lock
-      // Account for this by using the stored scroll position if needed
-      let elementTop = elementRect.top;
       
-      // If on mobile and element seems positioned incorrectly (negative or very large),
-      // try to get position from element's offsetTop instead
-      if (isMobile && (elementTop < 0 || elementTop > screenHeight * 2)) {
-        // Fallback: use offsetTop relative to document, then subtract scroll
-        const offsetTop = element.offsetTop;
-        elementTop = offsetTop - scrollYRef.current;
-        
-        // If still wrong, use a safe default
-        if (elementTop < 0 || elementTop > screenHeight * 2) {
-          elementTop = screenHeight / 2; // Center as fallback
+      // Calculate available space
+      const availableHeight = screenHeight - headerHeight - bottomNavHeight - (padding * 2);
+      
+      // Tooltip width - responsive for mobile
+      const tooltipWidth = isMobile 
+        ? Math.min(screenWidth - 32, 400) // 16px padding on each side
+        : Math.min(400, screenWidth - 80);
+      
+      // Estimate tooltip height (will be adjusted by content)
+      const estimatedTooltipHeight = Math.min(availableHeight - 40, 350);
+      
+      // Center horizontally
+      const left = (screenWidth - tooltipWidth) / 2;
+      
+      // Position vertically - center in available space, but ensure it doesn't cover bottom nav
+      // Calculate top position to center in available space
+      const availableTop = headerHeight + padding;
+      const availableBottom = screenHeight - bottomNavHeight - padding;
+      const centerY = (availableTop + availableBottom) / 2;
+      
+      // Position tooltip centered vertically in available space
+      let top = centerY - (estimatedTooltipHeight / 2);
+      
+      // Ensure it doesn't go above header or below bottom nav
+      if (top < availableTop) {
+        top = availableTop;
+      }
+      const tooltipBottom = top + estimatedTooltipHeight;
+      if (tooltipBottom > availableBottom) {
+        top = availableBottom - estimatedTooltipHeight;
+        // If still too tall, position at top of available space
+        if (top < availableTop) {
+          top = availableTop;
         }
       }
 
-      // Always position above the element with padding
-      let top = elementTop - tooltipHeight - padding;
+      setTooltipPosition({ top, left, width: `${tooltipWidth}px` });
 
-      // Ensure doesn't go off top of screen
-      if (top < minSpaceFromEdge) {
-        top = minSpaceFromEdge;
-      }
-
-      setTooltipPosition({ top, left });
-
-      // Calculate arrow position (always points down to element)
-      const arrowLeft = screenWidth / 2;
-      const arrowTop = elementTop - padding / 2;
-
-      setArrowPosition({
-        top: arrowTop,
-        left: arrowLeft,
-        rotation: 180, // Always points down
-      });
+      // Hide arrow for centered tooltip (not positioned relative to element)
+      setArrowPosition({ top: -1000, left: -1000, rotation: 0 });
     };
 
     // On mobile, add a small delay to ensure scroll lock is applied and DOM is settled
@@ -180,6 +207,10 @@ const CheckInTutorialOverlay = ({
       onStepComplete('addSocial');
     } else if (action === 'addDetails') {
       onStepComplete('addDetails');
+    } else if (action === 'useLocation') {
+      onStepComplete('useLocation');
+    } else if (action === 'enterManually') {
+      onStepComplete('enterManually');
     }
   };
 
@@ -201,17 +232,30 @@ const CheckInTutorialOverlay = ({
     };
   }, [highlightedElementRef]);
 
-  return (
+  // Render tooltip in portal for checkedIn step to appear above modals
+  const shouldUsePortal = currentStep === 'checkedIn';
+
+  const tooltipContent = (
     <>
-      {/* Dark overlay backdrop - dims everything (lighter for mobile visibility) */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-40 pointer-events-auto"
-        style={{ zIndex: 9998 }}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      />
+      {/* Dark overlay backdrop - dims everything and blocks all interactions (not for 'final' step) */}
+      {currentStep !== 'final' && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 pointer-events-auto"
+          style={{ zIndex: 9998 }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        />
+      )}
 
       {/* Arrow pointing to element (hidden for map overlay) */}
       {!tooltipConfig.overlayOnElement && arrowPosition.top > 0 && (
@@ -237,25 +281,34 @@ const CheckInTutorialOverlay = ({
       )}
 
       {/* Tooltip */}
-      {showTooltip && (
-        <div
-          className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 animate-in fade-in zoom-in duration-200"
-          style={{
-            top: `${tooltipPosition.top}px`,
-            left: `${tooltipPosition.left}px`,
-            zIndex: 10002,
-            width: 'calc(100vw - 40px)',
-            maxWidth: '320px',
-            ...(tooltipConfig.overlayOnElement && {
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-            }),
-          }}
-        >
+      <div
+        className="fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-300 animate-in fade-in zoom-in"
+        style={{
+          top: `${tooltipPosition.top}px`,
+          left: `${tooltipPosition.left}px`,
+          width: tooltipPosition.width || (window.innerWidth < 768 ? 'calc(100vw - 32px)' : '400px'),
+          maxWidth: '400px',
+          maxHeight: 'calc(100vh - 180px)', // Leave space for header and bottom nav
+          overflowY: 'auto',
+          zIndex: 10003, // Ensure it's on top of everything
+          ...(tooltipConfig.overlayOnElement && {
+            backgroundColor: 'rgba(253, 242, 248, 0.95)',
+            backdropFilter: 'blur(10px)',
+          }),
+        }}
+      >
+          {/* Decorative sparkle background */}
+          <div className="absolute top-0 right-0 p-4 opacity-20 pointer-events-none select-none">
+            <span className="text-4xl animate-pulse-slow">✨</span>
+          </div>
+          <div className="absolute bottom-0 left-0 p-4 opacity-20 pointer-events-none select-none">
+            <span className="text-3xl animate-bounce-gentle" style={{ animationDelay: '1s' }}>💖</span>
+          </div>
+
           {/* Skip button - available on all steps */}
           <button
             onClick={handleSkip}
-            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="absolute top-3 right-3 text-pink-400 dark:text-pink-300 hover:text-pink-600 dark:hover:text-pink-100 transition-colors z-10"
             aria-label="Skip tutorial"
           >
             <svg
@@ -271,70 +324,100 @@ const CheckInTutorialOverlay = ({
             </svg>
           </button>
 
-          {/* Icon */}
-          {tooltipConfig.icon && (
-            <div className="text-3xl mb-3 text-center">{tooltipConfig.icon}</div>
-          )}
+          {/* Content */}
+          <div className="space-y-4 relative z-10">
+            {/* Icon */}
+            {tooltipConfig.icon && (
+              <div className="text-3xl mb-3 text-center">{tooltipConfig.icon}</div>
+            )}
 
-          {/* Title */}
-          {tooltipConfig.title && (
-            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white text-center">
-              {tooltipConfig.title}
-            </h3>
-          )}
+            {/* Title */}
+            {tooltipConfig.title && (
+              <h4 className="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 dark:from-pink-300 dark:to-purple-300 flex items-center gap-2 drop-shadow-sm justify-center">
+                <span className="animate-wiggle text-2xl">🌸</span> {tooltipConfig.title}
+              </h4>
+            )}
 
-          {/* Body */}
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-line text-center">
-            {tooltipConfig.body}
-          </p>
+            {/* Body */}
+            <p className="text-md text-gray-700 dark:text-pink-100 leading-relaxed font-medium tracking-wide whitespace-pre-line">
+              {tooltipConfig.body}
+            </p>
 
-          {/* Buttons */}
-          {tooltipConfig.buttons && tooltipConfig.buttons.length > 0 && (
-            <div className="flex gap-2 justify-center">
-              {tooltipConfig.buttons.map((button, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleButtonClick(button.action)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all transform active:scale-95 ${
-                    button.primary
-                      ? 'bg-primary text-white hover:bg-primary-dark'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {button.text}
-                </button>
-              ))}
-            </div>
-          )}
+            {/* Buttons */}
+            {tooltipConfig.buttons && tooltipConfig.buttons.length > 0 && (
+              <div className="flex flex-col gap-2.5 mt-5">
+                <div className="flex gap-2.5">
+                  {tooltipConfig.buttons.map((button, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleButtonClick(button.action)}
+                      className={`${tooltipConfig.buttons.length === 1 ? 'w-full' : 'flex-1'} group relative px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-lg shadow-pink-500/30 overflow-hidden transform transition-all hover:scale-[1.02] active:scale-95`}
+                    >
+                      {button.primary ? (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-gradient-x"></div>
+                          <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                          <span className="relative flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            {button.text} ➜
+                          </span>
+                        </>
+                      ) : (
+                        <span className="relative px-4 py-2.5 rounded-full text-sm font-bold text-pink-600 dark:text-pink-300 bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/30 transition-all border-2 border-transparent hover:border-pink-200 whitespace-nowrap">
+                          {button.text}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
           {/* Dismiss/Continue button for map overlay */}
-          {tooltipConfig.overlayOnElement && (
-            tooltipConfig.showScrollMessage ? (
-              // Show scroll message with continue button
+          {tooltipConfig.overlayOnElement && tooltipConfig.showScrollMessage && (
+            // Show scroll message with continue button
+            <div className="flex flex-col gap-2.5 mt-5">
               <button
                 onClick={handleDismissTooltip}
-                className="mt-4 w-full px-4 py-2 rounded-lg font-medium transition-all transform active:scale-95 bg-primary text-white hover:bg-primary-dark"
+                className="w-full group relative px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-lg shadow-pink-500/30 overflow-hidden transform transition-all hover:scale-[1.02] active:scale-95"
               >
-                Continue
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-gradient-x"></div>
+                <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                <span className="relative flex items-center justify-center gap-1.5 whitespace-nowrap">
+                  Continue ➜
+                </span>
               </button>
-            ) : tooltipConfig.dismissible ? (
-              <button
-                onClick={handleDismissTooltip}
-                disabled={tooltipConfig.canDismiss === false}
-                className={`mt-4 w-full px-4 py-2 rounded-lg font-medium transition-all transform active:scale-95 ${
-                  tooltipConfig.canDismiss === false
-                    ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'bg-primary text-white hover:bg-primary-dark'
-                }`}
-              >
-                Got it
-              </button>
-            ) : null
+            </div>
           )}
+          </div>
+          
+          {/* Add animations if not already in global CSS */}
+          <style>{`
+            @keyframes wiggle {
+              0%, 100% { transform: rotate(0deg); }
+              25% { transform: rotate(-3deg); }
+              75% { transform: rotate(3deg); }
+            }
+            .animate-wiggle {
+              animation: wiggle 1s ease-in-out infinite;
+            }
+            @keyframes gradient-x {
+              0%, 100% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+            }
+            .animate-gradient-x {
+              animation: gradient-x 3s ease infinite;
+            }
+          `}</style>
         </div>
-      )}
-    </>
-  );
+      </>
+    );
+
+  // Use portal for checkedIn step to appear above modals
+  if (shouldUsePortal && typeof document !== 'undefined') {
+    return createPortal(tooltipContent, document.body);
+  }
+
+  return tooltipContent;
 };
 
 export default CheckInTutorialOverlay;

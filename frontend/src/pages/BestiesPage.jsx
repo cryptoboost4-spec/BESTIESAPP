@@ -64,7 +64,7 @@ const BestiesPage = () => {
   // Create mock tutorial posts when tutorial becomes active
   useEffect(() => {
     if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-      // Create 2 cute mock welcome messages
+      // Create informative mock posts about the besties page
       const mockPosts = [
         {
           id: 'mock-1',
@@ -72,7 +72,7 @@ const BestiesPage = () => {
           userId: 'BESTIES_TUTORIAL',
           userName: 'Besties Team',
           userPhoto: null,
-          text: "Hey bestie! 💜 Welcome to your private social space! This is where you'll see everything your besties share - check-ins, updates, and all the good stuff. No strangers, no algorithms, just you and your crew!",
+          text: "Hey bestie! 💜 Welcome to your Besties page! This is your private social space where you'll see check-ins and posts from your besties. It's like a private timeline just for your safety network!",
           photoURL: null,
           createdAt: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
           timestamp: new Date(Date.now() - 2 * 60 * 1000),
@@ -84,7 +84,7 @@ const BestiesPage = () => {
           userId: 'BESTIES_TUTORIAL',
           userName: 'Besties Team',
           userPhoto: null,
-          text: "Quick tip: You can react to posts with emojis, leave comments, and keep the conversation going. It's like your own private group chat, but prettier! ✨",
+          text: "When your besties create check-ins, they'll show up here. You can react with emojis, leave comments, and stay connected. It's all about keeping each other safe! 🛡️",
           photoURL: null,
           createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
           timestamp: new Date(Date.now() - 5 * 60 * 1000),
@@ -97,6 +97,15 @@ const BestiesPage = () => {
       setMockTutorialPosts([]);
     }
   }, [tutorial.tutorialActive, tutorial.currentStep]);
+
+  // Auto-start tutorial when coming from check-in tutorial
+  useEffect(() => {
+    if (location.state?.startTutorial && !tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive) {
+      tutorial.startTutorial();
+      // Clear the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, tutorial]);
   
   // Refs for highlighted elements
   const activityFeedRef = useRef(null);
@@ -664,37 +673,15 @@ const BestiesPage = () => {
       )}
 
       {/* Tutorial Overlay */}
-      {tutorial.tutorialActive && tutorial.currentStep && (
+      {tutorial.tutorialActive && tutorial.currentStep === 1 && (
         <BestiesTutorialOverlay
           currentStep={tutorial.currentStep}
           onNext={() => {
-            // Track step completion
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_step_completed', {
-                page: 'besties',
-                step: tutorial.currentStep,
-                total_steps: 3
-              });
-            }
-            
-            if (tutorial.currentStep === 3) {
-              // Last step - complete tutorial
-              if (typeof window !== 'undefined' && window.analytics) {
-                window.analytics.track('tutorial_completed', {
-                  page: 'besties',
-                  total_steps: 3
-                });
-              }
-              tutorial.completeTutorial();
-              setShowCelebration(true);
-            } else {
-              tutorial.nextStep();
-            }
+            // User clicked "Got it" - they should click profile button
+            // Don't advance, wait for them to click profile
           }}
           onBack={() => {
-            if (tutorial.currentStep > 1) {
-              tutorial.setCurrentStep(tutorial.currentStep - 1);
-            }
+            // No back button for single step
           }}
           onSkip={() => {
             if (typeof window !== 'undefined' && window.analytics) {

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCheckInTutorialState } from '../../hooks/useCheckInTutorialState';
 
 // Luxury loader for "I'm Safe" confirmation
 const SafeLoader = ({ isFirstCheckIn = false }) => {
   const navigate = useNavigate();
   const { userData } = useAuth();
+  const { currentCheckInTutorialStep, setCheckInTutorialStep } = useCheckInTutorialState();
   
   const firstCheckInMessages = [
     { text: "🎉 Your First Check-In Complete!", subtext: "You're building amazing safety habits! Your besties are proud of you 💜" },
@@ -34,13 +36,17 @@ const SafeLoader = ({ isFirstCheckIn = false }) => {
   // Pick one random message (locked in on mount)
   const [message] = useState(() => messagePool[Math.floor(Math.random() * messagePool.length)]);
 
-  // Redirect to home after 2 seconds
+  // Redirect to home after 2 seconds and advance tutorial if needed
   useEffect(() => {
     const timer = setTimeout(() => {
+      // If in checkedIn tutorial step, advance to afterSafe step
+      if (currentCheckInTutorialStep === 'checkedIn') {
+        setCheckInTutorialStep('afterSafe');
+      }
       navigate('/');
     }, 2000);
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [navigate, currentCheckInTutorialStep, setCheckInTutorialStep]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 via-teal-50 to-cyan-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 flex items-center justify-center p-4 overflow-hidden z-50">

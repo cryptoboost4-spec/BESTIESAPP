@@ -16,7 +16,8 @@ const BestieSelector = ({
   selectedMessengerContacts = [],
   setSelectedMessengerContacts = () => {},
   userId,
-  showMessenger = true
+  showMessenger = true,
+  isTutorial = false
 }) => {
   const navigate = useNavigate();
   const [expandedBestieShare, setExpandedBestieShare] = useState(null);
@@ -179,19 +180,82 @@ const BestieSelector = ({
       </div>
 
       {besties.length === 0 ? (
-        <div className="text-center py-6 bg-orange-50 dark:bg-orange-900/30 border-2 border-orange-200 dark:border-orange-800 rounded-xl">
-          <p className="font-semibold text-text-primary mb-2">⚠️ No besties in your circle</p>
-          <p className="text-text-secondary text-sm mb-4">Add besties to your bestie circle on the home page to create check-ins</p>
+        <div className="space-y-2">
+          {/* Fake bestie card for tutorial - looks like a real bestie */}
           <button
             type="button"
-            onClick={() => navigate('/')}
-            className="btn btn-primary"
+            onClick={() => {
+              // Use a special ID for the fake bestie
+              const fakeBestieId = 'TUTORIAL_FAKE_BESTIE';
+              if (selectedBesties.includes(fakeBestieId)) {
+                setSelectedBesties(selectedBesties.filter(id => id !== fakeBestieId));
+              } else {
+                if (selectedBesties.length >= 5) {
+                  haptic.error();
+                  toast.error('Maximum 5 besties per check-in');
+                  return;
+                }
+                haptic.success();
+                setSelectedBesties([...selectedBesties, fakeBestieId]);
+              }
+            }}
+            className={`w-full p-4 rounded-xl border-2 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+              selectedBesties.includes('TUTORIAL_FAKE_BESTIE')
+                ? 'border-primary bg-primary/10 shadow-md scale-[1.02]'
+                : 'border-dashed border-purple-400 bg-purple-50/50 dark:bg-purple-900/20 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-100/50 dark:hover:bg-purple-900/30 hover:scale-[1.01] active:scale-[0.99]'
+            }`}
+            aria-label="Select tutorial bestie"
+            aria-pressed={selectedBesties.includes('TUTORIAL_FAKE_BESTIE')}
           >
-            Go to Home Page
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-12 h-12 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">💜</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="font-semibold text-text-primary">Demo Bestie</div>
+                    <span className="text-xs bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full font-bold">
+                      🎓 DEMO
+                    </span>
+                  </div>
+                  <div className="text-sm text-text-secondary">
+                    Practice bestie for tutorial
+                  </div>
+                </div>
+              </div>
+              {selectedBesties.includes('TUTORIAL_FAKE_BESTIE') && (
+                <div className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">
+                  {selectedBesties.indexOf('TUTORIAL_FAKE_BESTIE') + 1}/5
+                </div>
+              )}
+            </div>
           </button>
         </div>
       ) : (
         <div className="space-y-2">
+          {/* Tutorial info card - styled like a bestie card */}
+          {isTutorial && (
+            <div className="w-full p-4 rounded-xl border-2 border-dashed border-purple-400 bg-purple-50/50 dark:bg-purple-900/20">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">💜</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="font-semibold text-text-primary text-sm">Tutorial</div>
+                    <span className="text-xs bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full font-bold">
+                      INFO
+                    </span>
+                  </div>
+                  <div className="text-sm text-text-secondary">
+                    Select the demo bestie if available, or continue without a bestie. After the tutorial, add real besties on the home page.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Besties with contact methods - shown first */}
           {bestiesWithContact.map((bestie) => {
             const selectionIndex = selectedBesties.indexOf(bestie.id);

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import toast from 'react-hot-toast';
 import { isEnabled } from '../../config/features';
 import { useAuth } from '../../contexts/AuthContext';
@@ -38,7 +38,7 @@ import {
  * - GPS button to get current location
  * - Autocomplete search
  */
-const CheckInMap = ({
+const CheckInMap = forwardRef(({
   locationInput,
   setLocationInput,
   gpsCoords,
@@ -51,7 +51,7 @@ const CheckInMap = ({
   loading,
   setLoading,
   onLocationSet
-}) => {
+}, ref) => {
   // Essential refs only
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
@@ -502,6 +502,18 @@ const CheckInMap = ({
     );
   }, [setLoading, setGpsCoords, geocodeLocation]);
   
+  // Expose methods via ref for parent components (e.g., tutorial)
+  useImperativeHandle(ref, () => ({
+    triggerGPS: () => {
+      // Only trigger if map is initialized and GPS is enabled
+      if (mapInitialized && isEnabled('gpsLocation') && !loading) {
+        handleGetLocation();
+        return true;
+      }
+      return false;
+    }
+  }), [mapInitialized, loading, handleGetLocation]);
+  
   // Handle favorite selection
   const handleFavoriteSelect = useCallback((favorite) => {
     setLocationInput(favorite.name);
@@ -831,6 +843,8 @@ const CheckInMap = ({
       `}</style>
     </div>
   );
-};
+});
+
+CheckInMap.displayName = 'CheckInMap';
 
 export default CheckInMap;

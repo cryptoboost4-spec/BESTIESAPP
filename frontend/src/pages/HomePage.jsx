@@ -14,6 +14,7 @@ import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
 import TutorialOverlay from '../components/TutorialOverlay';
+import CheckInTutorialOverlay from '../components/CheckInTutorialOverlay';
 import { useTutorialState } from '../hooks/useTutorialState';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 // FloatingNotificationBell removed per user request
@@ -34,9 +35,23 @@ const HomePage = () => {
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
   const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
-  const { setCheckInTutorialStep } = useCheckInTutorialState();
+  const { currentCheckInTutorialStep, setCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
+  const livingCircleRef = useRef(null);
   const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
+  const [showBestieCircleTutorial, setShowBestieCircleTutorial] = useState(false);
+
+  // Scroll to bestie circle when tutorial starts
+  useEffect(() => {
+    if (showBestieCircleTutorial && livingCircleRef.current) {
+      setTimeout(() => {
+        livingCircleRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 500); // Small delay to ensure overlay is rendered
+    }
+  }, [showBestieCircleTutorial]);
 
   // Validate tutorial state and clean up invalid states
   useEffect(() => {
@@ -125,6 +140,14 @@ const HomePage = () => {
           // Check-in was just created - advance tutorial
           setTimeout(() => {
             setTutorialStep('afterQuickCheckIn');
+          }, 1000); // Small delay to let user see their check-in
+        }
+
+        // Detect check-in creation during check-in tutorial (custom check-in)
+        if (currentCheckInTutorialStep === 'final' && checkIns.length > previousCheckInCount) {
+          // Check-in was just created - show checkedIn tutorial step
+          setTimeout(() => {
+            setCheckInTutorialStep('checkedIn');
           }, 1000); // Small delay to let user see their check-in
         }
 
@@ -558,7 +581,9 @@ const HomePage = () => {
             />
 
             {/* Living Circle - DO NOT REMOVE */}
-            <LivingCircle userId={currentUser?.uid} />
+            <div ref={livingCircleRef}>
+              <LivingCircle userId={currentUser?.uid} />
+            </div>
 
             {/* Weekly Summary */}
             <WeeklySummary
@@ -745,7 +770,8 @@ const HomePage = () => {
 
 
       {/* Tutorial Overlay - NEW FLOW */}
-      {shouldShowTutorial && tooltipConfig && !isTutorialModalOpen && (
+      {/* Hide HomePage tutorial when check-in tutorial is active */}
+      {shouldShowTutorial && tooltipConfig && !isTutorialModalOpen && (currentCheckInTutorialStep === null || currentCheckInTutorialStep === undefined) && (
         <TutorialOverlay
           currentStep={currentTutorialStep}
           onStepComplete={handleTutorialNext}
@@ -755,6 +781,65 @@ const HomePage = () => {
           tooltipConfig={tooltipConfig}
           stepNumber={getStepNumber()}
           totalSteps={5}
+        />
+      )}
+
+      {/* Check-In Tutorial - afterSafe step */}
+      {currentCheckInTutorialStep === 'afterSafe' && (
+        <CheckInTutorialOverlay
+          currentStep="afterSafe"
+          onStepComplete={(action) => {
+            if (action === 'continueTutorial') {
+              // User wants to continue tutorial - show bestie circle tutorial
+              setShowBestieCircleTutorial(true);
+              setCheckInTutorialStep(null); // Clear check-in tutorial step
+            } else if (action === 'explore') {
+              // User wants to explore on their own - mark tutorial complete
+              markCheckInTutorialComplete();
+            }
+          }}
+          onSkipTutorial={() => {
+            markCheckInTutorialComplete();
+          }}
+          highlightedElementRef={{ current: null }}
+          tooltipConfig={{
+            title: 'You\'re Safe! 🎉',
+            body: `You've completed your first check-in! That's the full check-in process.\n\nWould you like to continue with tutorials to learn more about the app, or explore on your own?`,
+            overlayOnElement: true,
+            dismissible: false,
+            canDismiss: false,
+            buttons: [
+              { text: 'Continue Tutorial', action: 'continueTutorial', primary: true },
+              { text: 'Explore on My Own', action: 'explore', primary: false }
+            ]
+          }}
+        />
+      )}
+
+      {/* Bestie Circle Tutorial */}
+      {showBestieCircleTutorial && livingCircleRef.current && (
+        <CheckInTutorialOverlay
+          currentStep="bestieCircle"
+          onStepComplete={(action) => {
+            if (action === 'continue') {
+              // Tutorial complete
+              setShowBestieCircleTutorial(false);
+              markCheckInTutorialComplete();
+            }
+          }}
+          onSkipTutorial={() => {
+            setShowBestieCircleTutorial(false);
+            markCheckInTutorialComplete();
+          }}
+          highlightedElementRef={livingCircleRef}
+          tooltipConfig={{
+            title: '💜 Your Bestie Circle',
+            body: `This is your Bestie Circle - your core safety network of up to 5 people.\n\nThese are the besties who will always be notified about your check-ins. You can add besties by clicking the + buttons, or manage your circle by clicking on existing besties.\n\nYour circle is the foundation of your safety network!`,
+            overlayOnElement: false,
+            buttons: [
+              { text: 'Got it', action: 'continue', primary: true }
+            ]
+          }}
         />
       )}
     </div>

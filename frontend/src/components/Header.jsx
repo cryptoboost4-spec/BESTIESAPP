@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import NotificationBell from './NotificationBell';
 import ProfileWithBubble from './ProfileWithBubble';
 import AnimatedProfilePicture from './AnimatedProfilePicture';
+import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
+import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
 
 const Header = () => {
   const { userData } = useAuth();
@@ -15,8 +17,14 @@ const Header = () => {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef(null);
+  const { currentCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
+  const tutorial = useBestiesTutorialState();
 
   const isActive = (path) => location.pathname === path;
+  
+  // Check if buttons should flash
+  const shouldFlashBesties = currentCheckInTutorialStep === 'afterSafe';
+  const shouldFlashProfile = tutorial.tutorialActive && tutorial.currentStep === 1;
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -65,17 +73,39 @@ const Header = () => {
               </Link>
               <Link
                 to="/besties"
-                className={`font-semibold transition-colors ${
+                onClick={(e) => {
+                  // If in afterSafe tutorial step, handle navigation and complete tutorial
+                  if (currentCheckInTutorialStep === 'afterSafe') {
+                    e.preventDefault();
+                    markCheckInTutorialComplete();
+                    navigate('/besties', { state: { startTutorial: true } });
+                  }
+                }}
+                className={`font-semibold transition-colors relative px-3 py-1 rounded ${
                   isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300 hover:text-primary' : 'text-text-secondary hover:text-primary')
-                }`}
+                } ${shouldFlashBesties ? 'animate-pulse' : ''}`}
+                style={shouldFlashBesties ? {
+                  boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+                } : {}}
               >
                 Besties
               </Link>
               <Link
                 to="/profile"
-                className={`font-semibold transition-colors ${
+                onClick={() => {
+                  // If besties tutorial is active, complete it so profile tutorial can start
+                  if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+                    tutorial.completeTutorial();
+                  }
+                }}
+                className={`font-semibold transition-colors relative px-3 py-1 rounded ${
                   isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300 hover:text-primary' : 'text-text-secondary hover:text-primary')
-                }`}
+                } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
+                style={shouldFlashProfile ? {
+                  boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+                } : {}}
               >
                 Profile
               </Link>
@@ -242,9 +272,23 @@ const Header = () => {
 
           <Link
             to="/besties"
-            className={`flex flex-col items-center gap-1 transition-colors ${
+            onClick={(e) => {
+              // If in afterSafe tutorial step, handle navigation and complete tutorial
+              if (currentCheckInTutorialStep === 'afterSafe') {
+                e.preventDefault();
+                markCheckInTutorialComplete();
+                navigate('/besties', { state: { startTutorial: true } });
+              }
+            }}
+            className={`flex flex-col items-center gap-1 transition-colors relative ${
               isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
-            }`}
+            } ${shouldFlashBesties ? 'animate-pulse' : ''}`}
+            style={shouldFlashBesties ? {
+              boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+              borderRadius: '12px',
+              padding: '8px',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+            } : {}}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -254,9 +298,21 @@ const Header = () => {
 
           <Link
             to="/profile"
-            className={`flex flex-col items-center gap-1 transition-colors ${
+            onClick={() => {
+              // If besties tutorial is active, complete it so profile tutorial can start
+              if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+                tutorial.completeTutorial();
+              }
+            }}
+            className={`flex flex-col items-center gap-1 transition-colors relative ${
               isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
-            }`}
+            } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
+            style={shouldFlashProfile ? {
+              boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+              borderRadius: '12px',
+              padding: '8px',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+            } : {}}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -265,6 +321,16 @@ const Header = () => {
           </Link>
         </div>
       </nav>
+      <style>{`
+        @keyframes glow {
+          from {
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+          }
+          to {
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.8);
+          }
+        }
+      `}</style>
     </>
   );
 };
