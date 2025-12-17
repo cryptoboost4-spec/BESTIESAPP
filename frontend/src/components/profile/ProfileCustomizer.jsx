@@ -54,6 +54,9 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
   const [nameSize, setNameSize] = useState(userData?.profile?.customization?.nameSize || 'md');
   const [bioSize, setBioSize] = useState(userData?.profile?.customization?.bioSize || 'md');
 
+  // Background position customization (0-100, where 50 is center)
+  const [backgroundPositionY, setBackgroundPositionY] = useState(userData?.profile?.customization?.backgroundPositionY ?? 50);
+
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -89,6 +92,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
           bioFont,
           nameSize,
           bioSize,
+          backgroundPositionY,
           // Keep old fields for backward compatibility
           typography: 'elegant',
           photoShape: 'circle',
@@ -120,7 +124,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
       return {
         backgroundImage: `url(${bg.image})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: `center ${backgroundPositionY}%`
       };
     }
     if (bg.svg) {
@@ -235,6 +239,44 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Pick your aesthetic 🎨
                 </p>
+
+                {/* Background Position Slider - Only show for image backgrounds */}
+                {currentBackground?.image && (
+                  <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                        🎯 Adjust Position
+                      </h3>
+                      <button
+                        onClick={() => setBackgroundPositionY(50)}
+                        className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                      Choose which part of the image to display
+                    </p>
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={backgroundPositionY}
+                        onChange={(e) => setBackgroundPositionY(Number(e.target.value))}
+                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>⬆️ Top</span>
+                        <span className="font-semibold text-purple-600 dark:text-purple-400">
+                          {backgroundPositionY}%
+                        </span>
+                        <span>⬇️ Bottom</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {BACKGROUND_CATEGORIES.map(category => {
                   const backgrounds = BACKGROUNDS[category] || [];
                   const illustrated = ILLUSTRATED_BACKGROUNDS[category] || [];
