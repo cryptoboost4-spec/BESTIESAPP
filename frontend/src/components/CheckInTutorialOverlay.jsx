@@ -16,7 +16,6 @@ const CheckInTutorialOverlay = ({
 }) => {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, width: '400px' });
   const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0, rotation: 180 });
-  const [showTooltip] = useState(true);
 
   // Trigger haptic feedback
   const triggerHaptic = () => {
@@ -64,11 +63,10 @@ const CheckInTutorialOverlay = ({
 
   // Calculate tooltip and arrow positions
   useEffect(() => {
-    if (!highlightedElementRef?.current) return;
+    if (!highlightedElementRef?.current || !tooltipConfig) return;
 
     // Detect mobile device (outside function so it can be used in cleanup)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const screenWidth = window.innerWidth;
 
     const calculatePositions = () => {
       const element = highlightedElementRef.current;
@@ -90,7 +88,6 @@ const CheckInTutorialOverlay = ({
         const elementTop = elementRect.top;
         const elementLeft = elementRect.left;
         const elementWidth = elementRect.width;
-        const elementHeight = elementRect.height;
         
         // Center tooltip horizontally over map, position near top of map
         const left = elementLeft + (elementWidth / 2) - (tooltipWidth / 2);
@@ -114,7 +111,6 @@ const CheckInTutorialOverlay = ({
       const bottomNavHeight = 84; // Bottom nav bar height + safe area
       const headerHeight = 80; // Header height + buffer
       const padding = 20;
-      const minSpaceFromEdge = 20;
       
       // Calculate available space
       const availableHeight = screenHeight - headerHeight - bottomNavHeight - (padding * 2);
@@ -230,7 +226,12 @@ const CheckInTutorialOverlay = ({
       element.style.zIndex = originalZIndex;
       element.style.position = originalPosition;
     };
-  }, [highlightedElementRef]);
+  }, [highlightedElementRef, tooltipConfig]);
+
+  // Don't render if no tooltip config (check after all hooks to follow Rules of Hooks)
+  if (!tooltipConfig) {
+    return null;
+  }
 
   // Render tooltip in portal for checkedIn step to appear above modals
   const shouldUsePortal = currentStep === 'checkedIn';
