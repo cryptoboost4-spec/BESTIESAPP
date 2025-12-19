@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
-import TestModeBadge from '../TestModeBadge';
 
 const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete }) => {
   const navigate = useNavigate();
@@ -142,8 +141,6 @@ const QuickMeetModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
         <h2 id="quickmeet-modal-title" className="text-2xl font-display text-text-primary mb-4 flex items-center gap-2">
           <span>👤</span> Quick Meet
         </h2>
-
-        {isTutorialMode && <TestModeBadge />}
 
         {/* Name Input */}
         <div className="mb-6">

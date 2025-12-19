@@ -318,19 +318,24 @@ const CreateCheckInPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, authLoading]);
   
-  // Add mock bestie during tutorial if user has no real besties
+  // During tutorial, show only the mock bestie (filter out real besties)
   useEffect(() => {
     if (!bestiesLoading && showTutorial) {
       const hasMockBestie = besties.some(b => isMockBestie(b));
-      const hasRealBesties = besties.some(b => !isMockBestie(b));
-      
-      if (!hasRealBesties && !hasMockBestie) {
-        // Add mock bestie for tutorial
-        console.log('[Tutorial] Adding mock bestie for tutorial');
-        setBesties(prev => [...prev, MOCK_BESTIE]);
+
+      if (!hasMockBestie) {
+        // Add mock bestie for tutorial and filter out real besties
+        console.log('[Tutorial] Adding mock bestie and filtering out real besties');
+        setBesties([MOCK_BESTIE]);
+      } else {
+        // Mock bestie already exists, just filter out real besties
+        const onlyMockBesties = besties.filter(b => isMockBestie(b));
+        if (onlyMockBesties.length !== besties.length) {
+          setBesties(onlyMockBesties);
+        }
       }
     } else if (!showTutorial) {
-      // Remove mock bestie when tutorial ends
+      // Remove mock bestie when tutorial ends (real besties will reload from Firestore)
       const filteredBesties = besties.filter(b => !isMockBestie(b));
       if (filteredBesties.length !== besties.length) {
         setBesties(filteredBesties);
@@ -733,6 +738,7 @@ const CreateCheckInPage = () => {
             overlayOnElement: true,
             dismissible: true,
             canDismiss: false, // Can't dismiss until location is entered
+            verticalButtons: true, // Stack buttons vertically for better text visibility
             buttons: [
               {
                 text: 'Use My Location',
