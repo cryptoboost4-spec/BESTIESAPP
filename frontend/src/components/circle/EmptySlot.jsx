@@ -1,13 +1,15 @@
 import React from 'react';
 
 const EmptySlot = ({ index, circleBestiesLength, setShowShareModal }) => {
-  const slotColors = [
-    'bg-pink-500',
-    'bg-purple-500',
-    'bg-blue-500',
-    'bg-green-500',
-    'bg-orange-500',
+  const slotStyles = [
+    { border: 'border-pink-500', text: 'text-pink-500', bg: 'bg-pink-500' },
+    { border: 'border-purple-500', text: 'text-purple-500', bg: 'bg-purple-500' },
+    { border: 'border-blue-500', text: 'text-blue-500', bg: 'bg-blue-500' },
+    { border: 'border-green-500', text: 'text-green-500', bg: 'bg-green-500' },
+    { border: 'border-orange-500', text: 'text-orange-500', bg: 'bg-orange-500' },
   ];
+
+  const style = slotStyles[index] || slotStyles[0];
 
   const angle = (index * 72 - 90) * (Math.PI / 180);
   const radius = 45;
@@ -25,7 +27,7 @@ const EmptySlot = ({ index, circleBestiesLength, setShowShareModal }) => {
     >
       <button
         onClick={() => setShowShareModal(true)}
-        className={`w-14 h-14 md:w-16 md:h-16 border-4 border-dashed ${slotColors[index].replace('bg-', 'border-')} rounded-full flex flex-col items-center justify-center ${slotColors[index].replace('bg-', 'text-')} font-bold hover:scale-110 hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl animate-pulse-slow relative group`}
+        className={`w-14 h-14 md:w-16 md:h-16 border-[6px] border-dashed ${style.border} rounded-full flex flex-col items-center justify-center ${style.text} font-bold hover:scale-110 hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl animate-pulse-slow relative group`}
         title="Add someone who has your back"
       >
         <span className="text-2xl">+</span>

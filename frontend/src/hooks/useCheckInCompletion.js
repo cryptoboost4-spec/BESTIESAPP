@@ -39,7 +39,7 @@ export function useCheckInCompletion(checkInId, currentUser) {
           where('type', 'in', ['checkin_reminder', 'checkin_urgent'])
         );
         const notificationsSnapshot = await getDocs(notificationsQuery);
-        const deletePromises = notificationsSnapshot.docs.map(notifDoc => 
+        const deletePromises = notificationsSnapshot.docs.map(notifDoc =>
           deleteDoc(notifDoc.ref)
         );
         await Promise.all(deletePromises);

@@ -13,6 +13,8 @@ const VALID_STEPS = [
   'notesPhotos',
   'final',
   'checkedIn',
+  'sacredTransition',
+  'bestieCircle',
   'afterSafe'
 ];
 
@@ -71,31 +73,47 @@ export const useCheckInTutorialState = () => {
             }
           }
 
-          // Firestore takes precedence if it exists
-          if (firestoreComplete !== localComplete || firestoreStep !== localStep) {
-            console.log('[Tutorial] Firestore state differs from localStorage, updating:', {
-              firestoreComplete,
-              firestoreStep,
-              localComplete,
-              localStep
-            });
-            setCheckInTutorialComplete(firestoreComplete);
-            setCurrentCheckInTutorialStep(firestoreStep);
-
-            // Update localStorage to match Firestore
-            localStorage.setItem('checkInTutorial_complete', firestoreComplete.toString());
-            if (firestoreStep) {
-              localStorage.setItem('current_checkInTutorial_step', firestoreStep);
-            } else {
-              localStorage.removeItem('current_checkInTutorial_step');
+          // [FIX] Priority Logic:
+          // If we have a valid local step (e.g. manually set for testing) and Firestore says "complete" or "null",
+          // TRUST LOCAL STORAGE. Do not overwrite with Firestore data.
+          // This allows developers/testers to manually trigger steps via localStorage.
+          if (localStep && VALID_STEPS.includes(localStep)) {
+            console.log('[Tutorial] Valid local step found. Ignoring Firestore state to allow manual testing override.');
+            // Force Firestore to match our local manual state (optional, but good for persistence)
+            if (firestoreStep !== localStep) {
+              // We won't await this to avoid blocking UI, but we'll try to sync up
+              updateDoc(userRef, {
+                currentCheckInTutorialStep: localStep,
+                checkInTutorialComplete: false
+              }).catch(e => console.error("Failed to sync manual override to FS", e));
             }
           } else {
-            console.log('[Tutorial] Firestore state matches localStorage, no update needed');
+            // Normal Sync Logic
+            if (firestoreComplete !== localComplete || firestoreStep !== localStep) {
+              console.log('[Tutorial] Firestore state differs from localStorage, updating:', {
+                firestoreComplete,
+                firestoreStep,
+                localComplete,
+                localStep
+              });
+              setCheckInTutorialComplete(firestoreComplete);
+              setCurrentCheckInTutorialStep(firestoreStep);
+
+              // Update localStorage to match Firestore
+              localStorage.setItem('checkInTutorial_complete', firestoreComplete.toString());
+              if (firestoreStep) {
+                localStorage.setItem('current_checkInTutorial_step', firestoreStep);
+              } else {
+                localStorage.removeItem('current_checkInTutorial_step');
+              }
+            } else {
+              console.log('[Tutorial] Firestore state matches localStorage, no update needed');
+            }
           }
         } else {
           console.log('[Tutorial] User document does not exist in Firestore');
         }
-        
+
         // Mark sync as complete
         console.log('[Tutorial] Firestore sync completed');
         setTutorialStateLoaded(true);
@@ -137,7 +155,7 @@ export const useCheckInTutorialState = () => {
   // Update current tutorial step
   const setCheckInTutorialStep = async (step) => {
     console.log('[Tutorial] setCheckInTutorialStep called with:', step);
-    
+
     // Validate step is one of the allowed values
     if (step && !VALID_STEPS.includes(step)) {
       console.warn('[Tutorial] Invalid check-in tutorial step attempted:', step, '- ignoring');

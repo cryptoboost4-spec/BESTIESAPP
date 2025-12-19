@@ -28,10 +28,10 @@ const CheckInCard = ({ checkIn }) => {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(checkIn.notes || '');
   const [photoURLs, setPhotoURLs] = useState(
-    checkIn.photoURLs?.length > 0 
-      ? checkIn.photoURLs.filter(url => url && url.trim() !== '') 
-      : checkIn.photoURL 
-        ? [checkIn.photoURL] 
+    checkIn.photoURLs?.length > 0
+      ? checkIn.photoURLs.filter(url => url && url.trim() !== '')
+      : checkIn.photoURL
+        ? [checkIn.photoURL]
         : []
   );
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -43,13 +43,13 @@ const CheckInCard = ({ checkIn }) => {
   // Passcode verification states
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [enteredPasscode, setEnteredPasscode] = useState('');
-  
+
   // Edit time modal state
   const [showEditTimeModal, setShowEditTimeModal] = useState(false);
-  
+
   // File input ref for photo upload
   const fileInputRef = useRef(null);
-  
+
   // Tutorial state
   const { currentCheckInTutorialStep, setCheckInTutorialStep } = useCheckInTutorialState();
   const cardRef = useRef(null);
@@ -58,10 +58,10 @@ const CheckInCard = ({ checkIn }) => {
 
   // Sync photo URLs when checkIn prop changes
   useEffect(() => {
-    const newPhotoURLs = checkIn.photoURLs?.length > 0 
-      ? checkIn.photoURLs.filter(url => url && url.trim() !== '') 
-      : checkIn.photoURL 
-        ? [checkIn.photoURL] 
+    const newPhotoURLs = checkIn.photoURLs?.length > 0
+      ? checkIn.photoURLs.filter(url => url && url.trim() !== '')
+      : checkIn.photoURL
+        ? [checkIn.photoURL]
         : [];
     setPhotoURLs(newPhotoURLs);
   }, [checkIn.photoURLs, checkIn.photoURL]);
@@ -69,14 +69,14 @@ const CheckInCard = ({ checkIn }) => {
   useEffect(() => {
     const calculateTimeLeft = () => {
       // Handle null/undefined alertTime safely
-      const alertTime = optimisticAlertTime || 
+      const alertTime = optimisticAlertTime ||
         (checkIn.alertTime?.toDate ? checkIn.alertTime.toDate() : null);
-      
+
       if (!alertTime) {
         setTimeLeft(0);
         return;
       }
-      
+
       const now = new Date();
       const diff = alertTime - now;
       setTimeLeft(Math.max(0, diff));
@@ -184,14 +184,14 @@ const CheckInCard = ({ checkIn }) => {
     haptic.light();
 
     // Handle null/undefined alertTime safely
-    const currentAlertTime = optimisticAlertTime || 
+    const currentAlertTime = optimisticAlertTime ||
       (checkIn.alertTime?.toDate ? checkIn.alertTime.toDate() : null);
-    
+
     if (!currentAlertTime) {
       toast.error('Unable to extend check-in: missing alert time');
       return;
     }
-    
+
     const newAlertTime = new Date(currentAlertTime.getTime() + minutes * 60 * 1000);
     setOptimisticAlertTime(newAlertTime);
     setExtendingButton(minutes);
@@ -389,12 +389,12 @@ const CheckInCard = ({ checkIn }) => {
       const rego = regoMatch ? regoMatch[1].trim() : '';
       return rego ? `Rideshare - ${rego}` : 'Rideshare';
     }
-    
+
     // Check for walking (notes format: "🚶‍♀️ Walking alone")
     if (checkIn.notes?.includes('🚶‍♀️ Walking alone') || checkIn.notes?.includes('Walking alone')) {
       return 'Walking';
     }
-    
+
     // Check for quick meet - if meetingWith exists and location is empty/not set, it's likely quick meet
     if (checkIn.meetingWith) {
       // If location is not set or is "No location set", it's likely a quick meet
@@ -404,12 +404,12 @@ const CheckInCard = ({ checkIn }) => {
       // Otherwise it's a custom check-in with meetingWith, so just show the name
       return checkIn.meetingWith;
     }
-    
+
     // Custom check-in: use location if available
     if (currentLocation && currentLocation !== 'No location set') {
       return currentLocation;
     }
-    
+
     // Fallback to default
     return 'Active Check-in';
   };
@@ -460,21 +460,20 @@ const CheckInCard = ({ checkIn }) => {
               </span>
             )}
           </div>
-          <div className="text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400">
+          <div className="text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400 font-mono tabular-nums min-w-[140px] text-right">
             {timeLeft === 0 ? '00:00:00' : formatTimeDisplay(timeLeft)}
           </div>
         </div>
 
         {/* Progress bar */}
         <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-gray-700 shadow-inner">
-          <div 
-            className={`h-full rounded-full transition-all duration-300 ${
-              isAlerted 
-                ? 'bg-gradient-to-r from-red-500 to-red-600' 
-                : isEndingSoon()
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${isAlerted
+              ? 'bg-gradient-to-r from-red-500 to-red-600'
+              : isEndingSoon()
                 ? 'bg-gradient-to-r from-accent to-orange-400'
                 : 'bg-gradient-to-r from-primary to-secondary'
-            }`}
+              }`}
             style={{ width: `${getProgressPercentage()}%` }}
           />
         </div>
@@ -482,7 +481,7 @@ const CheckInCard = ({ checkIn }) => {
         {/* Status message */}
         {!isAlerted && (
           <p className="text-sm font-semibold text-text-secondary dark:text-gray-400">
-            {isEndingSoon() 
+            {isEndingSoon()
               ? "Just a little longer! Let your guardians know you're safe."
               : "Your besties are watching over you. Check in when you're safe!"}
           </p>
@@ -561,7 +560,6 @@ const CheckInCard = ({ checkIn }) => {
                 icon: '💜'
               });
               await handleComplete();
-              // The step will advance in SafeLoader/HomePage after check-in completes
             } else {
               await handleComplete();
             }
@@ -666,7 +664,7 @@ const CheckInCard = ({ checkIn }) => {
         isOpen={showEditTimeModal}
         onClose={() => setShowEditTimeModal(false)}
         checkInId={checkIn.id}
-        currentAlertTime={optimisticAlertTime || 
+        currentAlertTime={optimisticAlertTime ||
           (checkIn.alertTime?.toDate ? checkIn.alertTime.toDate() : new Date())}
         onTimeUpdated={(newTime) => setOptimisticAlertTime(newTime)}
         isDark={isDark}
@@ -704,7 +702,7 @@ const CheckInCard = ({ checkIn }) => {
 export default memo(CheckInCard, (prevProps, nextProps) => {
   // Only re-render if checkIn data actually changed
   return prevProps.checkIn?.id === nextProps.checkIn?.id &&
-         prevProps.checkIn?.status === nextProps.checkIn?.status &&
-         prevProps.checkIn?.alertTime?.toMillis?.() === nextProps.checkIn?.alertTime?.toMillis?.() &&
-         JSON.stringify(prevProps.checkIn?.photoURLs) === JSON.stringify(nextProps.checkIn?.photoURLs);
+    prevProps.checkIn?.status === nextProps.checkIn?.status &&
+    prevProps.checkIn?.alertTime?.toMillis?.() === nextProps.checkIn?.alertTime?.toMillis?.() &&
+    JSON.stringify(prevProps.checkIn?.photoURLs) === JSON.stringify(nextProps.checkIn?.photoURLs);
 });

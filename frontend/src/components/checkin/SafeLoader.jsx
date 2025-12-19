@@ -8,13 +8,13 @@ const SafeLoader = ({ isFirstCheckIn = false }) => {
   const navigate = useNavigate();
   const { userData } = useAuth();
   const { currentCheckInTutorialStep, setCheckInTutorialStep } = useCheckInTutorialState();
-  
+
   const firstCheckInMessages = [
     { text: "🎉 Your First Check-In Complete!", subtext: "You're building amazing safety habits! Your besties are proud of you 💜" },
     { text: "🌟 You Did It!", subtext: "Your first check-in is complete! You're taking care of yourself like a pro ✨" },
     { text: "💜 Welcome to Safety!", subtext: "You just completed your first check-in! This is the start of something great 🎊" },
   ];
-  
+
   const regularMessages = [
     { text: "Welcome home, beautiful! 💖", subtext: "We're so relieved you're safe" },
     { text: "You made it safely! ✨", subtext: "Your besties can rest easy now" },
@@ -26,23 +26,25 @@ const SafeLoader = ({ isFirstCheckIn = false }) => {
   // Use prop if provided (most reliable), otherwise check stats
   // Note: Stats update asynchronously, so prop from CheckInCard is more accurate
   const isFirst = isFirstCheckIn !== undefined && isFirstCheckIn !== null
-    ? isFirstCheckIn 
+    ? isFirstCheckIn
     : ((userData?.stats?.completedCheckIns || 0) === 0);
-  
+
   // Lock in message pool and confetti count based on initial state
   const messagePool = isFirst ? firstCheckInMessages : regularMessages;
   const confettiCount = isFirst ? 20 : 12;
-  
+
   // Pick one random message (locked in on mount)
   const [message] = useState(() => messagePool[Math.floor(Math.random() * messagePool.length)]);
 
   // Redirect to home after 2 seconds and advance tutorial if needed
   useEffect(() => {
     const timer = setTimeout(() => {
-      // If in checkedIn tutorial step, advance to afterSafe step
+      // If in checkedIn tutorial step, advance to afterSafe step (intermediate congratulatory tooltip)
       if (currentCheckInTutorialStep === 'checkedIn') {
+        console.log('[SafeLoader] Setting tutorial step to afterSafe');
         setCheckInTutorialStep('afterSafe');
       }
+      console.log('[SafeLoader] Navigating to home page');
       navigate('/');
     }, 2000);
     return () => clearTimeout(timer);
@@ -107,13 +109,13 @@ const SafeLoader = ({ isFirstCheckIn = false }) => {
           {/* Celebrating animation */}
           <div className="flex justify-center items-center gap-2 md:gap-3 mb-4 md:mb-6">
             <span className="text-2xl md:text-3xl animate-bounce-gentle">🎉</span>
-            <span className="text-2xl md:text-3xl animate-bounce-gentle" style={{animationDelay: '0.2s'}}>💚</span>
-            <span className="text-2xl md:text-3xl animate-bounce-gentle" style={{animationDelay: '0.4s'}}>✨</span>
+            <span className="text-2xl md:text-3xl animate-bounce-gentle" style={{ animationDelay: '0.2s' }}>💚</span>
+            <span className="text-2xl md:text-3xl animate-bounce-gentle" style={{ animationDelay: '0.4s' }}>✨</span>
           </div>
 
           {/* Gentle reminder - special message for first check-in */}
           <p className="text-xs text-gray-400 dark:text-gray-500 italic">
-            {isFirst 
+            {isFirst
               ? "You're building amazing safety habits! Keep it up! 💜"
               : "Until next time, stay safe bestie! 💕"
             }
