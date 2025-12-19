@@ -72,7 +72,7 @@ const PricingTiers = () => {
         <div className="border-2 border-blue-300 dark:border-blue-600 rounded-xl p-5 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-display text-text-primary">Essential</h3>
-            <span className="text-2xl font-display text-blue-600">$1.99<span className="text-sm">/mo</span></span>
+            <span className="text-2xl font-display text-blue-600">$2<span className="text-sm">/mo</span></span>
           </div>
           <p className="text-xs text-text-secondary mb-3">Everything in Free, plus:</p>
           <ul className="text-sm text-text-secondary space-y-2">

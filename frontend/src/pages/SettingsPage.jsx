@@ -179,14 +179,40 @@ const SettingsPage = () => {
         return;
       }
 
-      // NEW: Check if user has credits
+      // NEW: Check if user has credits (with expiration checking like backend)
       if (!currentValue) {
         // Fetch current credit balance
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         const smsCredits = userDoc.data()?.smsCredits || {};
-        const balance = (smsCredits.freeCredits || 0) +
-                       (smsCredits.subscriptionCredits || 0) +
-                       (smsCredits.extraCredits || 0);
+        const now = Date.now();
+
+        // Check free credits expiration
+        let freeCredits = smsCredits.freeCredits || 0;
+        const freeExpiresAt = smsCredits.freeCreditsExpireAt;
+        if (freeExpiresAt) {
+          const expiresAtMs = freeExpiresAt.toMillis ? freeExpiresAt.toMillis() : freeExpiresAt;
+          if (now > expiresAtMs) {
+            freeCredits = 0;
+          }
+        }
+
+        // Subscription credits (backend doesn't expire them here, just checks if > 0)
+        let subscriptionCredits = smsCredits.subscriptionCredits || 0;
+
+        // Check extra purchased credits expiration
+        let extraCredits = 0;
+        const extraPurchases = smsCredits.extraPurchases || [];
+        extraPurchases.forEach(purchase => {
+          const expiresAt = purchase.expiresAt;
+          if (expiresAt) {
+            const expiresAtMs = expiresAt.toMillis ? expiresAt.toMillis() : expiresAt;
+            if (now < expiresAtMs && purchase.creditsRemaining > 0) {
+              extraCredits += purchase.creditsRemaining || 0;
+            }
+          }
+        });
+
+        const balance = freeCredits + subscriptionCredits + extraCredits;
 
         if (balance < 1) {
           toast.error('You have no SMS credits. Purchase credits in Settings to enable SMS alerts.', {
@@ -261,7 +287,7 @@ const SettingsPage = () => {
         hold_data: newValue
       });
 
-      toast.success(newValue ? 'Data will be kept indefinitely' : 'Data will be deleted after 24h');
+      toast.success(newValue ? 'Data will be kept indefinitely' : 'Data will be deleted after 7 days');
     } catch (error) {
       console.error('Error updating data retention:', error);
       toast.error('Failed to update setting');
@@ -810,8 +836,8 @@ const SettingsPage = () => {
                 <p className="font-semibold mb-1">Important to Know:</p>
                 <ul className="list-disc ml-4 space-y-1">
                   <li>SMS messages are expensive to send</li>
-                  <li>Once WhatsApp and Facebook integrations launch, SMS will become a premium feature ($1/month for up to 20 alerts)</li>
-                  <li>We recommend using email or WhatsApp for unlimited free alerts</li>
+                  <li>We recommend using Telegram or email for unlimited free alerts</li>
+                  <li>SMS is available as a premium feature ($2/month for 15 credits)</li>
                 </ul>
               </div>
 

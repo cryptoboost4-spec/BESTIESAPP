@@ -27,6 +27,7 @@ export const useSimpleTutorial = (tutorialKey) => {
   useEffect(() => {
     setIsReady(true);
     console.log(`[${tutorialKey} Tutorial] Hook ready. isComplete:`, isComplete);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Show tutorial if NOT complete and ready

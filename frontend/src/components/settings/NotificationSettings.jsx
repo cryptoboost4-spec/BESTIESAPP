@@ -30,17 +30,26 @@ const NotificationSettings = ({
                 Telegram
                 <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Free & Unlimited</span>
                 <InfoButton 
-                  message="Connect Telegram for free mobile alerts. Toggle on to connect." 
-                  detailedMessage="Connect your Telegram account to receive free, unlimited safety alerts. When you toggle this on, it opens Telegram to connect with our bot. Send /start to complete the connection. Works great for mobile alerts!" 
+                  message="Connect Telegram for free mobile alerts. Click to connect." 
+                  detailedMessage="Connect your Telegram account to receive free, unlimited safety alerts. Click the button to open Telegram and connect with our bot. Send /start to complete the connection. Works great for mobile alerts!" 
                 />
+              </div>
+              <div className="text-sm text-text-secondary mt-1">
+                {!userData?.telegramChatId 
+                  ? 'Not connected - Click to connect'
+                  : userData?.notificationPreferences?.telegram
+                  ? 'Connected and enabled'
+                  : 'Connected but disabled'}
               </div>
             </div>
             <button
               onClick={async () => {
                 if (!userData?.telegramChatId) {
-                  // Auto-connect when toggling on
+                  // Just open the bot link, don't toggle until connected
                   handleConnectTelegram();
+                  return;
                 }
+                // Only toggle if already connected
                 toggleNotification('telegram');
               }}
               className={`w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${
@@ -53,7 +62,7 @@ const NotificationSettings = ({
             >
               <div
                 className={`w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform ${
-                  userData?.notificationPreferences?.telegram
+                  userData?.notificationPreferences?.telegram && userData?.telegramChatId
                     ? 'translate-x-6'
                     : 'translate-x-1'
                 }`}

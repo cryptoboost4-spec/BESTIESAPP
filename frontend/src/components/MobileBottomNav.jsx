@@ -134,7 +134,7 @@ const MobileBottomNav = () => {
   // Besties button should flash during post-tutorial flow when user needs to click it
   const shouldFlashBesties = (postTutorialStep === 'click-besties-tab') && !isActive('/besties');
   // Track if Besties tooltip is dismissed (so Profile button only shows when tooltip is visible)
-  const [bestiesTooltipDismissed, setBestiesTooltipDismissed] = useState(() => {
+  const [, setBestiesTooltipDismissed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('besties_tooltip_dismissed') === 'true';
     }

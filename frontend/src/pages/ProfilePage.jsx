@@ -22,6 +22,7 @@ import { clearAllTutorialState } from '../utils/tutorialHelpers';
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
+  // eslint-disable-next-line no-unused-vars
   const location = useLocation();
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
