@@ -155,43 +155,10 @@ const OnboardingPage = () => {
         <div className="max-w-md w-full text-center space-y-6">
           <div className="text-8xl mb-6 animate-bounce">💜</div>
           <h1 className="text-4xl font-display text-white mb-4">Welcome to Besties!</h1>
-          <p className="text-xl text-white/90 mb-6">
-            Your personal safety network in your pocket
+          <p className="text-xl text-white/90 mb-8">
+            Let's confirm a few details, then we'll show you how it works.
           </p>
-          
-          {/* Information cards from deleted slides */}
-          <div className="space-y-4 mb-8 text-left">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border-2 border-white/30">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">⏰</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">How It Works</h3>
-                  <p className="text-sm text-white/90">Create a check-in with a time limit. If you don't mark yourself safe before time runs out, your besties get alerted.</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border-2 border-white/30">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">💜</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">Your Safety Network</h3>
-                  <p className="text-sm text-white/90">Add up to 5 besties to your circle. They'll be notified if you miss a check-in, so they can make sure you're okay.</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border-2 border-white/30">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">📱</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">Stay Connected</h3>
-                  <p className="text-sm text-white/90">Your besties get SMS alerts when you miss a check-in. They can also see your location and notes from your last check-in.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
+
           <button
             onClick={() => setStep('name')}
             className="btn bg-white dark:bg-gray-800 text-primary hover:bg-white/90 dark:hover:bg-gray-700 text-lg px-8 py-4 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary"

@@ -9,13 +9,13 @@ export const MOCK_BESTIE = {
   name: 'Demo Bestie',
   email: 'demo@besties.app',
   photoURL: null,
-  phone: null,
-  smsEnabled: false,
+  phone: '+1 (555) 123-4567', // Fake phone number for tutorial
+  smsEnabled: true,
   telegramChatId: null,
   notificationPreferences: {
     telegram: false,
     push: false,
-    sms: false
+    sms: true
   },
   requestAttention: false,
   isMock: true, // Flag to identify this as a mock bestie
