@@ -13,4 +13,6 @@ export const isOnline = () => {
     return navigator.onLine;
 };
 
-export default { ensureOnline, isOnline };
+const networkCheck = { ensureOnline, isOnline };
+
+export default networkCheck;

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import TutorialOverlay from '../../TutorialOverlay';
 
 /**
- * ProfileTutorialOverlay - Simplified tutorial for Profile page
- * Only shows step 2: Customize Your Background
+ * ProfileTutorialOverlay - Single tooltip for Profile page
+ * Explains this is the profile page and to go through it all, then click settings
  */
 const ProfileTutorialOverlay = ({
   currentStep,
@@ -11,58 +11,36 @@ const ProfileTutorialOverlay = ({
   onBack,
   onSkip,
   isPaused,
-  onPause,
-  onResume,
-  refs,
-  profileCompletion = 0,
-  onLater
+  refs
 }) => {
   const [tooltipConfig, setTooltipConfig] = useState(null);
 
   useEffect(() => {
-    if (!currentStep || !refs) return;
+    if (!currentStep || currentStep !== 1) return;
 
-    // Only show step 2 (Customize Your Background)
-    if (currentStep === 2) {
-      const config = {
-        title: 'Customize Your Background',
-        body: "You can change your background from here! Choose from different styles, colors, and themes to make your profile stand out. Express yourself! ✨",
-        buttonText: 'I\'ll do it later',
-        position: 'below',
-        highlightedElementRef: refs.customizerButton,
-        onLater: onLater // Callback for "I'll do it later" button
-      };
+    // Single step tutorial - explain the profile page
+    const config = {
+      title: '💜 This is Your Profile Page!',
+      body: `This is your profile! Scroll through everything here to explore all your stats, badges, and settings. When you're ready to move on, click the Settings button at the bottom.`,
+      buttonText: 'Got it',
+      position: 'auto',
+      highlightedElementRef: refs?.profileCard || { current: null }
+    };
 
-      // Smooth transition animation
-      setTooltipConfig(null);
-      setTimeout(() => {
-        setTooltipConfig(config);
-      }, 150);
-    } else {
-      setTooltipConfig(null);
-    }
-  }, [currentStep, refs, onLater]);
+    setTooltipConfig(config);
+  }, [currentStep, refs]);
 
-  if (!currentStep || currentStep !== 2 || !tooltipConfig) return null;
-
-  // Handle "I'll do it later" button click
-  const handleNext = () => {
-    if (tooltipConfig.onLater) {
-      tooltipConfig.onLater();
-    } else {
-      onNext();
-    }
-  };
+  if (!currentStep || currentStep !== 1 || !tooltipConfig) return null;
 
   return (
     <TutorialOverlay
       currentStep={currentStep}
-      onStepComplete={handleNext}
+      onStepComplete={onNext}
       onStepBack={onBack}
       onTutorialComplete={onSkip}
       highlightedElementRef={tooltipConfig.highlightedElementRef}
       tooltipConfig={tooltipConfig}
-      stepNumber={2}
+      stepNumber={1}
       totalSteps={1}
       isPaused={isPaused}
     />

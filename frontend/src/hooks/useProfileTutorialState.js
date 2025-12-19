@@ -54,7 +54,7 @@ export const useProfileTutorialState = () => {
 
   const startTutorial = () => {
     setTutorialActive(true);
-    setCurrentStep(2); // Start at step 2 (Customize Your Background)
+    setCurrentStep(1); // Single step tutorial
   };
 
   const nextStep = () => {

@@ -18,8 +18,6 @@ import OfflineBanner from '../components/OfflineBanner';
 import { useProfileTutorialState } from '../hooks/useProfileTutorialState';
 import ProfileTutorialWelcome from '../components/tutorials/profile/ProfileTutorialWelcome';
 import ProfileTutorialOverlay from '../components/tutorials/profile/ProfileTutorialOverlay';
-import ProfileScrollTooltip from '../components/tutorials/profile/ProfileScrollTooltip';
-import MiniModeTooltip from '../components/tutorials/MiniModeTooltip';
 import CelebrationToast from '../components/tutorials/CelebrationToast';
 
 const ProfilePage = () => {
@@ -52,6 +50,25 @@ const ProfilePage = () => {
   // Tutorial state
   const tutorial = useProfileTutorialState();
 
+  // Auto-start tutorial when coming from Besties page (after clicking Profile button)
+  useEffect(() => {
+    // Check if we're coming from Besties tutorial
+    const fromBestiesTutorial = location.state?.fromBestiesTutorial || 
+                                (typeof window !== 'undefined' && sessionStorage.getItem('fromBestiesTutorial') === 'true');
+    
+    if (fromBestiesTutorial && !tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive) {
+      // Clear the flag
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('fromBestiesTutorial');
+      }
+      // Auto-start tutorial
+      tutorial.startTutorial();
+      if (typeof window !== 'undefined' && window.analytics) {
+        window.analytics.track('tutorial_started', { page: 'profile', auto_started: true, from: 'besties' });
+      }
+    }
+  }, [location.state, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, tutorial]);
+
   // Handle tutorial restart from navigation state
   useEffect(() => {
     if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
@@ -70,9 +87,6 @@ const ProfilePage = () => {
   const badgesSectionRef = useRef(null);
   const statsSectionRef = useRef(null);
   const settingsButtonRef = useRef(null);
-  
-  // State for post-tutorial tooltip (scroll through profile)
-  const [showScrollTooltip, setShowScrollTooltip] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -602,8 +616,7 @@ const ProfilePage = () => {
               }
             }}
             onCustomizerSave={() => {
-              // Show scroll tooltip when user saves background
-              setShowScrollTooltip(true);
+              // Customizer saved
             }}
           />
         </div>
@@ -614,7 +627,7 @@ const ProfilePage = () => {
             profileCompletion={profileCompletion}
             animatedProgress={animatedProgress}
             onTaskNavigation={handleTaskNavigation}
-            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 3}
+            disableInteractions={false}
           />
         </div>
 
@@ -635,7 +648,7 @@ const ProfilePage = () => {
             featuredBadgeIds={featuredBadgeIds}
             setFeaturedBadgeIds={setFeaturedBadgeIds}
             setConfettiTrigger={setConfettiTrigger}
-            disableInteractions={tutorial.tutorialActive && tutorial.currentStep === 4}
+            disableInteractions={false}
           />
         </div>
 
@@ -666,13 +679,11 @@ const ProfilePage = () => {
         <div className="space-y-3" ref={settingsButtonRef}>
           <button
             onClick={() => {
-              if (tutorial.tutorialActive && tutorial.currentStep === 6) {
-                tutorial.completeTutorial().then(() => {
-                  navigate('/settings');
-                });
-              } else {
-                navigate('/settings');
+              // Complete tutorial when Settings is clicked (if tutorial was shown)
+              if (!tutorial.isCompleted) {
+                tutorial.completeTutorial();
               }
+              navigate('/settings');
             }}
             className="w-full btn btn-secondary"
           >
@@ -704,111 +715,40 @@ const ProfilePage = () => {
         />
       )}
 
-      {/* Tutorial Overlay */}
-      {tutorial.tutorialActive && tutorial.currentStep && (
+      {/* Tutorial Overlay - Single step tutorial */}
+      {tutorial.tutorialActive && tutorial.currentStep === 1 && (
         <ProfileTutorialOverlay
           currentStep={tutorial.currentStep}
           onNext={() => {
-            // Track step completion
+            // User clicked "Got it" - dismiss tooltip
+            // User can explore profile, then click Settings when ready
             if (typeof window !== 'undefined' && window.analytics) {
               window.analytics.track('tutorial_step_completed', {
                 page: 'profile',
-                step: tutorial.currentStep,
-                total_steps: 6
+                step: 1,
+                action: 'got_it'
               });
             }
-
-            if (tutorial.currentStep === 6) {
-              // Last step - complete tutorial
-              if (typeof window !== 'undefined' && window.analytics) {
-                window.analytics.track('tutorial_completed', {
-                  page: 'profile',
-                  total_steps: 6
-                });
-              }
-              tutorial.completeTutorial().then(() => {
-                setShowCelebration(true);
-              });
-            } else {
-              tutorial.nextStep();
-            }
+            // Don't complete tutorial yet - wait for Settings click
+            tutorial.setTutorialActive(false);
+            tutorial.setCurrentStep(null);
           }}
           onBack={() => {
-            if (tutorial.currentStep > 1) {
-              tutorial.setCurrentStep(tutorial.currentStep - 1);
-            }
+            // No back button for single step
           }}
           onSkip={() => {
             if (typeof window !== 'undefined' && window.analytics) {
               window.analytics.track('tutorial_skipped', {
                 page: 'profile',
-                at_step: tutorial.currentStep
+                at_step: 1
               });
             }
             tutorial.skipTutorial();
           }}
           isPaused={tutorial.isPaused}
-          onPause={() => {
-            tutorial.pauseTutorial();
-            // No longer opening customizer for step 2
-            // Step 4 (badges) doesn't need any action either since we removed requiresInteraction
-          }}
-          onResume={() => {
-            tutorial.resumeTutorial();
-          }}
           refs={{
-            profileCard: profileCardRef,
-            customizerButton: customizerButtonRef, // Use specific ref for customizer button
-            profileCompletion: profileCompletionRef,
-            badgesSection: badgesSectionRef,
-            statsSection: statsSectionRef,
-            settingsButton: settingsButtonRef
+            profileCard: profileCardRef
           }}
-          profileCompletion={profileCompletion.percentage}
-          onLater={() => {
-            // User clicked "I'll do it later" - close tutorial and show scroll tooltip
-            tutorial.setTutorialActive(false);
-            tutorial.setCurrentStep(null);
-            setShowScrollTooltip(true);
-          }}
-        />
-      )}
-
-      {/* Scroll Tooltip - Shows after user dismisses customize background tooltip */}
-      {showScrollTooltip && (
-        <ProfileScrollTooltip
-          onContinue={() => {
-            setShowScrollTooltip(false);
-            tutorial.completeTutorial();
-          }}
-          onSkip={() => {
-            setShowScrollTooltip(false);
-            tutorial.completeTutorial();
-          }}
-        />
-      )}
-
-      {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
-      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && tutorial.currentStep !== 2 && (
-        <MiniModeTooltip
-          message={
-            tutorial.currentStep === 4
-              ? "Explore the badges! Tap any badge to see how to earn it. When you're done, click Continue."
-              : "Take your time exploring! Click Continue when you're ready."
-          }
-          progressDots={Array.from({ length: 6 }, (_, i) => ({
-            filled: i < tutorial.currentStep
-          }))}
-          onContinue={() => {
-            tutorial.resumeTutorial();
-            // Auto-advance after interaction
-            if (tutorial.currentStep === 4) {
-              setTimeout(() => {
-                tutorial.nextStep();
-              }, 300);
-            }
-          }}
-          onSkip={tutorial.skipTutorial}
         />
       )}
 

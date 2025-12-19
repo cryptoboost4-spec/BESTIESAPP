@@ -1,7 +1,6 @@
 import { db } from './firebase';
 import { collection, addDoc, query, where, getDocs, Timestamp, limit, orderBy } from 'firebase/firestore';
 import { logAnalyticsEvent } from './firebase';
-import { ensureOnline } from '../utils/networkCheck';
 
 /**
  * Circle Check-In Service - Handles daily wellness check-ins
@@ -155,10 +154,12 @@ export const getUserCircleCheckIns = async (userId, limitCount = 30) => {
     }
 };
 
-export default {
+const circleCheckInService = {
     MOODS,
     canCreateCircleCheckIn,
     createCircleCheckIn,
     getVisibleCircleCheckIns,
     getUserCircleCheckIns
 };
+
+export default circleCheckInService;

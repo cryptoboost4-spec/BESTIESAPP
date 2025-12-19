@@ -211,10 +211,10 @@ const ActivityFeed = ({
             {activity.type === 'post' && (
               <div>
                 {/* Support Request - Special styling */}
-                {activity.postData.isSupportRequest ? (
+                {activity.postData?.isSupportRequest ? (
                   <div className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-xl p-4 border-2 border-pink-300 dark:border-pink-600">
                     <div className="flex items-start gap-2 md:gap-3 mb-3">
-                      {activity.postData.userPhoto ? (
+                      {activity.postData?.userPhoto ? (
                         <img
                           src={activity.postData.userPhoto}
                           alt={activity.userName}
@@ -245,7 +245,7 @@ const ActivityFeed = ({
                     {/* Support request content */}
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-3">
                       <p className="text-base md:text-lg font-semibold text-center text-gray-900 dark:text-gray-100 mb-2">
-                        {activity.postData.supportTag}
+                        {activity.postData?.supportTag}
                       </p>
                       <p className="text-sm text-center text-gray-600 dark:text-gray-400">
                         Reach out if you can help! 💜
@@ -257,7 +257,7 @@ const ActivityFeed = ({
                       <SupportActionsDropdown
                         recipientId={activity.userId}
                         recipientName={activity.userName}
-                        recipientPhone={activity.postData.userPhone}
+                        recipientPhone={activity.postData?.userPhone}
                         contextType="needs_attention"
                         contextId={activity.id}
                       />
@@ -267,7 +267,7 @@ const ActivityFeed = ({
                   /* Regular post */
                   <>
                     <div className="flex items-start gap-2 md:gap-3 mb-3">
-                      {activity.postData.userPhoto ? (
+                      {activity.postData?.userPhoto ? (
                         <img
                           src={activity.postData.userPhoto}
                           alt={activity.userName}
@@ -296,14 +296,14 @@ const ActivityFeed = ({
                     </div>
 
                     {/* Post Content */}
-                    {activity.postData.text && (
+                    {activity.postData?.text && (
                       <p className="text-sm md:text-base text-text-primary mb-3 whitespace-pre-wrap break-words">
                         {activity.postData.text}
                       </p>
                     )}
 
                     {/* Post Photo */}
-                    {activity.postData.photoURL && (
+                    {activity.postData?.photoURL && (
                       <img
                         src={activity.postData.photoURL}
                         alt="Post"
@@ -316,7 +316,7 @@ const ActivityFeed = ({
                     <div className="flex items-center justify-between mt-1">
                       <PostReactions
                         postId={activity.id}
-                        initialCounts={activity.postData.reactionCounts}
+                        initialCounts={activity.postData?.reactionCounts || {}}
                       />
 
                       {/* Comments Button on Right */}
@@ -326,7 +326,7 @@ const ActivityFeed = ({
                       >
                         <span>💬</span>
                         <span>
-                          {activity.postData.commentCount > 0
+                          {(activity.postData?.commentCount || 0) > 0
                             ? `${activity.postData.commentCount} ${activity.postData.commentCount === 1 ? 'comment' : 'comments'}`
                             : 'Add a comment'
                           }

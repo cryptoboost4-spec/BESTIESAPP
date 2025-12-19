@@ -22,7 +22,6 @@ import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
-import FloatingNotificationBell from '../components/FloatingNotificationBell';
 import CircleCheckInCard from '../components/circleCheckin/CircleCheckInCard';
 import { useActivityFeed } from '../hooks/useActivityFeed';
 import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
@@ -48,8 +47,99 @@ const BestiesPage = () => {
   // Mock posts for tutorial
   const [mockTutorialPosts, setMockTutorialPosts] = useState([]);
 
+  // Track if the first tooltip was dismissed (so Profile button appears and flashes)
+  const [tooltipDismissed, setTooltipDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('besties_tooltip_dismissed') === 'true';
+    }
+    return false;
+  });
+  const autoStartAttempted = useRef(false);
+
   // Tutorial state
   const tutorial = useBestiesTutorialState();
+  
+  // Auto-start tutorial on first visit OR when coming from "click-besties-tab" step
+  useEffect(() => {
+    // Check if we're coming from the "Ready to Learn More?" tooltip (click-besties-tab step)
+    const fromClickBestiesTab = typeof window !== 'undefined' && 
+                                localStorage.getItem('bestieCircle_postTutorialStep') === 'click-besties-tab';
+    
+    // If coming from click-besties-tab, reset tutorial state to allow it to start
+    if (fromClickBestiesTab && tutorial.isCompleted && !tutorial.tutorialActive && !tutorial.isLoading) {
+      // Reset the tutorial so it can start again
+      const resetAndStart = async () => {
+        await tutorial.resetTutorial();
+        // Reset autoStartAttempted flag
+        autoStartAttempted.current = false;
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          tutorial.startTutorial();
+          // Reset tooltip dismissed state when tutorial starts
+          setTooltipDismissed(false);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('besties_tooltip_dismissed');
+            window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
+              detail: { dismissed: false }
+            }));
+          }
+          if (typeof window !== 'undefined' && window.analytics) {
+            window.analytics.track('tutorial_started', { 
+              page: 'besties', 
+              auto_started: true,
+              from_click_besties_tab: true
+            });
+          }
+        }, 200);
+      };
+      resetAndStart();
+      return;
+    }
+    
+    // If coming from click-besties-tab, reset autoStartAttempted to allow tutorial to start
+    if (fromClickBestiesTab && autoStartAttempted.current) {
+      autoStartAttempted.current = false;
+    }
+    
+    // Only auto-start if:
+    // - Tutorial is not loading
+    // - Tutorial is not completed (unless coming from click-besties-tab, handled above)
+    // - Tutorial is not already active
+    // - Not coming from a notification
+    // - (Not already attempted to auto-start OR coming from click-besties-tab step)
+    if (
+      !tutorial.isLoading &&
+      !tutorial.isCompleted &&
+      !tutorial.tutorialActive &&
+      !location.state?.fromNotification &&
+      !location.state?.restartTutorial &&
+      (!autoStartAttempted.current || fromClickBestiesTab)
+    ) {
+      if (!fromClickBestiesTab) {
+        autoStartAttempted.current = true;
+      }
+      // Small delay to ensure page is fully rendered
+      const timer = setTimeout(() => {
+        tutorial.startTutorial();
+        // Reset tooltip dismissed state when tutorial starts
+        setTooltipDismissed(false);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('besties_tooltip_dismissed');
+          window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
+            detail: { dismissed: false }
+          }));
+        }
+        if (typeof window !== 'undefined' && window.analytics) {
+          window.analytics.track('tutorial_started', { 
+            page: 'besties', 
+            auto_started: true,
+            from_click_besties_tab: fromClickBestiesTab
+          });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [tutorial, location.state?.fromNotification, location.state?.restartTutorial]);
   
   // Handle tutorial restart from navigation state
   useEffect(() => {
@@ -62,10 +152,25 @@ const BestiesPage = () => {
     }
   }, [location.state, tutorial]);
 
+  // Reset tooltipDismissed when tutorial starts
+  useEffect(() => {
+    if (tutorial.tutorialActive && tutorial.currentStep === 1 && tooltipDismissed) {
+      // Reset tooltip dismissed state when tutorial starts
+      setTooltipDismissed(false);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('besties_tooltip_dismissed');
+        window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
+          detail: { dismissed: false }
+        }));
+      }
+    }
+  }, [tutorial.tutorialActive, tutorial.currentStep, tooltipDismissed]);
+
   // Create mock tutorial posts when tutorial becomes active
   useEffect(() => {
     if (tutorial.tutorialActive && tutorial.currentStep === 1) {
       // Create informative mock posts from Demo Bestie explaining the besties page
+      // Structure must match what ActivityFeed expects (with postData wrapper)
       const mockPosts = [
         {
           id: 'mock-1',
@@ -73,11 +178,15 @@ const BestiesPage = () => {
           userId: 'demo-user',
           userName: 'Demo Bestie',
           userPhoto: null,
-          text: "Hey bestie! 💜 Welcome to your Besties page! This is your private social space where you'll see check-ins and posts from your besties. This activity feed shows everything your besties share - it's like a private timeline just for your safety network!",
-          photoURL: null,
-          createdAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
-          timestamp: new Date(Date.now() - 10 * 60 * 1000),
-          isMockTutorial: true
+          timestamp: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+          isMockTutorial: true,
+          postData: {
+            text: "Hey bestie! 💜 Welcome to your Besties page! This is your private social space where you'll see check-ins and posts from your besties. This activity feed shows everything your besties share - it's like a private timeline just for your safety network!",
+            photoURL: null,
+            isSupportRequest: false,
+            commentCount: 0,
+            reactionCounts: {}
+          }
         },
         {
           id: 'mock-2',
@@ -85,11 +194,15 @@ const BestiesPage = () => {
           userId: 'demo-user',
           userName: 'Demo Bestie',
           userPhoto: null,
-          text: "You'll see check-ins here when your besties create them - like when they're on a date, taking a rideshare, or walking alone. If they don't check in on time, you'll get an alert so you can make sure they're safe! 🛡️",
-          photoURL: null,
-          createdAt: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
-          timestamp: new Date(Date.now() - 8 * 60 * 1000),
-          isMockTutorial: true
+          timestamp: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
+          isMockTutorial: true,
+          postData: {
+            text: "You'll see check-ins here when your besties create them - like when they're on a date, taking a rideshare, or walking alone. If they don't check in on time, you'll get an alert so you can make sure they're safe! 🛡️",
+            photoURL: null,
+            isSupportRequest: false,
+            commentCount: 0,
+            reactionCounts: {}
+          }
         },
         {
           id: 'mock-3',
@@ -97,11 +210,15 @@ const BestiesPage = () => {
           userId: 'demo-user',
           userName: 'Demo Bestie',
           userPhoto: null,
-          text: "You can also share posts here - updates, photos, or just how you're feeling! Everything is private and only visible to your besties. Scroll down to see all your besties and their connection info. When you're ready, click the Profile button below to continue learning about the app! 💜",
-          photoURL: null,
-          createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-          timestamp: new Date(Date.now() - 5 * 60 * 1000),
-          isMockTutorial: true
+          timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+          isMockTutorial: true,
+          postData: {
+            text: "You can also share posts here - updates, photos, or just how you're feeling! Everything is private and only visible to your besties. Scroll down to see all your besties and their connection info. When you're ready, click the Profile button below to continue learning about the app! 💜",
+            photoURL: null,
+            isSupportRequest: false,
+            commentCount: 0,
+            reactionCounts: {}
+          }
         }
       ];
       setMockTutorialPosts(mockPosts);
@@ -497,11 +614,6 @@ const BestiesPage = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
-      {/* Notification Bell - No Header */}
-      <div className="fixed top-16 right-4 z-50">
-        <FloatingNotificationBell />
-      </div>
-
       <div className="max-w-6xl mx-auto p-4 pb-32 md:pb-6">
         {/* Header */}
         <div className="mb-4 text-center">
@@ -642,7 +754,7 @@ const BestiesPage = () => {
       )}
 
       {/* Tutorial Welcome Card */}
-      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && besties.length > 0 && !location.state?.fromNotification && (
+      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && !location.state?.fromNotification && (
         <BestiesTutorialWelcome
           onStart={() => {
             if (typeof window !== 'undefined' && window.analytics) {
@@ -660,12 +772,27 @@ const BestiesPage = () => {
       )}
 
       {/* Tutorial Overlay */}
-      {tutorial.tutorialActive && tutorial.currentStep === 1 && (
+      {tutorial.tutorialActive && tutorial.currentStep === 1 && !tooltipDismissed && (
         <BestiesTutorialOverlay
           currentStep={tutorial.currentStep}
           onNext={() => {
-            // User clicked "Got it" - they should click profile button
-            // Don't advance, wait for them to click profile
+            // User clicked "Got it" - dismiss tooltip but keep tutorial active
+            // This will make Profile button appear and flash
+            setTooltipDismissed(true);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('besties_tooltip_dismissed', 'true');
+              // Dispatch custom event to notify MobileBottomNav
+              window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
+                detail: { dismissed: true }
+              }));
+            }
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_step_completed', {
+                page: 'besties',
+                step: 1,
+                action: 'got_it'
+              });
+            }
           }}
           onBack={() => {
             // No back button for single step

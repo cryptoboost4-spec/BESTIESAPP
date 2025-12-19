@@ -40,7 +40,11 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
         const snapshot = await getDocs(checkInsQuery);
         setHasCheckedInToday(!snapshot.empty);
       } catch (error) {
-        console.error('Error checking today check-in:', error);
+        // Permission errors are expected if user hasn't set up check-ins yet
+        // Only log non-permission errors to avoid console noise
+        if (error.code !== 'permission-denied' && error.code !== 'missing-permissions') {
+          console.error('Error checking today check-in:', error);
+        }
       } finally {
         setLoading(false);
       }

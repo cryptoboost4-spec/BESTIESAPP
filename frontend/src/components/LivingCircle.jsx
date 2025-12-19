@@ -43,14 +43,43 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
     return null;
   });
 
+  // Track if the "Ready to Learn More?" tooltip was dismissed (so we don't show it again but keep flashing)
+  const [bestiesTooltipDismissed, setBestiesTooltipDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bestieCircle_bestiesTooltipDismissed') === 'true';
+    }
+    return false;
+  });
+
   // Sync post-tutorial state to localStorage for Header access
   useEffect(() => {
     if (postTutorialStep) {
       localStorage.setItem('bestieCircle_postTutorialStep', postTutorialStep);
+      // Dispatch custom event to notify other components immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bestieCircle_postTutorialStep_changed', {
+          detail: { step: postTutorialStep }
+        }));
+      }
     } else {
       localStorage.removeItem('bestieCircle_postTutorialStep');
+      // Dispatch custom event to notify other components immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bestieCircle_postTutorialStep_changed', {
+          detail: { step: null }
+        }));
+      }
     }
   }, [postTutorialStep]);
+
+  // Sync bestiesTooltipDismissed to localStorage
+  useEffect(() => {
+    if (bestiesTooltipDismissed) {
+      localStorage.setItem('bestieCircle_bestiesTooltipDismissed', 'true');
+    } else {
+      localStorage.removeItem('bestieCircle_bestiesTooltipDismissed');
+    }
+  }, [bestiesTooltipDismissed]);
 
   // Listen for localStorage changes (e.g., when tutorial completes and sets postTutorialStep)
   useEffect(() => {
@@ -77,6 +106,12 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
     if (postTutorialStep === 'click-besties-tab') {
       // Set localStorage to make Besties tab visible
       localStorage.setItem('bestieCircle_tutorialComplete', 'true');
+      // Dispatch custom event to notify other components immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bestieCircle_tutorialComplete_changed', {
+          detail: { complete: true }
+        }));
+      }
     }
   }, [postTutorialStep]);
 
@@ -586,7 +621,26 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
                 localStorage.setItem('bestieCircle_postTutorialStep', 'add-bestie');
               }, 500);
             }}
-            onClose={() => diffTutorial.setTutorialActive ? diffTutorial.setTutorialActive(false) : null}
+            onClose={() => {
+              // If tutorial is closed/skipped, show tooltip to click Besties tab
+              if (diffTutorial.setTutorialActive) {
+                diffTutorial.setTutorialActive(false);
+              }
+              // Set postTutorialStep to make Besties button flash
+              setTimeout(() => {
+                setPostTutorialStep('click-besties-tab');
+                localStorage.setItem('bestieCircle_postTutorialStep', 'click-besties-tab');
+                localStorage.setItem('bestieCircle_tutorialComplete', 'true');
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('bestieCircle_tutorialComplete_changed', {
+                    detail: { complete: true }
+                  }));
+                  window.dispatchEvent(new CustomEvent('bestieCircle_postTutorialStep_changed', {
+                    detail: { step: 'click-besties-tab' }
+                  }));
+                }
+              }, 500);
+            }}
             originRef={circleRef}
           />
         )}
@@ -614,20 +668,21 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
 
       {/* Highlighting overlay removed - was causing visual issues during tutorial */}
 
-      {postTutorialStep === 'click-besties-tab' && (
+      {postTutorialStep === 'click-besties-tab' && !bestiesTooltipDismissed && (
         <PostTutorialTooltip
           step="click-besties-tab"
           onContinue={() => {
-            // Just close the popup, don't navigate
-            setPostTutorialStep(null);
-            localStorage.removeItem('bestieCircle_postTutorialStep');
-            diffTutorial.completeTutorial();
-            if (onTutorialComplete) onTutorialComplete();
+            // Close the tooltip but keep postTutorialStep so flashing continues
+            setBestiesTooltipDismissed(true);
+            localStorage.setItem('bestieCircle_bestiesTooltipDismissed', 'true');
+            // Don't clear postTutorialStep - keep it so button keeps flashing
+            // Don't complete tutorial - user still needs to click the button
           }}
           onSkip={() => {
+            // Clear everything - stop flashing and complete tutorial
             setPostTutorialStep(null);
             localStorage.removeItem('bestieCircle_postTutorialStep');
-            // Complete tutorial but don't navigate
+            localStorage.removeItem('bestieCircle_bestiesTooltipDismissed');
             diffTutorial.completeTutorial();
             if (onTutorialComplete) onTutorialComplete();
           }}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
 import { useTutorialState } from '../hooks/useTutorialState';
@@ -9,11 +10,15 @@ const MobileBottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark } = useDarkMode();
+  const { userData } = useAuth();
   const { currentCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const { currentTutorialStep, tutorialComplete } = useTutorialState();
   const tutorial = useBestiesTutorialState();
 
   const isActive = (path) => location.pathname === path;
+  
+  // Check if user is in onboarding
+  const isOnboarding = location.pathname === '/onboarding' || userData?.onboardingCompleted === false;
 
   // Check if we're in post-tutorial flow (hide profile menu)
   const [postTutorialStep, setPostTutorialStep] = useState(() => {
@@ -29,16 +34,26 @@ const MobileBottomNav = () => {
       const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
       setPostTutorialStep(newStep);
     };
+    
+    // Listen for custom event (immediate updates)
+    const handleCustomEvent = (e) => {
+      setPostTutorialStep(e.detail.step);
+    };
+    
     window.addEventListener('storage', handleStorageChange);
-    // Also check periodically (for same-tab updates)
+    window.addEventListener('bestieCircle_postTutorialStep_changed', handleCustomEvent);
+    
+    // Also check periodically (for same-tab updates and fallback)
     const interval = setInterval(() => {
       const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
       if (newStep !== postTutorialStep) {
         setPostTutorialStep(newStep);
       }
     }, 100);
+    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('bestieCircle_postTutorialStep_changed', handleCustomEvent);
       clearInterval(interval);
     };
   }, [postTutorialStep]);
@@ -59,17 +74,24 @@ const MobileBottomNav = () => {
       const isComplete = localStorage.getItem('bestieCircle_tutorialComplete') === 'true';
       setBestieCircleTutorialComplete(isComplete);
     };
+    
+    // Listen for custom event (immediate updates)
+    const handleCustomEvent = (e) => {
+      setBestieCircleTutorialComplete(e.detail.complete);
+    };
 
     // Check on mount and periodically (for same-tab updates)
     checkTutorialComplete();
     const interval = setInterval(checkTutorialComplete, 100);
 
-    // Also listen for storage events (cross-tab)
+    // Also listen for storage events (cross-tab) and custom events (same-tab)
     window.addEventListener('storage', checkTutorialComplete);
+    window.addEventListener('bestieCircle_tutorialComplete_changed', handleCustomEvent);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', checkTutorialComplete);
+      window.removeEventListener('bestieCircle_tutorialComplete_changed', handleCustomEvent);
     };
   }, []);
 
@@ -109,12 +131,43 @@ const MobileBottomNav = () => {
   const shouldShowBestiesTab = bestieCircleTutorialActive || isBestieCircleTutorialComplete;
 
   // Check if buttons should flash
-  // Flash during: tutorial active, afterSafe step, add-bestie step, click-besties-tab step
-  // Stops when: skip is clicked OR besties button itself is clicked (handled by clearing postTutorialStep/tutorialActive)
-  const shouldFlashBesties = bestieCircleTutorialActive ||
+  // Flash during: afterSafe step, add-bestie step, click-besties-tab step
+  // NOT during bestieCircleTutorialActive (that's the Besties page tutorial, we don't want flashing there)
+  // Stops when: skip is clicked OR besties button itself is clicked (handled by clearing postTutorialStep)
+  const shouldFlashBesties = 
     currentCheckInTutorialStep === 'afterSafe' ||
     postTutorialStep === 'add-bestie' ||
     postTutorialStep === 'click-besties-tab';
+  // Track if Besties tooltip is dismissed (so Profile button only shows when tooltip is visible)
+  const [bestiesTooltipDismissed, setBestiesTooltipDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('besties_tooltip_dismissed') === 'true';
+    }
+    return false;
+  });
+
+  // Listen for tooltip dismissed state changes
+  useEffect(() => {
+    const checkTooltipDismissed = () => {
+      const dismissed = localStorage.getItem('besties_tooltip_dismissed') === 'true';
+      setBestiesTooltipDismissed(dismissed);
+    };
+    
+    // Listen for custom event (immediate updates)
+    const handleCustomEvent = (e) => {
+      setBestiesTooltipDismissed(e.detail.dismissed);
+    };
+    
+    checkTooltipDismissed();
+    const interval = setInterval(checkTooltipDismissed, 100);
+    window.addEventListener('besties_tooltip_dismissed_changed', handleCustomEvent);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('besties_tooltip_dismissed_changed', handleCustomEvent);
+    };
+  }, []);
+
   // Profile button should flash when Besties tutorial is active (on Besties page)
   const shouldFlashProfile = tutorial.tutorialActive && tutorial.currentStep === 1;
 
@@ -134,19 +187,22 @@ const MobileBottomNav = () => {
           paddingTop: '12px'
         }}
       >
-        <Link
-          to="/"
-          className={`flex flex-col items-center gap-1 transition-colors ${isActive('/') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
-            }`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          <span className="text-xs font-semibold">Home</span>
-        </Link>
+        {/* Hide Home button during Besties tutorial or onboarding - only show Profile (flashing) during Besties tutorial */}
+        {!(tutorial.tutorialActive && tutorial.currentStep === 1) && !isOnboarding && (
+          <Link
+            to="/"
+            className={`flex flex-col items-center gap-1 transition-colors ${isActive('/') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
+              }`}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span className="text-xs font-semibold">Home</span>
+          </Link>
+        )}
 
-        {/* Only show Besties button during active tutorial OR after completed */}
-        {shouldShowBestiesTab && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep && !tutorial.tutorialActive && (
+        {/* Only show Besties button during active tutorial OR after completed, but hide during onboarding */}
+        {shouldShowBestiesTab && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep && !tutorial.tutorialActive && !isOnboarding && (
           <Link
             to="/besties"
             onClick={(e) => {
@@ -155,6 +211,11 @@ const MobileBottomNav = () => {
                 e.preventDefault();
                 markCheckInTutorialComplete();
                 navigate('/besties', { state: { startTutorial: true } });
+              }
+              // If flashing from click-besties-tab step, clear it to stop flashing
+              if (postTutorialStep === 'click-besties-tab') {
+                localStorage.removeItem('bestieCircle_postTutorialStep');
+                localStorage.removeItem('bestieCircle_bestiesTooltipDismissed');
               }
             }}
             className={`flex flex-col items-center gap-1 transition-colors relative ${isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
@@ -173,14 +234,18 @@ const MobileBottomNav = () => {
           </Link>
         )}
 
-        {/* Profile button - hidden during any tutorial, visible on Besties page during tutorial step 1 */}
-        {((!postTutorialStep || postTutorialStep === 'null') && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep) || (isActive('/besties') && tutorial.tutorialActive && tutorial.currentStep === 1) ? (
+        {/* Profile button - visible on Besties page ONLY when tutorial is active, tooltip is showing (not dismissed), and tooltip is visible */}
+        {isActive('/besties') && tutorial.tutorialActive && tutorial.currentStep === 1 && !bestiesTooltipDismissed ? (
           <Link
             to="/profile"
             onClick={() => {
-              // If besties tutorial is active, complete it so profile tutorial can start
+              // If besties tutorial is active, complete it and mark that we're going to profile tutorial
               if (tutorial.tutorialActive && tutorial.currentStep === 1) {
                 tutorial.completeTutorial();
+                // Mark that we're coming from Besties tutorial so Profile tutorial auto-starts
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem('fromBestiesTutorial', 'true');
+                }
               }
             }}
             className={`flex flex-col items-center gap-1 transition-colors relative ${isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
