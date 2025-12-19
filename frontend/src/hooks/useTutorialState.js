@@ -90,6 +90,15 @@ export const useTutorialState = () => {
               localStorage.removeItem('current_tutorial_step');
             }
           }
+        } else {
+          console.log('[useTutorialState] User document does not exist in Firestore - resetting tutorial state');
+          // If user doc doesn't exist in Firestore, reset tutorial state to initial
+          if (!isMounted) return;
+          setTutorialComplete(false);
+          setCurrentTutorialStep(null);
+          currentStepRef.current = null;
+          localStorage.setItem('tutorial_complete', 'false');
+          localStorage.removeItem('current_tutorial_step');
         }
       } catch (error) {
         console.error('[useTutorialState] Error syncing tutorial state with Firestore:', error);
