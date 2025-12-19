@@ -243,68 +243,145 @@ Is this hard to set up? Needs:
 
 ---
 
-### 5. SAFETY PACTS (Mutual Accountability)
+### 5. SAFETY PACT (The Sacred Promise)
 
 **What It Is:**
-A standing agreement between two besties to hold each other accountable for specific safety behaviors. Both must agree to it, both must do it, both get credit.
+A solemn, meaningful promise between two besties. There's only ONE pact. It's special. It's a commitment that says: "I promise to always use this app when I don't feel 100% safe - because you need me to come home safe, and I need you to come home safe."
+
+This is not a casual checkbox. This is a mutual vow that they make to each other.
+
+**The Philosophy Behind It:**
+- Safety isn't just for you - it's for everyone who loves you
+- When you stay safe, you're doing it for your bestie who needs you
+- You matter to someone, and they're counting on you to come home
+- This isn't guilt or pressure - it's empowerment and love
+- Two people choosing to protect each other
 
 **How It Works - User Experience:**
 
-1. **Creating a Pact:**
-   - Go to a bestie's profile
-   - Click "Create Safety Pact"
-   - Choose from pact templates:
-     - "Text when you get home from dates"
-     - "Check in every Friday night"
-     - "Use safety check-in for solo runs"
-     - "Never walk alone after 10 PM"
-     - Custom pact (write your own agreement)
-   - Send invitation to bestie
-   - Both must accept for pact to activate
+1. **Creating the Pact (First Time):**
+   - When two people become besties (or from a bestie's profile), option to "Make Our Safety Pact"
+   - Both users see a beautiful, solemn screen with the pact text
+   - They read it together (async, but the same experience)
+   - Both must accept for it to activate
+   - It feels ceremonial, meaningful, like they're truly promising each other something important
 
-2. **Pact Templates Include:**
-   - Clear description of the promise
-   - How often it applies (every Friday, every date, etc.)
-   - What counts as completing it (safety check-in, circle check-in, text message logged)
-   - Reminder settings (optional notifications)
+2. **The Pact Text (This Needs Perfect Wording):**
 
-3. **Living the Pact:**
-   - When someone does the thing, they log it: "Completed pact: got home safe from date ✅"
-   - The other bestie sees it in their feed: "Sarah completed your safety pact!"
-   - Both people can see pact history
-   - If someone breaks the pact, they can acknowledge it: "Forgot to check in last Friday 😅"
+   *Suggested wording (can be refined):*
 
-4. **Pact Stats:**
-   - "Pact streak: 12 weeks" (both kept the pact)
-   - "Times you kept your promise: 45/47"
-   - "Times they kept their promise: 47/47"
-   - Visual reminder of mutual commitment
+   ---
+
+   **Our Safety Pact**
+
+   [Bestie Name],
+
+   I know that I matter to you. And you matter so much to me.
+
+   So I'm making you this promise:
+
+   **Whenever I'm in any situation where I don't feel 100% safe, I will use this app.**
+
+   Not because I have to, but because you need me to come home safe. Because the people who love me need me to come home safe.
+
+   I promise to:
+   - Create a safety check-in when I'm meeting someone new, going somewhere unfamiliar, or just have that feeling that something's not right
+   - Let you know when I make it home
+   - Reach out when I need support
+   - Show up when you need me
+
+   This isn't about being paranoid. It's about being valued. Being loved. Being someone's person.
+
+   **You're my bestie. And I promise to stay safe - for both of us.**
+
+   ---
+
+   **Alternative version (softer tone):**
+
+   ---
+
+   **Our Safety Pact**
+
+   Hey [Bestie Name],
+
+   You mean a lot to me. And I know I mean a lot to you too.
+
+   So let's make a promise to each other:
+
+   **Whenever either of us is in a situation where we don't feel 100% safe, we'll use this app.**
+
+   Not because we're scared, but because we're smart. Not because we have to, but because we want to come home safe - for ourselves and for each other.
+
+   Whether it's a first date, a night out, walking alone, meeting someone new, or just that weird feeling that something's off - we'll check in.
+
+   **Because you matter to me. And I matter to you. And we both deserve to make it home safe.**
+
+   Let's look out for each other. Deal?
+
+   ---
+
+   *(Choose whichever tone feels right, or blend them. Key elements: warm, mutual, empowering, about doing it for each other, not guilt-trippy, not preachy, affirming their value)*
+
+3. **Accepting the Pact:**
+   - User 1 initiates the pact
+   - User 2 gets notification: "[Name] wants to make a Safety Pact with you 💜"
+   - They open it, read the full text
+   - Button: "I promise" (not just "Accept" - the language matters)
+   - When both have accepted:
+     - Both see celebration moment: "You've made your Safety Pact with [Name] 💜"
+     - Visual: Maybe two hands shaking, two hearts connecting, something meaningful
+     - This moment should feel special
+
+4. **Living the Pact:**
+   - The pact is always there, quietly in the background
+   - Users can see: "Safety Pact with [Name] - Active since [date]"
+   - NOT tracked with points/streaks/completion rates (too gamified for something this meaningful)
+   - Instead: gentle affirmation when they honor it
+   - When someone creates a check-in, optional subtle note: "✓ Honoring your pact with [Bestie]"
+   - When they complete it safely: "✓ Made it home safe - [Bestie] will be glad"
+
+5. **Seeing Your Pacts:**
+   - Users can have pacts with multiple besties
+   - Each pact is a 1:1 relationship
+   - Pact list shows:
+     - [Bestie Name] - Pact active since [date]
+     - "Last honored: 2 days ago" (when either person used a check-in)
+     - Simple, clean, respectful of the commitment
+
+6. **Breaking the Pact:**
+   - We DON'T track "you broke the pact!" (no shame/guilt)
+   - No notifications like "Sarah forgot to check in"
+   - The pact is aspirational, not punitive
+   - If someone goes weeks without any activity, very gentle prompt:
+     - "It's been a while since you checked in. [Bestie] is probably hoping you're staying safe 💜"
+     - Not guilting, just a soft reminder they're valued
 
 **What Data to Track:**
 - Database collection: `safety_pacts`
 - Fields needed:
   - `user1Id`, `user2Id` - both people in the pact
-  - `pactType` - which template
-  - `customText` - if custom pact, what's the agreement
-  - `status` - "pending", "active", "paused", "ended"
-  - `createdAt` - when created
+  - `status` - "pending" (invited), "active" (both accepted), "inactive" (one person paused it)
+  - `createdAt` - when pact was initiated
   - `activatedAt` - when both accepted
-  - `frequency` - "weekly", "every_date", "every_friday", "daily", "custom"
-  - `reminderEnabled` - boolean
-
-- Database collection: `pact_completions`
-- Fields needed:
-  - `pactId` - which pact this is for
-  - `userId` - who completed it
-  - `completedAt` - timestamp
-  - `note` - optional context ("drinks with coworkers, checked in safe")
-  - `verified` - did the other person confirm? (optional feature)
+  - `user1AcceptedAt` - when user 1 accepted
+  - `user2AcceptedAt` - when user 2 accepted
+  - `lastHonoredAt` - timestamp of most recent check-in by either person
+  - `lastHonoredBy` - userId of person who last honored it
+  - `totalCheckInsUnderPact` - count of check-ins created since pact activated
 
 **Stats This Creates:**
-- "Active safety pacts: X"
-- "Pact completion rate: 95%"
-- "Longest pact streak: X weeks"
-- "Most reliable pact partner: [name]"
+- "Safety Pacts: X active" (how many besties they have pacts with)
+- "Pact with [Name]: Active since [date]"
+- NOT completion rates or streaks - this isn't a game
+- Maybe: "Times you've honored your pacts this month: X check-ins"
+
+**Important Notes:**
+- This is NOT gamified with points and badges
+- No leaderboards for "best pact keeper"
+- No public shaming for not using the app
+- It's a private, meaningful commitment between two people
+- Gentle encouragement, never guilt
+- The power is in the promise itself, not in tracking compliance
 
 ---
 
