@@ -16,8 +16,10 @@ import {
   calculateConnectionStrength,
   getLastInteraction,
 } from '../services/connectionStrength';
+import BestieCircleTutorial from './tutorial/BestieCircleTutorial';
+import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
 
-const LivingCircle = ({ userId, onAddClick }) => {
+const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComplete }) => {
   const navigate = useNavigate();
   const [allBesties, setAllBesties] = useState([]);
   const [circleBesties, setCircleBesties] = useState([]);
@@ -30,6 +32,25 @@ const LivingCircle = ({ userId, onAddClick }) => {
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [overallHealth, setOverallHealth] = useState(0);
   const [showVibeTooltip, setShowVibeTooltip] = useState(false);
+
+  // Tutorial State
+  const diffTutorial = useBestiesTutorialState(); // Renamed to avoid conflicts if any
+  const circleRef = React.useRef(null);
+
+  // React to external tutorial trigger (from HomePage)
+  useEffect(() => {
+    if (shouldPlayTutorial && !diffTutorial.tutorialActive) {
+      diffTutorial.startTutorial();
+    }
+  }, [shouldPlayTutorial]);
+
+  // Auto-start tutorial if not completed (internal logic)
+  useEffect(() => {
+    if (!diffTutorial.isLoading && !diffTutorial.isCompleted && !diffTutorial.tutorialActive && !shouldPlayTutorial) {
+      // Optional: slight delay
+      setTimeout(() => diffTutorial.startTutorial(), 1000);
+    }
+  }, [diffTutorial.isLoading, diffTutorial.isCompleted, shouldPlayTutorial]);
 
   const loadBesties = async () => {
     if (!userId) return;
@@ -80,7 +101,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
       if (allBestieIdsForCheckIns.length > 0) {
         // Check check-ins in parallel (already optimized with Promise.all)
         // Use limit(1) since we only need to know if any exist
-        const checkInPromises = allBestieIdsForCheckIns.map(bestieId => 
+        const checkInPromises = allBestieIdsForCheckIns.map(bestieId =>
           getDocs(
             query(
               collection(db, 'checkins'),
@@ -106,7 +127,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
         // Check for active check-ins (optimized)
         let hasActiveCheckIn = false;
         const checkInVisibility = userData.privacySettings?.checkInVisibility || 'all_besties';
-        
+
         if (checkInVisibility === 'all_besties') {
           hasActiveCheckIn = activeCheckInsMap[data.recipientId] || false;
         } else if (checkInVisibility === 'circle') {
@@ -138,7 +159,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
         // Check for active check-ins (optimized)
         let hasActiveCheckIn = false;
         const checkInVisibility = userData.privacySettings?.checkInVisibility || 'all_besties';
-        
+
         if (checkInVisibility === 'all_besties') {
           hasActiveCheckIn = activeCheckInsMap[data.requesterId] || false;
         } else if (checkInVisibility === 'circle') {
@@ -209,7 +230,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
   const loadConnectionData = async (besties) => {
     setLoadingConnections(true);
-    
+
     // Load all connection data in parallel for better performance
     const connectionPromises = besties.map(async (bestie) => {
       try {
@@ -233,10 +254,10 @@ const LivingCircle = ({ userId, onAddClick }) => {
     });
 
     const results = await Promise.all(connectionPromises);
-    
+
     const strengths = {};
     const lastSeenData = {};
-    
+
     results.forEach(({ bestieId, strength, lastInteraction }) => {
       if (strength) strengths[bestieId] = strength;
       if (lastInteraction) lastSeenData[bestieId] = lastInteraction;
@@ -329,7 +350,7 @@ const LivingCircle = ({ userId, onAddClick }) => {
   };
 
   // Memoize slots array to avoid recreating on every render
-  const slots = useMemo(() => 
+  const slots = useMemo(() =>
     Array.from({ length: 5 }, (_, i) => circleBesties[i] || null),
     [circleBesties]
   );
@@ -354,14 +375,25 @@ const LivingCircle = ({ userId, onAddClick }) => {
 
       <div className="relative z-10">
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center gap-2">
             <h3 className="text-2xl md:text-3xl font-display mb-1 text-black dark:text-white">💜 Your Bestie Circle</h3>
             <InfoButton message="Your inner circle of 5 closest people - the ones you can call at 3am! Connection strength grows based on your interactions. Click besties to view profiles or manage your circle. 💜" />
+            <button
+              onClick={() => diffTutorial.resetTutorial().then(() => diffTutorial.startTutorial())}
+              className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded hover:bg-purple-200 transition-colors"
+              title="Replay Tutorial"
+            >
+              ↺
+            </button>
           </div>
         </div>
 
         {/* Circle Container - Responsive sizing */}
-        <div className="relative w-full max-w-md mx-auto aspect-square mb-6">
+        <div
+          ref={circleRef}
+          id="living-circle-origin"
+          className="relative w-full max-w-md mx-auto aspect-square mb-6"
+        >
           <div className="absolute inset-0">
             <CircleVisualization
               slots={slots}
@@ -406,6 +438,8 @@ const LivingCircle = ({ userId, onAddClick }) => {
                 />
               );
             })}
+
+            {/* BESPOKE TUTORIAL - MOVED TO ROOT */}
           </div>
         </div>
 
@@ -417,6 +451,8 @@ const LivingCircle = ({ userId, onAddClick }) => {
       </div>
 
       <CircleAnimations />
+
+      {/* (Tutorial was here) */}
 
       <ReplaceModal
         show={showReplaceModal}
@@ -433,6 +469,17 @@ const LivingCircle = ({ userId, onAddClick }) => {
           circleCount={circleBesties.length}
         />
       )}
+
+      {/* BESPOKE TUTORIAL - FULL CARD OVERLAY */}
+      <BestieCircleTutorial
+        isActive={diffTutorial.tutorialActive}
+        onComplete={() => {
+          diffTutorial.completeTutorial();
+          if (onTutorialComplete) onTutorialComplete();
+        }}
+        onClose={() => diffTutorial.setTutorialActive ? diffTutorial.setTutorialActive(false) : null}
+        originRef={circleRef}
+      />
     </div>
   );
 };

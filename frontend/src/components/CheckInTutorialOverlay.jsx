@@ -36,7 +36,7 @@ const CheckInTutorialOverlay = ({
 
     // Save current scroll position BEFORE locking
     scrollYRef.current = window.scrollY;
-    
+
     // Use requestAnimationFrame to ensure DOM is ready
     requestAnimationFrame(() => {
       document.body.style.overflow = 'hidden';
@@ -83,21 +83,21 @@ const CheckInTutorialOverlay = ({
         const tooltipWidth = Math.min(screenWidth - 40, 320);
         const tooltipHeight = 200; // Approximate tooltip height
         const padding = 20;
-        
+
         // Position tooltip centered over the map element
         const elementTop = elementRect.top;
         const elementLeft = elementRect.left;
         const elementWidth = elementRect.width;
-        
+
         // Center tooltip horizontally over map, position near top of map
         const left = elementLeft + (elementWidth / 2) - (tooltipWidth / 2);
         // Ensure tooltip doesn't go off screen
         const constrainedLeft = Math.max(20, Math.min(left, screenWidth - tooltipWidth - 20));
-        
+
         // Position tooltip near the top of the map, but ensure it's visible
         const top = elementTop + padding;
         const constrainedTop = Math.max(20, Math.min(top, screenHeight - tooltipHeight - 20));
-        
+
         setTooltipPosition({
           top: constrainedTop,
           left: constrainedLeft,
@@ -111,30 +111,30 @@ const CheckInTutorialOverlay = ({
       const bottomNavHeight = 84; // Bottom nav bar height + safe area
       const headerHeight = 80; // Header height + buffer
       const padding = 20;
-      
+
       // Calculate available space
       const availableHeight = screenHeight - headerHeight - bottomNavHeight - (padding * 2);
-      
+
       // Tooltip width - responsive for mobile
-      const tooltipWidth = isMobile 
+      const tooltipWidth = isMobile
         ? Math.min(screenWidth - 32, 400) // 16px padding on each side
         : Math.min(400, screenWidth - 80);
-      
+
       // Estimate tooltip height (will be adjusted by content)
       const estimatedTooltipHeight = Math.min(availableHeight - 40, 350);
-      
+
       // Center horizontally
       const left = (screenWidth - tooltipWidth) / 2;
-      
+
       // Position vertically - center in available space, but ensure it doesn't cover bottom nav
       // Calculate top position to center in available space
       const availableTop = headerHeight + padding;
       const availableBottom = screenHeight - bottomNavHeight - padding;
       const centerY = (availableTop + availableBottom) / 2;
-      
+
       // Position tooltip centered vertically in available space
       let top = centerY - (estimatedTooltipHeight / 2);
-      
+
       // Ensure it doesn't go above header or below bottom nav
       if (top < availableTop) {
         top = availableTop;
@@ -156,11 +156,11 @@ const CheckInTutorialOverlay = ({
 
     // On mobile, add a small delay to ensure scroll lock is applied and DOM is settled
     const delay = isMobile ? 100 : 0;
-    
+
     const timeoutId = setTimeout(() => {
       calculatePositions();
     }, delay);
-    
+
     window.addEventListener('resize', calculatePositions);
     // Also listen to orientation changes on mobile
     if (isMobile) {
@@ -298,80 +298,96 @@ const CheckInTutorialOverlay = ({
           }),
         }}
       >
-          {/* Decorative sparkle background */}
-          <div className="absolute top-0 right-0 p-4 opacity-20 pointer-events-none select-none">
-            <span className="text-4xl animate-pulse-slow">✨</span>
-          </div>
-          <div className="absolute bottom-0 left-0 p-4 opacity-20 pointer-events-none select-none">
-            <span className="text-3xl animate-bounce-gentle" style={{ animationDelay: '1s' }}>💖</span>
-          </div>
+        {/* Decorative sparkle background */}
+        <div className="absolute top-0 right-0 p-4 opacity-20 pointer-events-none select-none">
+          <span className="text-4xl animate-pulse-slow">✨</span>
+        </div>
+        <div className="absolute bottom-0 left-0 p-4 opacity-20 pointer-events-none select-none">
+          <span className="text-3xl animate-bounce-gentle" style={{ animationDelay: '1s' }}>💖</span>
+        </div>
 
-          {/* Skip button - available on all steps */}
-          <button
-            onClick={handleSkip}
-            className="absolute top-3 right-3 text-pink-400 dark:text-pink-300 hover:text-pink-600 dark:hover:text-pink-100 transition-colors z-10"
-            aria-label="Skip tutorial"
+        {/* Skip button - available on all steps */}
+        <button
+          onClick={handleSkip}
+          className="absolute top-3 right-3 text-pink-400 dark:text-pink-300 hover:text-pink-600 dark:hover:text-pink-100 transition-colors z-10"
+          aria-label="Skip tutorial"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+            <path d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
 
-          {/* Content */}
-          <div className="space-y-4 relative z-10">
-            {/* Icon */}
-            {tooltipConfig.icon && (
-              <div className="text-3xl mb-3 text-center">{tooltipConfig.icon}</div>
-            )}
+        {/* Content */}
+        <div className="space-y-4 relative z-10">
+          {/* Icon */}
+          {tooltipConfig.icon && (
+            <div className="text-3xl mb-3 text-center">{tooltipConfig.icon}</div>
+          )}
 
-            {/* Title */}
-            {tooltipConfig.title && (
-              <h4 className="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 dark:from-pink-300 dark:to-purple-300 flex items-center gap-2 drop-shadow-sm justify-center">
-                <span className="animate-wiggle text-2xl">🌸</span> {tooltipConfig.title}
-              </h4>
-            )}
+          {/* Title */}
+          {tooltipConfig.title && (
+            <h4 className="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 dark:from-pink-300 dark:to-purple-300 flex items-center gap-2 drop-shadow-sm justify-center">
+              <span className="animate-wiggle text-2xl">🌸</span> {tooltipConfig.title}
+            </h4>
+          )}
 
-            {/* Body */}
-            <p className="text-md text-gray-700 dark:text-pink-100 leading-relaxed font-medium tracking-wide whitespace-pre-line">
-              {tooltipConfig.body}
-            </p>
+          {/* Body */}
+          <p className="text-md text-gray-700 dark:text-pink-100 leading-relaxed font-medium tracking-wide whitespace-pre-line">
+            {tooltipConfig.body}
+          </p>
 
-            {/* Buttons */}
-            {tooltipConfig.buttons && tooltipConfig.buttons.length > 0 && (
-              <div className="flex flex-col gap-2.5 mt-5">
-                <div className="flex gap-2.5">
-                  {tooltipConfig.buttons.map((button, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleButtonClick(button.action)}
-                      className={`${tooltipConfig.buttons.length === 1 ? 'w-full' : 'flex-1'} group relative px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-lg shadow-pink-500/30 overflow-hidden transform transition-all hover:scale-[1.02] active:scale-95`}
-                    >
-                      {button.primary ? (
-                        <>
-                          <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-gradient-x"></div>
-                          <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
-                          <span className="relative flex items-center justify-center gap-1.5 whitespace-nowrap">
-                            {button.text} ➜
-                          </span>
-                        </>
-                      ) : (
-                        <span className="relative px-4 py-2.5 rounded-full text-sm font-bold text-pink-600 dark:text-pink-300 bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/30 transition-all border-2 border-transparent hover:border-pink-200 whitespace-nowrap">
-                          {button.text}
+          {/* Buttons */}
+          {tooltipConfig.buttons && tooltipConfig.buttons.length > 0 && (
+            <div className="flex flex-col gap-2.5 mt-5">
+              <div className="flex gap-2.5">
+                {tooltipConfig.buttons.map((button, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleButtonClick(button.action)}
+                    className={`${tooltipConfig.buttons.length === 1 ? 'w-full' : 'flex-1'} group relative px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-lg shadow-pink-500/30 overflow-hidden transform transition-all hover:scale-[1.02] active:scale-95`}
+                  >
+                    {button.primary ? (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-gradient-x"></div>
+                        <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                        <span className="relative flex items-center justify-center gap-1.5 whitespace-nowrap">
+                          {button.text} ➜
                         </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                      </>
+                    ) : (
+                      <span className="relative px-4 py-2.5 rounded-full text-sm font-bold text-pink-600 dark:text-pink-300 bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/30 transition-all border-2 border-transparent hover:border-pink-200 whitespace-nowrap">
+                        {button.text}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
-            )}
+
+              {/* Skip text link */}
+              {tooltipConfig.showSkipText && tooltipConfig.skipText && (
+                <button
+                  onClick={() => {
+                    if (tooltipConfig.onSkipClick) {
+                      tooltipConfig.onSkipClick();
+                    } else {
+                      handleSkip();
+                    }
+                  }}
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 transition-colors underline"
+                >
+                  {tooltipConfig.skipText}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Dismiss/Continue button for map overlay */}
           {tooltipConfig.overlayOnElement && tooltipConfig.showScrollMessage && (
@@ -389,10 +405,10 @@ const CheckInTutorialOverlay = ({
               </button>
             </div>
           )}
-          </div>
-          
-          {/* Add animations if not already in global CSS */}
-          <style>{`
+        </div>
+
+        {/* Add animations if not already in global CSS */}
+        <style>{`
             @keyframes wiggle {
               0%, 100% { transform: rotate(0deg); }
               25% { transform: rotate(-3deg); }
@@ -409,9 +425,9 @@ const CheckInTutorialOverlay = ({
               animation: gradient-x 3s ease infinite;
             }
           `}</style>
-        </div>
-      </>
-    );
+      </div>
+    </>
+  );
 
   // Use portal for checkedIn step to appear above modals
   if (shouldUsePortal && typeof document !== 'undefined') {

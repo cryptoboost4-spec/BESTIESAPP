@@ -20,6 +20,9 @@ import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
+import SacredTransitionOverlay from '../components/tutorial/SacredTransitionOverlay';
+import BestieCircleTutorial from '../components/tutorial/BestieCircleTutorial';
+import TutorialDebugPanel from '../components/TutorialDebugPanel';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -45,13 +48,18 @@ const HomePage = () => {
   useEffect(() => {
     if (showBestieCircleTutorial && livingCircleRef.current) {
       setTimeout(() => {
-        livingCircleRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        livingCircleRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         });
       }, 500); // Small delay to ensure overlay is rendered
     }
   }, [showBestieCircleTutorial]);
+
+  // Debug: Log tutorial step changes
+  useEffect(() => {
+    console.log('[HomePage] Check-in tutorial step changed:', currentCheckInTutorialStep);
+  }, [currentCheckInTutorialStep]);
 
   // Validate tutorial state and clean up invalid states
   useEffect(() => {
@@ -581,8 +589,15 @@ const HomePage = () => {
             />
 
             {/* Living Circle - DO NOT REMOVE */}
-            <div ref={livingCircleRef}>
-              <LivingCircle userId={currentUser?.uid} />
+            <div ref={livingCircleRef} id="living-circle-origin">
+              <LivingCircle
+                userId={currentUser?.uid}
+                shouldPlayTutorial={currentCheckInTutorialStep === 'sacredTransition' || currentCheckInTutorialStep === 'bestieCircle'}
+                onTutorialComplete={() => {
+                  markCheckInTutorialComplete();
+                  toast.success("Welcome to your Bestie Circle! 💜", { icon: "✨" });
+                }}
+              />
             </div>
 
             {/* Weekly Summary */}
@@ -785,63 +800,72 @@ const HomePage = () => {
       )}
 
       {/* Check-In Tutorial - afterSafe step */}
-      {currentCheckInTutorialStep === 'afterSafe' && (
-        <CheckInTutorialOverlay
-          currentStep="afterSafe"
-          onStepComplete={(action) => {
-            if (action === 'continueTutorial') {
-              // User wants to continue tutorial - show bestie circle tutorial
-              setShowBestieCircleTutorial(true);
-              setCheckInTutorialStep(null); // Clear check-in tutorial step
-            } else if (action === 'explore') {
-              // User wants to explore on their own - mark tutorial complete
+      {(() => {
+        console.log('[HomePage] Checking afterSafe render:', {
+          currentCheckInTutorialStep,
+          shouldRender: currentCheckInTutorialStep === 'afterSafe'
+        });
+        return currentCheckInTutorialStep === 'afterSafe';
+      })() && (
+          <CheckInTutorialOverlay
+            currentStep="afterSafe"
+            onStepComplete={(action) => {
+              if (action === 'continueTutorial') {
+                // User wants to continue tutorial - scroll to Bestie Circle and start tutorial
+                if (livingCircleRef.current) {
+                  livingCircleRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                  });
+                }
+                // Small delay to let scroll complete before starting tutorial
+                setTimeout(() => {
+                  setCheckInTutorialStep('sacredTransition');
+                }, 800);
+              } else if (action === 'skip') {
+                // User wants to skip - mark tutorial complete and show reminder
+                markCheckInTutorialComplete();
+                toast.success("You can replay tutorials anytime from Settings! 💜", {
+                  duration: 4000,
+                  icon: '✨'
+                });
+              }
+            }}
+            onSkipTutorial={() => {
               markCheckInTutorialComplete();
-            }
-          }}
-          onSkipTutorial={() => {
-            markCheckInTutorialComplete();
-          }}
-          highlightedElementRef={{ current: null }}
-          tooltipConfig={{
-            title: 'You\'re Safe! 🎉',
-            body: `You've completed your first check-in! That's the full check-in process.\n\nWould you like to continue with tutorials to learn more about the app, or explore on your own?`,
-            overlayOnElement: true,
-            dismissible: false,
-            canDismiss: false,
-            buttons: [
-              { text: 'Continue Tutorial', action: 'continueTutorial', primary: true },
-              { text: 'Explore on My Own', action: 'explore', primary: false }
-            ]
-          }}
-        />
-      )}
+              toast.success("You can replay tutorials anytime from Settings! 💜", {
+                duration: 4000,
+                icon: '✨'
+              });
+            }}
+            highlightedElementRef={{ current: null }}
+            tooltipConfig={{
+              icon: '🎉',
+              title: 'Amazing Work!',
+              body: `Congratulations! You've learned how to create a check-in and keep yourself safe.\n\nReady to learn about your Bestie Circle? It's where you build your safety network with the people you trust most.`,
+              overlayOnElement: false,
+              dismissible: false,
+              canDismiss: false,
+              showSkipText: true,
+              skipText: 'Skip tutorial',
+              onSkipClick: () => {
+                markCheckInTutorialComplete();
+                toast.success("You can replay tutorials anytime from Settings! 💜", {
+                  duration: 4000,
+                  icon: '✨'
+                });
+              },
+              buttons: [
+                { text: 'Learn About Bestie Circle', action: 'continueTutorial', primary: true }
+              ]
+            }}
+          />
+        )}
 
-      {/* Bestie Circle Tutorial */}
-      {showBestieCircleTutorial && livingCircleRef.current && (
-        <CheckInTutorialOverlay
-          currentStep="bestieCircle"
-          onStepComplete={(action) => {
-            if (action === 'continue') {
-              // Tutorial complete
-              setShowBestieCircleTutorial(false);
-              markCheckInTutorialComplete();
-            }
-          }}
-          onSkipTutorial={() => {
-            setShowBestieCircleTutorial(false);
-            markCheckInTutorialComplete();
-          }}
-          highlightedElementRef={livingCircleRef}
-          tooltipConfig={{
-            title: '💜 Your Bestie Circle',
-            body: `This is your Bestie Circle - your core safety network of up to 5 people.\n\nThese are the besties who will always be notified about your check-ins. You can add besties by clicking the + buttons, or manage your circle by clicking on existing besties.\n\nYour circle is the foundation of your safety network!`,
-            overlayOnElement: false,
-            buttons: [
-              { text: 'Got it', action: 'continue', primary: true }
-            ]
-          }}
-        />
-      )}
+      {/* Step 1: Bestie Circle Tutorial (NEW) - Moved to embedded LivingCircle */}
+
+      {/* Tutorial Debug Panel (development only) */}
+      <TutorialDebugPanel />
     </div>
   );
 };
