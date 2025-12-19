@@ -42,7 +42,7 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
     if (shouldPlayTutorial && !diffTutorial.tutorialActive) {
       diffTutorial.startTutorial();
     }
-  }, [shouldPlayTutorial]);
+  }, [shouldPlayTutorial, diffTutorial]);
 
   // Auto-start tutorial if not completed (internal logic)
   useEffect(() => {
@@ -50,7 +50,7 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
       // Optional: slight delay
       setTimeout(() => diffTutorial.startTutorial(), 1000);
     }
-  }, [diffTutorial.isLoading, diffTutorial.isCompleted, shouldPlayTutorial]);
+  }, [diffTutorial.isLoading, diffTutorial.isCompleted, diffTutorial.tutorialActive, diffTutorial, shouldPlayTutorial]);
 
   const loadBesties = async () => {
     if (!userId) return;

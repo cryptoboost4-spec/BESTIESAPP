@@ -20,8 +20,6 @@ import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
-import SacredTransitionOverlay from '../components/tutorial/SacredTransitionOverlay';
-import BestieCircleTutorial from '../components/tutorial/BestieCircleTutorial';
 import TutorialDebugPanel from '../components/TutorialDebugPanel';
 
 const HomePage = () => {
@@ -42,7 +40,7 @@ const HomePage = () => {
   const quickCheckInButtonsRef = useRef(null);
   const livingCircleRef = useRef(null);
   const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
-  const [showBestieCircleTutorial, setShowBestieCircleTutorial] = useState(false);
+  const [showBestieCircleTutorial] = useState(false);
 
   // Scroll to bestie circle when tutorial starts
   useEffect(() => {
