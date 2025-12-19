@@ -800,16 +800,13 @@ const HomePage = () => {
       )}
 
       {/* Check-In Tutorial - afterSafe step */}
-      {(() => {
-        console.log('[HomePage] Checking afterSafe render:', {
-          currentCheckInTutorialStep,
-          shouldRender: currentCheckInTutorialStep === 'afterSafe'
-        });
-        return currentCheckInTutorialStep === 'afterSafe';
-      })() && (
+      {currentCheckInTutorialStep === 'afterSafe' && (
+        <>
+          {console.log('[HomePage] Rendering afterSafe CheckInTutorialOverlay')}
           <CheckInTutorialOverlay
             currentStep="afterSafe"
             onStepComplete={(action) => {
+              console.log('[HomePage] afterSafe onStepComplete called with action:', action);
               if (action === 'continueTutorial') {
                 // User wants to continue tutorial - scroll to Bestie Circle and start tutorial
                 if (livingCircleRef.current) {
@@ -832,6 +829,7 @@ const HomePage = () => {
               }
             }}
             onSkipTutorial={() => {
+              console.log('[HomePage] afterSafe onSkipTutorial called');
               markCheckInTutorialComplete();
               toast.success("You can replay tutorials anytime from Settings! 💜", {
                 duration: 4000,
@@ -849,6 +847,7 @@ const HomePage = () => {
               showSkipText: true,
               skipText: 'Skip tutorial',
               onSkipClick: () => {
+                console.log('[HomePage] Skip text clicked');
                 markCheckInTutorialComplete();
                 toast.success("You can replay tutorials anytime from Settings! 💜", {
                   duration: 4000,
@@ -860,7 +859,8 @@ const HomePage = () => {
               ]
             }}
           />
-        )}
+        </>
+      )}
 
       {/* Step 1: Bestie Circle Tutorial (NEW) - Moved to embedded LivingCircle */}
 
