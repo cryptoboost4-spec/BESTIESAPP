@@ -2,126 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
-import { useSimpleTutorial } from '../hooks/useSimpleTutorial';
-import { useTutorialState } from '../hooks/useTutorialState';
+import { useTutorialSystem } from '../hooks/useTutorialSystem';
 
 const MobileBottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark } = useDarkMode();
   const { userData } = useAuth();
-  const { currentCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
-  const { currentTutorialStep, tutorialComplete } = useTutorialState();
-  const { showTutorial: bestiesShowTutorial, isComplete: bestiesTutorialComplete, completeTutorial: completeBestiesTutorial } = useSimpleTutorial('besties');
-  const { showTutorial: profileShowTutorial } = useSimpleTutorial('profile');
+
+  // NEW: Use unified tutorial system hook
+  const tutorial = useTutorialSystem();
+
+  // Extract tutorial states for easier reference
+  const {
+    home,
+    checkIn,
+    bestieCircle,
+    besties,
+    profile,
+    shouldShowNavigation,
+    markComplete,
+    setPostTutorialStep,
+  } = tutorial;
 
   const isActive = (path) => location.pathname === path;
-  
+
   // Check if user is in onboarding
   const isOnboarding = location.pathname === '/onboarding' || userData?.onboardingCompleted === false;
 
-  // Check if we're in post-tutorial flow (hide profile menu)
-  const [postTutorialStep, setPostTutorialStep] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('bestieCircle_postTutorialStep');
-    }
-    return null;
-  });
+  // SIMPLIFIED: Use tutorial system state directly
+  const postTutorialStep = bestieCircle.postTutorialStep;
+  const bestieCircleTutorialComplete = bestieCircle.complete;
+  const bestieCircleTutorialActive = bestieCircle.tutorialActive;
+  const currentTutorialStep = home.currentStep;
+  const currentCheckInTutorialStep = checkIn.currentStep;
+  const tutorialComplete = home.complete;
+  const bestiesTutorialComplete = besties.complete;
+  const profileShowTutorial = !profile.complete;
+  const bestiesShowTutorial = !besties.complete;
 
-  useEffect(() => {
-    // Listen for changes
-    const handleStorageChange = () => {
-      const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
-      setPostTutorialStep(newStep);
-    };
-    
-    // Listen for custom event (immediate updates)
-    const handleCustomEvent = (e) => {
-      setPostTutorialStep(e.detail.step);
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('bestieCircle_postTutorialStep_changed', handleCustomEvent);
-    
-    // Also check periodically (for same-tab updates and fallback)
-    const interval = setInterval(() => {
-      const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
-      if (newStep !== postTutorialStep) {
-        setPostTutorialStep(newStep);
-      }
-    }, 100);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('bestieCircle_postTutorialStep_changed', handleCustomEvent);
-      clearInterval(interval);
-    };
-  }, [postTutorialStep]);
-
-  // Check if Bestie Circle tutorial is completed
-  // Besties menu should be visible once tutorial completes
-  // Use state to react to localStorage changes
-  const [bestieCircleTutorialComplete, setBestieCircleTutorialComplete] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('bestieCircle_tutorialComplete') === 'true';
-    }
-    return false;
-  });
-
-  // Listen for localStorage changes to show Besties tab when tooltip appears
-  useEffect(() => {
-    const checkTutorialComplete = () => {
-      const isComplete = localStorage.getItem('bestieCircle_tutorialComplete') === 'true';
-      setBestieCircleTutorialComplete(isComplete);
-    };
-    
-    // Listen for custom event (immediate updates)
-    const handleCustomEvent = (e) => {
-      setBestieCircleTutorialComplete(e.detail.complete);
-    };
-
-    // Check on mount and periodically (for same-tab updates)
-    checkTutorialComplete();
-    const interval = setInterval(checkTutorialComplete, 100);
-
-    // Also listen for storage events (cross-tab) and custom events (same-tab)
-    window.addEventListener('storage', checkTutorialComplete);
-    window.addEventListener('bestieCircle_tutorialComplete_changed', handleCustomEvent);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', checkTutorialComplete);
-      window.removeEventListener('bestieCircle_tutorialComplete_changed', handleCustomEvent);
-    };
-  }, []);
-
-  // Track if Bestie Circle tutorial is actively running
-  const [bestieCircleTutorialActive, setBestieCircleTutorialActive] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('bestieCircle_tutorialActive') === 'true';
-    }
-    return false;
-  });
-
-  // Listen for tutorial active state changes
-  useEffect(() => {
-    const checkTutorialActive = () => {
-      const isActive = localStorage.getItem('bestieCircle_tutorialActive') === 'true';
-      setBestieCircleTutorialActive(isActive);
-    };
-
-    checkTutorialActive();
-    const interval = setInterval(checkTutorialActive, 100);
-    window.addEventListener('storage', checkTutorialActive);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', checkTutorialActive);
-    };
-  }, []);
-
-  // Besties tab should only be visible when:
+  // Besties tab should be visible when:
   // 1. Tutorial is actively running (bestieCircle_tutorialActive)
   // 2. Post-tutorial step is 'click-besties-tab'
   // 3. Tutorial is completed and no post-tutorial step active (normal state)
@@ -133,47 +53,18 @@ const MobileBottomNav = () => {
 
   // Besties button should flash during post-tutorial flow when user needs to click it
   const shouldFlashBesties = (postTutorialStep === 'click-besties-tab') && !isActive('/besties');
-  // Track if Besties tooltip is dismissed (so Profile button only shows when tooltip is visible)
-  const [, setBestiesTooltipDismissed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('besties_tooltip_dismissed') === 'true';
-    }
-    return false;
-  });
 
-  // Listen for tooltip dismissed state changes
-  useEffect(() => {
-    const checkTooltipDismissed = () => {
-      const dismissed = localStorage.getItem('besties_tooltip_dismissed') === 'true';
-      setBestiesTooltipDismissed(dismissed);
-    };
-    
-    // Listen for custom event (immediate updates)
-    const handleCustomEvent = (e) => {
-      setBestiesTooltipDismissed(e.detail.dismissed);
-    };
-    
-    checkTooltipDismissed();
-    const interval = setInterval(checkTooltipDismissed, 100);
-    window.addEventListener('besties_tooltip_dismissed_changed', handleCustomEvent);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('besties_tooltip_dismissed_changed', handleCustomEvent);
-    };
-  }, []);
-
-  // Profile button should flash on Besties page AFTER the besties tooltip is completed, 
+  // Profile button should flash on Besties page AFTER the besties tooltip is completed,
   // until user visits Profile (completes profile tutorial)
   const shouldFlashProfile = isActive('/besties') && bestiesTutorialComplete && profileShowTutorial;
 
   // Determine if we're in post-tutorial flow on home page (where Profile should be hidden)
-  const isInPostTutorialFlowOnHome = (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab') && 
+  const isInPostTutorialFlowOnHome = (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab') &&
     !isActive('/besties') && !isActive('/profile');
 
   // Profile button visibility logic:
   // - Always show on /profile page
-  // - Show on /besties page (with flash when tutorial tooltip visible)  
+  // - Show on /besties page (with flash when tutorial tooltip visible)
   // - Hide during post-tutorial flow on home page
   // - Otherwise show when besties tab is available and tutorials are done
   const shouldShowProfileButton = !isOnboarding && (
@@ -220,13 +111,12 @@ const MobileBottomNav = () => {
               // If in afterSafe tutorial step, handle navigation and complete tutorial
               if (currentCheckInTutorialStep === 'afterSafe') {
                 e.preventDefault();
-                markCheckInTutorialComplete();
+                markComplete('checkIn'); // NEW: Use unified hook
                 navigate('/besties', { state: { startTutorial: true } });
               }
               // Clear postTutorialStep to stop any flashing
               if (postTutorialStep) {
-                localStorage.removeItem('bestieCircle_postTutorialStep');
-                setPostTutorialStep(null);
+                setPostTutorialStep(null); // NEW: Use unified hook
               }
             }}
             className={`flex flex-col items-center gap-1 transition-colors relative ${isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
@@ -252,7 +142,7 @@ const MobileBottomNav = () => {
             onClick={() => {
               // Complete besties tutorial when Profile button is clicked from besties page during tutorial
               if (isActive('/besties') && bestiesShowTutorial) {
-                completeBestiesTutorial();
+                markComplete('besties'); // NEW: Use unified hook
               }
             }}
             className={`flex flex-col items-center gap-1 transition-colors relative ${isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
