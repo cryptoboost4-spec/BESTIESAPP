@@ -204,18 +204,9 @@ const HomePage = () => {
         }
 
         // Detect check-in creation during check-in tutorial (custom check-in)
-        console.log('[HomePage] Checking tutorial transition:', {
-          currentCheckInTutorialStep,
-          checkInsCount: checkIns.length,
-          previousCount: previousCheckInCount,
-          diff: checkIns.length - previousCheckInCount
-        });
-
         if (currentCheckInTutorialStep === 'final' && checkIns.length > previousCheckInCount) {
-          console.log('[HomePage] ✅ Conditions met! Setting checkedIn step');
           // Check-in was just created - show checkedIn tutorial step
           setTimeout(() => {
-            console.log('[HomePage] Executing setCheckInTutorialStep(checkedIn)');
             setCheckInTutorialStep('checkedIn');
           }, 2000); // Increased delay to ensure DOM is ready
         }
@@ -223,10 +214,9 @@ const HomePage = () => {
         // Detect check-in completion (check-in disappeared from active list)
         const currentCheckInIds = new Set(checkIns.map(c => c.id));
         const completedCheckInId = Array.from(previousCheckInIds).find(id => !currentCheckInIds.has(id));
-        
+
         if (completedCheckInId && currentCheckInTutorialStep === 'checkedIn') {
           // Check-in was just completed - show afterSafe tutorial step
-          console.log('[HomePage] Check-in completed, setting afterSafe step');
           setTimeout(() => {
             setCheckInTutorialStep('afterSafe');
           }, 500); // Small delay to let navigation complete
