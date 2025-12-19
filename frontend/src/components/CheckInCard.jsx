@@ -687,7 +687,7 @@ const CheckInCard = ({ checkIn }) => {
           tooltipConfig={{
             title: 'Your Active Check-In',
             body: `This is your active check-in page! Here you can:\n• Add notes about your situation\n• Add photos for your besties\n• Add more time if you need longer\n• Update your location\n\nWhen you're ready to complete your check-in, click the "I'm Safe" button. This will mark your check-in as complete and let your besties know you're safe! 💜`,
-            overlayOnElement: false,
+            overlayOnElement: true,
             buttons: [
               { text: 'Got it', action: 'continue', primary: true }
             ]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import './BestieCircleTutorial.css';
@@ -33,6 +33,7 @@ const STEP_DELAYS = {
 const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
     const [currentStep, setCurrentStep] = useState(TUTORIAL_STEPS.MOMENT_0);
     const [showTooltip, setShowTooltip] = useState(false);
+    const [showCongratulation, setShowCongratulation] = useState(false);
     const [butterflies, setButterflies] = useState([]); // Array of butterfly objects
 
     // Initial Confetti ("The Sacred Transition")
@@ -83,36 +84,49 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
         }, 300);
     };
 
-    const handleComplete = () => {
+    const triggerFinalExit = useCallback(() => {
+        const defaults = { origin: { y: 0.8 }, zIndex: 11000, colors: ['#ec4899', '#f472b6'] };
+        confetti({ ...defaults, particleCount: 40, scalar: 2, shape: 'circle' });
+    }, []);
+
+    const handleComplete = useCallback(() => {
         // Final Exit Animation
         triggerFinalExit();
         setTimeout(() => {
+            // Show congratulation message
+            setShowCongratulation(true);
             onComplete && onComplete();
-            onClose && onClose();
         }, 2000);
-    };
+    }, [onComplete, triggerFinalExit]);
+    
+    const handleCongratulationClose = useCallback(() => {
+        setShowCongratulation(false);
+        onClose && onClose();
+    }, [onClose]);
 
-    const triggerFinalExit = () => {
-        const defaults = { origin: { y: 0.8 }, zIndex: 11000, colors: ['#ec4899', '#f472b6'] };
-        confetti({ ...defaults, particleCount: 40, scalar: 2, shape: 'circle' });
-    };
-
-    const triggerButterflies = (rect) => {
-        const newButterflies = Array.from({ length: 25 }).map((_, i) => ({
-            id: Date.now() + i,
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2,
-            angle: Math.random() * 360,
-            delay: Math.random() * 0.2,
-            color: Math.random() > 0.5 ? '#F472B6' : '#A855F7'
-        }));
+    const triggerButterflies = useCallback((rect) => {
+        // Reduce butterfly count from 25 to 12 for better performance
+        const newButterflies = Array.from({ length: 12 }).map((_, i) => {
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            return {
+                id: Date.now() + i,
+                x,
+                y,
+                targetX: x + (Math.random() - 0.5) * 400, // Pre-calculate target
+                targetY: y - Math.random() * 400 - 100, // Pre-calculate target
+                angle: Math.random() * 360,
+                delay: Math.random() * 0.2,
+                color: Math.random() > 0.5 ? '#F472B6' : '#A855F7'
+            };
+        });
 
         setButterflies(prev => [...prev, ...newButterflies]);
 
         setTimeout(() => {
             setButterflies(prev => prev.filter(b => !newButterflies.includes(b)));
         }, 2000);
-    };
+    }, []);
 
     if (!isActive) return null;
 
@@ -123,8 +137,8 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
         >
-            {/* Global Background Layer */}
-            <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 z-0">
+            {/* Global Background Layer - Dream Circle Style */}
+            <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-gradient-to-br from-green-50 via-emerald-50 via-teal-50 via-pink-50 to-purple-50 border-4 border-green-300 z-0">
                 <DreamscapeBackground />
                 <ButterflySystem butterflies={butterflies} />
             </div>
@@ -148,47 +162,89 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Congratulation Message - shown after tutorial completes */}
+            <AnimatePresence>
+                {showCongratulation && (
+                    <div className="absolute inset-0 flex items-end justify-center pb-8 z-30 pointer-events-auto">
+                        <motion.div
+                            className="tutorial-tooltip w-11/12 max-w-sm bg-white/95 backdrop-blur-xl p-6 rounded-[32px] shadow-2xl flex flex-col items-center text-center border border-white/50"
+                            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+                            transition={{ type: "spring", bounce: 0.4 }}
+                        >
+                            <div className="text-4xl mb-4 animate-bounce-gentle">🎉</div>
+                            <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+                                Amazing Work!
+                            </h3>
+                            <p className="text-gray-600 mb-6 leading-relaxed text-sm">
+                                You've learned about your Bestie Circle! Want to continue the tutorial? Click on the Besties menu option (it just appeared!)
+                            </p>
+
+                            <button
+                                onClick={handleCongratulationClose}
+                                className="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all relative overflow-hidden group"
+                            >
+                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                    Got it!
+                                </span>
+                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform" />
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
 
 // --- VISUAL COMPONENTS ---
 
-const DreamscapeBackground = () => (
+const DreamscapeBackground = memo(() => (
     <div className="absolute inset-0 pointer-events-none">
-        {/* Aurora Borealis Effect */}
+        {/* Dream Circle style gradient - Green and Pink mixing */}
         <motion.div
-            className="absolute inset-0 opacity-60"
+            className="absolute inset-0 opacity-40"
             style={{
-                background: 'radial-gradient(circle at 50% 120%, #4c1d95 0%, #831843 40%, transparent 80%)'
+                background: 'radial-gradient(circle at 50% 50%, #10b981 0%, #34d399 30%, #ec4899 60%, #f472b6 80%, transparent 100%)'
             }}
-            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.7, 0.5] }}
+            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
-        {/* Moving Aurora Waves */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/30 via-transparent to-pink-900/30 animate-aurora mix-blend-screen" />
-        <div className="absolute inset-0 texture-overlay" />
+        {/* Subtle overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-green-900/20 via-transparent to-pink-900/20 mix-blend-screen" />
         <FallingStars />
     </div>
-);
+));
 
 const FallingStars = () => {
+    // Pre-calculate random values to prevent recalculation on every render
+    const stars = useMemo(() => 
+        Array.from({ length: 5 }).map((_, i) => ({
+            initialX: Math.random() * 100,
+            animateX: Math.random() * 100,
+            duration: Math.random() * 2 + 3,
+            delay: Math.random() * 10
+        }))
+    , []);
+
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {stars.map((star, i) => (
                 <motion.div
                     key={i}
                     className="absolute w-1 h-1 bg-white rounded-full shadow-[0_0_8px_white]"
-                    initial={{ x: Math.random() * 100 + "%", y: -10, opacity: 0 }}
-                    animate={{ x: Math.random() * 100 + "%", y: "100%", opacity: [0, 1, 0] }}
-                    transition={{ duration: Math.random() * 2 + 3, repeat: Infinity, delay: Math.random() * 10, ease: "linear" }}
+                    initial={{ x: `${star.initialX}%`, y: -10, opacity: 0 }}
+                    animate={{ x: `${star.animateX}%`, y: "100%", opacity: [0, 1, 0] }}
+                    transition={{ duration: star.duration, repeat: Infinity, delay: star.delay, ease: "linear" }}
                 />
             ))}
         </div>
     )
 }
 
-const ButterflySystem = ({ butterflies }) => (
+const ButterflySystem = memo(({ butterflies }) => (
     <div className="absolute inset-0 pointer-events-none z-[10000]">
         <AnimatePresence>
             {butterflies.map(b => (
@@ -196,15 +252,20 @@ const ButterflySystem = ({ butterflies }) => (
             ))}
         </AnimatePresence>
     </div>
-);
+));
 
-const Butterfly = ({ data }) => {
+const Butterfly = memo(({ data }) => {
+    // Pre-calculate random values when butterfly is created (in triggerButterflies)
+    // data should already have targetX and targetY calculated
+    const targetX = data.targetX ?? (data.x + (Math.random() - 0.5) * 400);
+    const targetY = data.targetY ?? (data.y - Math.random() * 400 - 100);
+
     return (
         <motion.div
             initial={{ x: data.x, y: data.y, scale: 0, opacity: 1 }}
             animate={{
-                x: data.x + (Math.random() - 0.5) * 400,
-                y: data.y - Math.random() * 400 - 100,
+                x: targetX,
+                y: targetY,
                 scale: [0, 1, 0],
                 opacity: 0
             }}
@@ -223,24 +284,26 @@ const Butterfly = ({ data }) => {
             </div>
         </motion.div>
     );
-}
+});
 
 // --- MAIN STAGE COORDINATOR ---
 
-const LivingCircleStage = ({ currentStep }) => {
+const LivingCircleStage = memo(({ currentStep }) => {
     return (
         <div className="relative w-full h-full preserve-3d">
+            {/* SVG Connection Lines Overlay - Dream Circle Style */}
+            <ConnectionLinesOverlay currentStep={currentStep} />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                 <YouBubbleCore currentStep={currentStep} />
             </div>
             <SlotRing currentStep={currentStep} />
         </div>
     );
-};
+});
 
 // --- COMPONENT: YOU BUBBLE ---
 
-const YouBubbleCore = ({ currentStep }) => {
+const YouBubbleCore = memo(({ currentStep }) => {
     const isStep4 = currentStep === TUTORIAL_STEPS.STEP_4; // Vibe Score
     const isStepFinal = currentStep === TUTORIAL_STEPS.STEP_5;
 
@@ -250,16 +313,18 @@ const YouBubbleCore = ({ currentStep }) => {
     useEffect(() => {
         if (isStep4) {
             setShowScore(true);
-            let val = 0;
-            const interval = setInterval(() => {
-                val += 2;
-                if (val > 80) {
-                    val = 80;
-                    clearInterval(interval);
+            let startTime = null;
+            const animate = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / 1500, 1); // 1.5 seconds total
+                const newScore = Math.floor(progress * 80);
+                setScore(newScore);
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
                 }
-                setScore(val);
-            }, 30);
-            return () => clearInterval(interval);
+            };
+            requestAnimationFrame(animate);
         } else {
             setShowScore(false);
             setScore(0);
@@ -274,7 +339,8 @@ const YouBubbleCore = ({ currentStep }) => {
             }}
             transition={{ duration: 0.8 }}
         >
-            <div className="absolute inset-0 rounded-full shadow-[0_0_40px_rgba(168,85,247,0.5)] animate-liquid bg-gradient-to-br from-purple-500 to-pink-500" />
+            {/* Dream Circle style center - Green gradient like perfect circle */}
+            <div className="absolute inset-0 rounded-full shadow-[0_0_40px_rgba(16,185,129,0.5)] animate-breathe-perfect bg-gradient-to-br from-green-500 to-emerald-500 border-4 border-white ring-4 ring-green-300" />
 
             {(isStep4) && (
                 <div className="absolute inset-0 rounded-full overflow-hidden mix-blend-overlay opacity-70">
@@ -317,7 +383,7 @@ const YouBubbleCore = ({ currentStep }) => {
             )}
         </motion.div>
     )
-}
+});
 
 const BurningProgressRing = () => {
     return (
@@ -337,9 +403,172 @@ const BurningProgressRing = () => {
     )
 }
 
+// --- COMPONENT: CONNECTION LINES OVERLAY (Dream Circle Style) ---
+
+const ConnectionLinesOverlay = memo(({ currentStep }) => {
+    // Memoize slot positions calculation - only calculate once
+    const slots = useMemo(() => 
+        Array.from({ length: 5 }).map((_, index) => {
+            const angle = (index * 72 - 90) * (Math.PI / 180);
+            const radius = 45; // Percentage radius (matching Dream Circle exactly)
+            const x = 50 + radius * Math.cos(angle);
+            const y = 50 + radius * Math.sin(angle);
+            return { index, x, y, angle };
+        })
+    , []);
+
+    // Memoize computed values
+    const isTopSlotActive = useMemo(() => 
+        currentStep === TUTORIAL_STEPS.STEP_2 || currentStep === TUTORIAL_STEPS.STEP_3,
+        [currentStep]
+    );
+    const isTopSlotElectric = useMemo(() => 
+        currentStep === TUTORIAL_STEPS.STEP_3,
+        [currentStep]
+    );
+
+    return (
+        <svg
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ zIndex: 10 }}
+        >
+            <defs>
+                {/* Gradients for each line - horizontal gradient matching Dream Circle exactly */}
+                {slots.map((slot) => (
+                    <linearGradient 
+                        key={`gradient-${slot.index}`} 
+                        id={`tutorial-line-gradient-${slot.index}`} 
+                        x1="0%" 
+                        y1="0%" 
+                        x2="100%" 
+                        y2="0%"
+                    >
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.9" />
+                        <stop offset="25%" stopColor="#14b8a6" stopOpacity="1" />
+                        <stop offset="50%" stopColor="#ec4899" stopOpacity="1" />
+                        <stop offset="75%" stopColor="#a855f7" stopOpacity="1" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.9" />
+                    </linearGradient>
+                ))}
+                {/* Glow filter for active lines - simplified for better performance */}
+                <filter id="tutorial-line-glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+
+            {/* Render connection lines for each slot */}
+            {slots.map((slot) => {
+                const isActive = slot.index === 0 && isTopSlotActive;
+                const isElectric = slot.index === 0 && isTopSlotElectric;
+                // Show lines from STEP_1 onwards, but only the top slot gets the energy ray effect
+                const isVisible = currentStep >= TUTORIAL_STEPS.STEP_1;
+
+                return (
+                    <g key={`line-group-${slot.index}`}>
+                        {/* Connection line - visible ray of energy (matches Dream Circle exactly) */}
+                        {isVisible && (
+                            <line
+                                x1="50%"
+                                y1="50%"
+                                x2={`${slot.x}%`}
+                                y2={`${slot.y}%`}
+                                stroke={isActive ? `url(#tutorial-line-gradient-${slot.index})` : "rgba(16, 185, 129, 0.3)"}
+                                strokeWidth={isActive ? "5" : "3"}
+                                filter={isActive ? "url(#tutorial-line-glow)" : "none"}
+                                strokeLinecap="round"
+                            >
+                                {/* Use SVG animate instead of CSS class for better performance */}
+                                {isActive && (
+                                    <animate
+                                        attributeName="opacity"
+                                        values="0.6;1;0.6"
+                                        dur="1.5s"
+                                        repeatCount="indefinite"
+                                    />
+                                )}
+                            </line>
+                        )}
+
+                        {/* Particles flowing along active lines - reduced from 4 to 2 for performance */}
+                        {isActive && !isElectric && (
+                            <>
+                                {/* Green particle */}
+                                <circle
+                                    cx="50%"
+                                    cy="50%"
+                                    r="5"
+                                    fill="#10b981"
+                                    opacity="0.9"
+                                >
+                                    <animate
+                                        attributeName="cx"
+                                        values={`50%;${slot.x}%;50%`}
+                                        dur="2s"
+                                        repeatCount="indefinite"
+                                        begin={`${slot.index * 0.2}s`}
+                                    />
+                                    <animate
+                                        attributeName="cy"
+                                        values={`50%;${slot.y}%;50%`}
+                                        dur="2s"
+                                        repeatCount="indefinite"
+                                        begin={`${slot.index * 0.2}s`}
+                                    />
+                                    <animate
+                                        attributeName="opacity"
+                                        values="0;0.9;0.5;0;0"
+                                        dur="2s"
+                                        repeatCount="indefinite"
+                                        begin={`${slot.index * 0.2}s`}
+                                    />
+                                </circle>
+                                {/* Pink particle */}
+                                <circle
+                                    cx="50%"
+                                    cy="50%"
+                                    r="4"
+                                    fill="#ec4899"
+                                    opacity="0.85"
+                                >
+                                    <animate
+                                        attributeName="cx"
+                                        values={`50%;${slot.x}%;50%`}
+                                        dur="2s"
+                                        repeatCount="indefinite"
+                                        begin={`${slot.index * 0.2 + 0.5}s`}
+                                    />
+                                    <animate
+                                        attributeName="cy"
+                                        values={`50%;${slot.y}%;50%`}
+                                        dur="2s"
+                                        repeatCount="indefinite"
+                                        begin={`${slot.index * 0.2 + 0.5}s`}
+                                    />
+                                    <animate
+                                        attributeName="opacity"
+                                        values="0;0.85;0.5;0;0"
+                                        dur="2s"
+                                        repeatCount="indefinite"
+                                        begin={`${slot.index * 0.2 + 0.5}s`}
+                                    />
+                                </circle>
+                            </>
+                        )}
+                    </g>
+                );
+            })}
+        </svg>
+    );
+});
+
 // --- COMPONENT: SLOT RING ---
 
-const SlotRing = ({ currentStep }) => {
+const SlotRing = memo(({ currentStep }) => {
     return (
         <div className="absolute inset-0">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -347,53 +576,58 @@ const SlotRing = ({ currentStep }) => {
             ))}
         </div>
     )
-}
+});
 
-const SingleSlot = ({ index, currentStep }) => {
-    const angle = (index * 72 - 90) * (Math.PI / 180);
-    const radius = 140;
-    const x = Math.cos(angle) * radius;
-    const y = Math.sin(angle) * radius;
+const SingleSlot = memo(({ index, currentStep }) => {
+    // Memoize position calculations
+    const { x, y } = useMemo(() => {
+        const angle = (index * 72 - 90) * (Math.PI / 180);
+        const radius = 140;
+        return {
+            x: Math.cos(angle) * radius,
+            y: Math.sin(angle) * radius
+        };
+    }, [index]);
 
-    const slotStyles = [
-        { border: 'border-pink-500', text: 'text-pink-500' },
-        { border: 'border-purple-500', text: 'text-purple-500' },
-        { border: 'border-blue-500', text: 'text-blue-500' },
-        { border: 'border-green-500', text: 'text-green-500' },
-        { border: 'border-orange-500', text: 'text-orange-500' },
-    ];
-    const style = slotStyles[index] || slotStyles[0];
-    const borderColor = style.border;
-    const textColor = style.text;
+    // Memoize slot styles
+    const { borderColor, textColor } = useMemo(() => {
+        const slotStyles = [
+            { border: 'border-pink-500', text: 'text-pink-500' },
+            { border: 'border-purple-500', text: 'text-purple-500' },
+            { border: 'border-blue-500', text: 'text-blue-500' },
+            { border: 'border-green-500', text: 'text-green-500' },
+            { border: 'border-orange-500', text: 'text-orange-500' },
+        ];
+        const style = slotStyles[index] || slotStyles[0];
+        return { borderColor: style.border, textColor: style.text };
+    }, [index]);
 
+    // Memoize computed values
     const isTopSlot = index === 0;
+    const isAwakening = useMemo(() => isTopSlot && currentStep === TUTORIAL_STEPS.STEP_2, [isTopSlot, currentStep]);
+    const isExhaling = useMemo(() => !isTopSlot && currentStep === TUTORIAL_STEPS.STEP_2, [isTopSlot, currentStep]);
+    const isBlooming = useMemo(() => isTopSlot && currentStep === TUTORIAL_STEPS.STEP_3, [isTopSlot, currentStep]);
 
-    const isAwakening = isTopSlot && currentStep === TUTORIAL_STEPS.STEP_2;
-    const isExhaling = !isTopSlot && currentStep === TUTORIAL_STEPS.STEP_2;
-    const isBlooming = isTopSlot && currentStep === TUTORIAL_STEPS.STEP_3;
-
-    const variants = {
+    // Memoize variants object
+    const variants = useMemo(() => ({
         dim: { opacity: 0.3, scale: 0.9, filter: 'blur(2px)' },
         awake: { opacity: 1, scale: 1.1, filter: 'blur(0px)' },
         normal: { opacity: 1, scale: 1, filter: 'blur(0px)' },
         hidden: { opacity: 0, scale: 0 }
-    };
+    }), []);
 
-    let state = 'normal';
-    if (currentStep === TUTORIAL_STEPS.STEP_1) state = 'normal';
-    else if (currentStep === TUTORIAL_STEPS.STEP_2) state = isTopSlot ? 'awake' : 'dim';
-    else if (currentStep === TUTORIAL_STEPS.STEP_3) state = isTopSlot ? 'awake' : 'dim';
-    else if (currentStep === TUTORIAL_STEPS.STEP_4) state = 'dim';
-    else if (currentStep === TUTORIAL_STEPS.STEP_5) state = 'awake'; // All awake at end
+    // Memoize state calculation
+    const state = useMemo(() => {
+        if (currentStep === TUTORIAL_STEPS.STEP_1) return 'normal';
+        else if (currentStep === TUTORIAL_STEPS.STEP_2) return isTopSlot ? 'awake' : 'dim';
+        else if (currentStep === TUTORIAL_STEPS.STEP_3) return isTopSlot ? 'awake' : 'dim';
+        else if (currentStep === TUTORIAL_STEPS.STEP_4) return 'dim';
+        else if (currentStep === TUTORIAL_STEPS.STEP_5) return 'awake';
+        return 'normal';
+    }, [currentStep, isTopSlot]);
 
     return (
         <>
-            <LiquidConnectionLine
-                x={x} y={y}
-                isActive={isTopSlot && (currentStep === TUTORIAL_STEPS.STEP_2 || currentStep === TUTORIAL_STEPS.STEP_3)}
-                isElectric={isTopSlot && currentStep === TUTORIAL_STEPS.STEP_3 && !isBlooming}
-            />
-
             <motion.div
                 className="absolute w-16 h-16 rounded-full flex items-center justify-center top-1/2 left-1/2 -ml-8 -mt-8"
                 style={{ x, y }}
@@ -424,11 +658,23 @@ const SingleSlot = ({ index, currentStep }) => {
                     </AnimatePresence>
 
                     {isBlooming && <MockAvatarSequence />}
+                    
+                    {/* Dream Circle style - Perfect Status Badge when active */}
+                    {isBlooming && (
+                        <motion.div
+                            className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center text-xs shadow-lg animate-pulse-fast"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.5 }}
+                        >
+                            🔥
+                        </motion.div>
+                    )}
                 </div>
             </motion.div>
         </>
     );
-}
+});
 
 const SunriseEffect = () => (
     <div className="absolute inset-[-40px] pointer-events-none -z-10">
@@ -497,24 +743,29 @@ const MockAvatarSequence = () => {
                 />
             )}
 
-            {(stage === 'bloom' || stage === 'done') && (
-                <motion.div
-                    className="w-full h-full rounded-full overflow-hidden border-[3px] bg-gray-100 relative z-10"
-                    initial={{ clipPath: 'circle(0% at 50% 50%)' }}
-                    animate={{
-                        clipPath: 'circle(100% at 50% 50%)',
-                        borderColor: status === 'safe' ? '#4ade80' : status === 'checkin' ? '#facc15' : '#c084fc'
-                    }}
-                    transition={{ duration: 0.8, ease: "circOut" }}
-                >
-                    <img src="/assets/watercolor-avatar.png" className="w-full h-full object-cover" alt="Avatar" />
+                    {(stage === 'bloom' || stage === 'done') && (
+                        <motion.div
+                            className="w-full h-full rounded-full overflow-hidden border-[3px] bg-gray-100 relative z-10 shadow-xl border-4 border-white ring-6 ring-green-300"
+                            initial={{ clipPath: 'circle(0% at 50% 50%)' }}
+                            animate={{
+                                clipPath: 'circle(100% at 50% 50%)',
+                                borderColor: status === 'safe' ? '#10b981' : status === 'checkin' ? '#facc15' : '#c084fc'
+                            }}
+                            transition={{ duration: 0.8, ease: "circOut" }}
+                            style={{
+                                background: status === 'safe' 
+                                    ? 'linear-gradient(to bottom right, #10b981, #34d399)' 
+                                    : 'linear-gradient(to bottom right, #f3f4f6, #e5e7eb)'
+                            }}
+                        >
+                            <img src="/assets/watercolor-avatar.png" className="w-full h-full object-cover" alt="Avatar" />
 
-                    <motion.div
-                        className="absolute inset-0"
-                        animate={{ backgroundColor: status === 'safe' ? 'rgba(74, 222, 128, 0.2)' : status === 'checkin' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(192, 132, 252, 0.3)' }}
-                    />
-                </motion.div>
-            )}
+                            <motion.div
+                                className="absolute inset-0"
+                                animate={{ backgroundColor: status === 'safe' ? 'rgba(16, 185, 129, 0.2)' : status === 'checkin' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(192, 132, 252, 0.3)' }}
+                            />
+                        </motion.div>
+                    )}
 
             {stage === 'done' && (
                 <motion.div
@@ -527,37 +778,6 @@ const MockAvatarSequence = () => {
                     {status === 'checkin' && <span className="text-yellow-600">Active Check-in ⏰</span>}
                     {status === 'support' && <span className="text-purple-600">Needs Support 💜</span>}
                 </motion.div>
-            )}
-        </div>
-    )
-}
-
-const LiquidConnectionLine = ({ x, y, isActive, isElectric }) => {
-    const angle = Math.atan2(y, x) * (180 / Math.PI);
-    const length = 140 - 32 - 48;
-
-    return (
-        <div
-            className="absolute top-1/2 left-1/2 h-[2px] origin-left bg-white/5"
-            style={{
-                width: length,
-                transform: `rotate(${angle}deg) translate(48px, 0)`
-            }}
-        >
-            {isActive && !isElectric && (
-                <FishSchool />
-            )}
-
-            {isElectric && (
-                <div className="absolute inset-0 bg-pink-400 blur-[2px] animate-pulse" />
-            )}
-
-            {isActive && (
-                <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                    animate={{ x: ['-100%', '100%'] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                />
             )}
         </div>
     )

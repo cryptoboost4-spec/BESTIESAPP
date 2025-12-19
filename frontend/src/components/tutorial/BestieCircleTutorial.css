@@ -194,3 +194,74 @@
 .animate-bounce-gentle {
   animation: bounce-gentle 2s ease-in-out infinite;
 }
+
+/* Dream Circle Animations - Matching PerfectCircleDemo */
+@keyframes breathe-perfect {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 15px 60px rgba(16, 185, 129, 0.6);
+  }
+}
+
+.animate-breathe-perfect {
+  animation: breathe-perfect 2s ease-in-out infinite;
+}
+
+@keyframes pulse-fast {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse-fast {
+  animation: pulse-fast 1.5s ease-in-out infinite;
+}
+
+@keyframes particle-fast {
+  0% {
+    cx: 50%;
+    cy: 50%;
+    opacity: 1;
+  }
+  100% {
+    cx: var(--target-x, 50%);
+    cy: var(--target-y, 50%);
+    opacity: 0;
+  }
+}
+
+.animate-particle-fast {
+  animation: particle-fast 2s linear infinite;
+}
+
+/* Performance optimizations */
+.animate-breathe-perfect,
+.animate-pulse-fast,
+.animate-liquid,
+.animate-aurora {
+  will-change: transform, opacity, box-shadow;
+  transform: translateZ(0); /* Force GPU acceleration */
+}
+
+/* Optimize animated SVG elements */
+svg[class*="animate"] {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+
+/* Optimize motion.div elements */
+[data-framer-component] {
+  will-change: transform, opacity;
+}
+
+/* Contain layout recalculations */
+.preserve-3d {
+  contain: layout style paint;
+}

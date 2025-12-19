@@ -63,14 +63,41 @@ const CheckInTutorialOverlay = ({
 
   // Calculate tooltip and arrow positions
   useEffect(() => {
-    if (!highlightedElementRef?.current || !tooltipConfig) return;
+    if (!tooltipConfig) return;
 
     // Detect mobile device (outside function so it can be used in cleanup)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
 
     const calculatePositions = () => {
+      // If no element to highlight (e.g., afterSafe step), use centered positioning
+      if (!highlightedElementRef?.current) {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        const bottomNavHeight = 84;
+        const headerHeight = 80;
+        const padding = 20;
+        const availableHeight = screenHeight - headerHeight - bottomNavHeight - (padding * 2);
+        const tooltipWidth = isMobile
+          ? Math.min(screenWidth - 32, 400)
+          : Math.min(400, screenWidth - 80);
+        const estimatedTooltipHeight = Math.min(availableHeight - 40, 350);
+        const left = (screenWidth - tooltipWidth) / 2;
+        const availableTop = headerHeight + padding;
+        const availableBottom = screenHeight - bottomNavHeight - padding;
+        const centerY = (availableTop + availableBottom) / 2;
+        let top = centerY - (estimatedTooltipHeight / 2);
+        if (top < availableTop) top = availableTop;
+        const tooltipBottom = top + estimatedTooltipHeight;
+        if (tooltipBottom > availableBottom) {
+          top = availableBottom - estimatedTooltipHeight;
+          if (top < availableTop) top = availableTop;
+        }
+        setTooltipPosition({ top, left, width: `${tooltipWidth}px` });
+        setArrowPosition({ top: -1000, left: -1000, rotation: 0 });
+        return;
+      }
+
       const element = highlightedElementRef.current;
-      if (!element) return;
 
       // On mobile, getBoundingClientRect can be wrong after scroll lock
       // Use a small delay to ensure DOM is settled, or calculate before lock
@@ -78,25 +105,24 @@ const CheckInTutorialOverlay = ({
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
 
-      // For map overlay, position tooltip on top of the map element
+      // For overlay on element, position tooltip on top of the element (full width)
       if (tooltipConfig.overlayOnElement) {
-        const tooltipWidth = Math.min(screenWidth - 40, 320);
-        const tooltipHeight = 200; // Approximate tooltip height
         const padding = 20;
+        const tooltipHeight = 200; // Approximate tooltip height
 
-        // Position tooltip centered over the map element
+        // Position tooltip on top of the element, full width of element
         const elementTop = elementRect.top;
         const elementLeft = elementRect.left;
         const elementWidth = elementRect.width;
 
-        // Center tooltip horizontally over map, position near top of map
-        const left = elementLeft + (elementWidth / 2) - (tooltipWidth / 2);
-        // Ensure tooltip doesn't go off screen
-        const constrainedLeft = Math.max(20, Math.min(left, screenWidth - tooltipWidth - 20));
+        // Use full width of element, but ensure it doesn't go off screen
+        const tooltipWidth = Math.min(elementWidth - (padding * 2), screenWidth - (padding * 2));
+        const left = elementLeft + padding;
+        const constrainedLeft = Math.max(padding, Math.min(left, screenWidth - tooltipWidth - padding));
 
-        // Position tooltip near the top of the map, but ensure it's visible
+        // Position tooltip near the top of the element, but ensure it's visible
         const top = elementTop + padding;
-        const constrainedTop = Math.max(20, Math.min(top, screenHeight - tooltipHeight - 20));
+        const constrainedTop = Math.max(padding, Math.min(top, screenHeight - tooltipHeight - padding));
 
         setTooltipPosition({
           top: constrainedTop,
@@ -195,6 +221,8 @@ const CheckInTutorialOverlay = ({
       onStepComplete('skip');
     } else if (action === 'continue') {
       onStepComplete('continue');
+    } else if (action === 'continueTutorial') {
+      onStepComplete('continueTutorial');
     } else if (action === 'useDefault') {
       onStepComplete('useDefault');
     } else if (action === 'setCustom') {
@@ -233,8 +261,8 @@ const CheckInTutorialOverlay = ({
     return null;
   }
 
-  // Render tooltip in portal for checkedIn step to appear above modals
-  const shouldUsePortal = currentStep === 'checkedIn';
+  // Render tooltip in portal for checkedIn and afterSafe steps to appear above modals and active check-ins
+  const shouldUsePortal = currentStep === 'checkedIn' || currentStep === 'afterSafe';
 
   const tooltipContent = (
     <>
@@ -288,7 +316,7 @@ const CheckInTutorialOverlay = ({
           top: `${tooltipPosition.top}px`,
           left: `${tooltipPosition.left}px`,
           width: tooltipPosition.width || (window.innerWidth < 768 ? 'calc(100vw - 32px)' : '400px'),
-          maxWidth: '400px',
+          maxWidth: tooltipConfig.overlayOnElement ? 'none' : '400px',
           maxHeight: 'calc(100vh - 180px)', // Leave space for header and bottom nav
           overflowY: 'auto',
           zIndex: 10003, // Ensure it's on top of everything

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FixedSizeList as List } from 'react-window';
 import PostReactions from './PostReactions';
 import PostComments from './PostComments';
+import MessageButton from '../messages/MessageButton';
+import SupportActionsDropdown from '../support/SupportActionsDropdown';
 
 const ActivityFeed = ({
   activityFeed,
@@ -129,6 +131,55 @@ const ActivityFeed = ({
               </div>
             )}
 
+            {activity.type === 'circle_checkin' && (
+              <div>
+                <div className="flex items-start gap-2 md:gap-3 mb-3">
+                  <div className="text-2xl md:text-3xl flex-shrink-0">
+                    {(() => {
+                      const moodEmojis = { 5: '🌟', 4: '😊', 3: '😐', 2: '😔', 1: '😢' };
+                      return moodEmojis[activity.checkInData.mood] || '😐';
+                    })()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-text-primary text-sm md:text-base break-words">
+                      <button
+                        onClick={() => navigate(`/user/${activity.userId}`)}
+                        className="text-primary hover:underline font-semibold"
+                      >
+                        {activity.userName}
+                      </button>
+                      {' is feeling '}
+                      {(() => {
+                        const moodLabels = { 5: '🌟 Amazing', 4: '😊 Good', 3: '😐 Okay', 2: '😔 Not great', 1: '😢 Struggling' };
+                        return moodLabels[activity.checkInData.mood] || '😐 Okay';
+                      })()}
+                    </h3>
+                    {activity.checkInData.note && (
+                      <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 mt-2 italic">
+                        "{activity.checkInData.note}"
+                      </p>
+                    )}
+                    <p className="text-xs md:text-sm text-text-secondary mt-1">
+                      {getTimeAgo(activity.timestamp)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Send Support Button */}
+                <div className="flex gap-2">
+                  <MessageButton
+                    recipientId={activity.userId}
+                    recipientName={activity.userName}
+                    recipientPhotoURL={null}
+                    contextType="circle_checkin_response"
+                    contextId={activity.id}
+                    variant="support"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+
             {activity.type === 'badge' && (
               <div className="flex items-start gap-2 md:gap-3">
                 <div className="text-2xl md:text-3xl flex-shrink-0">{activity.badge.icon || '🏆'}</div>
@@ -203,13 +254,13 @@ const ActivityFeed = ({
 
                     {/* Quick action buttons */}
                     <div className="flex gap-2">
-                      <a
-                        href={`sms:${activity.postData.userPhone || ''}`}
-                        className="flex-1 btn btn-sm bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-2 flex items-center justify-center gap-2"
-                      >
-                        <span>💬</span>
-                        <span>Send Message</span>
-                      </a>
+                      <SupportActionsDropdown
+                        recipientId={activity.userId}
+                        recipientName={activity.userName}
+                        recipientPhone={activity.postData.userPhone}
+                        contextType="needs_attention"
+                        contextId={activity.id}
+                      />
                     </div>
                   </div>
                 ) : (

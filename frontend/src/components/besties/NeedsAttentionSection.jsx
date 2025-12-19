@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SupportActionsDropdown from '../support/SupportActionsDropdown';
 
 const NeedsAttentionSection = ({ missedCheckIns, requestsForAttention, besties }) => {
   const [dismissedItems, setDismissedItems] = useState(new Set());
@@ -115,18 +116,16 @@ const NeedsAttentionSection = ({ missedCheckIns, requestsForAttention, besties }
                         {request.tag === 'needs to vent' ? '💭 needs to vent' : request.tag}
                       </span>
                     </div>
-                    <button
-                      className="btn btn-sm btn-primary flex-shrink-0 ml-2"
-                      onClick={() => {
+                    <SupportActionsDropdown
+                      recipientId={request.userId}
+                      recipientName={request.userName}
+                      recipientPhone={besties.find(b => b.userId === request.userId)?.phone}
+                      contextType="needs_attention"
+                      contextId={request.userId}
+                      onActionComplete={() => {
                         dismissItem('request', request.userId);
-                        const bestie = besties.find(b => b.userId === request.userId);
-                        if (bestie?.phone) {
-                          window.location.href = `sms:${bestie.phone}`;
-                        }
                       }}
-                    >
-                      💜 Reach Out
-                    </button>
+                    />
                   </div>
                 </div>
               </div>

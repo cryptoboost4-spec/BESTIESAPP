@@ -74,6 +74,32 @@ const { trackPostComment } = require('./core/social/trackPostComment');
 const { generateShareCard } = require('./core/social/generateShareCard');
 
 // ========================================
+// MESSAGE FUNCTIONS
+// ========================================
+const { onMessageCreated } = require('./core/messages/onMessageCreated');
+
+// ========================================
+// CIRCLE CHECK-IN FUNCTIONS
+// ========================================
+const { onCircleCheckInCreated } = require('./core/circleCheckin/onCircleCheckInCreated');
+
+// ========================================
+// CHALLENGE FUNCTIONS
+// ========================================
+const { onChallengeCompleted } = require('./core/challenges/onChallengeCompleted');
+
+// ========================================
+// SAFETY PACT FUNCTIONS
+// ========================================
+const { onPactActivated } = require('./core/pact/onPactActivated');
+
+// ========================================
+// SCHEDULED FUNCTIONS
+// ========================================
+const updateConnectionScoresLogic = require('./scheduled/updateConnectionScores');
+const expireChallengesLogic = require('./scheduled/expireChallenges');
+
+// ========================================
 // NOTIFICATION FUNCTIONS
 // ========================================
 const checkBirthdaysLogic = require('./core/notifications/checkBirthdays');
@@ -1258,6 +1284,18 @@ exports.onBestieDeleted = onBestieDeleted;
 exports.onUserCreated = onUserCreated;
 exports.onUserRequestAttention = onUserRequestAttention;
 
+// Messages
+exports.onMessageCreated = onMessageCreated;
+
+// Circle Check-Ins
+exports.onCircleCheckInCreated = onCircleCheckInCreated;
+
+// Challenges
+exports.onChallengeCompleted = onChallengeCompleted;
+
+// Safety Pacts
+exports.onPactActivated = onPactActivated;
+
 // Badges
 exports.onBadgeEarned = onBadgeEarned;
 
@@ -1287,6 +1325,22 @@ exports.generateMilestones = functions.pubsub
   .timeZone('Australia/Brisbane')
   .onRun(async (context) => {
     return await generateMilestonesLogic();
+  });
+
+// Connection Score Caching (runs daily)
+exports.updateConnectionScores = functions.pubsub
+  .schedule('every day 03:00')
+  .timeZone('Australia/Brisbane')
+  .onRun(async (context) => {
+    return await updateConnectionScoresLogic();
+  });
+
+// Expire Challenges (runs daily)
+exports.expireChallenges = functions.pubsub
+  .schedule('every day 04:00')
+  .timeZone('Australia/Brisbane')
+  .onRun(async (context) => {
+    return await expireChallengesLogic();
   });
 
 // Payments

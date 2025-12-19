@@ -13,8 +13,12 @@ const MobileBottomNav = () => {
 
   const isActive = (path) => location.pathname === path;
   
+  // Check if Bestie Circle tutorial is completed (buttons should be visible)
+  const isBestieCircleTutorialComplete = tutorial.isCompleted;
+  
   // Check if buttons should flash
-  const shouldFlashBesties = currentCheckInTutorialStep === 'afterSafe';
+  const shouldFlashBesties = currentCheckInTutorialStep === 'afterSafe' || 
+    (isBestieCircleTutorialComplete && !tutorial.tutorialActive);
   const shouldFlashProfile = tutorial.tutorialActive && tutorial.currentStep === 1;
 
   return (
@@ -45,32 +49,36 @@ const MobileBottomNav = () => {
           <span className="text-xs font-semibold">Home</span>
         </Link>
 
-        <Link
-          to="/besties"
-          onClick={(e) => {
-            // If in afterSafe tutorial step, handle navigation and complete tutorial
-            if (currentCheckInTutorialStep === 'afterSafe') {
-              e.preventDefault();
-              markCheckInTutorialComplete();
-              navigate('/besties', { state: { startTutorial: true } });
-            }
-          }}
-          className={`flex flex-col items-center gap-1 transition-colors relative ${
-            isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
-          } ${shouldFlashBesties ? 'animate-pulse' : ''}`}
-          style={shouldFlashBesties ? {
-            boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
-            borderRadius: '12px',
-            padding: '8px',
-            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
-          } : {}}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <span className="text-xs font-semibold">Besties</span>
-        </Link>
+        {/* Only show Besties button after Bestie Circle tutorial is complete */}
+        {isBestieCircleTutorialComplete && (
+          <Link
+            to="/besties"
+            onClick={(e) => {
+              // If in afterSafe tutorial step, handle navigation and complete tutorial
+              if (currentCheckInTutorialStep === 'afterSafe') {
+                e.preventDefault();
+                markCheckInTutorialComplete();
+                navigate('/besties', { state: { startTutorial: true } });
+              }
+            }}
+            className={`flex flex-col items-center gap-1 transition-colors relative ${
+              isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
+            } ${shouldFlashBesties ? 'animate-pulse' : ''}`}
+            style={shouldFlashBesties ? {
+              boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+              borderRadius: '12px',
+              padding: '8px',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+            } : {}}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span className="text-xs font-semibold">Besties</span>
+          </Link>
+        )}
 
+        {/* Profile button - always visible (not tied to Bestie Circle tutorial) */}
         <Link
           to="/profile"
           onClick={() => {

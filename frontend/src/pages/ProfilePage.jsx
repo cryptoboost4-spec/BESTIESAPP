@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { doc, getDoc, collection, query, where, getDocs, onSnapshot, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, onSnapshot, limit, Timestamp } from 'firebase/firestore';
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
@@ -39,6 +39,14 @@ const ProfilePage = () => {
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  
+  // New relationship stats
+  const [messagesExchangedThisWeek, setMessagesExchangedThisWeek] = useState(0);
+  const [supportActionsThisMonth, setSupportActionsThisMonth] = useState(0);
+  const [challengesCompleted, setChallengesCompleted] = useState(0);
+  const [activePacts, setActivePacts] = useState(0);
+  const [avgResponseTime, setAvgResponseTime] = useState(0);
+  const [strongestConnection, setStrongestConnection] = useState(null);
 
   // Tutorial state
   const tutorial = useProfileTutorialState();
@@ -223,10 +231,136 @@ const ProfilePage = () => {
         setWeekendCheckIns(weekendCount);
       }
 
+      // Load relationship stats
+      await loadRelationshipStats();
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading data:', error);
       setLoading(false);
+    }
+  };
+
+  const loadRelationshipStats = async () => {
+    if (!currentUser) return;
+
+    try {
+      const now = new Date();
+      
+      // Calculate start of this week (Monday)
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+      const startOfWeekTimestamp = Timestamp.fromDate(startOfWeek);
+
+      // Calculate start of this month
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const startOfMonthTimestamp = Timestamp.fromDate(startOfMonth);
+
+      // Load messages this week (sent or received)
+      const messagesQuery = query(
+        collection(db, 'bestie_messages'),
+        where('sentAt', '>=', startOfWeekTimestamp),
+        limit(1000)
+      );
+      const messagesSnapshot = await getDocs(messagesQuery);
+      const messagesThisWeek = messagesSnapshot.docs.filter(doc => {
+        const data = doc.data();
+        return data.senderId === currentUser.uid || data.recipientId === currentUser.uid;
+      }).length;
+      setMessagesExchangedThisWeek(messagesThisWeek);
+
+      // Load support actions this month
+      const supportActionsQuery = query(
+        collection(db, 'support_actions'),
+        where('actorId', '==', currentUser.uid),
+        where('timestamp', '>=', startOfMonthTimestamp),
+        limit(1000)
+      );
+      const supportActionsSnapshot = await getDocs(supportActionsQuery);
+      setSupportActionsThisMonth(supportActionsSnapshot.size);
+
+      // Load completed challenges
+      const challengesQuery1 = query(
+        collection(db, 'bestie_challenges'),
+        where('user1Id', '==', currentUser.uid),
+        where('status', '==', 'completed'),
+        limit(100)
+      );
+      const challengesQuery2 = query(
+        collection(db, 'bestie_challenges'),
+        where('user2Id', '==', currentUser.uid),
+        where('status', '==', 'completed'),
+        limit(100)
+      );
+      const [challenges1, challenges2] = await Promise.all([
+        getDocs(challengesQuery1),
+        getDocs(challengesQuery2)
+      ]);
+      setChallengesCompleted(challenges1.size + challenges2.size);
+
+      // Load active pacts
+      const pactsQuery1 = query(
+        collection(db, 'safety_pacts'),
+        where('user1Id', '==', currentUser.uid),
+        where('status', '==', 'active'),
+        limit(100)
+      );
+      const pactsQuery2 = query(
+        collection(db, 'safety_pacts'),
+        where('user2Id', '==', currentUser.uid),
+        where('status', '==', 'active'),
+        limit(100)
+      );
+      const [pacts1, pacts2] = await Promise.all([
+        getDocs(pactsQuery1),
+        getDocs(pactsQuery2)
+      ]);
+      setActivePacts(pacts1.size + pacts2.size);
+
+      // Load average response time from alert_responses
+      const alertResponsesQuery = query(
+        collection(db, 'alert_responses'),
+        where('responderId', '==', currentUser.uid),
+        limit(100)
+      );
+      const alertResponsesSnapshot = await getDocs(alertResponsesQuery);
+      if (!alertResponsesSnapshot.empty) {
+        let totalResponseTime = 0;
+        let count = 0;
+        alertResponsesSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.responseTime) {
+            totalResponseTime += data.responseTime;
+            count++;
+          }
+        });
+        if (count > 0) {
+          setAvgResponseTime(totalResponseTime / count);
+        }
+      }
+
+      // Load strongest connection from user stats (cached) or calculate
+      const strongestConn = userData?.stats?.strongestConnection;
+      if (strongestConn) {
+        // Get bestie name and photo
+        const bestieDoc = await getDoc(doc(db, 'users', strongestConn.bestieId));
+        if (bestieDoc.exists()) {
+          const bestieData = bestieDoc.data();
+          setStrongestConnection({
+            bestieId: strongestConn.bestieId,
+            bestieName: strongestConn.bestieName || bestieData.displayName || 'Bestie',
+            photoURL: bestieData.photoURL || null,
+            score: strongestConn.score
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading relationship stats:', error);
+      // Don't fail if stats can't be loaded
     }
   };
 
@@ -499,6 +633,12 @@ const ProfilePage = () => {
             loginStreak={loginStreak}
             nighttimeCheckIns={nighttimeCheckIns}
             weekendCheckIns={weekendCheckIns}
+            messagesExchangedThisWeek={messagesExchangedThisWeek}
+            supportActionsThisMonth={supportActionsThisMonth}
+            challengesCompleted={challengesCompleted}
+            activePacts={activePacts}
+            avgResponseTime={avgResponseTime}
+            strongestConnection={strongestConnection}
           />
         </div>
 

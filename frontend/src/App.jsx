@@ -50,6 +50,7 @@ const AboutBestiesPage = lazy(() => import('./pages/AboutBestiesPage'));
 const AdminBackfillPage = lazy(() => import('./pages/AdminBackfillPage'));
 const CircleHealthPage = lazy(() => import('./pages/CircleHealthPage'));
 const DataPolicyPage = lazy(() => import('./pages/DataPolicyPage'));
+const ChallengesPage = lazy(() => import('./pages/ChallengesPage'));
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
@@ -273,6 +274,10 @@ function App() {
                   <Route
                     path="/data-policy"
                     element={user ? <DataPolicyPage /> : <Navigate to="/login" />}
+                  />
+                  <Route
+                    path="/challenges"
+                    element={user ? <ChallengesPage /> : <Navigate to="/login" />}
                   />
 
                   {/* Admin-only routes */}

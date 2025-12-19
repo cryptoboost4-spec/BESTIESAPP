@@ -23,6 +23,7 @@ import CreatePostModal from '../components/CreatePostModal';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
 import FloatingNotificationBell from '../components/FloatingNotificationBell';
+import CircleCheckInCard from '../components/circleCheckin/CircleCheckInCard';
 import { useActivityFeed } from '../hooks/useActivityFeed';
 import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
 import BestiesTutorialWelcome from '../components/tutorials/besties/BestiesTutorialWelcome';
@@ -507,8 +508,11 @@ const BestiesPage = () => {
 
         {/* Activity Feed - Moved to top */}
         <div ref={activityFeedRef} className="mb-6">
+          {/* Circle Check-In Card */}
+          <CircleCheckInCard />
+
           {/* Activity Feed Header with Create Post Button */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 mt-6">
             <h2 className="text-lg md:text-xl font-display text-text-primary">
               📰 Activity Feed
             </h2>

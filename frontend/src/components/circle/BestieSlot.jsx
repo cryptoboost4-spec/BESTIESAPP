@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../../services/firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { useAuth } from '../../contexts/AuthContext';
 import ProfileWithBubble from '../ProfileWithBubble';
 import { getConnectionEmoji, formatTimeAgo } from '../../services/connectionStrength';
+import SafetyPactModal from '../pact/SafetyPactModal';
+import PactCelebration from '../pact/PactCelebration';
 
 const BestieSlot = ({
   bestie,
@@ -15,6 +20,70 @@ const BestieSlot = ({
   setShowReplaceModal,
   handleRemoveFromCircle,
 }) => {
+  const { currentUser } = useAuth();
+  const [pactStatus, setPactStatus] = useState(null);
+  const [showPactModal, setShowPactModal] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [loadingPact, setLoadingPact] = useState(true);
+
+  // Load pact status
+  useEffect(() => {
+    if (!currentUser || !bestie.id) return;
+
+    const loadPactStatus = async () => {
+      try {
+        const pactQuery1 = query(
+          collection(db, 'safety_pacts'),
+          where('user1Id', '==', currentUser.uid),
+          where('user2Id', '==', bestie.id),
+          limit(1)
+        );
+        const pactQuery2 = query(
+          collection(db, 'safety_pacts'),
+          where('user1Id', '==', bestie.id),
+          where('user2Id', '==', currentUser.uid),
+          limit(1)
+        );
+
+        const [snapshot1, snapshot2] = await Promise.all([
+          getDocs(pactQuery1),
+          getDocs(pactQuery2)
+        ]);
+
+        if (!snapshot1.empty) {
+          const pact = snapshot1.docs[0].data();
+          setPactStatus(pact.status);
+          
+          // Show celebration if just activated
+          if (pact.status === 'active' && pact.activatedAt) {
+            const activatedAt = pact.activatedAt.toDate();
+            const now = new Date();
+            // Show if activated within last 5 minutes
+            if ((now - activatedAt) < 5 * 60 * 1000) {
+              setShowCelebration(true);
+            }
+          }
+        } else if (!snapshot2.empty) {
+          const pact = snapshot2.docs[0].data();
+          setPactStatus(pact.status);
+          
+          // Check if this is an invitation (user2 needs to accept)
+          if (pact.status === 'pending' && pact.user1Id === bestie.id) {
+            setPactStatus('invited');
+          }
+        } else {
+          setPactStatus(null);
+        }
+      } catch (error) {
+        console.error('Error loading pact status:', error);
+      } finally {
+        setLoadingPact(false);
+      }
+    };
+
+    loadPactStatus();
+  }, [currentUser, bestie.id]);
+
   const status = getStatusInfo(bestie);
   const angle = (index * 72 - 90) * (Math.PI / 180);
   const radius = 45;
@@ -87,6 +156,13 @@ const BestieSlot = ({
                 <span className="text-xs">💕</span>
               </div>
             )}
+
+            {/* Safety Pact Badge - Bottom Left */}
+            {!loadingPact && pactStatus === 'active' && (
+              <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
+                <span className="text-xs">🛡️</span>
+              </div>
+            )}
           </div>
         </button>
 
@@ -136,6 +212,34 @@ const BestieSlot = ({
             >
               👤 View Profile
             </button>
+            
+            {/* Safety Pact Button */}
+            {!loadingPact && (
+              <>
+                {pactStatus === null && (
+                  <button
+                    onClick={() => setShowPactModal(true)}
+                    className="w-full text-left px-3 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded text-sm font-semibold text-purple-600 dark:text-purple-400"
+                  >
+                    🛡️ Make Our Safety Pact
+                  </button>
+                )}
+                {pactStatus === 'invited' && (
+                  <button
+                    onClick={() => setShowPactModal(true)}
+                    className="w-full text-left px-3 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded text-sm font-semibold text-purple-600 dark:text-purple-400"
+                  >
+                    🛡️ View Safety Pact Invitation
+                  </button>
+                )}
+                {pactStatus === 'active' && (
+                  <div className="w-full text-left px-3 py-2 text-sm font-semibold text-green-600 dark:text-green-400">
+                    🛡️ Safety Pact Active ✓
+                  </div>
+                )}
+              </>
+            )}
+            
             <button
               onClick={() => setShowReplaceModal(true)}
               className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm font-semibold text-gray-700"
@@ -151,6 +255,28 @@ const BestieSlot = ({
           </div>
         )}
       </div>
+
+      {/* Safety Pact Modal */}
+      <SafetyPactModal
+        isOpen={showPactModal}
+        onClose={() => setShowPactModal(false)}
+        bestieId={bestie.id}
+        bestieName={bestie.name || 'Bestie'}
+        pactStatus={pactStatus}
+        onPactCreated={(newStatus) => {
+          setPactStatus(newStatus);
+          if (newStatus === 'active') {
+            setShowCelebration(true);
+          }
+        }}
+      />
+
+      {/* Pact Celebration */}
+      <PactCelebration
+        isOpen={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        bestieName={bestie.name || 'Bestie'}
+      />
     </div>
   );
 };

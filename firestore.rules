@@ -345,6 +345,103 @@ service cloud.firestore {
       allow update: if isSignedIn() && request.auth.uid == resource.data.userId; // Allow marking as celebrated
       allow delete: if isAdmin();
     }
+
+    // Bestie Messages collection - "I See You" messages between besties
+    match /bestie_messages/{messageId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.senderId ||
+        request.auth.uid == resource.data.recipientId
+      );
+      allow create: if isSignedIn() && 
+        request.auth.uid == request.resource.data.senderId &&
+        request.resource.data.keys().hasAll(['senderId', 'recipientId', 'messageText', 'sentAt']);
+      allow update: if isSignedIn() && (
+        // Recipient can mark as read
+        (request.auth.uid == resource.data.recipientId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']))
+      );
+      allow delete: if false; // Messages cannot be deleted (as per plan)
+    }
+
+    // Support Actions collection - trackable support actions
+    match /support_actions/{actionId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.actorId ||
+        request.auth.uid == resource.data.recipientId
+      );
+      allow create: if isSignedIn() && 
+        request.auth.uid == request.resource.data.actorId &&
+        request.resource.data.keys().hasAll(['actorId', 'recipientId', 'actionType', 'timestamp']);
+      allow update, delete: if false; // Immutable records
+    }
+
+    // Circle Check-ins collection - daily wellness check-ins
+    match /circle_checkins/{checkInId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        // Visible to featured circle members only
+        request.auth.uid in resource.data.visibleTo
+      );
+      allow create: if isSignedIn() && 
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.keys().hasAll(['userId', 'mood', 'createdAt', 'visibleTo']);
+      allow update, delete: if false; // Immutable records
+    }
+
+    // Bestie Challenges collection - challenges between besties
+    match /bestie_challenges/{challengeId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.user1Id ||
+        request.auth.uid == resource.data.user2Id
+      );
+      allow create: if isSignedIn() && 
+        request.auth.uid == request.resource.data.user1Id &&
+        request.resource.data.keys().hasAll(['user1Id', 'user2Id', 'status', 'challengeId', 'target']);
+      allow update: if isSignedIn() && (
+        // User 2 can accept
+        (request.auth.uid == resource.data.user2Id &&
+         request.resource.data.status == 'active' &&
+         resource.data.status == 'invited') ||
+        // Either user can cancel
+        ((request.auth.uid == resource.data.user1Id ||
+          request.auth.uid == resource.data.user2Id) &&
+         request.resource.data.status == 'cancelled') ||
+        // Progress updates only by Cloud Functions (via updateChallengeProgress)
+        false
+      );
+      allow delete: if false; // Challenges cannot be deleted
+    }
+
+    // Challenge Templates collection - pre-made challenge templates (admin-only)
+    match /challenge_templates/{templateId} {
+      allow read: if isSignedIn(); // All users can read templates
+      allow create, update, delete: if isAdmin(); // Only admins can manage templates
+    }
+
+    // Safety Pacts collection - safety pacts between bestie pairs
+    match /safety_pacts/{pactId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.user1Id ||
+        request.auth.uid == resource.data.user2Id
+      );
+      allow create: if isSignedIn() && 
+        request.auth.uid == request.resource.data.user1Id &&
+        request.resource.data.keys().hasAll(['user1Id', 'user2Id', 'status', 'createdAt']);
+      allow update: if isSignedIn() && (
+        // User 2 can accept (activate pact)
+        (request.auth.uid == resource.data.user2Id &&
+         request.resource.data.status == 'active' &&
+         resource.data.status == 'pending') ||
+        // Either user can end pact
+        ((request.auth.uid == resource.data.user1Id ||
+          request.auth.uid == resource.data.user2Id) &&
+         request.resource.data.status == 'inactive' &&
+         resource.data.status == 'active') ||
+        // Progress updates (lastHonoredAt) only by Cloud Functions
+        false
+      );
+      allow delete: if false; // Pacts cannot be deleted
+    }
     // Facebook Messenger Contacts collection
     match /messengerContacts/{contactId} {
       allow read: if isSignedIn() && request.auth.uid == resource.data.userId;

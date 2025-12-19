@@ -39,7 +39,9 @@ const HomePage = () => {
   const { currentCheckInTutorialStep, setCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const livingCircleRef = useRef(null);
+  const activeCheckInCardRef = useRef(null);
   const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
+  const [previousCheckInIds, setPreviousCheckInIds] = useState(new Set());
   const [showBestieCircleTutorial] = useState(false);
 
   // Scroll to bestie circle when tutorial starts
@@ -157,7 +159,20 @@ const HomePage = () => {
           }, 1000); // Small delay to let user see their check-in
         }
 
+        // Detect check-in completion (check-in disappeared from active list)
+        const currentCheckInIds = new Set(checkIns.map(c => c.id));
+        const completedCheckInId = Array.from(previousCheckInIds).find(id => !currentCheckInIds.has(id));
+        
+        if (completedCheckInId && currentCheckInTutorialStep === 'checkedIn') {
+          // Check-in was just completed - show afterSafe tutorial step
+          console.log('[HomePage] Check-in completed, setting afterSafe step');
+          setTimeout(() => {
+            setCheckInTutorialStep('afterSafe');
+          }, 500); // Small delay to let navigation complete
+        }
+
         setPreviousCheckInCount(checkIns.length);
+        setPreviousCheckInIds(currentCheckInIds);
         setActiveCheckIns(checkIns);
         setLoading(false);
       },
@@ -241,7 +256,7 @@ const HomePage = () => {
       unsubscribeCheckIns();
       unsubscribeAlerted();
     };
-  }, [currentUser, currentTutorialStep, previousCheckInCount, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
+  }, [currentUser, currentTutorialStep, previousCheckInCount, previousCheckInIds, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
 
   // Load alerts for featured circle besties
   useEffect(() => {
@@ -666,8 +681,10 @@ const HomePage = () => {
           <>
             <div className="mb-6 space-y-4">
               <h2 className="text-xl font-display text-text-primary">Active Check-Ins</h2>
-              {activeCheckIns.map((checkIn) => (
-                <CheckInCard key={checkIn.id} checkIn={checkIn} />
+              {activeCheckIns.map((checkIn, index) => (
+                <div key={checkIn.id} ref={index === 0 ? activeCheckInCardRef : null}>
+                  <CheckInCard checkIn={checkIn} />
+                </div>
               ))}
             </div>
 
@@ -831,12 +848,12 @@ const HomePage = () => {
                 icon: '✨'
               });
             }}
-            highlightedElementRef={{ current: null }}
+            highlightedElementRef={activeCheckIns.length > 0 ? activeCheckInCardRef : null}
             tooltipConfig={{
               icon: '🎉',
               title: 'Amazing Work!',
               body: `Congratulations! You've learned how to create a check-in and keep yourself safe.\n\nReady to learn about your Bestie Circle? It's where you build your safety network with the people you trust most.`,
-              overlayOnElement: false,
+              overlayOnElement: activeCheckIns.length > 0,
               dismissible: false,
               canDismiss: false,
               showSkipText: true,

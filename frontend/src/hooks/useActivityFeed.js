@@ -126,6 +126,23 @@ export function useActivityFeed(currentUser, besties, userData) {
       const allQueryPromises = [];
       const userDocPromises = [];
       const badgeDocPromises = [];
+
+      // Load circle check-ins (visible to current user's featured circle)
+      const featuredCircle = userData?.featuredCircle || [];
+      if (featuredCircle.length > 0) {
+        // Query circle check-ins where current user is in visibleTo array
+        const circleCheckInsQuery = query(
+          collection(db, 'circle_checkins'),
+          where('visibleTo', 'array-contains', currentUser.uid),
+          where('createdAt', '>=', twoDaysAgo),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        );
+        allQueryPromises.push(getDocs(circleCheckInsQuery).then(snap => ({ type: 'circle_checkins', snap })).catch(err => {
+          console.warn('Error loading circle check-ins:', err);
+          return { type: 'circle_checkins', snap: { forEach: () => {}, empty: true } };
+        }));
+      }
       
       for (let i = 0; i < bestieIds.length; i += BATCH_SIZE) {
         const batch = bestieIds.slice(i, i + BATCH_SIZE);
@@ -252,6 +269,21 @@ export function useActivityFeed(currentUser, besties, userData) {
               timestamp: data.createdAt?.toDate() || new Date(),
             });
           });
+        } else if (result.type === 'circle_checkins') {
+          result.snap.forEach((checkInDoc) => {
+            const data = checkInDoc.data();
+            const userId = data.userId;
+            const bestie = bestieMap.get(userId);
+            
+            activities.push({
+              id: checkInDoc.id,
+              type: 'circle_checkin',
+              checkInData: data,
+              userName: bestie?.name || userDataMap.get(userId)?.displayName || 'Bestie',
+              userId: userId,
+              timestamp: data.createdAt?.toDate() || new Date(),
+            });
+          });
         }
       });
       
@@ -290,7 +322,7 @@ export function useActivityFeed(currentUser, besties, userData) {
 
       activities.sort((a, b) => b.timestamp - a.timestamp);
 
-      const featuredCircle = userData?.featuredCircle || [];
+      // Use featuredCircle already declared above
       const filteredMissed = featuredCircle.length > 0
         ? missed.filter(m => featuredCircle.includes(m.userId))
         : missed;

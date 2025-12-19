@@ -69,6 +69,15 @@ exports.onCheckInCreated = functions.firestore
         await updateUserBadges(checkIn.userId);
       }
 
+      // Update challenge progress (if applicable)
+      try {
+        const { updateChallengeProgress } = require('../challenges/updateChallengeProgress');
+        await updateChallengeProgress(checkIn.userId, 'safety_checkins');
+      } catch (error) {
+        functions.logger.warn('Error updating challenge progress for check-in:', error);
+        // Don't fail the whole function if challenge update fails
+      }
+
       // Update analytics cache (real-time global stats)
       const cacheRef = db.collection('analytics_cache').doc('realtime');
       await cacheRef.set({
