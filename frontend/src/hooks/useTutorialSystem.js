@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 /**
  * Unified Tutorial System Hook
@@ -151,8 +151,25 @@ export const useTutorialSystem = () => {
     return newState;
   }
 
+  // Dispatch custom events for backward compatibility
+  const dispatchTutorialEvents = useCallback((newState) => {
+    if (typeof window === 'undefined') return;
+
+    const events = [
+      { key: 'bestieCircle_tutorialComplete', value: newState.bestieCircle.complete },
+      { key: 'tutorial_complete', value: newState.home.complete },
+      { key: 'checkInTutorial_complete', value: newState.checkIn.complete },
+    ];
+
+    events.forEach(({ key, value }) => {
+      window.dispatchEvent(new CustomEvent(`${key}_changed`, {
+        detail: { complete: value }
+      }));
+    });
+  }, []);
+
   // Save state to localStorage
-  function saveToLocalStorage(newState) {
+  const saveToLocalStorage = useCallback((newState) => {
     try {
       localStorage.setItem('_tutorial_system_state', JSON.stringify(newState));
 
@@ -169,24 +186,7 @@ export const useTutorialSystem = () => {
     } catch (error) {
       console.error('[TutorialSystem] Error saving to localStorage:', error);
     }
-  }
-
-  // Dispatch custom events for backward compatibility
-  function dispatchTutorialEvents(newState) {
-    if (typeof window === 'undefined') return;
-
-    const events = [
-      { key: 'bestieCircle_tutorialComplete', value: newState.bestieCircle.complete },
-      { key: 'tutorial_complete', value: newState.home.complete },
-      { key: 'checkInTutorial_complete', value: newState.checkIn.complete },
-    ];
-
-    events.forEach(({ key, value }) => {
-      window.dispatchEvent(new CustomEvent(`${key}_changed`, {
-        detail: { complete: value }
-      }));
-    });
-  }
+  }, [dispatchTutorialEvents]);
 
   // Sync with Firestore on mount
   useEffect(() => {
@@ -230,8 +230,9 @@ export const useTutorialSystem = () => {
         } else {
           // Migrate from old Firestore fields
           console.log('[TutorialSystem] Migrating from old Firestore fields...');
+          const defaultState = getDefaultState();
           const migratedState = {
-            ...state,
+            ...defaultState,
             home: {
               complete: userData.tutorialComplete || false,
               currentStep: userData.currentTutorialStep || null,
@@ -247,7 +248,7 @@ export const useTutorialSystem = () => {
               tutorialActive: false,
             },
             system: {
-              ...state.system,
+              ...defaultState.system,
               onboardingComplete: userData.onboardingCompleted || false,
               allComplete: false,
               lastUpdated: new Date().toISOString(),
@@ -271,7 +272,7 @@ export const useTutorialSystem = () => {
     };
 
     syncFromFirestore();
-  }, [currentUser]);
+  }, [currentUser, saveToLocalStorage]);
 
   // Sync to Firestore when state changes (debounced)
   useEffect(() => {
@@ -302,7 +303,7 @@ export const useTutorialSystem = () => {
   useEffect(() => {
     if (!isLoaded) return;
     saveToLocalStorage(state);
-  }, [state, isLoaded]);
+  }, [state, isLoaded, saveToLocalStorage]);
 
   // Mark tutorial as complete
   const markComplete = useCallback((tutorialName) => {
@@ -392,7 +393,7 @@ export const useTutorialSystem = () => {
     setState(newState);
     saveToLocalStorage(newState);
     console.log('[TutorialSystem] Reset all tutorials');
-  }, []);
+  }, [saveToLocalStorage]);
 
   // Return state and control functions
   return {

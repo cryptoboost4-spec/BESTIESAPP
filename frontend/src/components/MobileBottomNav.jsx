@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,7 +20,6 @@ const MobileBottomNav = () => {
     bestieCircle,
     besties,
     profile,
-    shouldShowNavigation,
     markComplete,
     setPostTutorialStep,
   } = tutorial;
