@@ -113,3 +113,42 @@ export const getProgressDots = (currentStep, totalSteps) => {
   }));
 };
 
+/**
+ * Clear tutorial flow state (temporary state used during tutorial)
+ * This clears post-tutorial flow state but preserves completion flags
+ * so the tutorials don't re-appear and navigation works correctly
+ */
+export const clearAllTutorialState = () => {
+  // Clear post-tutorial flow state (temporary)
+  localStorage.removeItem('bestieCircle_postTutorialStep');
+  localStorage.removeItem('bestieCircle_tutorialActive');
+  localStorage.removeItem('livingCircle_readyToLearnDismissed');
+  
+  // Clear current step state (not completion flags)
+  localStorage.removeItem('current_checkInTutorial_step');
+  localStorage.removeItem('current_tutorial_step');
+  
+  // Mark all tutorials as complete so they don't re-appear
+  localStorage.setItem('bestieCircle_tutorialComplete', 'true');
+  localStorage.setItem('checkInTutorial_complete', 'true');
+  localStorage.setItem('tutorial_complete', 'true');
+  localStorage.setItem('bestiesTutorial_complete', 'true');
+  localStorage.setItem('profileTutorial_complete', 'true');
+  localStorage.setItem('besties_tooltip_dismissed', 'true');
+  
+  // Dispatch events to notify components immediately
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('bestieCircle_postTutorialStep_changed', {
+      detail: { step: null }
+    }));
+    window.dispatchEvent(new CustomEvent('bestieCircle_tutorialComplete_changed', {
+      detail: { complete: true }
+    }));
+    window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
+      detail: { dismissed: true }
+    }));
+  }
+  
+  console.log('[Tutorial] Tutorial flow state cleared, all tutorials marked complete');
+};
+

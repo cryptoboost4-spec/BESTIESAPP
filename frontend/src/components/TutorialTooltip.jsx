@@ -75,11 +75,13 @@ const TutorialTooltip = ({
     return () => clearTimeout(timeoutId);
   }, [title, body, stepNumber, totalSteps, targetElement]); // Re-measure if content changes
 
+  // Reset positioned state only when content changes (not on resize/scroll)
+  useEffect(() => {
+    setIsPositioned(false);
+  }, [title, body, stepNumber, targetElement]);
+
   // Second useEffect: Calculate position and show tooltip after dimensions are known
   useEffect(() => {
-    // Reset positioned state when dependencies change
-    setIsPositioned(false);
-
     // Don't calculate position until we have dimensions
     if (!tooltipDimensions) return;
 
@@ -148,7 +150,7 @@ const TutorialTooltip = ({
     });
 
     const handleResize = () => {
-      setIsPositioned(false);
+      // Recalculate position on resize without hiding the tooltip
       requestAnimationFrame(() => {
         requestAnimationFrame(calculatePosition);
       });
@@ -166,6 +168,16 @@ const TutorialTooltip = ({
   }, [targetElement, position, tooltipDimensions]);
 
   const getPositionStyles = () => {
+    // If not positioned yet, place offscreen to prevent flash
+    if (!isPositioned) {
+      return {
+        top: '-9999px',
+        left: '-9999px',
+        visibility: 'hidden',
+        opacity: 0
+      };
+    }
+
     const viewportWidth = window.innerWidth;
 
     // Use measured dimensions, not fallback

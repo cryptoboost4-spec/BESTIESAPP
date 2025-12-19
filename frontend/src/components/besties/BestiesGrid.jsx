@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { db } from '../../services/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 
-const BestiesGrid = ({ besties, activityFeed, featuredCircle = [] }) => {
+const BestiesGrid = ({ besties, activityFeed, featuredCircle = [], onAddBestie }) => {
   const navigate = useNavigate();
   const [selectedBestie, setSelectedBestie] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -141,9 +141,17 @@ const BestiesGrid = ({ besties, activityFeed, featuredCircle = [] }) => {
         <div className="card p-6 md:p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30">
           <div className="text-5xl md:text-6xl mb-3">💜</div>
           <p className="text-base md:text-lg font-semibold text-text-primary mb-2">No besties yet</p>
-          <p className="text-sm md:text-base text-text-secondary">
+          <p className="text-sm md:text-base text-text-secondary mb-4">
             Start adding besties to see them here
           </p>
+          {onAddBestie && (
+            <button
+              onClick={onAddBestie}
+              className="btn btn-primary px-6 py-3 shadow-md hover:shadow-lg transform hover:scale-105 transition-all"
+            >
+              ➕ Add Your First Bestie
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">

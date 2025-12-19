@@ -31,7 +31,8 @@ export const useBestiesTutorialState = () => {
         return;
       }
 
-      // Check Firestore (cross-device sync)
+      // Try Firestore but don't let it block the tutorial
+      // Firestore is optional - tutorial works fine with localStorage only
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
         const docSnap = await getDoc(tutorialsRef);
@@ -43,16 +44,13 @@ export const useBestiesTutorialState = () => {
           }
         }
       } catch (error) {
-        // Firestore permissions error is expected if user hasn't set up besties yet
-        // This is non-critical - tutorial will work with localStorage only
-        if (error.code === 'permission-denied') {
-          console.debug('Besties tutorial state not available in Firestore (permissions) - using localStorage only');
-        } else {
-          console.warn('Error loading Besties tutorial state:', error);
-        }
+        // Firestore error is non-critical - tutorial will work with localStorage only
+        // This is expected for new users or if Firestore rules haven't been set up yet
+        console.debug('[Besties Tutorial] Firestore not available (expected for new users) - using localStorage only');
+      } finally {
+        // Always set loading to false, even if Firestore fails
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     loadState();
@@ -79,18 +77,23 @@ export const useBestiesTutorialState = () => {
     setCurrentStep(null);
     setIsCompleted(true);
 
-    // Save to both localStorage and Firestore
-    await saveTutorialState('besties', { key: 'completed', value: true }, async () => {
-      if (currentUser) {
+    // Save to localStorage (immediate)
+    localStorage.setItem('besties_tutorial_completed', 'true');
+    localStorage.setItem('besties_tutorial_completed_at', Date.now().toString());
+
+    // Try to save to Firestore (optional, don't block on errors)
+    if (currentUser) {
+      try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
         await updateDoc(tutorialsRef, {
           'besties.completed': true,
           'besties.completedAt': new Date()
         });
+      } catch (error) {
+        // Firestore save failed - that's okay, localStorage is sufficient
+        console.debug('[Besties Tutorial] Could not sync to Firestore (localStorage saved successfully)');
       }
-    });
-
-    localStorage.setItem('besties_tutorial_completed_at', Date.now().toString());
+    }
     
     // Trigger celebration (parent component will handle)
     return true;
@@ -107,7 +110,8 @@ export const useBestiesTutorialState = () => {
           'besties.dismissedAt': new Date()
         });
       } catch (error) {
-        console.error('Error saving Besties tutorial dismissal:', error);
+        // Firestore save failed - that's okay, localStorage is sufficient
+        console.debug('[Besties Tutorial] Could not sync dismissal to Firestore (localStorage saved)');
       }
     }
   };
@@ -125,12 +129,12 @@ export const useBestiesTutorialState = () => {
     setIsCompleted(false);
     setIsPaused(false);
 
-    // Clear localStorage
+    // Clear localStorage (immediate)
     localStorage.removeItem('besties_tutorial_completed');
     localStorage.removeItem('besties_tutorial_dismissed');
     localStorage.removeItem('besties_tutorial_completed_at');
 
-    // Clear Firestore
+    // Try to clear Firestore (optional)
     if (currentUser) {
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
@@ -141,7 +145,8 @@ export const useBestiesTutorialState = () => {
           'besties.dismissedAt': null
         });
       } catch (error) {
-        console.error('Error resetting Besties tutorial in Firestore:', error);
+        // Firestore clear failed - that's okay, localStorage is cleared
+        console.debug('[Besties Tutorial] Could not reset in Firestore (localStorage reset successfully)');
       }
     }
   };

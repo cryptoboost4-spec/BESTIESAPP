@@ -74,6 +74,64 @@ function RouteTracker() {
   return null;
 }
 
+// Conditional Mobile Nav - hide during onboarding and until besties tutorial starts
+function ConditionalMobileNav() {
+  const location = useLocation();
+  const [shouldShow, setShouldShow] = useState(false);
+  
+  useEffect(() => {
+    const isOnboarding = location.pathname === '/onboarding';
+    
+    // Hide during onboarding
+    if (isOnboarding) {
+      setShouldShow(false);
+      return;
+    }
+    
+    // Check if bestie circle tutorial is active or completed
+    const checkBestieTutorialStatus = () => {
+      if (typeof window === 'undefined') return false;
+      
+      const postTutorialStep = localStorage.getItem('bestieCircle_postTutorialStep');
+      const isBestieCircleTutorialComplete = localStorage.getItem('bestieCircle_tutorial_complete') === 'true';
+      const bestieCircleTutorialActive = postTutorialStep && postTutorialStep !== 'complete';
+      
+      // Show nav when besties tutorial is active or complete
+      return bestieCircleTutorialActive || isBestieCircleTutorialComplete;
+    };
+    
+    const updateVisibility = () => {
+      setShouldShow(checkBestieTutorialStatus());
+    };
+    
+    // Initial check
+    updateVisibility();
+    
+    // Listen for tutorial state changes
+    const handleStorageChange = () => {
+      updateVisibility();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('bestieCircle_postTutorialStep_changed', handleStorageChange);
+    
+    // Also check periodically for same-tab updates
+    const interval = setInterval(updateVisibility, 100);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('bestieCircle_postTutorialStep_changed', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [location.pathname]);
+  
+  if (!shouldShow) {
+    return null;
+  }
+  
+  return <MobileBottomNav />;
+}
+
 // Deep link handler component
 function DeepLinkHandler() {
   useDeepLinking();
@@ -184,7 +242,7 @@ function App() {
                 </div>
               </>
             )}
-            {user && <MobileBottomNav />}
+            {user && <ConditionalMobileNav />}
             <div className="App pb-20 md:pb-0">
               <Suspense fallback={<PageLoader />}>
                 <Routes>

@@ -15,10 +15,9 @@ import DonationStatus from '../components/profile/DonationStatus';
 import ProfileAuraStyles from '../components/profile/ProfileAuraStyles';
 import RequestSupportSection from '../components/RequestSupportSection';
 import OfflineBanner from '../components/OfflineBanner';
-import { useProfileTutorialState } from '../hooks/useProfileTutorialState';
-import ProfileTutorialWelcome from '../components/tutorials/profile/ProfileTutorialWelcome';
+import { useSimpleTutorial } from '../hooks/useSimpleTutorial';
 import ProfileTutorialOverlay from '../components/tutorials/profile/ProfileTutorialOverlay';
-import CelebrationToast from '../components/tutorials/CelebrationToast';
+import { clearAllTutorialState } from '../utils/tutorialHelpers';
 
 const ProfilePage = () => {
   const { currentUser, userData } = useAuth();
@@ -37,7 +36,6 @@ const ProfilePage = () => {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
   const [showCustomizer, setShowCustomizer] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
   
   // New relationship stats
   const [messagesExchangedThisWeek, setMessagesExchangedThisWeek] = useState(0);
@@ -47,53 +45,13 @@ const ProfilePage = () => {
   const [avgResponseTime, setAvgResponseTime] = useState(0);
   const [strongestConnection, setStrongestConnection] = useState(null);
 
-  // Tutorial state
-  const tutorial = useProfileTutorialState();
-
-  // Auto-start tutorial when coming from Besties page (after clicking Profile button)
+  // Simple tutorial state - just tracks if tutorial has been shown
+  const { showTutorial, completeTutorial } = useSimpleTutorial('profile');
+  
+  // Log tutorial state for debugging
   useEffect(() => {
-    // Check if we're coming from Besties tutorial
-    const fromBestiesTutorial = location.state?.fromBestiesTutorial || 
-                                (typeof window !== 'undefined' && sessionStorage.getItem('fromBestiesTutorial') === 'true');
-    
-    if (fromBestiesTutorial && !tutorial.isLoading && !tutorial.tutorialActive) {
-      // Clear the flag
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('fromBestiesTutorial');
-      }
-      
-      // If tutorial was previously completed, reset it first
-      if (tutorial.isCompleted) {
-        tutorial.resetTutorial().then(() => {
-          // Small delay to ensure state is updated
-          setTimeout(() => {
-            tutorial.startTutorial();
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_started', { page: 'profile', auto_started: true, from: 'besties', reset: true });
-            }
-          }, 200);
-        });
-      } else {
-        // Tutorial not completed, just start it
-        tutorial.startTutorial();
-        if (typeof window !== 'undefined' && window.analytics) {
-          window.analytics.track('tutorial_started', { page: 'profile', auto_started: true, from: 'besties' });
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state?.fromBestiesTutorial, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive]);
-
-  // Handle tutorial restart from navigation state
-  useEffect(() => {
-    if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
-      tutorial.resetTutorial().then(() => {
-        tutorial.startTutorial();
-        // Clear the state
-        window.history.replaceState({}, document.title);
-      });
-    }
-  }, [location.state, tutorial]);
+    console.log('[Profile Tutorial] State:', { showTutorial });
+  }, [showTutorial]);
 
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
@@ -623,16 +581,8 @@ const ProfilePage = () => {
             showCustomizer={showCustomizer}
             setShowCustomizer={setShowCustomizer}
             customizerButtonRef={customizerButtonRef}
-            onCustomizerClick={() => {
-              // Close tutorial tooltip when user clicks customizer button
-              if (tutorial.tutorialActive && tutorial.currentStep === 2) {
-                tutorial.setTutorialActive(false);
-                tutorial.setCurrentStep(null);
-              }
-            }}
-            onCustomizerSave={() => {
-              // Customizer saved
-            }}
+            onCustomizerClick={() => {}}
+            onCustomizerSave={() => {}}
           />
         </div>
 
@@ -694,13 +644,9 @@ const ProfilePage = () => {
         <div className="space-y-3" ref={settingsButtonRef}>
           <button
             onClick={() => {
-              // Complete tutorial when Settings is clicked (if tutorial was shown)
-              if (!tutorial.isCompleted) {
-                tutorial.completeTutorial();
-              }
-              // Mark that we're coming from Profile tutorial so Settings tutorial auto-starts
-              if (typeof window !== 'undefined') {
-                sessionStorage.setItem('fromProfileTutorial', 'true');
+              // Complete tutorial when Settings is clicked
+              if (showTutorial) {
+                completeTutorial();
               }
               navigate('/settings');
             }}
@@ -716,67 +662,25 @@ const ProfilePage = () => {
         <SocialShareCardsModal onClose={() => setShowShareModal(false)} />
       )}
 
-      {/* Tutorial Welcome Card */}
-      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && (
-        <ProfileTutorialWelcome
-          onStart={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_started', { page: 'profile' });
-            }
-            tutorial.startTutorial();
-          }}
-          onSkip={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_skipped', { page: 'profile', at_step: 0 });
-            }
-            tutorial.skipTutorial();
-          }}
-        />
-      )}
-
-      {/* Tutorial Overlay - Single step tutorial */}
-      {tutorial.tutorialActive && tutorial.currentStep === 1 && (
+      {/* Tutorial Overlay - Simple: show once on first visit */}
+      {showTutorial && (
         <ProfileTutorialOverlay
-          currentStep={tutorial.currentStep}
+          currentStep={1}
           onNext={() => {
-            // User clicked "Got it" - dismiss tooltip
-            // User can explore profile, then click Settings when ready
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_step_completed', {
-                page: 'profile',
-                step: 1,
-                action: 'got_it'
-              });
-            }
-            // Don't complete tutorial yet - wait for Settings click
-            tutorial.setTutorialActive(false);
-            tutorial.setCurrentStep(null);
+            // User clicked "Got it" - complete tutorial and clear all tutorial state
+            completeTutorial();
+            clearAllTutorialState();
           }}
-          onBack={() => {
-            // No back button for single step
-          }}
+          onBack={() => {}}
           onSkip={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_skipped', {
-                page: 'profile',
-                at_step: 1
-              });
-            }
-            tutorial.skipTutorial();
+            // Same as "Got it"
+            completeTutorial();
+            clearAllTutorialState();
           }}
-          isPaused={tutorial.isPaused}
+          isPaused={false}
           refs={{
             profileCard: profileCardRef
           }}
-        />
-      )}
-
-      {/* Celebration Toast */}
-      {showCelebration && (
-        <CelebrationToast
-          message="Your profile is looking great! ✨"
-          icon="🎉"
-          onClose={() => setShowCelebration(false)}
         />
       )}
     </div>

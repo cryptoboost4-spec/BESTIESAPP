@@ -56,7 +56,10 @@ exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
 
     profile: {
       featuredBadges: [],
-      bio: null
+      bio: null,
+      customization: {
+        background: 'tropical-escape'
+      }
     },
 
     createdAt: admin.firestore.Timestamp.now(),

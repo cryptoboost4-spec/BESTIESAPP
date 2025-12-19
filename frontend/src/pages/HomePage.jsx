@@ -17,6 +17,7 @@ import TutorialOverlay from '../components/TutorialOverlay';
 import CheckInTutorialOverlay from '../components/CheckInTutorialOverlay';
 import { useTutorialState } from '../hooks/useTutorialState';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
+import { clearAllTutorialState } from '../utils/tutorialHelpers';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
@@ -913,7 +914,8 @@ const HomePage = () => {
                   setCheckInTutorialStep('sacredTransition');
                 }, 800);
               } else if (action === 'skip') {
-                // User wants to skip - mark tutorial complete and don't show bestie circle tutorial
+                // User wants to skip - clear ALL tutorial state
+                clearAllTutorialState();
                 markCheckInTutorialComplete();
                 toast.success("You can replay tutorials anytime from Settings! 💜", {
                   duration: 4000,
@@ -922,7 +924,8 @@ const HomePage = () => {
               }
             }}
             onSkipTutorial={() => {
-              // User skipped - mark tutorial complete and don't show bestie circle tutorial
+              // User skipped - clear ALL tutorial state
+              clearAllTutorialState();
               markCheckInTutorialComplete();
               toast.success("You can replay tutorials anytime from Settings! 💜", {
                 duration: 4000,
@@ -940,7 +943,8 @@ const HomePage = () => {
               showSkipText: true,
               skipText: 'Skip tutorial',
               onSkipClick: () => {
-                // User skipped - mark tutorial complete and don't show bestie circle tutorial
+                // User skipped - clear ALL tutorial state
+                clearAllTutorialState();
                 markCheckInTutorialComplete();
                 toast.success("You can replay tutorials anytime from Settings! 💜", {
                   duration: 4000,

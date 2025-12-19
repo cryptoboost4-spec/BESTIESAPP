@@ -46,7 +46,7 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
   // Track if the "Ready to Learn More?" tooltip was dismissed (so we don't show it again but keep flashing)
   const [bestiesTooltipDismissed, setBestiesTooltipDismissed] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('bestieCircle_bestiesTooltipDismissed') === 'true';
+      return localStorage.getItem('livingCircle_readyToLearnDismissed') === 'true';
     }
     return false;
   });
@@ -75,9 +75,9 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
   // Sync bestiesTooltipDismissed to localStorage
   useEffect(() => {
     if (bestiesTooltipDismissed) {
-      localStorage.setItem('bestieCircle_bestiesTooltipDismissed', 'true');
+      localStorage.setItem('livingCircle_readyToLearnDismissed', 'true');
     } else {
-      localStorage.removeItem('bestieCircle_bestiesTooltipDismissed');
+      localStorage.removeItem('livingCircle_readyToLearnDismissed');
     }
   }, [bestiesTooltipDismissed]);
 
@@ -673,16 +673,25 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
           step="click-besties-tab"
           onContinue={() => {
             // Close the tooltip but keep postTutorialStep so flashing continues
+            console.log('[LivingCircle] "Ready to Learn More?" tooltip dismissed - Besties button should be VISIBLE and FLASHING');
             setBestiesTooltipDismissed(true);
-            localStorage.setItem('bestieCircle_bestiesTooltipDismissed', 'true');
+            localStorage.setItem('livingCircle_readyToLearnDismissed', 'true');
+            // Dispatch event to update MobileBottomNav immediately
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('bestieCircle_postTutorialStep_changed', {
+                detail: { step: 'click-besties-tab' }
+              }));
+            }
             // Don't clear postTutorialStep - keep it so button keeps flashing
             // Don't complete tutorial - user still needs to click the button
           }}
           onSkip={() => {
             // Clear everything - stop flashing and complete tutorial
+            console.log('[LivingCircle] "Ready to Learn More?" tooltip skipped');
             setPostTutorialStep(null);
+            setBestiesTooltipDismissed(false);
             localStorage.removeItem('bestieCircle_postTutorialStep');
-            localStorage.removeItem('bestieCircle_bestiesTooltipDismissed');
+            localStorage.removeItem('livingCircle_readyToLearnDismissed');
             diffTutorial.completeTutorial();
             if (onTutorialComplete) onTutorialComplete();
           }}

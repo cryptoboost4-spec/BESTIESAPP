@@ -14,8 +14,10 @@ const CheckInTutorialOverlay = ({
   tooltipConfig,
   isFirstStep = false,
 }) => {
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, width: '400px' });
-  const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0, rotation: 180 });
+  // Start offscreen to prevent position jump flash
+  const [tooltipPosition, setTooltipPosition] = useState({ top: -9999, left: -9999, width: '400px' });
+  const [arrowPosition, setArrowPosition] = useState({ top: -9999, left: -9999, rotation: 180 });
+  const [isPositioned, setIsPositioned] = useState(false);
 
   // Trigger haptic feedback
   const triggerHaptic = () => {
@@ -61,6 +63,11 @@ const CheckInTutorialOverlay = ({
     };
   }, [currentStep]);
 
+  // Reset positioned state only when step changes
+  useEffect(() => {
+    setIsPositioned(false);
+  }, [currentStep]);
+
   // Calculate tooltip and arrow positions
   useEffect(() => {
     if (!tooltipConfig) return;
@@ -94,6 +101,7 @@ const CheckInTutorialOverlay = ({
         }
         setTooltipPosition({ top, left, width: `${tooltipWidth}px` });
         setArrowPosition({ top: -1000, left: -1000, rotation: 0 });
+        setIsPositioned(true);
         return;
       }
 
@@ -130,6 +138,7 @@ const CheckInTutorialOverlay = ({
           width: `${tooltipWidth}px`,
         });
         setArrowPosition({ top: -1000, left: -1000, rotation: 0 }); // Hide arrow
+        setIsPositioned(true);
         return;
       }
 
@@ -178,6 +187,7 @@ const CheckInTutorialOverlay = ({
 
       // Hide arrow for centered tooltip (not positioned relative to element)
       setArrowPosition({ top: -1000, left: -1000, rotation: 0 });
+      setIsPositioned(true);
     };
 
     // On mobile, add a delay to ensure scroll lock is applied and DOM is settled
@@ -323,7 +333,7 @@ const CheckInTutorialOverlay = ({
 
       {/* Tooltip */}
       <div
-        className="fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-300 animate-in fade-in zoom-in"
+        className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-300 ${isPositioned ? 'animate-in fade-in zoom-in' : ''}`}
         style={{
           top: `${tooltipPosition.top}px`,
           left: `${tooltipPosition.left}px`,
@@ -332,6 +342,8 @@ const CheckInTutorialOverlay = ({
           maxHeight: 'calc(100vh - 180px)', // Leave space for header and bottom nav
           overflowY: 'auto',
           zIndex: 10003, // Ensure it's on top of everything
+          visibility: isPositioned ? 'visible' : 'hidden',
+          opacity: isPositioned ? 1 : 0,
           ...(tooltipConfig.overlayOnElement && {
             backgroundColor: 'rgba(253, 242, 248, 0.95)',
             backdropFilter: 'blur(10px)',

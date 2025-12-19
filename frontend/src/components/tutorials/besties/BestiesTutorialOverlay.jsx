@@ -18,13 +18,13 @@ const BestiesTutorialOverlay = ({
   useEffect(() => {
     if (!currentStep || currentStep !== 1) return;
 
-    // Single step tutorial - mobile-optimized tooltip over activity feed
+    // Single step tutorial - simple tooltip
     const config = {
-      title: '💜 This is Your Besties Page!',
-      body: `This is your private social space! Scroll through the activity feed below to learn more about what you can do here. When you're ready to move on, click the Profile button (now flashing) at the bottom.`,
+      title: '💜 Welcome to Your Besties Page!',
+      body: `This is your private social space where you'll see check-ins and posts from your besties. Notice the Profile button (flashing at the bottom) - click it when you're ready to continue!`,
       buttonText: 'Got it',
-      position: 'below', // Position below/over the activity feed
-      highlightedElementRef: refs?.activityFeed || { current: null }
+      position: 'auto',
+      highlightedElementRef: { current: null } // No specific element highlighted
     };
 
     setTooltipConfig(config);

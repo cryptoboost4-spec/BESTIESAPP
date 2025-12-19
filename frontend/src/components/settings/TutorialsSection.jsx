@@ -40,31 +40,20 @@ const TutorialsSection = () => {
       const checkInComplete = loadTutorialState('checkIn', 'completed');
       states.checkIn = { completed: checkInComplete === true, loading: false };
 
-      // Besties tutorial
-      const bestiesComplete = loadTutorialState('besties', 'completed');
-      states.besties = { completed: bestiesComplete === true, loading: false };
+      // Besties tutorial (new simple system)
+      const bestiesComplete = localStorage.getItem('bestiesTutorial_complete') === 'true';
+      states.besties = { completed: bestiesComplete, loading: false };
 
-      // Profile tutorial
-      const profileComplete = loadTutorialState('profile', 'completed');
-      states.profile = { completed: profileComplete === true, loading: false };
+      // Profile tutorial (new simple system)
+      const profileComplete = localStorage.getItem('profileTutorial_complete') === 'true';
+      states.profile = { completed: profileComplete, loading: false };
 
-      // Settings tutorial
-      const settingsComplete = loadTutorialState('settings', 'completed');
-      states.settings = { completed: settingsComplete === true, loading: false };
+      // Settings tutorial (new simple system)
+      const settingsComplete = localStorage.getItem('settingsTutorial_complete') === 'true';
+      states.settings = { completed: settingsComplete, loading: false };
 
-      // Also check Firestore for cross-device sync
-      try {
-        const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-        const docSnap = await getDoc(tutorialsRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.besties?.completed) states.besties.completed = true;
-          if (data.profile?.completed) states.profile.completed = true;
-          if (data.settings?.completed) states.settings.completed = true;
-        }
-      } catch (error) {
-        console.error('Error loading tutorial states from Firestore:', error);
-      }
+      // Note: New simple tutorial system uses localStorage only
+      // Firestore sync is optional and non-blocking
 
       setTutorialStates(states);
     };
@@ -72,6 +61,63 @@ const TutorialsSection = () => {
     loadStates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, location.state]); // tutorialStates intentionally excluded - we create fresh state object
+
+  const handleResetAllTutorials = async () => {
+    haptic.medium();
+    
+    if (!window.confirm('Reset all tutorials? This will clear all tutorial progress and allow you to replay them.')) {
+      return;
+    }
+
+    try {
+      // Clear all tutorial localStorage keys
+      localStorage.removeItem('tutorial_complete');
+      localStorage.removeItem('current_tutorial_step');
+      localStorage.removeItem('checkInTutorial_complete');
+      localStorage.removeItem('current_checkInTutorial_step');
+      localStorage.removeItem('bestiesTutorial_complete');
+      localStorage.removeItem('besties_tooltip_dismissed');
+      localStorage.removeItem('profileTutorial_complete');
+      localStorage.removeItem('settingsTutorial_complete');
+      
+      // Clear Firestore (optional, non-blocking)
+      if (currentUser) {
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
+          await updateDoc(userRef, {
+            tutorialComplete: false,
+            currentTutorialStep: null,
+            checkInTutorialComplete: false,
+            currentCheckInTutorialStep: null
+          });
+          
+          const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
+          await updateDoc(tutorialsRef, {
+            'besties.completed': false,
+            'profile.completed': false,
+            'settings.completed': false
+          });
+        } catch (error) {
+          console.error('Error clearing Firestore tutorial states:', error);
+          // Non-critical - localStorage is cleared
+        }
+      }
+      
+      // Reload states
+      setTutorialStates({
+        home: { completed: false, loading: false },
+        checkIn: { completed: false, loading: false },
+        besties: { completed: false, loading: false },
+        profile: { completed: false, loading: false },
+        settings: { completed: false, loading: false }
+      });
+      
+      toast.success('All tutorials reset! You can now replay them. 🎉', { duration: 3000 });
+    } catch (error) {
+      console.error('Error resetting all tutorials:', error);
+      toast.error('Failed to reset tutorials. Please try again.');
+    }
+  };
 
   const handleRestartTutorial = async (tutorialName) => {
     haptic.light();
@@ -110,53 +156,21 @@ const TutorialsSection = () => {
           toast.success('Check-in tutorial restarted! 🛡️', { duration: 2000 });
           break;
         case 'besties':
-          localStorage.removeItem('besties_tutorial_completed');
-          localStorage.removeItem('besties_tutorial_dismissed');
-          localStorage.removeItem('besties_tutorial_completed_at');
-          // Clear Firestore
-          if (currentUser) {
-            const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-            await updateDoc(tutorialsRef, {
-              'besties.completed': false,
-              'besties.completedAt': null,
-              'besties.dismissed': false,
-              'besties.dismissedAt': null
-            });
-          }
-          navigate('/besties', { state: { restartTutorial: true } });
+          // New simple tutorial system
+          localStorage.removeItem('bestiesTutorial_complete');
+          localStorage.removeItem('besties_tooltip_dismissed');
+          navigate('/besties');
           toast.success('Besties tutorial restarted! 💜', { duration: 2000 });
           break;
         case 'profile':
-          localStorage.removeItem('profile_tutorial_completed');
-          localStorage.removeItem('profile_tutorial_dismissed');
-          localStorage.removeItem('profile_tutorial_completed_at');
-          // Clear Firestore
-          if (currentUser) {
-            const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-            await updateDoc(tutorialsRef, {
-              'profile.completed': false,
-              'profile.completedAt': null,
-              'profile.dismissed': false,
-              'profile.dismissedAt': null
-            });
-          }
-          navigate('/profile', { state: { restartTutorial: true } });
+          // New simple tutorial system
+          localStorage.removeItem('profileTutorial_complete');
+          navigate('/profile');
           toast.success('Profile tutorial restarted! ✨', { duration: 2000 });
           break;
         case 'settings':
-          localStorage.removeItem('settings_tutorial_completed');
-          localStorage.removeItem('settings_tutorial_dismissed');
-          localStorage.removeItem('settings_tutorial_completed_at');
-          // Clear Firestore
-          if (currentUser) {
-            const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-            await updateDoc(tutorialsRef, {
-              'settings.completed': false,
-              'settings.completedAt': null,
-              'settings.dismissed': false,
-              'settings.dismissedAt': null
-            });
-          }
+          // New simple tutorial system
+          localStorage.removeItem('settingsTutorial_complete');
           // Reload page to restart tutorial
           window.location.reload();
           toast.success('Settings tutorial restarted! ⚙️', { duration: 2000 });
@@ -199,15 +213,15 @@ const TutorialsSection = () => {
     {
       id: 'profile',
       name: 'Profile Page',
-      description: 'Customize your profile and track progress',
+      description: 'Learn about your profile and stats',
       emoji: '✨',
       route: '/profile',
       completed: tutorialStates.profile.completed
     },
     {
       id: 'settings',
-      name: 'Settings Page',
-      description: 'Configure notifications and privacy',
+      name: 'Settings',
+      description: 'Learn about app settings',
       emoji: '⚙️',
       route: '/settings',
       completed: tutorialStates.settings.completed
@@ -216,7 +230,15 @@ const TutorialsSection = () => {
 
   return (
     <div className="card p-6 mb-6">
-      <h2 className="text-xl font-display text-text-primary mb-4">Tutorials</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-display text-text-primary">Tutorials</h2>
+        <button
+          onClick={handleResetAllTutorials}
+          className="btn btn-secondary text-sm px-4 py-2"
+        >
+          Reset All
+        </button>
+      </div>
       <p className="text-sm text-text-secondary mb-4">
         Restart any tutorial to learn or review features. Tutorials will automatically start when you navigate to the page.
       </p>

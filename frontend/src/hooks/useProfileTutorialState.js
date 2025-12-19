@@ -31,7 +31,8 @@ export const useProfileTutorialState = () => {
         return;
       }
 
-      // Check Firestore (cross-device sync)
+      // Try Firestore but don't let it block the tutorial
+      // Firestore is optional - tutorial works fine with localStorage only
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
         const docSnap = await getDoc(tutorialsRef);
@@ -43,10 +44,13 @@ export const useProfileTutorialState = () => {
           }
         }
       } catch (error) {
-        console.error('Error loading Profile tutorial state:', error);
+        // Firestore error is non-critical - tutorial will work with localStorage only
+        // This is expected for new users or if Firestore rules haven't been set up yet
+        console.debug('[Profile Tutorial] Firestore not available (expected for new users) - using localStorage only');
+      } finally {
+        // Always set loading to false, even if Firestore fails
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     loadState();
@@ -76,18 +80,23 @@ export const useProfileTutorialState = () => {
     setCurrentStep(null);
     setIsCompleted(true);
 
-    // Save to both localStorage and Firestore
-    await saveTutorialState('profile', { key: 'completed', value: true }, async () => {
-      if (currentUser) {
+    // Save to localStorage (immediate)
+    localStorage.setItem('profile_tutorial_completed', 'true');
+    localStorage.setItem('profile_tutorial_completed_at', Date.now().toString());
+
+    // Try to save to Firestore (optional, don't block on errors)
+    if (currentUser) {
+      try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
         await updateDoc(tutorialsRef, {
           'profile.completed': true,
           'profile.completedAt': new Date()
         });
+      } catch (error) {
+        // Firestore save failed - that's okay, localStorage is sufficient
+        console.debug('[Profile Tutorial] Could not sync to Firestore (localStorage saved successfully)');
       }
-    });
-
-    localStorage.setItem('profile_tutorial_completed_at', Date.now().toString());
+    }
     
     // Trigger celebration (parent component will handle)
     return true;
@@ -104,7 +113,8 @@ export const useProfileTutorialState = () => {
           'profile.dismissedAt': new Date()
         });
       } catch (error) {
-        console.error('Error saving Profile tutorial dismissal:', error);
+        // Firestore save failed - that's okay, localStorage is sufficient
+        console.debug('[Profile Tutorial] Could not sync dismissal to Firestore (localStorage saved)');
       }
     }
   };
@@ -118,12 +128,12 @@ export const useProfileTutorialState = () => {
     setIsCompleted(false);
     setIsPaused(false);
 
-    // Clear localStorage
+    // Clear localStorage (immediate)
     localStorage.removeItem('profile_tutorial_completed');
     localStorage.removeItem('profile_tutorial_dismissed');
     localStorage.removeItem('profile_tutorial_completed_at');
 
-    // Clear Firestore
+    // Try to clear Firestore (optional)
     if (currentUser) {
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
@@ -134,7 +144,8 @@ export const useProfileTutorialState = () => {
           'profile.dismissedAt': null
         });
       } catch (error) {
-        console.error('Error resetting Profile tutorial in Firestore:', error);
+        // Firestore clear failed - that's okay, localStorage is cleared
+        console.debug('[Profile Tutorial] Could not reset in Firestore (localStorage reset successfully)');
       }
     }
   };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
@@ -18,17 +18,14 @@ import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import ActivityFeed from '../components/besties/ActivityFeed';
-import EmptyState from '../components/besties/EmptyState';
 import CreatePostModal from '../components/CreatePostModal';
 import BestiesGrid from '../components/besties/BestiesGrid';
 import CommentsModal from '../components/besties/CommentsModal';
 import CircleCheckInCard from '../components/circleCheckin/CircleCheckInCard';
 import { useActivityFeed } from '../hooks/useActivityFeed';
-import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
-import BestiesTutorialWelcome from '../components/tutorials/besties/BestiesTutorialWelcome';
+import { useSimpleTutorial } from '../hooks/useSimpleTutorial';
 import BestiesTutorialOverlay from '../components/tutorials/besties/BestiesTutorialOverlay';
-import CelebrationToast from '../components/tutorials/CelebrationToast';
-import { useRef } from 'react';
+import { clearAllTutorialState } from '../utils/tutorialHelpers';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -44,231 +41,21 @@ const BestiesPage = () => {
   // Activity feed - using custom hook
   const { activityFeed, activityLoading, missedCheckIns, requestsForAttention } = useActivityFeed(currentUser, besties, userData);
 
-  // Mock posts for tutorial
-  const [mockTutorialPosts, setMockTutorialPosts] = useState([]);
-
-  // Read localStorage flags BEFORE any state initialization to avoid race conditions
-  const initialState = useRef(() => {
-    if (typeof window === 'undefined') {
-      return { fromClickBestiesTab: false, shouldResetTooltip: false };
-    }
-    
-    const fromClickBestiesTab = localStorage.getItem('bestieCircle_postTutorialStep') === 'click-besties-tab';
-    
-    // If coming from click-besties-tab, clear flags immediately
-    if (fromClickBestiesTab) {
-      localStorage.removeItem('bestieCircle_postTutorialStep');
-      localStorage.removeItem('besties_tooltip_dismissed'); // FIXED: Correct key
-      console.log('[Besties Tutorial] Coming from click-besties-tab, cleared flags');
-      return { fromClickBestiesTab: true, shouldResetTooltip: true };
-    }
-    
-    return { fromClickBestiesTab: false, shouldResetTooltip: false };
-  }).current(); // Call immediately via IIFE pattern with useRef
-
-  // Track if the first tooltip was dismissed (so Profile button appears and flashes)
-  const [tooltipDismissed, setTooltipDismissed] = useState(() => {
-    // If we should reset (coming from click-besties-tab), start with false
-    if (initialState.shouldResetTooltip) {
-      return false;
-    }
-    // Otherwise, read from localStorage
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('besties_tooltip_dismissed') === 'true';
-    }
-    return false;
-  });
-  const autoStartAttempted = useRef(false);
-
-  // Tutorial state
-  const tutorial = useBestiesTutorialState();
+  // Simple tutorial state - just tracks if tutorial has been shown
+  const { showTutorial, completeTutorial } = useSimpleTutorial('besties');
   
-  // Auto-start tutorial on first visit OR when coming from "click-besties-tab" step
-  useEffect(() => {
-    const fromClickBestiesTab = initialState.fromClickBestiesTab;
-    
-    console.log('[Besties Tutorial] Auto-start check:', {
-      fromClickBestiesTab,
-      isLoading: tutorial.isLoading,
-      isCompleted: tutorial.isCompleted,
-      tutorialActive: tutorial.tutorialActive,
-      tooltipDismissed,
-      autoStartAttempted: autoStartAttempted.current
-    });
-    
-    // Don't run if still loading
-    if (tutorial.isLoading) return;
-    
-    // If coming from click-besties-tab, always start tutorial (reset if needed)
-    if (fromClickBestiesTab && !tutorial.tutorialActive) {
-      console.log('[Besties Tutorial] Coming from click-besties-tab, starting tutorial...');
-      const startTutorial = async () => {
-        // Reset if previously completed
-        if (tutorial.isCompleted) {
-          console.log('[Besties Tutorial] Tutorial was completed, resetting...');
-          await tutorial.resetTutorial();
-        }
-        // Start tutorial
-        tutorial.startTutorial();
-        setTooltipDismissed(false);
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('besties_tooltip_dismissed');
-          window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
-            detail: { dismissed: false }
-          }));
-          if (window.analytics) {
-            window.analytics.track('tutorial_started', { 
-              page: 'besties', 
-              auto_started: true,
-              from_click_besties_tab: true
-            });
-          }
-        }
-      };
-      startTutorial();
-      return;
-    }
-    
-    // Normal auto-start for first-time visitors
-    // Only auto-start if:
-    // - Tutorial is not completed
-    // - Tutorial is not already active
-    // - Not coming from a notification
-    // - Haven't already attempted to auto-start
-    if (
-      !tutorial.isCompleted &&
-      !tutorial.tutorialActive &&
-      !location.state?.fromNotification &&
-      !location.state?.restartTutorial &&
-      !autoStartAttempted.current
-    ) {
-      console.log('[Besties Tutorial] First-time visitor, auto-starting tutorial...');
-      autoStartAttempted.current = true;
-      // Small delay to ensure page is fully rendered
-      const timer = setTimeout(() => {
-        tutorial.startTutorial();
-        setTooltipDismissed(false);
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('besties_tooltip_dismissed');
-          window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
-            detail: { dismissed: false }
-          }));
-          if (window.analytics) {
-            window.analytics.track('tutorial_started', { 
-              page: 'besties', 
-              auto_started: true,
-              from_click_besties_tab: false
-            });
-          }
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, location.state?.fromNotification, location.state?.restartTutorial, tooltipDismissed]);
-  
-  // Handle tutorial restart from navigation state
-  useEffect(() => {
-    if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
-      tutorial.resetTutorial().then(() => {
-        tutorial.startTutorial();
-        // Clear the state
-        window.history.replaceState({}, document.title);
-      });
-    }
-  }, [location.state, tutorial]);
+  // Track if tooltip was dismissed (for Profile button flashing)
+  const [tooltipDismissed, setTooltipDismissed] = useState(false);
 
-  // Reset tooltipDismissed when tutorial starts (backup safety check)
+  // Log tutorial state for debugging
   useEffect(() => {
-    if (tutorial.tutorialActive && tutorial.currentStep === 1 && tooltipDismissed) {
-      console.log('[Besties Tutorial] Safety reset: Tutorial is active but tooltip is dismissed, resetting...');
-      // Reset tooltip dismissed state when tutorial starts
-      setTooltipDismissed(false);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('besties_tooltip_dismissed');
-        window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
-          detail: { dismissed: false }
-        }));
-      }
-    }
-  }, [tutorial.tutorialActive, tutorial.currentStep, tooltipDismissed]);
+    console.log('[Besties Tutorial] State:', { showTutorial, tooltipDismissed });
+  }, [showTutorial, tooltipDismissed]);
 
-  // Create mock tutorial posts when tutorial becomes active
-  useEffect(() => {
-    if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-      // Create informative mock posts from Demo Bestie explaining the besties page
-      // Structure must match what ActivityFeed expects (with postData wrapper)
-      const mockPosts = [
-        {
-          id: 'mock-1',
-          type: 'post',
-          userId: 'demo-user',
-          userName: 'Demo Bestie',
-          userPhoto: null,
-          timestamp: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
-          isMockTutorial: true,
-          postData: {
-            text: "Hey bestie! 💜 Welcome to your Besties page! This is your private social space where you'll see check-ins and posts from your besties. This activity feed shows everything your besties share - it's like a private timeline just for your safety network!",
-            photoURL: null,
-            isSupportRequest: false,
-            commentCount: 0,
-            reactionCounts: {}
-          }
-        },
-        {
-          id: 'mock-2',
-          type: 'post',
-          userId: 'demo-user',
-          userName: 'Demo Bestie',
-          userPhoto: null,
-          timestamp: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
-          isMockTutorial: true,
-          postData: {
-            text: "You'll see check-ins here when your besties create them - like when they're on a date, taking a rideshare, or walking alone. If they don't check in on time, you'll get an alert so you can make sure they're safe! 🛡️",
-            photoURL: null,
-            isSupportRequest: false,
-            commentCount: 0,
-            reactionCounts: {}
-          }
-        },
-        {
-          id: 'mock-3',
-          type: 'post',
-          userId: 'demo-user',
-          userName: 'Demo Bestie',
-          userPhoto: null,
-          timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-          isMockTutorial: true,
-          postData: {
-            text: "You can also share posts here - updates, photos, or just how you're feeling! Everything is private and only visible to your besties. Scroll down to see all your besties and their connection info. When you're ready, click the Profile button below to continue learning about the app! 💜",
-            photoURL: null,
-            isSupportRequest: false,
-            commentCount: 0,
-            reactionCounts: {}
-          }
-        }
-      ];
-      setMockTutorialPosts(mockPosts);
-    } else {
-      // Clear mock posts when tutorial is not active
-      setMockTutorialPosts([]);
-    }
-  }, [tutorial.tutorialActive, tutorial.currentStep]);
-
-  // Auto-start tutorial when coming from check-in tutorial
-  useEffect(() => {
-    if (location.state?.startTutorial && !tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive) {
-      tutorial.startTutorial();
-      // Clear the state
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state, tutorial]);
-  
-  // Refs for highlighted elements
+  // Refs for highlighted elements (kept for potential future use)
   const activityFeedRef = useRef(null);
   const postButtonRef = useRef(null);
   const bestiesGridRef = useRef(null);
-  const [showCelebration, setShowCelebration] = useState(false);
 
   // Modal state
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
@@ -682,28 +469,15 @@ const BestiesPage = () => {
           {/* Activity Feed */}
           {!activityLoading && (
             <ActivityFeed
-              activityFeed={
-                tutorial.tutorialActive && tutorial.currentStep === 1
-                  ? [...mockTutorialPosts, ...activityFeed.filter(activity => {
-                      // Filter out activities that are already shown in Needs Attention section
-                      const isInMissedCheckIns = missedCheckIns.some(m => 
-                        m.userId === activity.userId && activity.status === 'alerted'
-                      );
-                      const isInAttentionRequests = requestsForAttention.some(r => 
-                        r.userId === activity.userId && activity.type === 'checkin'
-                      );
-                      return !isInMissedCheckIns && !isInAttentionRequests;
-                    })]
-                  : activityFeed.filter(activity => {
-                      const isInMissedCheckIns = missedCheckIns.some(m => 
-                        m.userId === activity.userId && activity.status === 'alerted'
-                      );
-                      const isInAttentionRequests = requestsForAttention.some(r => 
-                        r.userId === activity.userId && activity.type === 'checkin'
-                      );
-                      return !isInMissedCheckIns && !isInAttentionRequests;
-                    })
-              }
+              activityFeed={activityFeed.filter(activity => {
+                const isInMissedCheckIns = missedCheckIns.some(m => 
+                  m.userId === activity.userId && activity.status === 'alerted'
+                );
+                const isInAttentionRequests = requestsForAttention.some(r => 
+                  r.userId === activity.userId && activity.type === 'checkin'
+                );
+                return !isInMissedCheckIns && !isInAttentionRequests;
+              })}
               reactions={reactions}
               addReaction={addReaction}
               setSelectedCheckIn={setSelectedCheckIn}
@@ -722,16 +496,11 @@ const BestiesPage = () => {
               featuredCircle={featuredCircle}
               besties={filteredBesties}
               activityFeed={activityFeed}
+              onAddBestie={() => setShowAddModal(true)}
             />
           </div>
         </div>
 
-        {/* Empty State */}
-        <EmptyState
-          besties={besties}
-          pendingRequests={pendingRequests}
-          onAddBestie={() => setShowAddModal(true)}
-        />
       </div>
 
       {/* Comments Modal */}
@@ -750,15 +519,6 @@ const BestiesPage = () => {
           }}
         />
       )}
-
-      {/* Floating Action Button - Add Bestie */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-6 right-6 md:bottom-8 md:right-8 w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-primary to-pink-500 text-white shadow-2xl hover:shadow-3xl transform hover:scale-110 active:scale-95 transition-all z-40 flex items-center justify-center text-3xl md:text-4xl font-bold animate-pulse-slow hover:animate-none"
-        title="Add a bestie"
-      >
-        <span className="drop-shadow-lg">+</span>
-      </button>
 
       {/* Add Bestie Modal */}
       {showAddModal && (
@@ -780,90 +540,43 @@ const BestiesPage = () => {
         />
       )}
 
-      {/* Tutorial Welcome Card */}
-      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && !location.state?.fromNotification && (
-        <BestiesTutorialWelcome
-          onStart={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_started', { page: 'besties' });
-            }
-            tutorial.startTutorial();
-          }}
-          onSkip={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_skipped', { page: 'besties', at_step: 0 });
-            }
-            tutorial.skipTutorial();
-          }}
-        />
-      )}
 
-      {/* Tutorial Overlay */}
-      {(() => {
-        const shouldRender = tutorial.tutorialActive && tutorial.currentStep === 1 && !tooltipDismissed;
-        console.log('[Besties Tutorial] Overlay render check:', {
-          tutorialActive: tutorial.tutorialActive,
-          currentStep: tutorial.currentStep,
-          tooltipDismissed,
-          shouldRender
-        });
-        return shouldRender;
-      })() && (
+      {/* Tutorial Overlay - Simple: show once on first visit */}
+      {showTutorial && !tooltipDismissed && (
         <BestiesTutorialOverlay
-          currentStep={tutorial.currentStep}
+          currentStep={1}
           onNext={() => {
-            // User clicked "Got it" - dismiss tooltip but keep tutorial active
-            // This will make Profile button appear and flash
+            // User clicked "Got it" - dismiss and complete tutorial
             setTooltipDismissed(true);
+            completeTutorial();
+            // Clear all tutorial state since user is progressing through
+            clearAllTutorialState();
+            // Notify MobileBottomNav to show Profile button
             if (typeof window !== 'undefined') {
-              localStorage.setItem('besties_tooltip_dismissed', 'true');
-              // Dispatch custom event to notify MobileBottomNav
               window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
                 detail: { dismissed: true }
               }));
             }
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_step_completed', {
-                page: 'besties',
-                step: 1,
-                action: 'got_it'
-              });
-            }
           }}
-          onBack={() => {
-            // No back button for single step
-          }}
+          onBack={() => {}}
           onSkip={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_skipped', {
-                page: 'besties',
-                at_step: tutorial.currentStep
-              });
+            // Same as "Got it"
+            setTooltipDismissed(true);
+            completeTutorial();
+            // Clear all tutorial state
+            clearAllTutorialState();
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
+                detail: { dismissed: true }
+              }));
             }
-            tutorial.skipTutorial();
           }}
-          isPaused={tutorial.isPaused}
-          activityFeedLength={
-            tutorial.tutorialActive && tutorial.currentStep === 1
-              ? activityFeed.length + mockTutorialPosts.length
-              : activityFeed.length
-          }
+          isPaused={false}
           refs={{
             activityFeed: activityFeedRef,
             postButton: postButtonRef,
             bestiesGrid: bestiesGridRef
           }}
-        />
-      )}
-
-      {/* Celebration Toast with Confetti */}
-      {showCelebration && (
-        <CelebrationToast
-          message="You're all set! Enjoy your Besties space 💜"
-          icon="🎉"
-          duration={4000}
-          showConfetti={true}
-          onComplete={() => setShowCelebration(false)}
         />
       )}
 

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
-import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
+import { useSimpleTutorial } from '../hooks/useSimpleTutorial';
 import { useTutorialState } from '../hooks/useTutorialState';
 
 const MobileBottomNav = () => {
@@ -13,7 +13,8 @@ const MobileBottomNav = () => {
   const { userData } = useAuth();
   const { currentCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const { currentTutorialStep, tutorialComplete } = useTutorialState();
-  const tutorial = useBestiesTutorialState();
+  const { showTutorial: bestiesShowTutorial, isComplete: bestiesTutorialComplete, completeTutorial: completeBestiesTutorial } = useSimpleTutorial('besties');
+  const { showTutorial: profileShowTutorial } = useSimpleTutorial('profile');
 
   const isActive = (path) => location.pathname === path;
   
@@ -130,14 +131,8 @@ const MobileBottomNav = () => {
   // Show besties tab during active tutorial OR when complete
   const shouldShowBestiesTab = bestieCircleTutorialActive || isBestieCircleTutorialComplete;
 
-  // Check if buttons should flash
-  // Flash during: afterSafe step, add-bestie step, click-besties-tab step
-  // NOT during bestieCircleTutorialActive (that's the Besties page tutorial, we don't want flashing there)
-  // Stops when: skip is clicked OR besties button itself is clicked (handled by clearing postTutorialStep)
-  const shouldFlashBesties = 
-    currentCheckInTutorialStep === 'afterSafe' ||
-    postTutorialStep === 'add-bestie' ||
-    postTutorialStep === 'click-besties-tab';
+  // Besties button should flash during post-tutorial flow when user needs to click it
+  const shouldFlashBesties = (postTutorialStep === 'click-besties-tab') && !isActive('/besties');
   // Track if Besties tooltip is dismissed (so Profile button only shows when tooltip is visible)
   const [bestiesTooltipDismissed, setBestiesTooltipDismissed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -168,8 +163,24 @@ const MobileBottomNav = () => {
     };
   }, []);
 
-  // Profile button should flash when Besties tutorial is active (on Besties page)
-  const shouldFlashProfile = tutorial.tutorialActive && tutorial.currentStep === 1;
+  // Profile button should flash on Besties page AFTER the besties tooltip is completed, 
+  // until user visits Profile (completes profile tutorial)
+  const shouldFlashProfile = isActive('/besties') && bestiesTutorialComplete && profileShowTutorial;
+
+  // Determine if we're in post-tutorial flow on home page (where Profile should be hidden)
+  const isInPostTutorialFlowOnHome = (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab') && 
+    !isActive('/besties') && !isActive('/profile');
+
+  // Profile button visibility logic:
+  // - Always show on /profile page
+  // - Show on /besties page (with flash when tutorial tooltip visible)  
+  // - Hide during post-tutorial flow on home page
+  // - Otherwise show when besties tab is available and tutorials are done
+  const shouldShowProfileButton = !isOnboarding && (
+    isActive('/profile') ||
+    isActive('/besties') ||
+    (!isInPostTutorialFlowOnHome && shouldShowBestiesTab && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep)
+  );
 
   return (
     <nav
@@ -187,8 +198,8 @@ const MobileBottomNav = () => {
           paddingTop: '12px'
         }}
       >
-        {/* Hide Home button during Besties tutorial, onboarding, or until Besties button appears - only show Profile (flashing) during Besties tutorial */}
-        {!(tutorial.tutorialActive && tutorial.currentStep === 1) && !isOnboarding && shouldShowBestiesTab && (
+        {/* Home button - show on besties/profile pages, or when besties tab is available */}
+        {!isOnboarding && (isActive('/besties') || isActive('/profile') || shouldShowBestiesTab) && (
           <Link
             to="/"
             className={`flex flex-col items-center gap-1 transition-colors ${isActive('/') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
@@ -201,8 +212,8 @@ const MobileBottomNav = () => {
           </Link>
         )}
 
-        {/* Only show Besties button during active tutorial OR after completed, but hide during onboarding */}
-        {shouldShowBestiesTab && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep && !tutorial.tutorialActive && !isOnboarding && (
+        {/* Besties button - show on besties/profile pages, or when available */}
+        {!isOnboarding && (isActive('/besties') || isActive('/profile') || (shouldShowBestiesTab && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep)) && (
           <Link
             to="/besties"
             onClick={(e) => {
@@ -212,8 +223,11 @@ const MobileBottomNav = () => {
                 markCheckInTutorialComplete();
                 navigate('/besties', { state: { startTutorial: true } });
               }
-              // Note: Don't clear localStorage flags here - let BestiesPage read them first
-              // BestiesPage will clear them after reading to prevent race condition
+              // Clear postTutorialStep to stop any flashing
+              if (postTutorialStep) {
+                localStorage.removeItem('bestieCircle_postTutorialStep');
+                setPostTutorialStep(null);
+              }
             }}
             className={`flex flex-col items-center gap-1 transition-colors relative ${isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
               } ${shouldFlashBesties ? 'animate-pulse' : ''}`}
@@ -231,18 +245,14 @@ const MobileBottomNav = () => {
           </Link>
         )}
 
-        {/* Profile button - visible on Besties page ONLY when tutorial is active, tooltip is showing (not dismissed), and tooltip is visible */}
-        {isActive('/besties') && tutorial.tutorialActive && tutorial.currentStep === 1 && !bestiesTooltipDismissed ? (
+        {/* Profile button - show on Besties/Profile pages, hide during post-tutorial flow on home page */}
+        {shouldShowProfileButton ? (
           <Link
             to="/profile"
             onClick={() => {
-              // If besties tutorial is active, complete it and mark that we're going to profile tutorial
-              if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-                tutorial.completeTutorial();
-                // Mark that we're coming from Besties tutorial so Profile tutorial auto-starts
-                if (typeof window !== 'undefined') {
-                  sessionStorage.setItem('fromBestiesTutorial', 'true');
-                }
+              // Complete besties tutorial when Profile button is clicked from besties page during tutorial
+              if (isActive('/besties') && bestiesShowTutorial) {
+                completeBestiesTutorial();
               }
             }}
             className={`flex flex-col items-center gap-1 transition-colors relative ${isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')

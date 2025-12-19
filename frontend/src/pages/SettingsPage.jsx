@@ -98,13 +98,20 @@ const SettingsPage = () => {
     }
   }, [currentUser]);
 
-  // Auto-start tutorial when coming from Profile page (after clicking Settings button)
+  // Auto-start tutorial when coming from Profile page (after clicking Settings button) OR on first-time visit
   useEffect(() => {
+    if (tutorial.isLoading) return; // Wait for tutorial state to load
+    
     // Check if we're coming from Profile tutorial
     const fromProfileTutorial = location.state?.fromProfileTutorial || 
                                 (typeof window !== 'undefined' && sessionStorage.getItem('fromProfileTutorial') === 'true');
     
-    if (fromProfileTutorial && !tutorial.isLoading && !tutorial.tutorialActive) {
+    // Check if this is first-time visit (tutorial not completed and not dismissed)
+    const isFirstTime = !tutorial.isCompleted && 
+                        !tutorial.tutorialActive &&
+                        !localStorage.getItem('settings_tutorial_dismissed');
+    
+    if (fromProfileTutorial && !tutorial.tutorialActive) {
       // Clear the flag
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('fromProfileTutorial');
@@ -127,6 +134,12 @@ const SettingsPage = () => {
         if (typeof window !== 'undefined' && window.analytics) {
           window.analytics.track('tutorial_started', { page: 'settings', auto_started: true, from: 'profile' });
         }
+      }
+    } else if (isFirstTime && !tutorial.tutorialActive) {
+      // First time opening settings - auto-start tutorial
+      tutorial.startTutorial();
+      if (typeof window !== 'undefined' && window.analytics) {
+        window.analytics.track('tutorial_started', { page: 'settings', auto_started: true, from: 'first_visit' });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
