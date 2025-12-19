@@ -124,17 +124,6 @@ const OnboardingPage = () => {
     }
   };
 
-  const handleSkipPhoto = async () => {
-    // User wants to skip photo (no photo or doesn't want to use existing one)
-    // If user joined via invite, show welcome screen first
-    if (inviterInfo) {
-      setStep('invite-welcome');
-    } else {
-      // Complete onboarding and go to home
-      await handleFinish();
-    }
-  };
-
   const handleFinish = async () => {
     if (!currentUser) {
       toast.error('Please sign in to continue');
