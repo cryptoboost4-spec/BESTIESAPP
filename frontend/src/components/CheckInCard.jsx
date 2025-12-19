@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { db, storage } from '../services/firebase';
 import { doc, updateDoc, Timestamp, addDoc, collection, getDoc } from 'firebase/firestore';
@@ -16,8 +16,8 @@ import SafeLoader from './checkin/SafeLoader';
 import CheckInNotes from './checkin/CheckInNotes';
 import PasscodeModal from './checkin/PasscodeModal';
 import EditTimeModal from './checkin/EditTimeModal';
-import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
-import CheckInTutorialOverlay from './CheckInTutorialOverlay';
+// Tutorial overlay moved to HomePage
+
 
 const CheckInCard = ({ checkIn }) => {
   const { currentUser, userData } = useAuth();
@@ -50,22 +50,8 @@ const CheckInCard = ({ checkIn }) => {
   // File input ref for photo upload
   const fileInputRef = useRef(null);
 
-  // Tutorial state
-  const { currentCheckInTutorialStep, setCheckInTutorialStep } = useCheckInTutorialState();
-  const cardRef = useRef(null);
-  const safeButtonRef = useRef(null);
-  const [tooltipDismissed, setTooltipDismissed] = useState(false);
 
-  // Debug: Log tutorial state updates
-  useEffect(() => {
-    console.log('[CheckInCard] Tutorial state update:', {
-      currentCheckInTutorialStep,
-      shouldShow: currentCheckInTutorialStep === 'checkedIn',
-      tooltipDismissed,
-      cardRefExists: !!cardRef.current,
-      finalShouldRender: currentCheckInTutorialStep === 'checkedIn' && !tooltipDismissed && !!cardRef.current
-    });
-  }, [currentCheckInTutorialStep, tooltipDismissed]);
+  // Refs for card and safe button (used by HomePage for tutorial highlighting)
 
   // Sync photo URLs when checkIn prop changes
   useEffect(() => {
@@ -440,7 +426,7 @@ const CheckInCard = ({ checkIn }) => {
   };
 
   return (
-    <div ref={cardRef} className={`flex flex-col overflow-hidden rounded-xl bg-surface-light/80 dark:bg-gray-800/80 shadow-soft backdrop-blur-sm ${isAlerted ? 'border-2 border-danger' : ''}`}>
+    <div className={`flex flex-col overflow-hidden rounded-xl bg-surface-light/80 dark:bg-gray-800/80 shadow-soft backdrop-blur-sm ${isAlerted ? 'border-2 border-danger' : ''}`}>
       <div className="flex w-full grow flex-col items-stretch justify-center gap-4 p-5">
         {/* Header with title and timer */}
         <div className="flex items-center justify-between">
@@ -471,7 +457,10 @@ const CheckInCard = ({ checkIn }) => {
               </span>
             )}
           </div>
-          <div className="text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400 font-mono tabular-nums min-w-[140px] text-right">
+          <div
+            className="text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400 font-mono text-right"
+            style={{ fontVariantNumeric: 'tabular-nums', minWidth: '9ch' }}
+          >
             {timeLeft === 0 ? '00:00:00' : formatTimeDisplay(timeLeft)}
           </div>
         </div>
@@ -558,22 +547,11 @@ const CheckInCard = ({ checkIn }) => {
           </label>
         </div>
         <button
-          ref={safeButtonRef}
           onClick={isAlerted ? () => {
             haptic.warning();
             handleComplete(true);
           } : async () => {
-            // If in checkedIn tutorial step, show next steps info
-            if (currentCheckInTutorialStep === 'checkedIn') {
-              // Show next steps information
-              toast.success('Great job! 🎉\n\nNext steps:\n• You\'ll see a success screen\n• Then you\'ll return to the home page\n• We\'ll show you how to continue learning about the app!', {
-                duration: 6000,
-                icon: '💜'
-              });
-              await handleComplete();
-            } else {
-              await handleComplete();
-            }
+            await handleComplete();
           }}
           disabled={loading}
           className="flex min-w-[84px] max-w-[480px] flex-1 cursor-pointer items-center justify-center gap-2.5 overflow-hidden rounded-lg h-12 px-4 bg-gradient-to-br from-green-300 to-cyan-300 dark:from-green-500 dark:to-cyan-500 text-green-900 dark:text-green-100 text-base font-bold leading-normal shadow-md transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -681,48 +659,11 @@ const CheckInCard = ({ checkIn }) => {
         isDark={isDark}
       />
 
-      {/* Tutorial Overlay for checkedIn step */}
-      {(() => {
-        const shouldRender = currentCheckInTutorialStep === 'checkedIn' && !tooltipDismissed && !!cardRef.current;
-        console.log('[CheckInCard] Render check:', {
-          step: currentCheckInTutorialStep,
-          dismissed: tooltipDismissed,
-          hasRef: !!cardRef.current,
-          shouldRender
-        });
-        return shouldRender;
-      })() && (
-        <CheckInTutorialOverlay
-          currentStep="checkedIn"
-          onStepComplete={(action) => {
-            if (action === 'continue') {
-              // User clicked "Got it" - dismiss tooltip but keep tutorial state
-              setTooltipDismissed(true);
-            }
-          }}
-          onSkipTutorial={() => {
-            setCheckInTutorialStep(null);
-          }}
-          highlightedElementRef={cardRef}
-          tooltipConfig={{
-            title: 'Your Active Check-In',
-            body: `This is your active check-in page! Here you can:\n• Add notes about your situation\n• Add photos for your besties\n• Add more time if you need longer\n• Update your location\n\nWhen you're ready to complete your check-in, click the "I'm Safe" button. This will mark your check-in as complete and let your besties know you're safe! 💜`,
-            overlayOnElement: true,
-            buttons: [
-              { text: 'Got it', action: 'continue', primary: true }
-            ]
-          }}
-        />
-      )}
+      {/* Tutorial Overlay moved to HomePage for reliable rendering */}
     </div>
   );
 };
 
-// Memoize to prevent unnecessary re-renders when parent updates
-export default memo(CheckInCard, (prevProps, nextProps) => {
-  // Only re-render if checkIn data actually changed
-  return prevProps.checkIn?.id === nextProps.checkIn?.id &&
-    prevProps.checkIn?.status === nextProps.checkIn?.status &&
-    prevProps.checkIn?.alertTime?.toMillis?.() === nextProps.checkIn?.alertTime?.toMillis?.() &&
-    JSON.stringify(prevProps.checkIn?.photoURLs) === JSON.stringify(nextProps.checkIn?.photoURLs);
-});
+// Export without custom memo comparison - tutorial state from hook needs to trigger re-renders
+// The useCheckInTutorialState hook changes don't propagate through props, so memo blocks renders
+export default CheckInCard;

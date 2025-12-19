@@ -258,6 +258,14 @@ const OnboardingFlow = ({ onComplete }) => {
           >
             Skip for Now →
           </button>
+
+          <button
+            onClick={handleSkipPhoto}
+            className="w-full text-center text-sm text-text-secondary hover:text-primary transition-colors mt-2"
+            disabled={uploading}
+          >
+            Do it later
+          </button>
         </div>
       </div>
     );

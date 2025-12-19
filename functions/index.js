@@ -94,6 +94,11 @@ const { onChallengeCompleted } = require('./core/challenges/onChallengeCompleted
 const { onPactActivated } = require('./core/pact/onPactActivated');
 
 // ========================================
+// CHALLENGE TRACKING FUNCTIONS (NEW)
+// ========================================
+const challengeTracking = require('./challengeTracking');
+
+// ========================================
 // SCHEDULED FUNCTIONS
 // ========================================
 const updateConnectionScoresLogic = require('./scheduled/updateConnectionScores');
@@ -123,7 +128,7 @@ const FB_API_VERSION = 'v24.0';
 // Helper: Get Facebook Profile with detailed error logging
 async function getFacebookProfile(psid) {
   const pageToken = functions.config().facebook?.page_token;
-  
+
   if (!pageToken) {
     functions.logger.error('❌ FACEBOOK PAGE TOKEN NOT CONFIGURED - check firebase functions:config:get');
     return null;
@@ -132,7 +137,7 @@ async function getFacebookProfile(psid) {
   // Try first_name,last_name,profile_pic FIRST (preferred format per Facebook User Profile API docs)
   // All fields require Business Asset User Profile Access feature
   let apiUrl = `https://graph.facebook.com/${FB_API_VERSION}/${psid}?fields=first_name,last_name,profile_pic&access_token=${pageToken}`;
-  
+
   functions.logger.info(`📡 Fetching Facebook profile for PSID: ${psid}`, {
     psid,
     apiVersion: FB_API_VERSION,
@@ -143,7 +148,7 @@ async function getFacebookProfile(psid) {
 
   try {
     const response = await axios.get(apiUrl);
-    
+
     if (response.data && (response.data.first_name || response.data.last_name)) {
       // Combine first_name and last_name into full name
       const fullName = [response.data.first_name, response.data.last_name].filter(Boolean).join(' ') || 'Friend';
@@ -151,7 +156,7 @@ async function getFacebookProfile(psid) {
         name: fullName,
         profile_pic: response.data.profile_pic || null
       };
-      
+
       functions.logger.info(`✅ Profile fetch SUCCESS for PSID ${psid}`, {
         psid,
         name: profileData.name,
@@ -163,7 +168,7 @@ async function getFacebookProfile(psid) {
       functions.logger.info(`🔄 Trying fallback 1: name,picture for PSID ${psid}`);
       const fallback1Url = `https://graph.facebook.com/${FB_API_VERSION}/${psid}?fields=name,picture&access_token=${pageToken}`;
       const fallback1Response = await axios.get(fallback1Url);
-      
+
       if (fallback1Response.data && fallback1Response.data.name) {
         // Business Asset User Profile Access returns 'name' and 'picture'
         // 'picture' is an object with 'data.url', need to extract the URL
@@ -182,7 +187,7 @@ async function getFacebookProfile(psid) {
         functions.logger.info(`🔄 Trying fallback 2: name,profile_pic for PSID ${psid}`);
         const fallback2Url = `https://graph.facebook.com/${FB_API_VERSION}/${psid}?fields=name,profile_pic&access_token=${pageToken}`;
         const fallback2Response = await axios.get(fallback2Url);
-        
+
         if (fallback2Response.data && fallback2Response.data.name) {
           functions.logger.info(`✅ Profile fetch SUCCESS (fallback 2) for PSID ${psid}`, {
             psid,
@@ -249,7 +254,7 @@ async function getFacebookProfile(psid) {
 // Helper: Send Messenger Message with error handling
 async function sendMessengerMessage(psid, text) {
   const pageToken = functions.config().facebook?.page_token;
-  
+
   if (!pageToken) {
     functions.logger.error('❌ Cannot send message - page token not configured');
     throw new Error('Facebook page token not configured');
@@ -278,7 +283,7 @@ async function sendMessengerMessage(psid, text) {
 // Helper: Send Messenger Message with Quick Replies
 async function sendMessengerMessageWithQuickReplies(psid, text, quickReplies) {
   const pageToken = functions.config().facebook?.page_token;
-  
+
   if (!pageToken) {
     functions.logger.error('❌ Cannot send message - page token not configured');
     throw new Error('Facebook page token not configured');
@@ -315,7 +320,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
     const verifyToken = functions.config().facebook?.verify_token;
-    
+
     functions.logger.info('🔐 Webhook verification request received', {
       mode,
       tokenReceived: !!token,
@@ -327,16 +332,16 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
       functions.logger.error('❌ Facebook verify_token not configured in Firebase');
       return res.sendStatus(500);
     }
-    
+
     if (mode === 'subscribe' && token === verifyToken) {
       functions.logger.info('✅ Webhook verification SUCCESS');
       return res.status(200).send(challenge);
     }
-    
+
     functions.logger.warn('❌ Webhook verification FAILED - token mismatch');
     return res.sendStatus(403);
   }
-  
+
   // Handle incoming webhook events (POST request)
   if (req.method === 'POST') {
     const body = req.body;
@@ -359,9 +364,9 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 
         // Determine event type for logging
         const eventType = webhookEvent.message?.quick_reply ? 'quick_reply' :
-                         webhookEvent.referral ? 'referral' :
-                         webhookEvent.postback?.referral ? 'postback_referral' :
-                         webhookEvent.message ? 'message' : 'unknown';
+          webhookEvent.referral ? 'referral' :
+            webhookEvent.postback?.referral ? 'postback_referral' :
+              webhookEvent.message ? 'message' : 'unknown';
 
         functions.logger.info(`📨 Processing ${eventType} event`, {
           senderPSID,
@@ -381,7 +386,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
             if (payload === 'CONFIRM_YES') {
               // User confirmed - NOW fetch their profile (better permission context)
               functions.logger.info(`✅ User confirmed! Fetching profile now...`, { senderPSID });
-              
+
               // Find the contact that's awaiting confirmation
               const contactsRef = admin.firestore().collection('messengerContacts');
               const pendingContactQuery = await contactsRef
@@ -435,7 +440,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
                     senderPSID,
                     docId: contactDoc.id
                   });
-                  
+
                   // Update with generic name so contact still shows
                   await contactDoc.ref.update({
                     name: 'Emergency Contact',
@@ -467,7 +472,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 
               if (!awaitingConfirmationQuery.empty) {
                 const contactDoc = awaitingConfirmationQuery.docs[0];
-                
+
                 // DON'T delete - just mark as declined
                 await contactDoc.ref.update({
                   awaitingConfirmation: false,
@@ -604,7 +609,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
         // Handle regular message events (user sent a message - for fallback flow)
         else if (webhookEvent.message && !webhookEvent.message.quick_reply) {
           functions.logger.info(`💬 Regular message received from PSID ${senderPSID}`);
-          
+
           try {
             // Check if this is from a user with pending profile (fallback flow)
             const contactsRef = admin.firestore().collection('messengerContacts');
@@ -628,7 +633,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
 
               // Try to get profile now that user has sent a message
               const profile = await getFacebookProfile(senderPSID);
-              
+
               if (profile && profile.name) {
                 // SUCCESS: We got profile data
                 const contactName = profile.name;
@@ -705,7 +710,7 @@ exports.messengerWebhook = functions.https.onRequest(async (req, res) => {
       }
       return res.status(200).send('EVENT_RECEIVED');
     }
-    
+
     functions.logger.warn('⚠️ Received non-page webhook object', { object: body.object });
     return res.sendStatus(404);
   }
@@ -738,34 +743,34 @@ async function sendTelegramMessage(chatId, text, options = {}) {
 // Send Telegram Alert
 async function sendTelegramAlert(chatId, alertData) {
   let message = `🚨 <b>SAFETY ALERT</b> 🚨\n<b>${alertData.userName}</b> needs help!\n\n`;
-  
+
   // Add time (no date)
   const now = new Date();
-  const timeString = now.toLocaleTimeString('en-AU', { 
-    hour: 'numeric', 
+  const timeString = now.toLocaleTimeString('en-AU', {
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   });
   message += `⏰ Alert triggered: ${timeString}\n`;
-  
+
   // Add location
   if (alertData.location && alertData.location !== 'No location set') {
     const locationText = typeof alertData.location === 'object' ? alertData.location.address : alertData.location;
     message += `📍 Location: ${locationText}\n`;
   }
-  
+
   // Add notes
   if (alertData.notes) {
     message += `📝 Notes: "${alertData.notes}"\n`;
   }
-  
+
   // Mention photos but DON'T send them
   if (alertData.photoURLs && alertData.photoURLs.length > 0) {
     message += `\n📷 ${alertData.userName} included ${alertData.photoURLs.length} photo(s) - view in the Besties app for important context.\n`;
   }
-  
+
   message += `\nIf you can help, respond immediately or check the Besties app!`;
-  
+
   // Send text-only message (no photos)
   await sendTelegramMessage(chatId, message);
 }
@@ -905,31 +910,31 @@ exports.markCheckInSafe = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   }
-  
+
   const { checkinId } = data;
   const userId = context.auth.uid;
   const db = admin.firestore();
-  
+
   try {
     const checkinRef = db.collection('checkins').doc(checkinId);
     const checkinDoc = await checkinRef.get();
-    
+
     if (!checkinDoc.exists) {
       throw new functions.https.HttpsError('not-found', 'Check-in not found');
     }
-    
+
     const checkinData = checkinDoc.data();
-    
+
     // Verify this user created the check-in
     if (checkinData.userId !== userId) {
       throw new functions.https.HttpsError('permission-denied', 'Not your check-in');
     }
-    
+
     // Verify check-in is actually alerted
     if (checkinData.status !== 'alerted') {
       throw new functions.https.HttpsError('failed-precondition', 'Check-in is not in alerted state');
     }
-    
+
     // Update to completed (marked safe after alert)
     await checkinRef.update({
       status: 'completed',
@@ -937,16 +942,16 @@ exports.markCheckInSafe = functions.https.onCall(async (data, context) => {
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
       lastUpdate: admin.firestore.FieldValue.serverTimestamp()
     });
-    
+
     // Get user name
     const userDoc = await db.collection('users').doc(userId).get();
     const userName = userDoc.data()?.displayName || 'User';
-    
+
     // Notify besties that user is safe
     const { sendPushNotification } = require('./utils/notifications');
     const { sendBulkNotifications } = require('./utils/messaging');
     const config = functions.config();
-    
+
     // Send push notifications
     if (checkinData.bestieIds && checkinData.bestieIds.length > 0) {
       const bestieDocs = await db.getAll(...checkinData.bestieIds.map(id => db.collection('users').doc(id)));
@@ -971,7 +976,7 @@ exports.markCheckInSafe = functions.https.onCall(async (data, context) => {
           }
         }
       }
-      
+
       // Send other notifications (Telegram, SMS, etc.)
       const safeMessage = `✅ ${userName} marked themselves as safe! All clear.`;
       await sendBulkNotifications(
@@ -986,9 +991,9 @@ exports.markCheckInSafe = functions.https.onCall(async (data, context) => {
         }
       );
     }
-    
+
     functions.logger.info('Check-in marked safe', { checkinId, userId });
-    
+
     return { success: true };
   } catch (error) {
     functions.logger.error('Error marking check-in safe:', error);
@@ -1004,34 +1009,34 @@ exports.markAlertViewed = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   }
-  
+
   const { checkinId } = data;
   const userId = context.auth.uid;
   const db = admin.firestore();
-  
+
   try {
     const checkinRef = db.collection('checkins').doc(checkinId);
     const checkinDoc = await checkinRef.get();
-    
+
     if (!checkinDoc.exists) {
       throw new functions.https.HttpsError('not-found', 'Check-in not found');
     }
-    
+
     const checkinData = checkinDoc.data();
-    
+
     // Verify user is a bestie for this check-in
     if (!checkinData.bestieIds || !checkinData.bestieIds.includes(userId)) {
       throw new functions.https.HttpsError('permission-denied', 'Not a selected bestie');
     }
-    
+
     // Add user to viewedBy array if not already there
     await checkinRef.update({
       viewedBy: admin.firestore.FieldValue.arrayUnion(userId),
       lastUpdate: admin.firestore.FieldValue.serverTimestamp()
     });
-    
+
     functions.logger.info('Alert marked as viewed', { checkinId, userId });
-    
+
     return { success: true };
   } catch (error) {
     functions.logger.error('Error marking alert viewed:', error);
@@ -1056,36 +1061,36 @@ exports.sendScheduledSMS = functions.pubsub
     try {
       const db = admin.firestore();
       const now = admin.firestore.Timestamp.now();
-      
+
       // Query pending SMS that are due
       const dueSnapshot = await db.collection('scheduledSMS')
         .where('status', '==', 'pending')
         .where('scheduledFor', '<=', now)
         .limit(50)
         .get();
-      
+
       if (dueSnapshot.empty) {
         return null;
       }
-      
+
       const { sendSMSAlert } = require('./utils/notifications');
-      
+
       for (const doc of dueSnapshot.docs) {
         const smsData = doc.data();
         const { checkinId, bestieIds } = smsData;
-        
+
         try {
           // Get check-in current state
           const checkinDoc = await db.collection('checkins').doc(checkinId).get();
-          
+
           if (!checkinDoc.exists) {
             // Check-in deleted, mark SMS as cancelled
             await doc.ref.update({ status: 'cancelled' });
             continue;
           }
-          
+
           const checkinData = checkinDoc.data();
-          
+
           // Check if alert is still active
           if (checkinData.status !== 'alerted') {
             // User marked safe or completed, cancel SMS
@@ -1093,59 +1098,59 @@ exports.sendScheduledSMS = functions.pubsub
             functions.logger.info('SMS cancelled - check-in no longer alerted', { checkinId });
             continue;
           }
-          
+
           // Check if any bestie has viewed the alert
           const viewedBy = checkinData.viewedBy || [];
           if (viewedBy.length > 0) {
             // At least one bestie viewed it, cancel SMS
             await doc.ref.update({ status: 'cancelled' });
-            functions.logger.info('SMS cancelled - alert viewed by besties', { 
-              checkinId, 
-              viewedCount: viewedBy.length 
+            functions.logger.info('SMS cancelled - alert viewed by besties', {
+              checkinId,
+              viewedCount: viewedBy.length
             });
             continue;
           }
-          
+
           // Get user data for message
           const userDoc = await db.collection('users').doc(checkinData.userId).get();
           const userData = userDoc.data();
           const userName = userData?.displayName || 'User';
           const location = checkinData.location?.address || checkinData.location || 'Unknown';
           const notes = checkinData.notes || '';
-          
-          const timeString = new Date().toLocaleTimeString('en-AU', { 
-            hour: 'numeric', 
+
+          const timeString = new Date().toLocaleTimeString('en-AU', {
+            hour: 'numeric',
             minute: '2-digit',
-            hour12: true 
+            hour12: true
           });
-          
+
           // Construct SMS message (keep under 160 chars)
           let smsMessage = `🚨 ${userName} needs help! ${timeString}`;
-          
+
           if (location && location !== 'No location set') {
             const shortLocation = location.substring(0, 30); // Truncate if too long
             smsMessage += ` @ ${shortLocation}`;
           }
-          
+
           if (notes) {
             const shortNotes = notes.substring(0, 40); // Truncate if too long
             smsMessage += `. "${shortNotes}"`;
           }
-          
+
           smsMessage += `. Check Besties app now!`;
-          
+
           // Send to each bestie with SMS enabled
           let smsSent = 0;
           for (const bestieId of bestieIds) {
             const bestieDoc = await db.collection('users').doc(bestieId).get();
             if (!bestieDoc.exists) continue;
-            
+
             const bestieData = bestieDoc.data();
-            
+
             // Check if bestie has SMS enabled and phone number
-            if (bestieData?.phoneNumber && 
-                bestieData?.notificationPreferences?.sms) {
-              
+            if (bestieData?.phoneNumber &&
+              bestieData?.notificationPreferences?.sms) {
+
               try {
                 await sendSMSAlert(bestieData.phoneNumber, smsMessage, {
                   userId: checkinData.userId,
@@ -1154,10 +1159,10 @@ exports.sendScheduledSMS = functions.pubsub
                   checkinId: checkinId
                 });
                 smsSent++;
-                functions.logger.info('SMS sent', { 
-                  checkinId, 
+                functions.logger.info('SMS sent', {
+                  checkinId,
                   bestieId,
-                  phone: bestieData.phoneNumber 
+                  phone: bestieData.phoneNumber
                 });
               } catch (error) {
                 functions.logger.error('Failed to send SMS', {
@@ -1168,33 +1173,33 @@ exports.sendScheduledSMS = functions.pubsub
               }
             }
           }
-          
+
           // Mark as sent
-          await doc.ref.update({ 
+          await doc.ref.update({
             status: 'sent',
             sentAt: admin.firestore.FieldValue.serverTimestamp(),
             recipientCount: smsSent
           });
-          
-          functions.logger.info('Scheduled SMS completed', { 
-            checkinId, 
-            smsSent 
+
+          functions.logger.info('Scheduled SMS completed', {
+            checkinId,
+            smsSent
           });
-          
+
         } catch (error) {
           functions.logger.error('Error processing scheduled SMS', {
             checkinId,
             error: error.message
           });
-          
+
           // Mark as failed
-          await doc.ref.update({ 
+          await doc.ref.update({
             status: 'failed',
-            error: error.message 
+            error: error.message
           });
         }
       }
-      
+
       return null;
     } catch (error) {
       functions.logger.error('sendScheduledSMS error:', {
@@ -1229,7 +1234,7 @@ exports.sendLowCreditAlerts = functions.pubsub
   .onRun(async (context) => {
     const db = admin.firestore();
     const { getAvailableCredits } = require('./utils/smsCredits');
-    
+
     const usersSnapshot = await db.collection('users')
       .where('smsSubscription.active', '==', true)
       .get();
@@ -1292,6 +1297,12 @@ exports.onCircleCheckInCreated = onCircleCheckInCreated;
 
 // Challenges
 exports.onChallengeCompleted = onChallengeCompleted;
+
+// Challenge Tracking (NEW)
+exports.updateChallengeProgressOnCheckIn = challengeTracking.updateChallengeProgressOnCheckIn;
+exports.updateChallengeProgressOnCircleCheckIn = challengeTracking.updateChallengeProgressOnCircleCheckIn;
+exports.updateChallengeProgressOnMessage = challengeTracking.updateChallengeProgressOnMessage;
+exports.updatePactHonorOnCheckIn = challengeTracking.updatePactHonorOnCheckIn;
 
 // Safety Pacts
 exports.onPactActivated = onPactActivated;

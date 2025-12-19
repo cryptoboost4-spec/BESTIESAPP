@@ -188,9 +188,9 @@ const TutorialTooltip = ({
     const buttonTop = rect.top;
     const buttonBottom = rect.bottom;
     const viewportHeight = window.innerHeight;
-    const bottomNavHeight = 84; // Bottom nav bar height + safe area buffer
+    const bottomNavHeight = 100; // Increased from 84 for more safety margin
     const headerHeight = 80; // Approximate header height + buffer
-    const bottomPadding = 12; // Reduced padding
+    const bottomPadding = 20; // Increased from 12 for more clearance
     const minHeight = 150; // Minimum usable tooltip height
 
     // Position tooltip based on position prop
@@ -360,9 +360,8 @@ const TutorialTooltip = ({
   return (
     <div
       ref={tooltipRef}
-      className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-300 ${
-        isPositioned ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed z-[10002] bg-gradient-to-br from-pink-50 via-purple-50 to-pink-50 dark:from-pink-900/95 dark:via-purple-900/95 dark:to-pink-900/95 rounded-3xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.3)] p-6 border-[3px] border-pink-100 dark:border-pink-800 backdrop-blur-xl ring-4 ring-white/30 dark:ring-black/20 transition-opacity duration-300 ${isPositioned ? 'opacity-100' : 'opacity-0'
+        }`}
       style={{
         ...getPositionStyles(),
       }}

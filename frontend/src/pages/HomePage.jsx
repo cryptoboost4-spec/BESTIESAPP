@@ -20,7 +20,8 @@ import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
-import TutorialDebugPanel from '../components/TutorialDebugPanel';
+
+import CircleCheckInPrompt from '../components/circleCheckin/CircleCheckInPrompt';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -43,6 +44,7 @@ const HomePage = () => {
   const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
   const [previousCheckInIds, setPreviousCheckInIds] = useState(new Set());
   const [showBestieCircleTutorial] = useState(false);
+  const [checkedInTooltipDismissed, setCheckedInTooltipDismissed] = useState(false);
 
   // Scroll to bestie circle when tutorial starts
   useEffect(() => {
@@ -56,10 +58,7 @@ const HomePage = () => {
     }
   }, [showBestieCircleTutorial]);
 
-  // Debug: Log tutorial step changes
-  useEffect(() => {
-    console.log('[HomePage] Check-in tutorial step changed:', currentCheckInTutorialStep);
-  }, [currentCheckInTutorialStep]);
+  // Debug logging removed for production
 
   // Track when tutorial step was last set to prevent premature clearing
   const tutorialStepSetTimeRef = useRef(null);
@@ -105,10 +104,10 @@ const HomePage = () => {
     // If we have an invalid step, reset to null
     // But don't clear if it was just set (within last 500ms) or onboarding just completed - prevents race condition
     if (currentTutorialStep && !validSteps.includes(currentTutorialStep)) {
-      const timeSinceSet = tutorialStepSetTimeRef.current 
-        ? Date.now() - tutorialStepSetTimeRef.current 
+      const timeSinceSet = tutorialStepSetTimeRef.current
+        ? Date.now() - tutorialStepSetTimeRef.current
         : Infinity;
-      
+
       if (timeSinceSet > 500 && !onboardingJustCompletedRef.current) {
         console.warn('[HomePage] Validation: Invalid tutorial step detected:', currentTutorialStep, '- resetting');
         setTutorialStep(null);
@@ -151,7 +150,7 @@ const HomePage = () => {
 
     // Only check: onboarding completed AND tutorial not complete
     const shouldAutoStart = userData.onboardingCompleted && !tutorialComplete;
-    
+
     if (shouldAutoStart) {
       tutorialAutoStartAttemptedRef.current = true; // Mark as attempted immediately
       // Small delay to ensure page is fully rendered
@@ -206,6 +205,7 @@ const HomePage = () => {
         // Detect check-in creation during check-in tutorial (custom check-in)
         if (currentCheckInTutorialStep === 'final' && checkIns.length > previousCheckInCount) {
           // Check-in was just created - show checkedIn tutorial step
+          setCheckedInTooltipDismissed(false); // Reset dismissal state for new check-in
           setTimeout(() => {
             setCheckInTutorialStep('checkedIn');
           }, 2000); // Increased delay to ensure DOM is ready
@@ -217,9 +217,10 @@ const HomePage = () => {
 
         if (completedCheckInId && currentCheckInTutorialStep === 'checkedIn') {
           // Check-in was just completed - show afterSafe tutorial step
+          console.log('[Tutorial] Check-in completed, showing afterSafe tooltip');
           setTimeout(() => {
             setCheckInTutorialStep('afterSafe');
-          }, 500); // Small delay to let navigation complete
+          }, 1000); // Increased from 500ms to ensure navigation completes
         }
 
         setPreviousCheckInCount(checkIns.length);
@@ -634,6 +635,9 @@ const HomePage = () => {
         {/* Active Alert Banner - Only thing that shows above check-in buttons */}
         <ActiveAlertBanner />
 
+        {/* Circle Check-In Prompt - Daily wellness check */}
+        {activeCheckIns.length === 0 && <CircleCheckInPrompt />}
+
         {/* =================================================================
             ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
             Quick Check-In Section - Do not modify unless explicitly told by the user
@@ -658,8 +662,7 @@ const HomePage = () => {
                 userId={currentUser?.uid}
                 shouldPlayTutorial={currentCheckInTutorialStep === 'sacredTransition' || currentCheckInTutorialStep === 'bestieCircle'}
                 onTutorialComplete={() => {
-                  // Clear the 'sacredTransition' or 'bestieCircle' step to unstick the user doc
-                  // Don't mark entire tutorial complete yet - user still needs to see post-tutorial tooltip
+                  // Clear the tutorial state completely
                   setCheckInTutorialStep(null);
                   toast.success("Welcome to your Bestie Circle! 💜", { icon: "✨" });
                 }}
@@ -864,6 +867,33 @@ const HomePage = () => {
         />
       )}
 
+      {/* Check-In Tutorial - checkedIn step (moved from CheckInCard for reliable rendering) */}
+      {currentCheckInTutorialStep === 'checkedIn' && !checkedInTooltipDismissed && (
+        <CheckInTutorialOverlay
+          currentStep="checkedIn"
+          onStepComplete={(action) => {
+            if (action === 'continue') {
+              // Dismiss tooltip - user can now complete check-in
+              // When check-in completes, afterSafe will show
+              setCheckedInTooltipDismissed(true);
+            }
+          }}
+          onSkipTutorial={() => {
+            markCheckInTutorialComplete();
+          }}
+          highlightedElementRef={activeCheckIns.length > 0 ? activeCheckInCardRef : null}
+          tooltipConfig={{
+            icon: '✅',
+            title: 'Your Active Check-In',
+            body: `Great job! Your check-in is now active.\n\nHere you can:\n• Add notes about your situation\n• Add photos for your besties\n• Add more time if needed\n\nWhen you're safe, click the "I'm Safe" button. This lets your besties know you're okay! 💜`,
+            overlayOnElement: activeCheckIns.length > 0,
+            buttons: [
+              { text: 'Got it!', action: 'continue', primary: true }
+            ]
+          }}
+        />
+      )}
+
       {/* Check-In Tutorial - afterSafe step */}
       {currentCheckInTutorialStep === 'afterSafe' && (
         <>
@@ -871,16 +901,12 @@ const HomePage = () => {
             currentStep="afterSafe"
             onStepComplete={(action) => {
               if (action === 'continueTutorial') {
-                // User wants to continue tutorial - scroll to Bestie Circle and start tutorial
-                if (livingCircleRef.current) {
-                  const element = livingCircleRef.current;
-                  const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-                  const offsetPosition = elementPosition - 100; // 100px offset from top
-                  
-                  window.scrollTo({
-                    top: offsetPosition,
-                    behavior: 'smooth'
-                  });
+                // User wants to continue tutorial - scroll to Bestie Circle
+                const circleElement = document.getElementById('living-circle-origin');
+                if (circleElement) {
+                  const yOffset = -100;
+                  const y = circleElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
                 }
                 // Small delay to let scroll complete before starting tutorial
                 setTimeout(() => {
@@ -932,7 +958,17 @@ const HomePage = () => {
       {/* Step 1: Bestie Circle Tutorial (NEW) - Moved to embedded LivingCircle */}
 
       {/* Tutorial Debug Panel (development only) */}
-      <TutorialDebugPanel />
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-20 right-4 z-50">
+          <details className="bg-gray-900 text-white p-2 rounded text-xs">
+            <summary className="cursor-pointer">Debug</summary>
+            <div className="mt-2 space-y-1">
+              <div>Tutorial: {currentTutorialStep || 'none'}</div>
+              <div>CheckIn Tutorial: {currentCheckInTutorialStep || 'none'}</div>
+            </div>
+          </details>
+        </div>
+      )}
     </div>
   );
 };

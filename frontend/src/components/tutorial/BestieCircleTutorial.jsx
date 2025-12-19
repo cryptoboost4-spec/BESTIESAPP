@@ -139,7 +139,7 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
             exit={{ opacity: 0, transition: { duration: 0.5 } }}
         >
             {/* Global Background Layer - Dream Circle Style */}
-            <motion.div 
+            <motion.div
                 className="absolute inset-0 pointer-events-none rounded-[inherit] bg-gradient-to-br from-green-50 via-emerald-50 via-teal-50 via-pink-50 to-purple-50 border-4 border-green-300 z-0"
                 animate={{ opacity: isCompleting ? 0 : 1 }}
                 transition={{ duration: 0.5 }}
@@ -194,14 +194,14 @@ const DreamscapeBackground = memo(() => (
 
 const FallingStars = () => {
     // Pre-calculate random values to prevent recalculation on every render
-    const stars = useMemo(() => 
+    const stars = useMemo(() =>
         Array.from({ length: 5 }).map((_, i) => ({
             initialX: Math.random() * 100,
             animateX: Math.random() * 100,
             duration: Math.random() * 2 + 3,
             delay: Math.random() * 10
         }))
-    , []);
+        , []);
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -381,7 +381,7 @@ const BurningProgressRing = () => {
 
 const ConnectionLinesOverlay = memo(({ currentStep }) => {
     // Memoize slot positions calculation - only calculate once
-    const slots = useMemo(() => 
+    const slots = useMemo(() =>
         Array.from({ length: 5 }).map((_, index) => {
             const angle = (index * 72 - 90) * (Math.PI / 180);
             const radius = 45; // Percentage radius (matching Dream Circle exactly)
@@ -389,14 +389,14 @@ const ConnectionLinesOverlay = memo(({ currentStep }) => {
             const y = 50 + radius * Math.sin(angle);
             return { index, x, y, angle };
         })
-    , []);
+        , []);
 
     // Memoize computed values
-    const isTopSlotActive = useMemo(() => 
+    const isTopSlotActive = useMemo(() =>
         currentStep === TUTORIAL_STEPS.STEP_2 || currentStep === TUTORIAL_STEPS.STEP_3,
         [currentStep]
     );
-    const isTopSlotElectric = useMemo(() => 
+    const isTopSlotElectric = useMemo(() =>
         currentStep === TUTORIAL_STEPS.STEP_3,
         [currentStep]
     );
@@ -409,12 +409,12 @@ const ConnectionLinesOverlay = memo(({ currentStep }) => {
             <defs>
                 {/* Gradients for each line - horizontal gradient matching Dream Circle exactly */}
                 {slots.map((slot) => (
-                    <linearGradient 
-                        key={`gradient-${slot.index}`} 
-                        id={`tutorial-line-gradient-${slot.index}`} 
-                        x1="0%" 
-                        y1="0%" 
-                        x2="100%" 
+                    <linearGradient
+                        key={`gradient-${slot.index}`}
+                        id={`tutorial-line-gradient-${slot.index}`}
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
                         y2="0%"
                     >
                         <stop offset="0%" stopColor="#10b981" stopOpacity="0.9" />
@@ -426,11 +426,11 @@ const ConnectionLinesOverlay = memo(({ currentStep }) => {
                 ))}
                 {/* Glow filter for active lines - simplified for better performance */}
                 <filter id="tutorial-line-glow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
                     <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
                     </feMerge>
                 </filter>
             </defs>
@@ -632,7 +632,7 @@ const SingleSlot = memo(({ index, currentStep }) => {
                     </AnimatePresence>
 
                     {isBlooming && <MockAvatarSequence />}
-                    
+
                     {/* Dream Circle style - Perfect Status Badge when active */}
                     {isBlooming && (
                         <motion.div
@@ -717,29 +717,29 @@ const MockAvatarSequence = () => {
                 />
             )}
 
-                    {(stage === 'bloom' || stage === 'done') && (
-                        <motion.div
-                            className="w-full h-full rounded-full overflow-hidden border-[3px] bg-gray-100 relative z-10 shadow-xl border-4 border-white ring-6 ring-green-300"
-                            initial={{ clipPath: 'circle(0% at 50% 50%)' }}
-                            animate={{
-                                clipPath: 'circle(100% at 50% 50%)',
-                                borderColor: status === 'safe' ? '#10b981' : status === 'checkin' ? '#facc15' : '#c084fc'
-                            }}
-                            transition={{ duration: 0.8, ease: "circOut" }}
-                            style={{
-                                background: status === 'safe' 
-                                    ? 'linear-gradient(to bottom right, #10b981, #34d399)' 
-                                    : 'linear-gradient(to bottom right, #f3f4f6, #e5e7eb)'
-                            }}
-                        >
-                            <img src="/assets/watercolor-avatar.png" className="w-full h-full object-cover" alt="Avatar" />
+            {(stage === 'bloom' || stage === 'done') && (
+                <motion.div
+                    className="w-full h-full rounded-full overflow-hidden border-[3px] bg-gray-100 relative z-10 shadow-xl border-4 border-white ring-6 ring-green-300"
+                    initial={{ clipPath: 'circle(0% at 50% 50%)' }}
+                    animate={{
+                        clipPath: 'circle(100% at 50% 50%)',
+                        borderColor: status === 'safe' ? '#10b981' : status === 'checkin' ? '#facc15' : '#c084fc'
+                    }}
+                    transition={{ duration: 0.8, ease: "circOut" }}
+                    style={{
+                        background: status === 'safe'
+                            ? 'linear-gradient(to bottom right, #10b981, #34d399)'
+                            : 'linear-gradient(to bottom right, #f3f4f6, #e5e7eb)'
+                    }}
+                >
+                    <img src="/assets/watercolor-avatar.png" className="w-full h-full object-cover" alt="Avatar" />
 
-                            <motion.div
-                                className="absolute inset-0"
-                                animate={{ backgroundColor: status === 'safe' ? 'rgba(16, 185, 129, 0.2)' : status === 'checkin' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(192, 132, 252, 0.3)' }}
-                            />
-                        </motion.div>
-                    )}
+                    <motion.div
+                        className="absolute inset-0"
+                        animate={{ backgroundColor: status === 'safe' ? 'rgba(16, 185, 129, 0.2)' : status === 'checkin' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(192, 132, 252, 0.3)' }}
+                    />
+                </motion.div>
+            )}
 
             {stage === 'done' && (
                 <motion.div
@@ -782,11 +782,36 @@ const MockAvatarSequence = () => {
 
 const TutorialTooltip = ({ step, onNext }) => {
     const content = {
-        [TUTORIAL_STEPS.STEP_1]: { icon: "💜", title: "Your Circle Awaits", text: "You've checked in. Now, meet your safety net. This is where your chosen family lives.", btn: "Reveal" },
-        [TUTORIAL_STEPS.STEP_2]: { icon: "✨", title: "A Sacred Space", text: "Each slot is a promise. Connect closely with those you trust most.", btn: "Next" },
-        [TUTORIAL_STEPS.STEP_3]: { icon: "👀", title: "Real-time Connection", text: "They see your status instantly. You see theirs. Green for safe, purple for support.", btn: "Show Me How" },
-        [TUTORIAL_STEPS.STEP_4]: { icon: "⚡", title: "Your Vibe Score", text: "Watch your circle strength grow as you connect. A full circle means maximum protection.", btn: "See Stats" },
-        [TUTORIAL_STEPS.STEP_5]: { icon: "🌟", title: "Ready to Start?", text: "Tap any slot to invite your first Bestie. The magic starts with one connection.", btn: "I'm Ready!" },
+        [TUTORIAL_STEPS.STEP_1]: {
+            icon: "💜",
+            title: "Welcome to Your Bestie Circle!",
+            text: "This is your inner circle - the 5 people you trust most. They'll see your check-ins and you'll see theirs. Let's learn how it works!",
+            btn: "Show Me"
+        },
+        [TUTORIAL_STEPS.STEP_2]: {
+            icon: "✨",
+            title: "Your Safety Network",
+            text: "Each slot represents one of your closest besties. You can have up to 5 people in your circle - think of them as your 3am emergency contacts!",
+            btn: "Next"
+        },
+        [TUTORIAL_STEPS.STEP_3]: {
+            icon: "👀",
+            title: "Real-Time Status",
+            text: "Your besties' status shows at a glance:\n💚 Green = Safe\n⏰ Yellow = Active check-in\n💜 Purple = Needs support",
+            btn: "Got It"
+        },
+        [TUTORIAL_STEPS.STEP_4]: {
+            icon: "⚡",
+            title: "Your Circle's Vibe",
+            text: "This score shows your circle's overall health! It's based on connection strength and how full your circle is. Keep it high by staying connected!",
+            btn: "Cool!"
+        },
+        [TUTORIAL_STEPS.STEP_5]: {
+            icon: "🌟",
+            title: "Ready to Start?",
+            text: "Tap any empty slot to invite your first Bestie. The magic starts with one connection. Build your safety network!",
+            btn: "I'm Ready!"
+        },
     }[step];
 
     if (!content) return null;

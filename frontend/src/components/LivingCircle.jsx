@@ -61,13 +61,13 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
         setPostTutorialStep(stored);
       }
     };
-    
+
     // Check on mount
     checkPostTutorialStep();
-    
+
     // Only listen for cross-tab changes
     window.addEventListener('storage', checkPostTutorialStep);
-    
+
     return () => {
       window.removeEventListener('storage', checkPostTutorialStep);
     };
@@ -84,16 +84,11 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
   // Tutorial State
   const diffTutorial = useBestiesTutorialState(); // Renamed to avoid conflicts if any
 
-  // Clear post-tutorial step when bestie circle tutorial is completed
-  useEffect(() => {
-    if (diffTutorial.isCompleted && postTutorialStep) {
-      // Tutorial is complete, clear any post-tutorial steps
-      setPostTutorialStep(null);
-      localStorage.removeItem('bestieCircle_postTutorialStep');
-    }
-  }, [diffTutorial.isCompleted, postTutorialStep]);
+  // Note: Removed useEffect that was clearing postTutorialStep when diffTutorial.isCompleted
+  // This was causing the add-bestie tooltip to be immediately cleared after being set
+
   const circleRef = React.useRef(null);
-  
+
   // Refs for empty slot buttons (for highlighting)
   const emptySlotRefs = React.useRef([]);
 
@@ -554,17 +549,22 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
       )}
 
       {/* BESPOKE TUTORIAL - FULL CARD OVERLAY */}
+      {/* Only render when shouldPlayTutorial is true (Check-In tutorial reached sacredTransition/bestieCircle step) */}
       <AnimatePresence>
-        {diffTutorial.tutorialActive && (
+        {shouldPlayTutorial && diffTutorial.tutorialActive && (
           <BestieCircleTutorial
             key="bestie-circle-tutorial"
             isActive={true}
             onComplete={() => {
-              // Complete the tutorial
+              // Complete the Bestie Circle tutorial
               diffTutorial.completeTutorial();
               // Set tutorial complete flag
               localStorage.setItem('bestieCircle_tutorialComplete', 'true');
-              // Call onTutorialComplete to clear the check-in tutorial step
+
+              // Mark check-in tutorial as complete separately
+              localStorage.setItem('checkInTutorialComplete', 'true');
+
+              // Call onTutorialComplete to clear sacredTransition state
               if (onTutorialComplete) {
                 onTutorialComplete();
               }
@@ -600,10 +600,7 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
         />
       )}
 
-      {/* Highlighting overlay for add bestie buttons */}
-      {postTutorialStep === 'waiting-for-modal' && !loading && !diffTutorial.tutorialActive && (
-        <AddBestieHighlightOverlay emptySlotRefs={emptySlotRefs.current} />
-      )}
+      {/* Highlighting overlay removed - was causing visual issues during tutorial */}
 
       {postTutorialStep === 'click-besties-tab' && (
         <PostTutorialTooltip

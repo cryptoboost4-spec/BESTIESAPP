@@ -5,6 +5,7 @@ import { auth } from './services/firebase';
 
 // Context
 import { AuthProvider } from './contexts/AuthContext';
+import { useDeepLinking } from './hooks/useDeepLinking';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 
 // Components
@@ -73,6 +74,12 @@ function RouteTracker() {
   return null;
 }
 
+// Deep link handler component
+function DeepLinkHandler() {
+  useDeepLinking();
+  return null;
+}
+
 // Custom redirect component that preserves invite parameter
 function ProtectedRoute({ user, children }) {
   const location = useLocation();
@@ -113,10 +120,10 @@ function App() {
       if (e.ctrlKey || e.metaKey) {
         // Allow zoom on map containers
         const target = e.target;
-        const isMapContainer = target.closest('[role="application"]') || 
-                               target.closest('.gm-style') ||
-                               target.closest('[class*="map"]');
-        
+        const isMapContainer = target.closest('[role="application"]') ||
+          target.closest('.gm-style') ||
+          target.closest('[class*="map"]');
+
         if (!isMapContainer) {
           e.preventDefault();
         }
@@ -127,10 +134,10 @@ function App() {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.keyCode === 187 || e.keyCode === 189)) {
         const target = e.target;
-        const isMapContainer = target.closest('[role="application"]') || 
-                               target.closest('.gm-style') ||
-                               target.closest('[class*="map"]');
-        
+        const isMapContainer = target.closest('[role="application"]') ||
+          target.closest('.gm-style') ||
+          target.closest('[class*="map"]');
+
         if (!isMapContainer) {
           e.preventDefault();
         }
@@ -163,6 +170,7 @@ function App() {
       <DarkModeProvider>
         <AuthProvider>
           <Router>
+            <DeepLinkHandler />
             <RouteTracker />
             <ScrollToTop />
             <MilestoneCelebration />
