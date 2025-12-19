@@ -13,7 +13,7 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
             <div>
               <div className="font-semibold text-text-primary flex items-center">
                 Dark Mode
-                <InfoButton message="Toggle between light and dark color themes. Dark mode is easier on your eyes at night and can save battery on OLED screens." />
+                <InfoButton message="Switch between light and dark themes." />
               </div>
               <div className="text-sm text-text-secondary">
                 {isDark ? 'Dark mode enabled' : 'Light mode enabled'}
@@ -37,7 +37,10 @@ const PreferencesAndQuickAccess = ({ isDark, toggleDarkMode, toggleHoldData, use
             <div>
               <div className="font-semibold text-text-primary flex items-center">
                 Data Retention
-                <InfoButton message={`Choose whether to keep your check-in history indefinitely or auto-delete after 7 days. We keep running totals (like badge progress) but delete actual location/check-in data for privacy.`} />
+                <InfoButton 
+                  message="Keep check-in history forever or auto-delete after 7 days. Totals always kept." 
+                  detailedMessage="Choose whether to keep your check-in history indefinitely or auto-delete after 7 days. When auto-delete is on, we delete location data and check-in details after 7 days, but always keep your totals (like badge progress and streaks) for your profile." 
+                />
               </div>
               <div className="text-sm text-text-secondary">
                 {userData?.settings?.holdData

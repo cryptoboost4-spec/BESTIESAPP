@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
-import { collection, getDocs, query, where, addDoc, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, addDoc, Timestamp, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import haptic from '../../utils/hapticFeedback';
@@ -10,7 +10,6 @@ const ChallengeLibrary = ({ isOpen, onClose, onSelect, currentUserId, userData }
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [selectedBestieId, setSelectedBestieId] = useState(null);
   const [besties, setBesties] = useState([]);
 
   useEffect(() => {

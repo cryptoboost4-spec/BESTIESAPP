@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -11,10 +11,19 @@ export const useTutorialState = () => {
   const { currentUser } = useAuth();
   const [tutorialComplete, setTutorialComplete] = useState(false);
   const [currentTutorialStep, setCurrentTutorialStep] = useState(null);
+  const [tutorialStateLoaded, setTutorialStateLoaded] = useState(false);
+  const currentStepRef = useRef(null); // Track current step to prevent duplicate updates
 
   // Load initial state from localStorage and Firestore
+  // Only run once when currentUser changes (not on every render)
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setTutorialStateLoaded(true);
+      return;
+    }
+
+    // Prevent multiple simultaneous syncs
+    let isMounted = true;
 
     // Load from localStorage first (quick access)
     const localComplete = localStorage.getItem('tutorial_complete') === 'true';
@@ -27,13 +36,17 @@ export const useTutorialState = () => {
     }
     
     setTutorialComplete(localComplete);
-    setCurrentTutorialStep(localStep || null);
+    const initialStep = localStep || null;
+    setCurrentTutorialStep(initialStep);
+    currentStepRef.current = initialStep;
 
-    // Then sync with Firestore (cross-device)
+    // Then sync with Firestore (cross-device) - only once on mount
     const syncWithFirestore = async () => {
       try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userSnap = await getDoc(userRef);
+        
+        if (!isMounted) return; // Component unmounted, don't update state
         
         if (userSnap.exists()) {
           const data = userSnap.data();
@@ -49,18 +62,20 @@ export const useTutorialState = () => {
                 currentTutorialStep: null
               });
             } catch (error) {
-              console.error('Error cleaning up intro step:', error);
+              console.error('[useTutorialState] Error cleaning up intro step:', error);
             }
           }
 
           // Firestore takes precedence if it exists
-          // Ensure we never set 'intro' as a step (clean it up if it exists)
           const finalStep = firestoreStep === 'intro' ? null : firestoreStep;
           const finalComplete = firestoreComplete;
+          
+          if (!isMounted) return; // Check again before updating state
           
           if (finalComplete !== localComplete || finalStep !== localStep) {
             setTutorialComplete(finalComplete);
             setCurrentTutorialStep(finalStep);
+            currentStepRef.current = finalStep;
             
             // Update localStorage to match Firestore
             localStorage.setItem('tutorial_complete', finalComplete.toString());
@@ -72,13 +87,22 @@ export const useTutorialState = () => {
           }
         }
       } catch (error) {
-        console.error('Error syncing tutorial state with Firestore:', error);
+        console.error('[useTutorialState] Error syncing tutorial state with Firestore:', error);
         // Continue with localStorage state if Firestore fails
+      } finally {
+        if (isMounted) {
+          console.log('[useTutorialState] Firestore sync completed, tutorialStateLoaded set to true');
+          setTutorialStateLoaded(true);
+        }
       }
     };
 
     syncWithFirestore();
-  }, [currentUser]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.uid]); // Only depend on uid, not the whole currentUser object
 
   // Safety net: Clean up 'intro' step if it somehow gets into state
   useEffect(() => {
@@ -101,6 +125,7 @@ export const useTutorialState = () => {
   const markTutorialComplete = async (skipFirestore = false) => {
     setTutorialComplete(true);
     setCurrentTutorialStep(null);
+    currentStepRef.current = null;
     
     // Update localStorage
     localStorage.setItem('tutorial_complete', 'true');
@@ -131,8 +156,13 @@ export const useTutorialState = () => {
     // Validate step is one of the allowed values
     const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom', 'rideshare', 'walking', 'quickmeet'];
     if (step && !validSteps.includes(step)) {
-      console.warn('Invalid tutorial step attempted:', step, '- ignoring');
+      console.warn('[useTutorialState] Invalid tutorial step attempted:', step, '- ignoring');
       return;
+    }
+    
+    // Prevent duplicate updates if step is already set to the same value
+    if (step === currentStepRef.current) {
+      return; // Already set to this step, skip update
     }
     
     // If setting step, ensure tutorial is not marked complete
@@ -140,6 +170,7 @@ export const useTutorialState = () => {
       setTutorialComplete(false);
     }
     
+    currentStepRef.current = step; // Update ref immediately
     setCurrentTutorialStep(step);
     
     // Update localStorage
@@ -159,7 +190,7 @@ export const useTutorialState = () => {
           ...(step ? { tutorialComplete: false } : {})
         });
       } catch (error) {
-        console.error('Error updating tutorial step in Firestore:', error);
+        console.error('[useTutorialState] Error updating tutorial step in Firestore:', error);
         // Non-critical - localStorage is updated
       }
     }
@@ -169,6 +200,7 @@ export const useTutorialState = () => {
   const resetTutorial = async () => {
     setTutorialComplete(false);
     setCurrentTutorialStep(null);
+    currentStepRef.current = null;
     
     localStorage.removeItem('tutorial_complete');
     localStorage.removeItem('current_tutorial_step');
@@ -189,6 +221,7 @@ export const useTutorialState = () => {
   return {
     tutorialComplete,
     currentTutorialStep,
+    tutorialStateLoaded,
     markTutorialComplete,
     setTutorialStep,
     resetTutorial

@@ -15,7 +15,10 @@ const PrivacySettings = ({ userData, currentUser }) => {
           <div>
             <div className="font-semibold text-text-primary flex items-center">
               Show Stats to Besties
-              <InfoButton message="Control whether your besties can see your check-in stats and safety record on your profile. This includes streaks, badges, and check-in history." />
+              <InfoButton 
+                message="Control if besties can see your stats, streaks, and badges." 
+                detailedMessage="Control if besties can see your check-in stats, streaks, and badges on your profile." 
+              />
             </div>
             <div className="text-sm text-text-secondary">
               {userData?.privacySettings?.showStatsToBesties !== false
@@ -56,7 +59,10 @@ const PrivacySettings = ({ userData, currentUser }) => {
           <div>
             <div className="font-semibold text-text-primary mb-2 flex items-center">
               Check-in Visibility
-              <InfoButton message="Choose who can see your check-ins in their activity feed. This helps you control your privacy while still letting your closest besties know you're safe." />
+              <InfoButton 
+                message="Choose who sees your check-ins: all besties, circle only, or alerts only." 
+                detailedMessage="Control who can see your check-ins in their activity feed. Choose from: all besties, only your top 5 circle besties, or alerts only (most private - check-ins hidden until an alert triggers)." 
+              />
             </div>
             <div className="text-sm text-text-secondary mb-3">
               Control who can see your check-ins (last 7 days)

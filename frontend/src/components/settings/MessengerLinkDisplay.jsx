@@ -48,21 +48,8 @@ const MessengerLinkDisplay = ({ userId }) => {
     );
   };
 
-  const infoMessage = `Share your personal Messenger link with emergency contacts. When they click it and send any message, they're connected for 20 hours. They'll get alerts if you don't check in safely.
-
-How it works:
-1. Share link with emergency contacts
-2. They click & send ANY message on Messenger
-3. Connected for 20 hours automatically
-4. Select them when creating check-ins
-5. They get alerts if you don't check in
-
-Why use this?
-• Unlimited contacts (no 5-person limit)
-• Completely free forever
-• Easy setup - just one message
-• Auto-expires after 20 hours for privacy
-• Instant real-time alerts`;
+  const infoMessage = `Share your link. When contacts message you, they're connected for 20 hours and get alerts if you don't check in.`;
+  const detailedMessage = `Share your personal Messenger link with emergency contacts. When they click it and send any message, they're automatically connected for 20 hours. You can then select them when creating check-ins, and they'll receive alerts if you don't check in safely. This is completely free, unlimited, and works even if they don't have the Besties app. Connections auto-expire after 20 hours for privacy.`;
 
   return (
     <div className="card p-6 mb-6">
@@ -73,7 +60,7 @@ Why use this?
             <path d="M12 0C5.373 0 0 4.975 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.09.301 2.246.464 3.442.464 6.627 0 12-4.974 12-11.111C24 4.975 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/>
           </svg>
           Facebook Messenger
-          <span className="ml-1"><InfoButton message={infoMessage} /></span>
+          <span className="ml-1"><InfoButton message={infoMessage} detailedMessage={detailedMessage} /></span>
         </h2>
         <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full font-semibold">
           Free & Unlimited

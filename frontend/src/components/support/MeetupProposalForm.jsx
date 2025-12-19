@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import haptic from '../../utils/hapticFeedback';
 
 const WHEN_OPTIONS = ['This week', 'Next week', 'Just checking in'];
 const WHAT_OPTIONS = ['Coffee', 'Meal', 'Activity', 'Just talk'];
 
 const MeetupProposalForm = ({ isOpen, onClose, onComplete, recipientName }) => {
-  const { currentUser } = useAuth();
   const [when, setWhen] = useState('');
   const [what, setWhat] = useState('');
   const [note, setNote] = useState('');

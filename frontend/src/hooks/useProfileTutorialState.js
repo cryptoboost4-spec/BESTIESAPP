@@ -54,7 +54,7 @@ export const useProfileTutorialState = () => {
 
   const startTutorial = () => {
     setTutorialActive(true);
-    setCurrentStep(1); // Skip welcome card (0), go straight to step 1
+    setCurrentStep(2); // Start at step 2 (Customize Your Background)
   };
 
   const nextStep = () => {
@@ -148,6 +148,7 @@ export const useProfileTutorialState = () => {
     startTutorial,
     nextStep,
     setCurrentStep,
+    setTutorialActive,
     skipTutorial,
     completeTutorial,
     pauseTutorial,

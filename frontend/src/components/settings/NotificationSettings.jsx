@@ -28,7 +28,10 @@ const NotificationSettings = ({
             <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
               WhatsApp
               <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full whitespace-nowrap">Coming Soon</span>
-              <InfoButton message="WhatsApp notifications will be sent when your besties check in or need help. This is the most reliable option for mobile alerts and will be completely free!" />
+              <InfoButton 
+                message="Free WhatsApp alerts coming soon." 
+                detailedMessage="Free WhatsApp alerts when besties need help. Coming soon." 
+              />
             </div>
             <div className="text-sm text-text-secondary">Integration in development</div>
           </div>
@@ -47,7 +50,10 @@ const NotificationSettings = ({
               <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
                 Telegram
                 <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Free & Unlimited</span>
-                <InfoButton message="Connect YOUR Telegram account to receive safety alerts when your besties need help. When you toggle this on, it will automatically open Telegram to connect. Send /start to the bot to complete the connection!" />
+                <InfoButton 
+                  message="Connect Telegram for free mobile alerts. Toggle on to connect." 
+                  detailedMessage="Connect your Telegram account to receive free, unlimited safety alerts. When you toggle this on, it opens Telegram to connect with our bot. Send /start to complete the connection. Works great for mobile alerts!" 
+                />
               </div>
             </div>
             <button
@@ -82,7 +88,10 @@ const NotificationSettings = ({
           <div className="flex-1">
             <div className="font-semibold text-text-primary flex items-center">
               Push Notifications
-              <InfoButton message="Browser push notifications work when your browser is open. For mobile alerts, we recommend Telegram or SMS." />
+              <InfoButton 
+                message="Browser notifications when browser is open. Use Telegram or SMS for mobile." 
+                detailedMessage="Browser notifications when your browser is open. For mobile, use Telegram or SMS." 
+              />
             </div>
             <div className="text-sm text-text-secondary">
               {pushNotificationsSupported
@@ -117,7 +126,10 @@ const NotificationSettings = ({
             <div className="flex items-center gap-2 flex-wrap">
               <div className="font-semibold text-text-primary flex items-center">
                 SMS Alerts
-                <InfoButton message="Text message alerts cost 1 credit per message. Subscribe for $2/month to get 15 credits." />
+                <InfoButton 
+                  message="SMS costs 1 credit per message. $2/month gets 15 credits." 
+                  detailedMessage="SMS alerts use credits (1 credit = 1 SMS to 1 person). Subscribe for $2/month to get 15 credits that refresh monthly. SMS is used when free channels (Telegram, Messenger) aren't available. You can buy extra credits anytime." 
+                />
               </div>
             </div>
             <div className="text-sm text-text-secondary">

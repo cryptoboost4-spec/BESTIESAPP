@@ -7,11 +7,7 @@ import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
  */
 const TutorialDebugPanel = () => {
     const {
-        currentCheckInTutorialStep,
-        setCheckInTutorialStep,
-        resetCheckInTutorial,
-        markCheckInTutorialComplete,
-        validSteps
+        currentCheckInTutorialStep
     } = useCheckInTutorialState();
 
     // Only show in development

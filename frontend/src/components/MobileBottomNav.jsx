@@ -1,24 +1,88 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
+import { useTutorialState } from '../hooks/useTutorialState';
 
 const MobileBottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark } = useDarkMode();
   const { currentCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
+  const { currentTutorialStep, tutorialComplete } = useTutorialState();
   const tutorial = useBestiesTutorialState();
 
   const isActive = (path) => location.pathname === path;
   
-  // Check if Bestie Circle tutorial is completed (buttons should be visible)
-  const isBestieCircleTutorialComplete = tutorial.isCompleted;
+  // Check if we're in post-tutorial flow (hide profile menu)
+  const [postTutorialStep, setPostTutorialStep] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bestieCircle_postTutorialStep');
+    }
+    return null;
+  });
+  
+  useEffect(() => {
+    // Listen for changes
+    const handleStorageChange = () => {
+      const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
+      setPostTutorialStep(newStep);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    // Also check periodically (for same-tab updates)
+    const interval = setInterval(() => {
+      const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
+      if (newStep !== postTutorialStep) {
+        setPostTutorialStep(newStep);
+      }
+    }, 100);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [postTutorialStep]);
+  
+  // Check if Bestie Circle tutorial is completed
+  // Besties menu should be visible once tutorial completes
+  // Use state to react to localStorage changes
+  const [bestieCircleTutorialComplete, setBestieCircleTutorialComplete] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bestieCircle_tutorialComplete') === 'true';
+    }
+    return false;
+  });
+  
+  // Listen for localStorage changes to show Besties tab when tooltip appears
+  useEffect(() => {
+    const checkTutorialComplete = () => {
+      const isComplete = localStorage.getItem('bestieCircle_tutorialComplete') === 'true';
+      setBestieCircleTutorialComplete(isComplete);
+    };
+    
+    // Check on mount and periodically (for same-tab updates)
+    checkTutorialComplete();
+    const interval = setInterval(checkTutorialComplete, 100);
+    
+    // Also listen for storage events (cross-tab)
+    window.addEventListener('storage', checkTutorialComplete);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', checkTutorialComplete);
+    };
+  }, []);
+  
+  // Besties tab should only be visible when we're showing the tooltip to click it
+  // OR if tutorial is already completed (for returning users)
+  const isBestieCircleTutorialComplete = bestieCircleTutorialComplete && 
+    (postTutorialStep === 'click-besties-tab' || !postTutorialStep);
   
   // Check if buttons should flash
   const shouldFlashBesties = currentCheckInTutorialStep === 'afterSafe' || 
-    (isBestieCircleTutorialComplete && !tutorial.tutorialActive);
+    postTutorialStep === 'add-bestie' ||
+    postTutorialStep === 'click-besties-tab';
+  // Profile button should flash when Besties tutorial is active (on Besties page)
   const shouldFlashProfile = tutorial.tutorialActive && tutorial.currentStep === 1;
 
   return (
@@ -49,8 +113,8 @@ const MobileBottomNav = () => {
           <span className="text-xs font-semibold">Home</span>
         </Link>
 
-        {/* Only show Besties button after Bestie Circle tutorial is complete */}
-        {isBestieCircleTutorialComplete && (
+        {/* Only show Besties button after Bestie Circle tutorial is complete AND no tutorials are active */}
+        {isBestieCircleTutorialComplete && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep && !tutorial.tutorialActive && (
           <Link
             to="/besties"
             onClick={(e) => {
@@ -78,30 +142,32 @@ const MobileBottomNav = () => {
           </Link>
         )}
 
-        {/* Profile button - always visible (not tied to Bestie Circle tutorial) */}
-        <Link
-          to="/profile"
-          onClick={() => {
-            // If besties tutorial is active, complete it so profile tutorial can start
-            if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-              tutorial.completeTutorial();
-            }
-          }}
-          className={`flex flex-col items-center gap-1 transition-colors relative ${
-            isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
-          } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
-          style={shouldFlashProfile ? {
-            boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
-            borderRadius: '12px',
-            padding: '8px',
-            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
-          } : {}}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span className="text-xs font-semibold">Profile</span>
-        </Link>
+        {/* Profile button - hidden during any tutorial, visible on Besties page during tutorial step 1 */}
+        {((!postTutorialStep || postTutorialStep === 'null') && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep) || (isActive('/besties') && tutorial.tutorialActive && tutorial.currentStep === 1) ? (
+          <Link
+            to="/profile"
+            onClick={() => {
+              // If besties tutorial is active, complete it so profile tutorial can start
+              if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+                tutorial.completeTutorial();
+              }
+            }}
+            className={`flex flex-col items-center gap-1 transition-colors relative ${
+              isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
+            } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
+            style={shouldFlashProfile ? {
+              boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+              borderRadius: '12px',
+              padding: '8px',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+            } : {}}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="text-xs font-semibold">Profile</span>
+          </Link>
+        ) : null}
       </div>
       <style>{`
         @keyframes glow {

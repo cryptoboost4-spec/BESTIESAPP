@@ -1,10 +1,63 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const InfoButton = ({ message }) => {
+const InfoButton = ({ message, detailedMessage }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState('left');
+  const [expanded, setExpanded] = useState(false);
+  const [tooltipStyle, setTooltipStyle] = useState({});
   const buttonRef = useRef(null);
   const tooltipRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // Calculate tooltip position to stay within viewport
+  useEffect(() => {
+    if (showTooltip && buttonRef.current && tooltipRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const mobileNavHeight = 80; // Approximate height of mobile bottom nav
+      const padding = 16; // 1rem padding
+      const tooltipGap = 8; // Gap between button and tooltip
+      
+      // Find the card container (parent with 'card' class)
+      let cardElement = buttonRef.current.closest('.card');
+      if (!cardElement) {
+        // Fallback: find the nearest container with max-width
+        cardElement = buttonRef.current.closest('[class*="max-w"]');
+      }
+      
+      const cardRect = cardElement ? cardElement.getBoundingClientRect() : null;
+      const cardWidth = cardRect ? cardRect.width : viewportWidth - (padding * 2);
+      const cardLeft = cardRect ? cardRect.left : padding;
+      
+      // Calculate tooltip width (full card width minus padding)
+      const tooltipWidth = Math.min(cardWidth - (padding * 2), viewportWidth - (padding * 2));
+      
+      // Calculate horizontal position (center of card)
+      const tooltipLeft = cardLeft + (cardWidth / 2) - (tooltipWidth / 2);
+      
+      // Always position tooltip below the button
+      const top = buttonRect.bottom + tooltipGap;
+      const arrowPosition = buttonRect.left + (buttonRect.width / 2) - tooltipLeft;
+      const arrowDirection = 'up';
+      
+      // Calculate available space below button (accounting for mobile nav)
+      const availableSpaceBelow = viewportHeight - buttonRect.bottom - mobileNavHeight - tooltipGap - padding;
+      
+      // Ensure tooltip doesn't go off screen horizontally
+      const clampedLeft = Math.max(padding, Math.min(tooltipLeft, viewportWidth - tooltipWidth - padding));
+      
+      setTooltipStyle({
+        position: 'fixed',
+        left: `${clampedLeft}px`,
+        width: `${tooltipWidth}px`,
+        top: `${top}px`,
+        maxHeight: `${Math.max(100, availableSpaceBelow)}px`, // Ensure at least 100px height, but respect available space
+        zIndex: 9998,
+        arrowLeft: `${arrowPosition}px`,
+        arrowDirection: arrowDirection
+      });
+    }
+  }, [showTooltip, expanded, detailedMessage]);
 
   // Close tooltip when clicking outside
   useEffect(() => {
@@ -21,29 +74,35 @@ const InfoButton = ({ message }) => {
     }
   }, [showTooltip]);
 
-  // Calculate optimal tooltip position to keep it on screen
+  // Close tooltip on scroll
   useEffect(() => {
-    if (showTooltip && buttonRef.current) {
-      const buttonRect = buttonRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const tooltipWidth = 200; // maxWidth from styling
-
-      // Check if tooltip would go off right edge
-      if (buttonRect.left + tooltipWidth > viewportWidth - 20) {
-        setTooltipPosition('right');
-      } else {
-        setTooltipPosition('left');
+    const handleScroll = () => {
+      if (showTooltip) {
+        setShowTooltip(false);
       }
+    };
+
+    if (showTooltip) {
+      window.addEventListener('scroll', handleScroll, true);
+      return () => window.removeEventListener('scroll', handleScroll, true);
     }
   }, [showTooltip]);
 
   const handleClick = (e) => {
     e.stopPropagation();
     setShowTooltip(!showTooltip);
+    if (!showTooltip) {
+      setExpanded(false); // Reset expanded state when opening tooltip
+    }
+  };
+
+  const handleToggleExpand = (e) => {
+    e.stopPropagation();
+    setExpanded(!expanded);
   };
 
   return (
-    <div className="relative inline-block ml-2">
+    <div ref={containerRef} className="relative inline-block ml-2">
       <button
         ref={buttonRef}
         type="button"
@@ -56,28 +115,76 @@ const InfoButton = ({ message }) => {
         </svg>
       </button>
 
-      {/* Tooltip Bubble */}
+      {/* Full-Width Tooltip */}
       {showTooltip && (
         <div
           ref={tooltipRef}
-          className={`absolute ${tooltipPosition === 'right' ? 'right-0' : 'left-0'} top-full mt-2 z-50 animate-scale-up`}
-          style={{ minWidth: '160px', maxWidth: '200px' }}
+          className="fixed animate-scale-up overflow-y-auto"
+          style={tooltipStyle}
         >
-          <div className="bg-white dark:bg-gray-800 bg-opacity-100 dark:bg-opacity-100 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-2.5">
-            <div className="flex items-start gap-1.5">
-              <span className="text-sm flex-shrink-0">ℹ️</span>
-              <div className="flex-1">
-                <p className="text-xs text-gray-900 dark:text-gray-100 leading-snug font-medium">{message}</p>
-                <button
-                  onClick={() => setShowTooltip(false)}
-                  className="mt-1.5 text-primary dark:text-purple-400 text-xs font-semibold underline hover:no-underline"
-                >
-                  Got it!
-                </button>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-primary dark:border-purple-400 p-4 transition-all duration-200">
+            <div className="flex items-start gap-2">
+              <span className="text-base flex-shrink-0">ℹ️</span>
+              <div className="flex-1 min-w-0">
+                {!expanded ? (
+                  <>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed break-words">{message}</p>
+                    {detailedMessage && (
+                      <button
+                        onClick={handleToggleExpand}
+                        className="mt-3 text-primary dark:text-purple-400 text-sm font-semibold underline hover:no-underline flex items-center gap-1"
+                      >
+                        More info →
+                      </button>
+                    )}
+                    {!detailedMessage && (
+                      <button
+                        onClick={() => setShowTooltip(false)}
+                        className="mt-3 text-primary dark:text-purple-400 text-sm font-semibold underline hover:no-underline"
+                      >
+                        Got it!
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed break-words">{detailedMessage}</p>
+                    <div className="flex items-center gap-3 mt-3">
+                      <button
+                        onClick={handleToggleExpand}
+                        className="text-primary dark:text-purple-400 text-sm font-semibold underline hover:no-underline flex items-center gap-1"
+                      >
+                        ← Less info
+                      </button>
+                      <button
+                        onClick={() => setShowTooltip(false)}
+                        className="text-primary dark:text-purple-400 text-sm font-semibold underline hover:no-underline"
+                      >
+                        Got it!
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-            {/* Arrow pointing up */}
-            <div className={`absolute bottom-full ${tooltipPosition === 'right' ? 'right-3' : 'left-3'} w-0 h-0 border-l-6 border-r-6 border-b-6 border-transparent border-b-primary dark:border-b-purple-400`}></div>
+            {/* Arrow pointing to button */}
+            {tooltipStyle.arrowDirection === 'up' ? (
+              <div 
+                className="absolute bottom-full w-0 h-0 border-l-6 border-r-6 border-b-6 border-transparent border-b-primary dark:border-b-purple-400"
+                style={{
+                  left: `${tooltipStyle.arrowLeft || 0}px`,
+                  transform: 'translateX(-50%)'
+                }}
+              ></div>
+            ) : (
+              <div 
+                className="absolute top-full w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-primary dark:border-t-purple-400"
+                style={{
+                  left: `${tooltipStyle.arrowLeft || 0}px`,
+                  transform: 'translateX(-50%)'
+                }}
+              ></div>
+            )}
           </div>
         </div>
       )}

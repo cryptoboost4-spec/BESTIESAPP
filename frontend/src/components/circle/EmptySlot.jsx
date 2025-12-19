@@ -1,6 +1,6 @@
 import React from 'react';
 
-const EmptySlot = ({ index, circleBestiesLength, setShowShareModal }) => {
+const EmptySlot = ({ index, circleBestiesLength, setShowShareModal, buttonRef }) => {
   const slotStyles = [
     { border: 'border-pink-500', text: 'text-pink-500', bg: 'bg-pink-500' },
     { border: 'border-purple-500', text: 'text-purple-500', bg: 'bg-purple-500' },
@@ -26,6 +26,7 @@ const EmptySlot = ({ index, circleBestiesLength, setShowShareModal }) => {
       }}
     >
       <button
+        ref={buttonRef}
         onClick={() => setShowShareModal(true)}
         className={`w-14 h-14 md:w-16 md:h-16 border-[6px] border-dashed ${style.border} rounded-full flex flex-col items-center justify-center ${style.text} font-bold hover:scale-110 hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl animate-pulse-slow relative group`}
         title="Add someone who has your back"

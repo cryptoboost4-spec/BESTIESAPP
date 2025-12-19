@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -18,17 +18,11 @@ import LegalSection from '../components/settings/LegalSection';
 import PricingTiers from '../components/settings/PricingTiers';
 import TutorialsSection from '../components/settings/TutorialsSection';
 import { FEATURES } from '../config/features';
-import { useSettingsTutorialState } from '../hooks/useSettingsTutorialState';
-import SettingsTutorialWelcome from '../components/tutorials/settings/SettingsTutorialWelcome';
-import SettingsTutorialOverlay from '../components/tutorials/settings/SettingsTutorialOverlay';
-import MiniModeTooltip from '../components/tutorials/MiniModeTooltip';
-import CelebrationToast from '../components/tutorials/CelebrationToast';
 
 const SettingsPage = () => {
   const { currentUser, userData } = useAuth();
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
-  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [pushNotificationsSupported, setPushNotificationsSupported] = useState(true);
@@ -45,46 +39,6 @@ const SettingsPage = () => {
   const [passcode, setPasscode] = useState('');
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [showPasscodeInfo, setShowPasscodeInfo] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-
-  // Tutorial state
-  const tutorial = useSettingsTutorialState();
-  
-  // Handle tutorial restart from navigation state
-  useEffect(() => {
-    if (location.state?.restartTutorial && !tutorial.isLoading && tutorial.isCompleted) {
-      tutorial.resetTutorial().then(() => {
-        tutorial.startTutorial();
-        // Clear the state
-        window.history.replaceState({}, document.title);
-      });
-    }
-  }, [location.state, tutorial, tutorial.isLoading, tutorial.isCompleted]);
-
-  // Smart step skipping: Skip step 1 if notifications are already configured
-  useEffect(() => {
-    if (tutorial.tutorialActive && tutorial.currentStep === 1 && userData) {
-      const hasNotificationsConfigured = 
-        userData?.settings?.notifications?.email ||
-        userData?.settings?.notifications?.sms ||
-        userData?.settings?.notifications?.push ||
-        pushNotificationsEnabled;
-      
-      if (hasNotificationsConfigured) {
-        // Skip to step 2
-        setTimeout(() => {
-          tutorial.nextStep();
-        }, 500);
-      }
-    }
-  }, [tutorial.tutorialActive, tutorial.currentStep, userData, pushNotificationsEnabled, tutorial]);
-  
-  // Refs for highlighted elements
-  const notificationSettingsRef = useRef(null);
-  const messengerLinkRef = useRef(null);
-  const privacySettingsRef = useRef(null);
-  const securityPasscodesRef = useRef(null);
-  const preferencesRef = useRef(null);
 
   // Check if push notifications are supported and enabled
   useEffect(() => {
@@ -552,7 +506,7 @@ const SettingsPage = () => {
           <p className="text-text-secondary">Manage your account and preferences</p>
         </div>
         {/* Notification Preferences */}
-        <div id="notifications" ref={notificationSettingsRef}>
+        <div id="notifications">
           <NotificationSettings
             userData={userData}
             currentUserId={currentUser.uid}
@@ -562,9 +516,6 @@ const SettingsPage = () => {
             pushNotificationsEnabled={pushNotificationsEnabled}
             loading={loading}
             onOpenTestModal={() => {
-              if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-                tutorial.pauseTutorial();
-              }
               setShowTestAlertModal(true);
             }}
           />
@@ -572,7 +523,7 @@ const SettingsPage = () => {
 
         {/* Messenger Integration */}
         {FEATURES.messengerAlerts && (
-          <div id="messenger" ref={messengerLinkRef}>
+          <div id="messenger">
             <MessengerLinkDisplay userId={currentUser?.uid} />
           </div>
         )}
@@ -585,14 +536,14 @@ const SettingsPage = () => {
 
 
         {/* Privacy Settings */}
-        <div id="privacy" ref={privacySettingsRef}>
+        <div id="privacy">
           <PrivacySettings userData={userData} currentUser={currentUser} />
         </div>
 
 
 
         {/* Security - Passcodes */}
-        <div id="security" ref={securityPasscodesRef}>
+        <div id="security">
           <SecurityPasscodes
             userData={userData}
             showPasscodeInfo={showPasscodeInfo}
@@ -632,7 +583,7 @@ const SettingsPage = () => {
         <TutorialsSection />
 
         {/* Preferences */}
-        <div ref={preferencesRef}>
+        <div>
           <PreferencesAndQuickAccess
             isDark={isDark}
             toggleDarkMode={toggleDarkMode}
@@ -831,128 +782,12 @@ const SettingsPage = () => {
       <TestAlertModal
         isOpen={showTestAlertModal}
         onClose={() => {
-          if (tutorial.tutorialActive && tutorial.isPaused) {
-            tutorial.resumeTutorial();
-          }
           setShowTestAlertModal(false);
         }}
         userData={userData}
         onSendTest={handleSendTestAlert}
         loading={loading}
       />
-
-      {/* Tutorial Welcome Card */}
-      {!tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive && (
-        <SettingsTutorialWelcome
-          onStart={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_started', { page: 'settings' });
-            }
-            tutorial.startTutorial();
-          }}
-          onSkip={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_skipped', { page: 'settings', at_step: 0 });
-            }
-            tutorial.skipTutorial();
-          }}
-        />
-      )}
-
-      {/* Tutorial Overlay */}
-      {tutorial.tutorialActive && tutorial.currentStep && (
-        <SettingsTutorialOverlay
-          currentStep={tutorial.currentStep}
-          onNext={() => {
-            // Track step completion
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_step_completed', {
-                page: 'settings',
-                step: tutorial.currentStep,
-                total_steps: FEATURES.messengerAlerts ? 5 : 4
-              });
-            }
-            
-            const totalSteps = FEATURES.messengerAlerts ? 5 : 4;
-            if (tutorial.currentStep === totalSteps) {
-              // Last step - complete tutorial
-              if (typeof window !== 'undefined' && window.analytics) {
-                window.analytics.track('tutorial_completed', {
-                  page: 'settings',
-                  total_steps: totalSteps
-                });
-              }
-              tutorial.completeTutorial().then(() => {
-                setShowCelebration(true);
-              });
-            } else {
-              tutorial.nextStep();
-            }
-          }}
-          onBack={() => {
-            if (tutorial.currentStep > 1) {
-              tutorial.setCurrentStep(tutorial.currentStep - 1);
-            }
-          }}
-          onSkip={() => {
-            if (typeof window !== 'undefined' && window.analytics) {
-              window.analytics.track('tutorial_skipped', {
-                page: 'settings',
-                at_step: tutorial.currentStep
-              });
-            }
-            tutorial.skipTutorial();
-          }}
-          isPaused={tutorial.isPaused}
-          onPause={() => {
-            tutorial.pauseTutorial();
-          }}
-          onResume={() => {
-            tutorial.resumeTutorial();
-          }}
-          refs={{
-            notificationSettings: notificationSettingsRef,
-            messengerLink: messengerLinkRef,
-            privacySettings: privacySettingsRef,
-            securityPasscodes: securityPasscodesRef,
-            preferences: preferencesRef
-          }}
-          hasMessenger={FEATURES.messengerAlerts}
-        />
-      )}
-
-      {/* Mini Mode Tooltip - Shows when tutorial is paused for interaction */}
-      {tutorial.isPaused && tutorial.tutorialActive && tutorial.currentStep && (
-        <MiniModeTooltip
-          message={
-            tutorial.currentStep === 1
-              ? "Try toggling the notification settings! When you're done, click Continue below."
-              : "Take your time exploring! Click Continue when you're ready."
-          }
-          progressDots={Array.from({ length: FEATURES.messengerAlerts ? 5 : 4 }, (_, i) => ({
-            filled: i < tutorial.currentStep
-          }))}
-          onContinue={() => {
-            tutorial.resumeTutorial();
-            // Auto-advance after interaction
-            if (tutorial.currentStep === 1) {
-              setTimeout(() => {
-                tutorial.nextStep();
-              }, 300);
-            }
-          }}
-          onSkip={tutorial.skipTutorial}
-        />
-      )}
-
-      {/* Celebration Toast */}
-      {showCelebration && (
-        <CelebrationToast
-          message="Your settings are all set! ⚙️"
-          icon="🎉"
-          onClose={() => setShowCelebration(false)}
-        />
-      )}
     </div>
   );
 };

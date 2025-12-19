@@ -21,7 +21,7 @@ const BestiesTutorialOverlay = ({
     // Single step tutorial - just show info about the page
     const config = {
       title: '💜 Welcome to Your Besties Page!',
-      body: `This is your private social space where you'll see check-ins and posts from your besties.\n\nScroll through the mock posts above to see how it works. When you're ready, click the Profile button below to continue learning about the app!`,
+      body: `Scroll through the posts above from Demo Bestie to learn about this page. When you're ready, click the Profile button below to continue learning about the app!`,
       buttonText: 'Got it',
       position: 'auto',
       highlightedElementRef: refs?.activityFeed || { current: null }

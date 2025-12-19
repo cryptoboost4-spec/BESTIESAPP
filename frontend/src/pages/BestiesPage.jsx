@@ -65,27 +65,39 @@ const BestiesPage = () => {
   // Create mock tutorial posts when tutorial becomes active
   useEffect(() => {
     if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-      // Create informative mock posts about the besties page
+      // Create informative mock posts from Demo Bestie explaining the besties page
       const mockPosts = [
         {
           id: 'mock-1',
           type: 'post',
-          userId: 'BESTIES_TUTORIAL',
-          userName: 'Besties Team',
+          userId: 'demo-user',
+          userName: 'Demo Bestie',
           userPhoto: null,
-          text: "Hey bestie! 💜 Welcome to your Besties page! This is your private social space where you'll see check-ins and posts from your besties. It's like a private timeline just for your safety network!",
+          text: "Hey bestie! 💜 Welcome to your Besties page! This is your private social space where you'll see check-ins and posts from your besties. This activity feed shows everything your besties share - it's like a private timeline just for your safety network!",
           photoURL: null,
-          createdAt: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
-          timestamp: new Date(Date.now() - 2 * 60 * 1000),
+          createdAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+          timestamp: new Date(Date.now() - 10 * 60 * 1000),
           isMockTutorial: true
         },
         {
           id: 'mock-2',
           type: 'post',
-          userId: 'BESTIES_TUTORIAL',
-          userName: 'Besties Team',
+          userId: 'demo-user',
+          userName: 'Demo Bestie',
           userPhoto: null,
-          text: "When your besties create check-ins, they'll show up here. You can react with emojis, leave comments, and stay connected. It's all about keeping each other safe! 🛡️",
+          text: "You'll see check-ins here when your besties create them - like when they're on a date, taking a rideshare, or walking alone. If they don't check in on time, you'll get an alert so you can make sure they're safe! 🛡️",
+          photoURL: null,
+          createdAt: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
+          timestamp: new Date(Date.now() - 8 * 60 * 1000),
+          isMockTutorial: true
+        },
+        {
+          id: 'mock-3',
+          type: 'post',
+          userId: 'demo-user',
+          userName: 'Demo Bestie',
+          userPhoto: null,
+          text: "You can also share posts here - updates, photos, or just how you're feeling! Everything is private and only visible to your besties. Scroll down to see all your besties and their connection info. When you're ready, click the Profile button below to continue learning about the app! 💜",
           photoURL: null,
           createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
           timestamp: new Date(Date.now() - 5 * 60 * 1000),
@@ -520,17 +532,8 @@ const BestiesPage = () => {
               ref={postButtonRef}
               onClick={() => {
                 setShowCreatePostModal(true);
-                // If tutorial active on step 2, pause it
-                if (tutorial.tutorialActive && tutorial.currentStep === 2) {
-                  tutorial.pauseTutorial();
-                  if (typeof window !== 'undefined' && window.analytics) {
-                    window.analytics.track('tutorial_post_attempted', { page: 'besties' });
-                  }
-                }
               }}
-              className={`btn btn-primary px-4 py-2 text-sm font-semibold ${
-                tutorial.tutorialActive && tutorial.currentStep === 2 ? 'animate-pulse' : ''
-              }`}
+              className="btn btn-primary px-4 py-2 text-sm font-semibold"
               aria-label="Create a new post"
             >
               ✍️ Post
@@ -631,28 +634,8 @@ const BestiesPage = () => {
           onClose={() => {
             setShowCreatePostModal(false);
           }}
-          onCancel={() => {
-            // If tutorial active on step 2
-            if (tutorial.tutorialActive && tutorial.currentStep === 2) {
-              tutorial.resumeTutorial();
-              if (typeof window !== 'undefined' && window.analytics) {
-                window.analytics.track('tutorial_post_cancelled', { page: 'besties' });
-              }
-              // Stay on step 2 (user cancelled)
-            }
-          }}
           onPostCreated={() => {
             setShowCreatePostModal(false);
-            
-            // If tutorial active on step 2
-            if (tutorial.tutorialActive && tutorial.currentStep === 2) {
-              tutorial.resumeTutorial();
-              if (typeof window !== 'undefined' && window.analytics) {
-                window.analytics.track('tutorial_post_created', { page: 'besties' });
-              }
-              toast.success("Nice! Your besties will see it 🎉", { duration: 2000 });
-              tutorial.nextStep();
-            }
             // Note: Activity feed will update automatically via useActivityFeed hook
           }}
         />

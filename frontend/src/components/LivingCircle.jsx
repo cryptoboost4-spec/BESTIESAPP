@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, limit } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -18,6 +19,8 @@ import {
 } from '../services/connectionStrength';
 import BestieCircleTutorial from './tutorial/BestieCircleTutorial';
 import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
+import PostTutorialTooltip from './PostTutorialTooltip';
+import AddBestieHighlightOverlay from './AddBestieHighlightOverlay';
 
 const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComplete }) => {
   const navigate = useNavigate();
@@ -33,9 +36,69 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
   const [overallHealth, setOverallHealth] = useState(0);
   const [showVibeTooltip, setShowVibeTooltip] = useState(false);
 
+  // Post-tutorial tooltip state - load from localStorage on mount
+  const [postTutorialStep, setPostTutorialStep] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bestieCircle_postTutorialStep');
+    }
+    return null;
+  });
+  const [hasOpenedInviteModal, setHasOpenedInviteModal] = useState(false);
+
+  // Sync post-tutorial state to localStorage for Header access
+  useEffect(() => {
+    if (postTutorialStep) {
+      localStorage.setItem('bestieCircle_postTutorialStep', postTutorialStep);
+    } else {
+      localStorage.removeItem('bestieCircle_postTutorialStep');
+    }
+  }, [postTutorialStep]);
+
+  // Listen for localStorage changes (e.g., when tutorial completes and sets postTutorialStep)
+  useEffect(() => {
+    const checkPostTutorialStep = () => {
+      const stored = localStorage.getItem('bestieCircle_postTutorialStep');
+      if (stored !== postTutorialStep) {
+        setPostTutorialStep(stored);
+      }
+    };
+    
+    // Check on mount and periodically
+    checkPostTutorialStep();
+    const interval = setInterval(checkPostTutorialStep, 500);
+    
+    // Also listen for storage events (cross-tab)
+    window.addEventListener('storage', checkPostTutorialStep);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', checkPostTutorialStep);
+    };
+  }, [postTutorialStep]);
+
+  // Show Besties tab ONLY when we're showing the tooltip to click it
+  useEffect(() => {
+    if (postTutorialStep === 'click-besties-tab') {
+      // Set localStorage to make Besties tab visible
+      localStorage.setItem('bestieCircle_tutorialComplete', 'true');
+    }
+  }, [postTutorialStep]);
+
   // Tutorial State
   const diffTutorial = useBestiesTutorialState(); // Renamed to avoid conflicts if any
+
+  // Clear post-tutorial step when bestie circle tutorial is completed
+  useEffect(() => {
+    if (diffTutorial.isCompleted && postTutorialStep) {
+      // Tutorial is complete, clear any post-tutorial steps
+      setPostTutorialStep(null);
+      localStorage.removeItem('bestieCircle_postTutorialStep');
+    }
+  }, [diffTutorial.isCompleted, postTutorialStep]);
   const circleRef = React.useRef(null);
+  
+  // Refs for empty slot buttons (for highlighting)
+  const emptySlotRefs = React.useRef([]);
 
   // React to external tutorial trigger (from HomePage)
   useEffect(() => {
@@ -45,12 +108,17 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
   }, [shouldPlayTutorial, diffTutorial]);
 
   // Auto-start tutorial if not completed (internal logic)
+  // Don't auto-start if we're in post-tutorial flow
+  // IMPORTANT: Only auto-start if shouldPlayTutorial is true (user clicked "Learn About Bestie Circle")
+  // If user skipped the afterSafe tooltip, shouldPlayTutorial will be false and tutorial won't start
   useEffect(() => {
-    if (!diffTutorial.isLoading && !diffTutorial.isCompleted && !diffTutorial.tutorialActive && !shouldPlayTutorial) {
+    // Only start tutorial if explicitly triggered by shouldPlayTutorial
+    // This ensures tutorial only shows after user clicks "Learn About Bestie Circle"
+    if (shouldPlayTutorial && !diffTutorial.isLoading && !diffTutorial.isCompleted && !diffTutorial.tutorialActive && !postTutorialStep) {
       // Optional: slight delay
       setTimeout(() => diffTutorial.startTutorial(), 1000);
     }
-  }, [diffTutorial.isLoading, diffTutorial.isCompleted, diffTutorial.tutorialActive, diffTutorial, shouldPlayTutorial]);
+  }, [diffTutorial.isLoading, diffTutorial.isCompleted, diffTutorial.tutorialActive, diffTutorial, shouldPlayTutorial, postTutorialStep]);
 
   const loadBesties = async () => {
     if (!userId) return;
@@ -414,6 +482,11 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
               const connectionStrength = bestie ? connectionStrengths[bestie.id] : null;
               const lastSeenTime = bestie ? lastSeen[bestie.id] : null;
 
+              // Initialize refs array if needed
+              if (!emptySlotRefs.current[index]) {
+                emptySlotRefs.current[index] = React.createRef();
+              }
+
               return bestie ? (
                 <BestieSlot
                   key={index}
@@ -434,7 +507,14 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
                   key={index}
                   index={index}
                   circleBestiesLength={circleBesties.length}
-                  setShowShareModal={setShowShareModal}
+                  setShowShareModal={(show) => {
+                    setShowShareModal(show);
+                    // Track modal opening for post-tutorial
+                    if (show && (postTutorialStep === 'waiting-for-modal' || postTutorialStep === 'add-bestie')) {
+                      setHasOpenedInviteModal(true);
+                    }
+                  }}
+                  buttonRef={emptySlotRefs.current[index]}
                 />
               );
             })}
@@ -465,21 +545,100 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
       {/* Bestie Circle Share Modal */}
       {showShareModal && (
         <BestieCircleShareModal
-          onClose={() => setShowShareModal(false)}
+          onClose={() => {
+            setShowShareModal(false);
+            // Track that user opened and closed the modal
+            if (postTutorialStep === 'waiting-for-modal') {
+              setHasOpenedInviteModal(true);
+              // Move to next step after modal closes - show tooltip to click Besties tab
+              // localStorage will be set by useEffect when postTutorialStep becomes 'click-besties-tab'
+              setTimeout(() => {
+                setPostTutorialStep('click-besties-tab');
+                localStorage.setItem('bestieCircle_postTutorialStep', 'click-besties-tab');
+              }, 500);
+            }
+          }}
+          onOpen={() => {
+            // Track that user opened the modal
+            if (postTutorialStep === 'waiting-for-modal') {
+              setHasOpenedInviteModal(true);
+            }
+          }}
           circleCount={circleBesties.length}
         />
       )}
 
       {/* BESPOKE TUTORIAL - FULL CARD OVERLAY */}
-      <BestieCircleTutorial
-        isActive={diffTutorial.tutorialActive}
-        onComplete={() => {
-          diffTutorial.completeTutorial();
-          if (onTutorialComplete) onTutorialComplete();
-        }}
-        onClose={() => diffTutorial.setTutorialActive ? diffTutorial.setTutorialActive(false) : null}
-        originRef={circleRef}
-      />
+      <AnimatePresence>
+        {diffTutorial.tutorialActive && (
+          <BestieCircleTutorial
+            key="bestie-circle-tutorial"
+            isActive={true}
+            onComplete={() => {
+              // Complete the tutorial
+              diffTutorial.completeTutorial();
+              // Set tutorial complete flag
+              localStorage.setItem('bestieCircle_tutorialComplete', 'true');
+              // Call onTutorialComplete to clear the check-in tutorial step
+              if (onTutorialComplete) {
+                onTutorialComplete();
+              }
+              // Show tooltip to click Besties tab after tutorial completes
+              setTimeout(() => {
+                setPostTutorialStep('click-besties-tab');
+                localStorage.setItem('bestieCircle_postTutorialStep', 'click-besties-tab');
+              }, 500);
+            }}
+            onClose={() => diffTutorial.setTutorialActive ? diffTutorial.setTutorialActive(false) : null}
+            originRef={circleRef}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Post-Tutorial Tooltips */}
+      {/* Show tooltip only after tutorial is finished AND circle is visible on home screen */}
+      {postTutorialStep === 'add-bestie' && !loading && !diffTutorial.tutorialActive && (
+        <PostTutorialTooltip
+          step="add-bestie"
+          onOkay={() => {
+            // Dismiss tooltip, wait for user to open and close invite modal
+            // The modal onClose handler will advance to next step
+            setPostTutorialStep('waiting-for-modal');
+            localStorage.setItem('bestieCircle_postTutorialStep', 'waiting-for-modal');
+          }}
+          onLater={() => {
+            // Show tooltip to click Besties tab
+            // localStorage will be set by useEffect when postTutorialStep becomes 'click-besties-tab'
+            setPostTutorialStep('click-besties-tab');
+            localStorage.setItem('bestieCircle_postTutorialStep', 'click-besties-tab');
+          }}
+        />
+      )}
+
+      {/* Highlighting overlay for add bestie buttons */}
+      {postTutorialStep === 'waiting-for-modal' && !loading && !diffTutorial.tutorialActive && (
+        <AddBestieHighlightOverlay emptySlotRefs={emptySlotRefs.current} />
+      )}
+
+      {postTutorialStep === 'click-besties-tab' && (
+        <PostTutorialTooltip
+          step="click-besties-tab"
+          onContinue={() => {
+            // Just close the popup, don't navigate
+            setPostTutorialStep(null);
+            localStorage.removeItem('bestieCircle_postTutorialStep');
+            diffTutorial.completeTutorial();
+            if (onTutorialComplete) onTutorialComplete();
+          }}
+          onSkip={() => {
+            setPostTutorialStep(null);
+            localStorage.removeItem('bestieCircle_postTutorialStep');
+            // Complete tutorial but don't navigate
+            diffTutorial.completeTutorial();
+            if (onTutorialComplete) onTutorialComplete();
+          }}
+        />
+      )}
     </div>
   );
 };

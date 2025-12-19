@@ -10,7 +10,7 @@ import { loadTutorialState, saveTutorialState } from '../utils/tutorialHelpers';
 export const useBestiesTutorialState = () => {
   const { currentUser } = useAuth();
   const [tutorialActive, setTutorialActive] = useState(false);
-  const [currentStep, setCurrentStep] = useState(null); // null = not started, 0 = welcome card, 1-4 = steps
+  const [currentStep, setCurrentStep] = useState(null); // null = not started, 1 = single step only
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,11 +64,8 @@ export const useBestiesTutorialState = () => {
   };
 
   const nextStep = () => {
-    if (currentStep === 3) {
-      completeTutorial();
-    } else {
-      setCurrentStep(currentStep + 1);
-    }
+    // Tutorial is single step - complete immediately when called
+    completeTutorial();
   };
 
   const skipTutorial = async () => {
@@ -117,6 +114,10 @@ export const useBestiesTutorialState = () => {
 
   const pauseTutorial = () => setIsPaused(true);
   const resumeTutorial = () => setIsPaused(false);
+  
+  const stopTutorial = () => {
+    setTutorialActive(false);
+  };
 
   const resetTutorial = async () => {
     setTutorialActive(false);
@@ -158,7 +159,8 @@ export const useBestiesTutorialState = () => {
     completeTutorial,
     pauseTutorial,
     resumeTutorial,
-    resetTutorial
+    resetTutorial,
+    setTutorialActive: stopTutorial
   };
 };
 

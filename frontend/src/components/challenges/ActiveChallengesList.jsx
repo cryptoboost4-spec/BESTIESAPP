@@ -1,12 +1,10 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import ChallengeProgressCard from './ChallengeProgressCard';
 import toast from 'react-hot-toast';
 
 const ActiveChallengesList = ({ challenges, currentUserId, onInvitationClick }) => {
-  const navigate = useNavigate();
 
   const handleCancelChallenge = async (challengeId, otherUserName) => {
     if (!window.confirm(`Are you sure? ${otherUserName} will be notified.`)) {

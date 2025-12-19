@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, onSnapshot, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import ChallengeLibrary from '../components/challenges/ChallengeLibrary';
 import ActiveChallengesList from '../components/challenges/ActiveChallengesList';
 import ChallengeInvitationModal from '../components/challenges/ChallengeInvitationModal';
@@ -11,7 +11,6 @@ import toast from 'react-hot-toast';
 const ChallengesPage = () => {
   const { currentUser, userData } = useAuth();
   const [activeChallenges, setActiveChallenges] = useState([]);
-  const [invitations, setInvitations] = useState([]);
   const [showLibrary, setShowLibrary] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [showInvitationModal, setShowInvitationModal] = useState(false);
@@ -102,35 +101,6 @@ const ChallengesPage = () => {
   const handleStartChallenge = (template) => {
     setSelectedChallenge(template);
     setShowLibrary(false);
-  };
-
-  const handleInviteBestie = async (template, bestieId) => {
-    try {
-      // Create challenge invitation
-      const now = Timestamp.now();
-      const expiresAt = new Date(now.toMillis());
-      expiresAt.setDate(expiresAt.getDate() + template.duration);
-      const expiresAtTimestamp = Timestamp.fromDate(expiresAt);
-
-      await addDoc(collection(db, 'bestie_challenges'), {
-        challengeId: template.id,
-        user1Id: currentUser.uid,
-        user2Id: bestieId,
-        status: 'invited',
-        startedAt: null,
-        expiresAt: expiresAtTimestamp,
-        user1Progress: 0,
-        user2Progress: 0,
-        completedAt: null,
-        target: template.target
-      });
-
-      toast.success('Challenge invitation sent!');
-      setSelectedChallenge(null);
-    } catch (error) {
-      console.error('Error creating challenge:', error);
-      toast.error('Failed to create challenge');
-    }
   };
 
   const handleAcceptInvitation = async (challengeId) => {

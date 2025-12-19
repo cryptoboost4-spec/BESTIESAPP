@@ -44,7 +44,7 @@ const FONT_SIZES = [
   { id: 'xl', label: 'XL', nameClass: 'text-6xl', bioClass: 'text-xl' }
 ];
 
-const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
+const ProfileCustomizer = ({ currentUser, userData, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState('backgrounds');
   const [selectedBackground, setSelectedBackground] = useState(userData?.profile?.customization?.background || 'pearl-elegance');
 
@@ -100,6 +100,7 @@ const ProfileCustomizer = ({ currentUser, userData, onClose }) => {
         }
       });
       toast.success('Profile style saved! 💜');
+      if (onSave) onSave();
       if (onClose) onClose();
     } catch (error) {
       console.error('Error saving customization:', error);

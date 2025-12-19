@@ -68,13 +68,16 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
   };
 
   const handleShare = async () => {
-    if (!currentUser || !selectedMood) return;
+    if (!currentUser || !selectedMood) {
+      toast.error('Please select a mood first');
+      return;
+    }
 
     setSubmitting(true);
     haptic.medium();
 
     try {
-      // Get user's featured circle
+      // Get user's featured circle (can be empty - post will still be created)
       const featuredCircle = userData?.featuredCircle || [];
 
       // Create circle check-in
@@ -83,7 +86,7 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
         mood: selectedMood.value,
         note: note.trim() || null,
         createdAt: Timestamp.now(),
-        visibleTo: featuredCircle, // Copy of featured circle at posting time
+        visibleTo: featuredCircle, // Copy of featured circle at posting time (can be empty)
         responses: []
       });
 
@@ -92,17 +95,17 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
       setIsDismissed(true);
       
       // Show celebration
-      toast.success(
-        `Shared with Your Circle ✨\nYour ${featuredCircle.length} circle besties can now see how you're doing 💜`,
-        { duration: 4000 }
-      );
+      const message = featuredCircle.length > 0
+        ? `Shared with Your Circle ✨\nYour ${featuredCircle.length} circle besties can now see how you're doing 💜`
+        : `Shared! ✨\nAdd besties to your circle to share with them 💜`;
+      toast.success(message, { duration: 4000 });
 
       if (onCheckInComplete) {
         onCheckInComplete();
       }
     } catch (error) {
       console.error('Error creating circle check-in:', error);
-      toast.error('Failed to share check-in. Please try again.');
+      toast.error(`Failed to share check-in: ${error.message || 'Please try again'}`);
     } finally {
       setSubmitting(false);
     }

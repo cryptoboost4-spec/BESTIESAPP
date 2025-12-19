@@ -18,6 +18,7 @@ import OfflineBanner from '../components/OfflineBanner';
 import { useProfileTutorialState } from '../hooks/useProfileTutorialState';
 import ProfileTutorialWelcome from '../components/tutorials/profile/ProfileTutorialWelcome';
 import ProfileTutorialOverlay from '../components/tutorials/profile/ProfileTutorialOverlay';
+import ProfileScrollTooltip from '../components/tutorials/profile/ProfileScrollTooltip';
 import MiniModeTooltip from '../components/tutorials/MiniModeTooltip';
 import CelebrationToast from '../components/tutorials/CelebrationToast';
 
@@ -64,10 +65,14 @@ const ProfilePage = () => {
 
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
+  const customizerButtonRef = useRef(null);
   const profileCompletionRef = useRef(null);
   const badgesSectionRef = useRef(null);
   const statsSectionRef = useRef(null);
   const settingsButtonRef = useRef(null);
+  
+  // State for post-tutorial tooltip (scroll through profile)
+  const [showScrollTooltip, setShowScrollTooltip] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -588,6 +593,18 @@ const ProfilePage = () => {
             userData={userData}
             showCustomizer={showCustomizer}
             setShowCustomizer={setShowCustomizer}
+            customizerButtonRef={customizerButtonRef}
+            onCustomizerClick={() => {
+              // Close tutorial tooltip when user clicks customizer button
+              if (tutorial.tutorialActive && tutorial.currentStep === 2) {
+                tutorial.setTutorialActive(false);
+                tutorial.setCurrentStep(null);
+              }
+            }}
+            onCustomizerSave={() => {
+              // Show scroll tooltip when user saves background
+              setShowScrollTooltip(true);
+            }}
           />
         </div>
 
@@ -741,13 +758,33 @@ const ProfilePage = () => {
           }}
           refs={{
             profileCard: profileCardRef,
-            customizerButton: profileCardRef, // Use same ref since customizer is in ProfileCard
+            customizerButton: customizerButtonRef, // Use specific ref for customizer button
             profileCompletion: profileCompletionRef,
             badgesSection: badgesSectionRef,
             statsSection: statsSectionRef,
             settingsButton: settingsButtonRef
           }}
           profileCompletion={profileCompletion.percentage}
+          onLater={() => {
+            // User clicked "I'll do it later" - close tutorial and show scroll tooltip
+            tutorial.setTutorialActive(false);
+            tutorial.setCurrentStep(null);
+            setShowScrollTooltip(true);
+          }}
+        />
+      )}
+
+      {/* Scroll Tooltip - Shows after user dismisses customize background tooltip */}
+      {showScrollTooltip && (
+        <ProfileScrollTooltip
+          onContinue={() => {
+            setShowScrollTooltip(false);
+            tutorial.completeTutorial();
+          }}
+          onSkip={() => {
+            setShowScrollTooltip(false);
+            tutorial.completeTutorial();
+          }}
         />
       )}
 

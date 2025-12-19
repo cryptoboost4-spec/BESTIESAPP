@@ -23,17 +23,17 @@ const TUTORIAL_STEPS = {
 
 const STEP_DELAYS = {
     [TUTORIAL_STEPS.MOMENT_0]: 1800,
-    [TUTORIAL_STEPS.STEP_1]: 500,
-    [TUTORIAL_STEPS.STEP_2]: 1500,
-    [TUTORIAL_STEPS.STEP_3]: 1000,
-    [TUTORIAL_STEPS.STEP_4]: 1000,
-    [TUTORIAL_STEPS.STEP_5]: 1500
+    [TUTORIAL_STEPS.STEP_1]: 2000, // Increased to allow time to see circle reveal
+    [TUTORIAL_STEPS.STEP_2]: 3000, // Increased to allow time to see avatar bloom animation
+    [TUTORIAL_STEPS.STEP_3]: 4000, // Increased to allow time to see status changes
+    [TUTORIAL_STEPS.STEP_4]: 3000, // Increased to allow time to see vibe score animation
+    [TUTORIAL_STEPS.STEP_5]: 2500  // Increased to allow time to see final state
 };
 
 const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
     const [currentStep, setCurrentStep] = useState(TUTORIAL_STEPS.MOMENT_0);
     const [showTooltip, setShowTooltip] = useState(false);
-    const [showCongratulation, setShowCongratulation] = useState(false);
+    const [isCompleting, setIsCompleting] = useState(false);
     const [butterflies, setButterflies] = useState([]); // Array of butterfly objects
 
     // Initial Confetti ("The Sacred Transition")
@@ -75,13 +75,14 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
 
         setShowTooltip(false);
 
+        // Increased delay to allow tooltip exit animation and step animations to complete
         setTimeout(() => {
             if (currentStep < TUTORIAL_STEPS.STEP_5) {
                 setCurrentStep(c => c + 1);
             } else {
                 handleComplete();
             }
-        }, 300);
+        }, 600);
     };
 
     const triggerFinalExit = useCallback(() => {
@@ -90,19 +91,16 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
     }, []);
 
     const handleComplete = useCallback(() => {
+        // Hide tooltip and mark as completing
+        setShowTooltip(false);
+        setIsCompleting(true);
         // Final Exit Animation
         triggerFinalExit();
+        // Call onComplete after confetti animation
         setTimeout(() => {
-            // Show congratulation message
-            setShowCongratulation(true);
             onComplete && onComplete();
-        }, 2000);
-    }, [onComplete, triggerFinalExit]);
-    
-    const handleCongratulationClose = useCallback(() => {
-        setShowCongratulation(false);
-        onClose && onClose();
-    }, [onClose]);
+        }, 800); // Increased delay to allow confetti to be visible
+    }, [triggerFinalExit, onComplete]);
 
     const triggerButterflies = useCallback((rect) => {
         // Reduce butterfly count from 25 to 12 for better performance
@@ -128,6 +126,8 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
         }, 2000);
     }, []);
 
+    // Note: With AnimatePresence in parent, component stays mounted during exit animation
+    // isActive will be true when component is rendered by AnimatePresence
     if (!isActive) return null;
 
     return (
@@ -136,62 +136,36 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
             style={{ borderRadius: 'inherit' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.5 } }}
         >
             {/* Global Background Layer - Dream Circle Style */}
-            <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-gradient-to-br from-green-50 via-emerald-50 via-teal-50 via-pink-50 to-purple-50 border-4 border-green-300 z-0">
+            <motion.div 
+                className="absolute inset-0 pointer-events-none rounded-[inherit] bg-gradient-to-br from-green-50 via-emerald-50 via-teal-50 via-pink-50 to-purple-50 border-4 border-green-300 z-0"
+                animate={{ opacity: isCompleting ? 0 : 1 }}
+                transition={{ duration: 0.5 }}
+            >
                 <DreamscapeBackground />
                 <ButterflySystem butterflies={butterflies} />
-            </div>
+            </motion.div>
 
             {/* Main Stage */}
-            <div className="relative w-full h-full flex items-center justify-center transition-transform duration-1000 z-10 pointer-events-none">
-                <div className="relative transition-transform duration-1000 w-full h-full flex items-center justify-center scale-100">
-                    <LivingCircleStage currentStep={currentStep} />
+            {!isCompleting && (
+                <div className="relative w-full h-full flex items-center justify-center transition-transform duration-1000 z-10 pointer-events-none">
+                    <div className="relative transition-transform duration-1000 w-full h-full flex items-center justify-center scale-100">
+                        <LivingCircleStage currentStep={currentStep} />
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Tooltip Layer */}
             <AnimatePresence>
                 {showTooltip && currentStep !== TUTORIAL_STEPS.MOMENT_0 && (
-                    <div className="absolute inset-0 flex items-end justify-center pb-8 z-30 pointer-events-auto">
+                    <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-auto">
                         <TutorialTooltip
                             key={currentStep}
                             step={currentStep}
                             onNext={handleNext}
                         />
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Congratulation Message - shown after tutorial completes */}
-            <AnimatePresence>
-                {showCongratulation && (
-                    <div className="absolute inset-0 flex items-end justify-center pb-8 z-30 pointer-events-auto">
-                        <motion.div
-                            className="tutorial-tooltip w-11/12 max-w-sm bg-white/95 backdrop-blur-xl p-6 rounded-[32px] shadow-2xl flex flex-col items-center text-center border border-white/50"
-                            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
-                            transition={{ type: "spring", bounce: 0.4 }}
-                        >
-                            <div className="text-4xl mb-4 animate-bounce-gentle">🎉</div>
-                            <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
-                                Amazing Work!
-                            </h3>
-                            <p className="text-gray-600 mb-6 leading-relaxed text-sm">
-                                You've learned about your Bestie Circle! Want to continue the tutorial? Click on the Besties menu option (it just appeared!)
-                            </p>
-
-                            <button
-                                onClick={handleCongratulationClose}
-                                className="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all relative overflow-hidden group"
-                            >
-                                <span className="relative z-10 flex items-center justify-center gap-2">
-                                    Got it!
-                                </span>
-                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform" />
-                            </button>
-                        </motion.div>
                     </div>
                 )}
             </AnimatePresence>
@@ -783,27 +757,28 @@ const MockAvatarSequence = () => {
     )
 }
 
-const FishSchool = () => {
-    return (
-        <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 3 }).map((_, i) => (
-                <motion.div
-                    key={i}
-                    className="absolute top-0 h-[2px] w-4 bg-gradient-to-r from-transparent to-pink-300"
-                    initial={{ left: '-20%' }}
-                    animate={{ left: '120%' }}
-                    transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.4,
-                        ease: "linear"
-                    }}
-                    style={{ borderRadius: '100%' }}
-                />
-            ))}
-        </div>
-    )
-}
+// FishSchool component - unused, kept for potential future use
+// const FishSchool = () => {
+//     return (
+//         <div className="absolute inset-0 overflow-hidden">
+//             {Array.from({ length: 3 }).map((_, i) => (
+//                 <motion.div
+//                     key={i}
+//                     className="absolute top-0 h-[2px] w-4 bg-gradient-to-r from-transparent to-pink-300"
+//                     initial={{ left: '-20%' }}
+//                     animate={{ left: '120%' }}
+//                     transition={{
+//                         duration: 1.5,
+//                         repeat: Infinity,
+//                         delay: i * 0.4,
+//                         ease: "linear"
+//                     }}
+//                     style={{ borderRadius: '100%' }}
+//                 />
+//             ))}
+//         </div>
+//     )
+// }
 
 const TutorialTooltip = ({ step, onNext }) => {
     const content = {

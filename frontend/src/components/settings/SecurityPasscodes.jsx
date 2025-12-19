@@ -44,7 +44,10 @@ const SecurityPasscodes = ({
             <div className="flex items-center gap-3">
               <div className="font-semibold text-text-primary flex items-center">
                 🔒 Safety<br />Passcode
-                <InfoButton message="Required to cancel check-ins or SOS alerts. This ensures only you can mark yourself safe, protecting you from coercion." />
+                <InfoButton 
+                  message="Required to cancel check-ins. Protects you from coercion." 
+                  detailedMessage="A passcode required to cancel check-ins or SOS alerts. This protects you from coercion - only someone who knows your passcode can mark you safe. Set a 4-6 digit code you'll remember." 
+                />
               </div>
               {userData?.security?.safetyPasscode && (
                 <div className="text-green-600 text-xl">✓</div>
@@ -92,7 +95,10 @@ const SecurityPasscodes = ({
             <div className="flex items-center gap-3">
               <div className="font-semibold text-text-primary flex items-center">
                 🚨 Duress<br />Code
-                <InfoButton message="A special code that appears to cancel alerts but secretly sends an emergency signal to all besties. Use if you're in danger and being forced to cancel." />
+                <InfoButton 
+                  message="A code that looks like it cancels alerts but secretly sends emergency alerts to all besties." 
+                  detailedMessage="A special code that looks like it cancels alerts, but secretly triggers an emergency alert to all your besties. Use this if someone is forcing you to cancel an alert - they'll think it's cancelled, but your besties will get an emergency notification. Must be different from your safety passcode." 
+                />
               </div>
               {userData?.security?.duressCode && (
                 <div className="text-green-600 text-xl">✓</div>

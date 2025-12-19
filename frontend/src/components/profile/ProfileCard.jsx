@@ -32,7 +32,7 @@ const AURA_OPTIONS = [
   { id: 'rainbow', name: 'Rainbow', emoji: '🌈', description: 'Rainbow border effect' }
 ];
 
-const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustomizer, setShowCustomizer: externalSetShowCustomizer }) => {
+const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustomizer, setShowCustomizer: externalSetShowCustomizer, customizerButtonRef, onCustomizerClick, onCustomizerSave }) => {
   const navigate = useNavigate();
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -257,8 +257,14 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
         <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
           {/* Customize Button */}
           <button
+            ref={customizerButtonRef}
             id="profile-customizer-button"
-            onClick={() => setShowCustomizer(true)}
+            onClick={() => {
+              setShowCustomizer(true);
+              if (onCustomizerClick) {
+                onCustomizerClick();
+              }
+            }}
             className="w-10 h-10 rounded-full bg-gradient-primary text-white backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all text-lg"
             title="Customize your vibe"
           >
@@ -507,6 +513,7 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
             currentUser={currentUser}
             userData={userData}
             onClose={() => setShowCustomizer(false)}
+            onSave={onCustomizerSave}
           />
         </Suspense>
       )}

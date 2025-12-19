@@ -2,18 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage } from '../services/firebase';
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 
 const OnboardingPage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState('welcome'); // welcome, slides, name, photo, invite-welcome, bestie-circle
-  const [slideIndex, setSlideIndex] = useState(0);
+  const [step, setStep] = useState('welcome'); // welcome, name, photo, invite-welcome
   const [displayName, setDisplayName] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [hasBesties, setHasBesties] = useState(false);
   const [inviterInfo, setInviterInfo] = useState(null);
   const [nameHasBeenEdited, setNameHasBeenEdited] = useState(false);
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -42,73 +40,6 @@ const OnboardingPage = () => {
     }
   }, [userData, currentUser, displayName, nameHasBeenEdited]);
 
-  const slides = [
-    {
-      emoji: '👋',
-      title: 'Welcome to Besties!',
-      description: 'Your personal safety check-in app that keeps your loved ones informed.',
-    },
-    {
-      emoji: '⏰',
-      title: 'How It Works',
-      description: 'Create a check-in with a time limit. If you don\'t mark yourself safe before time runs out, your besties get alerted.',
-    },
-    {
-      emoji: '💜',
-      title: 'Your Safety Network',
-      description: 'Add up to 5 besties to your circle. They\'ll be notified if you miss a check-in, so they can make sure you\'re okay.',
-    },
-    {
-      emoji: '📱',
-      title: 'Stay Connected',
-      description: 'Your besties get SMS alerts when you miss a check-in. They can also see your location and notes from your last check-in.',
-    },
-    {
-      emoji: '✨',
-      title: 'Let\'s Get Started!',
-      description: 'We\'ll help you set up your profile and add your first bestie. Then you\'ll be ready to create your first check-in!',
-    },
-  ];
-
-  const currentSlide = slides[slideIndex];
-
-  // Check if user already has besties (for analytics only)
-  useEffect(() => {
-    if (step === 'bestie-circle' && currentUser) {
-      checkForBesties();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, currentUser]);
-
-  const checkForBesties = async () => {
-    if (!currentUser) return;
-
-    try {
-      // If there's a pending invite, wait for it to be processed
-      // AuthContext removes pending_invite after processing
-      const pendingInvite = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
-      if (pendingInvite) {
-        // Wait up to 3 seconds for invite to process
-        for (let i = 0; i < 6; i++) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const stillPending = sessionStorage.getItem('pending_invite') || localStorage.getItem('pending_invite');
-          if (!stillPending) break; // Invite processed!
-        }
-      }
-
-      // Now check for besties in Firestore (for analytics tracking only)
-      const [requesterQuery, recipientQuery] = await Promise.all([
-        getDocs(query(collection(db, 'besties'), where('requesterId', '==', currentUser.uid), where('status', '==', 'accepted'))),
-        getDocs(query(collection(db, 'besties'), where('recipientId', '==', currentUser.uid), where('status', '==', 'accepted'))),
-      ]);
-
-      setHasBesties(!requesterQuery.empty || !recipientQuery.empty);
-    } catch (error) {
-      console.error('Error checking besties:', error);
-      // On error, assume no besties (for analytics)
-      setHasBesties(false);
-    }
-  };
 
   const handleSaveName = async () => {
     if (!currentUser) {
@@ -171,7 +102,8 @@ const OnboardingPage = () => {
       if (inviterInfo) {
         setStep('invite-welcome');
       } else {
-        setStep('bestie-circle');
+        // Complete onboarding and go to home
+        await handleFinish();
       }
     } catch (error) {
       console.error('Error uploading photo:', error);
@@ -181,23 +113,25 @@ const OnboardingPage = () => {
     }
   };
 
-  const handleUseCurrentPhoto = () => {
+  const handleUseCurrentPhoto = async () => {
     // User already has a photo and wants to use it
     // No need to update anything, just advance to next step
     if (inviterInfo) {
       setStep('invite-welcome');
     } else {
-      setStep('bestie-circle');
+      // Complete onboarding and go to home
+      await handleFinish();
     }
   };
 
-  const handleSkipPhoto = () => {
+  const handleSkipPhoto = async () => {
     // User wants to skip photo (no photo or doesn't want to use existing one)
     // If user joined via invite, show welcome screen first
     if (inviterInfo) {
       setStep('invite-welcome');
     } else {
-      setStep('bestie-circle');
+      // Complete onboarding and go to home
+      await handleFinish();
     }
   };
 
@@ -214,11 +148,9 @@ const OnboardingPage = () => {
 
       // Track analytics
       const { logAnalyticsEvent } = require('../services/firebase');
-      logAnalyticsEvent('onboarding_completed', {
-        has_besties: hasBesties
-      });
+      logAnalyticsEvent('onboarding_completed', {});
 
-      // Always navigate to home page - it has clear instructions for next steps
+      // Navigate to home page - tutorial will auto-start
       navigate('/');
     } catch (error) {
       console.error('Error completing onboarding:', error);
@@ -230,15 +162,49 @@ const OnboardingPage = () => {
   // Welcome Screen
   if (step === 'welcome') {
     return (
-      <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
-        <div className="max-w-md w-full text-center">
+      <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4 pb-32 md:pb-6 overflow-y-auto" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
+        <div className="max-w-md w-full text-center space-y-6">
           <div className="text-8xl mb-6 animate-bounce">💜</div>
           <h1 className="text-4xl font-display text-white mb-4">Welcome to Besties!</h1>
-          <p className="text-xl text-white/90 mb-8">
+          <p className="text-xl text-white/90 mb-6">
             Your personal safety network in your pocket
           </p>
+          
+          {/* Information cards from deleted slides */}
+          <div className="space-y-4 mb-8 text-left">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border-2 border-white/30">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl">⏰</span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">How It Works</h3>
+                  <p className="text-sm text-white/90">Create a check-in with a time limit. If you don't mark yourself safe before time runs out, your besties get alerted.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border-2 border-white/30">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl">💜</span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">Your Safety Network</h3>
+                  <p className="text-sm text-white/90">Add up to 5 besties to your circle. They'll be notified if you miss a check-in, so they can make sure you're okay.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border-2 border-white/30">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl">📱</span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">Stay Connected</h3>
+                  <p className="text-sm text-white/90">Your besties get SMS alerts when you miss a check-in. They can also see your location and notes from your last check-in.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <button
-            onClick={() => setStep('slides')}
+            onClick={() => setStep('name')}
             className="btn bg-white dark:bg-gray-800 text-primary hover:bg-white/90 dark:hover:bg-gray-700 text-lg px-8 py-4 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary"
             aria-label="Start onboarding"
           >
@@ -249,71 +215,12 @@ const OnboardingPage = () => {
     );
   }
 
-  // Slides
-  if (step === 'slides') {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-800 flex flex-col items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
-        <div className="max-w-md w-full text-center">
-          <div className="text-7xl mb-6">{currentSlide.emoji}</div>
-          <h2 className="text-3xl font-display text-gray-800 dark:text-gray-200 mb-4">
-            {currentSlide.title}
-          </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-            {currentSlide.description}
-          </p>
-
-          {/* Dots */}
-          <div className="flex justify-center gap-2 mb-8">
-            {slides.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === slideIndex ? 'bg-primary w-6' : 'bg-gray-300 dark:bg-gray-600'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex gap-3">
-            {slideIndex < slides.length - 1 ? (
-              <>
-                <button
-                  onClick={() => setStep('name')}
-                  className="flex-1 btn btn-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  aria-label="Skip slides and go to profile setup"
-                  title="Skip the introduction and go straight to setting up your profile"
-                >
-                  Skip Intro
-                </button>
-                <button
-                  onClick={() => setSlideIndex(slideIndex + 1)}
-                  className="flex-1 btn btn-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  aria-label="Go to next slide"
-                >
-                  Next →
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setStep('name')}
-                className="w-full btn btn-primary text-lg py-4"
-              >
-                Set Up Your Profile →
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Name Edit
   if (step === 'name') {
     const hasName = displayName.trim().length > 0;
     
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 pb-32 md:pb-6 overflow-y-auto" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">👤</div>
@@ -384,16 +291,16 @@ const OnboardingPage = () => {
     const hasExistingPhoto = userData?.photoURL || currentUser?.photoURL;
     
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
+      <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center p-4 pb-32 md:pb-6 overflow-y-auto" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">📷</div>
             <h2 className="text-3xl font-display text-gray-800 dark:text-gray-200 mb-2">
-              {hasExistingPhoto ? 'Your Profile Picture' : 'Add a Profile Picture?'}
+              {hasExistingPhoto ? 'Add a Profile Picture?' : 'Add a Profile Picture?'}
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
               {hasExistingPhoto 
-                ? 'We found a photo from your account. Want to use it or upload a different one?'
+                ? 'Help your besties recognize you (optional)'
                 : 'Help your besties recognize you (optional)'}
             </p>
           </div>
@@ -413,18 +320,18 @@ const OnboardingPage = () => {
 
           {hasExistingPhoto ? (
             <>
-              {/* User has existing photo - show "Use This Photo" as primary action */}
+              {/* User has existing photo - show "Use This Photo" as top button */}
               <button
                 onClick={handleUseCurrentPhoto}
                 className="w-full btn btn-primary text-lg py-4 mb-3"
                 disabled={uploading}
               >
-                ✓ Use This Photo →
+                Use This Photo →
               </button>
 
               <label className="block w-full mb-3">
                 <div className="btn btn-secondary text-lg py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  {uploading ? 'Uploading...' : '📤 Upload Different Photo'}
+                  {uploading ? 'Uploading...' : '📤 Upload Photo'}
                 </div>
                 <input
                   type="file"
@@ -480,7 +387,7 @@ const OnboardingPage = () => {
   // Invite Welcome Screen (only shown if user joined via invite)
   if (step === 'invite-welcome' && inviterInfo) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center p-4 pb-32 md:pb-6" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
+      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center p-4 pb-32 md:pb-6 overflow-y-auto" style={{ paddingBottom: 'max(8rem, calc(env(safe-area-inset-bottom) + 8rem))' }}>
         <div className="max-w-md w-full text-center">
           <div className="text-8xl mb-6 animate-bounce">💜</div>
 
@@ -512,141 +419,18 @@ const OnboardingPage = () => {
           </p>
 
           <button
-            onClick={() => {
-              // Clean up inviter info and proceed to bestie circle
+            onClick={async () => {
+              // Clean up inviter info and complete onboarding
               sessionStorage.removeItem('inviter_info');
               localStorage.removeItem('inviter_info');
               setInviterInfo(null);
-              setStep('bestie-circle');
+              await handleFinish();
             }}
             className="btn bg-white dark:bg-gray-800 text-primary hover:bg-white/90 dark:hover:bg-gray-700 text-lg px-8 py-4"
           >
             Continue →
           </button>
         </div>
-      </div>
-    );
-  }
-
-  // Completion Screen
-  if (step === 'bestie-circle') {
-    return (
-      <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4 overflow-hidden relative">
-        {/* Confetti background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-celebration-float"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${3 + Math.random() * 3}s`,
-                opacity: 0.6 + Math.random() * 0.4,
-              }}
-            >
-              <span className="text-3xl md:text-4xl">
-                {['🎉', '✨', '💜', '🌟', '💫', '🎊', '⭐', '💕'][Math.floor(Math.random() * 8)]}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="max-w-md w-full text-center relative z-10">
-          <div className="text-8xl mb-6 animate-bounce">🎉</div>
-          <h1 className="text-4xl md:text-5xl font-display text-white mb-4">
-            You're All Set!
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 mb-6">
-            Welcome to Besties! You're ready to start using your safety network.
-          </p>
-          
-          {/* What's Next - Adapts based on whether user has besties */}
-          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 mb-8 border-2 border-white/30">
-            <h2 className="text-2xl font-display text-white mb-4">What's Next?</h2>
-            <div className="space-y-3 text-left">
-              {hasBesties ? (
-                <>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">✅</span>
-                    <div className="text-white/90">
-                      <p className="font-semibold">Great! You already have besties</p>
-                      <p className="text-sm text-white/70">Your safety circle is ready to go</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">1️⃣</span>
-                    <div className="text-white/90">
-                      <p className="font-semibold">Create Your First Check-In</p>
-                      <p className="text-sm text-white/70">Use the "Try Test Walkthrough" button on the home page to practice first</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">2️⃣</span>
-                    <div className="text-white/90">
-                      <p className="font-semibold">Stay Safe Together</p>
-                      <p className="text-sm text-white/70">Your besties will watch out for you 💜</p>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">1️⃣</span>
-                    <div className="text-white/90">
-                      <p className="font-semibold">Learn How to Check In</p>
-                      <p className="text-sm text-white/70">Create your first check-in to see how it works - we'll guide you through it!</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">2️⃣</span>
-                    <div className="text-white/90">
-                      <p className="font-semibold">Add Your Besties</p>
-                      <p className="text-sm text-white/70">After you learn check-ins, add real besties to your safety circle</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">3️⃣</span>
-                    <div className="text-white/90">
-                      <p className="font-semibold">Stay Safe Together</p>
-                      <p className="text-sm text-white/70">Your besties will watch out for you 💜</p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={handleFinish}
-            className="btn bg-white dark:bg-gray-800 text-primary hover:bg-white/90 dark:hover:bg-gray-700 text-lg px-8 py-4 shadow-2xl transform hover:scale-105 transition-all"
-          >
-            Let's Go! →
-          </button>
-        </div>
-
-        <style>{`
-          @keyframes celebration-float {
-            0% {
-              transform: translateY(100vh) rotate(0deg);
-              opacity: 0;
-            }
-            10% {
-              opacity: 1;
-            }
-            90% {
-              opacity: 1;
-            }
-            100% {
-              transform: translateY(-100vh) rotate(360deg);
-              opacity: 0;
-            }
-          }
-          .animate-celebration-float {
-            animation: celebration-float 5s ease-in-out infinite;
-          }
-        `}</style>
       </div>
     );
   }

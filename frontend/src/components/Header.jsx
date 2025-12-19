@@ -22,12 +22,74 @@ const Header = () => {
 
   const isActive = (path) => location.pathname === path;
   
-  // Check if Bestie Circle tutorial is completed (buttons should be visible)
-  const isBestieCircleTutorialComplete = tutorial.isCompleted;
+  // Check if we're in post-tutorial flow (hide profile menu)
+  const [postTutorialStep, setPostTutorialStep] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bestieCircle_postTutorialStep');
+    }
+    return null;
+  });
+  
+  React.useEffect(() => {
+    // Listen for changes
+    const handleStorageChange = () => {
+      const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
+      setPostTutorialStep(newStep);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    // Also check periodically (for same-tab updates)
+    const interval = setInterval(() => {
+      const newStep = localStorage.getItem('bestieCircle_postTutorialStep');
+      if (newStep !== postTutorialStep) {
+        setPostTutorialStep(newStep);
+      }
+    }, 100);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [postTutorialStep]);
+  
+  // Check if Bestie Circle tutorial is completed
+  // Besties menu should be visible once tutorial completes
+  // Use state to react to localStorage changes
+  const [bestieCircleTutorialComplete, setBestieCircleTutorialComplete] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bestieCircle_tutorialComplete') === 'true';
+    }
+    return false;
+  });
+  
+  // Listen for localStorage changes to show Besties tab when tooltip appears
+  useEffect(() => {
+    const checkTutorialComplete = () => {
+      const isComplete = localStorage.getItem('bestieCircle_tutorialComplete') === 'true';
+      setBestieCircleTutorialComplete(isComplete);
+    };
+    
+    // Check on mount and periodically (for same-tab updates)
+    checkTutorialComplete();
+    const interval = setInterval(checkTutorialComplete, 100);
+    
+    // Also listen for storage events (cross-tab)
+    window.addEventListener('storage', checkTutorialComplete);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', checkTutorialComplete);
+    };
+  }, []);
+  
+  // Besties tab should only be visible when we're showing the tooltip to click it
+  // OR if tutorial is already completed (for returning users)
+  const isBestieCircleTutorialComplete = bestieCircleTutorialComplete && 
+    (postTutorialStep === 'click-besties-tab' || !postTutorialStep);
   
   // Check if buttons should flash
   const shouldFlashBesties = currentCheckInTutorialStep === 'afterSafe' || 
-    (isBestieCircleTutorialComplete && !tutorial.tutorialActive);
+    postTutorialStep === 'add-bestie' ||
+    postTutorialStep === 'click-besties-tab';
+  // Profile button should flash when Besties tutorial is active (on Besties page)
   const shouldFlashProfile = tutorial.tutorialActive && tutorial.currentStep === 1;
 
   // Close menu when clicking outside
@@ -98,25 +160,27 @@ const Header = () => {
                   Besties
                 </Link>
               )}
-              {/* Profile button - always visible (not tied to Bestie Circle tutorial) */}
-              <Link
-                to="/profile"
-                onClick={() => {
-                  // If besties tutorial is active, complete it so profile tutorial can start
-                  if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-                    tutorial.completeTutorial();
-                  }
-                }}
-                className={`font-semibold transition-colors relative px-3 py-1 rounded ${
-                  isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300 hover:text-primary' : 'text-text-secondary hover:text-primary')
-                } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
-                style={shouldFlashProfile ? {
-                  boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
-                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
-                } : {}}
-              >
-                Profile
-              </Link>
+              {/* Profile button - hidden during post-tutorial flow on HomePage, visible on Besties page during tutorial */}
+              {((!postTutorialStep || postTutorialStep === 'null') || (isActive('/besties') && tutorial.tutorialActive)) && (
+                <Link
+                  to="/profile"
+                  onClick={() => {
+                    // If besties tutorial is active, complete it so profile tutorial can start
+                    if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+                      tutorial.completeTutorial();
+                    }
+                  }}
+                  className={`font-semibold transition-colors relative px-3 py-1 rounded ${
+                    isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300 hover:text-primary' : 'text-text-secondary hover:text-primary')
+                  } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
+                  style={shouldFlashProfile ? {
+                    boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+                  } : {}}
+                >
+                  Profile
+                </Link>
+              )}
             </nav>
 
             {/* Right Side Actions */}
@@ -160,18 +224,20 @@ const Header = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      navigate('/profile');
-                    }}
-                    className={`w-full px-4 py-2 text-left ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-50 text-text-primary'} transition-colors flex items-center gap-2`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Profile
-                  </button>
+                  {(!postTutorialStep || postTutorialStep === 'null') && (
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        navigate('/profile');
+                      }}
+                      className={`w-full px-4 py-2 text-left ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-50 text-text-primary'} transition-colors flex items-center gap-2`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Profile
+                    </button>
+                  )}
 
                   <button
                     onClick={() => {
@@ -307,30 +373,32 @@ const Header = () => {
             </Link>
           )}
 
-          {/* Profile button - always visible (not tied to Bestie Circle tutorial) */}
-          <Link
-            to="/profile"
-            onClick={() => {
-              // If besties tutorial is active, complete it so profile tutorial can start
-              if (tutorial.tutorialActive && tutorial.currentStep === 1) {
-                tutorial.completeTutorial();
-              }
-            }}
-            className={`flex flex-col items-center gap-1 transition-colors relative ${
-              isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
-            } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
-            style={shouldFlashProfile ? {
-              boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
-              borderRadius: '12px',
-              padding: '8px',
-              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
-            } : {}}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span className="text-xs font-semibold">Profile</span>
-          </Link>
+          {/* Profile button - hidden during post-tutorial flow on HomePage, visible on Besties page during tutorial */}
+          {((!postTutorialStep || postTutorialStep === 'null') || (isActive('/besties') && tutorial.tutorialActive)) && (
+            <Link
+              to="/profile"
+              onClick={() => {
+                // If besties tutorial is active, complete it so profile tutorial can start
+                if (tutorial.tutorialActive && tutorial.currentStep === 1) {
+                  tutorial.completeTutorial();
+                }
+              }}
+              className={`flex flex-col items-center gap-1 transition-colors relative ${
+                isActive('/profile') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
+              } ${shouldFlashProfile ? 'animate-pulse' : ''}`}
+              style={shouldFlashProfile ? {
+                boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
+                borderRadius: '12px',
+                padding: '8px',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite, glow 2s ease-in-out infinite alternate'
+              } : {}}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="text-xs font-semibold">Profile</span>
+            </Link>
+          )}
         </div>
       </nav>
       <style>{`

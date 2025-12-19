@@ -16,32 +16,28 @@ export function useActivityFeed(currentUser, besties, userData) {
     
     // Don't wait for besties - load activity even if no besties yet
     if (besties.length === 0) {
-      // Add mock activity for tutorial/demo purposes
+      // Add mock activity for tutorial/demo purposes - explanatory posts from Demo Bestie
       const mockActivities = [
         {
           id: 'mock-1',
-          type: 'checkin',
-          status: 'active',
+          type: 'post',
           userName: 'Demo Bestie',
           userId: 'demo-user',
-          location: 'Coffee Shop',
-          timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-          checkInData: {
-            type: 'walking',
-            duration: 30
+          timestamp: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+          postData: {
+            text: "Hey bestie! 💜 Welcome to your Besties page! This is your private social space where you'll see check-ins and posts from your besties. This activity feed shows everything your besties share - it's like a private timeline just for your safety network!",
+            createdAt: Timestamp.fromDate(new Date(Date.now() - 10 * 60 * 1000))
           }
         },
         {
           id: 'mock-2',
-          type: 'checkin',
-          status: 'completed',
+          type: 'post',
           userName: 'Demo Bestie',
           userId: 'demo-user',
-          location: 'Home',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-          checkInData: {
-            type: 'rideshare',
-            duration: 20
+          timestamp: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
+          postData: {
+            text: "You'll see check-ins here when your besties create them - like when they're on a date, taking a rideshare, or walking alone. If they don't check in on time, you'll get an alert so you can make sure they're safe! 🛡️",
+            createdAt: Timestamp.fromDate(new Date(Date.now() - 8 * 60 * 1000))
           }
         },
         {
@@ -49,10 +45,10 @@ export function useActivityFeed(currentUser, besties, userData) {
           type: 'post',
           userName: 'Demo Bestie',
           userId: 'demo-user',
-          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+          timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
           postData: {
-            text: 'Just finished a great walk! 🚶‍♀️',
-            createdAt: Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 60 * 1000))
+            text: "You can also share posts here - updates, photos, or just how you're feeling! Everything is private and only visible to your besties. Scroll down to see all your besties and their connection info. When you're ready, click the Profile button below to continue learning about the app! 💜",
+            createdAt: Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000))
           }
         }
       ];

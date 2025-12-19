@@ -35,7 +35,7 @@ const HomePage = () => {
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
-  const { tutorialComplete, currentTutorialStep, markTutorialComplete, setTutorialStep } = useTutorialState();
+  const { tutorialComplete, currentTutorialStep, tutorialStateLoaded, markTutorialComplete, setTutorialStep } = useTutorialState();
   const { currentCheckInTutorialStep, setCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const livingCircleRef = useRef(null);
@@ -61,23 +61,56 @@ const HomePage = () => {
     console.log('[HomePage] Check-in tutorial step changed:', currentCheckInTutorialStep);
   }, [currentCheckInTutorialStep]);
 
+  // Track when tutorial step was last set to prevent premature clearing
+  const tutorialStepSetTimeRef = useRef(null);
+  const onboardingJustCompletedRef = useRef(false);
+  const tutorialAutoStartAttemptedRef = useRef(false); // Track if we've already tried to auto-start
+
+  // Track when onboarding is completed to prevent clearing tutorial step
+  useEffect(() => {
+    if (userData?.onboardingCompleted && !tutorialComplete && !currentTutorialStep) {
+      onboardingJustCompletedRef.current = true;
+      // Reset flag after 2 seconds (enough time for tutorial to start)
+      setTimeout(() => {
+        onboardingJustCompletedRef.current = false;
+      }, 2000);
+    }
+  }, [userData?.onboardingCompleted, tutorialComplete, currentTutorialStep]);
+
   // Validate tutorial state and clean up invalid states
   useEffect(() => {
+    // Don't validate until tutorial state has finished loading
+    if (!tutorialStateLoaded) {
+      console.log('[HomePage] Validation effect: Waiting for tutorial state to load');
+      return;
+    }
+
     const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
 
     // If tutorial is marked complete but has a step, clear the step
-    if (tutorialComplete && currentTutorialStep) {
+    // But don't clear if onboarding just completed (tutorial is about to start)
+    if (tutorialComplete && currentTutorialStep && !onboardingJustCompletedRef.current) {
+      console.log('[HomePage] Validation: Tutorial complete but has step, clearing step');
       setTutorialStep(null);
       return;
     }
 
     // If we have an invalid step, reset to null
+    // But don't clear if it was just set (within last 500ms) or onboarding just completed - prevents race condition
     if (currentTutorialStep && !validSteps.includes(currentTutorialStep)) {
-      console.warn('Invalid tutorial step detected:', currentTutorialStep, '- resetting');
-      setTutorialStep(null);
+      const timeSinceSet = tutorialStepSetTimeRef.current 
+        ? Date.now() - tutorialStepSetTimeRef.current 
+        : Infinity;
+      
+      if (timeSinceSet > 500 && !onboardingJustCompletedRef.current) {
+        console.warn('[HomePage] Validation: Invalid tutorial step detected:', currentTutorialStep, '- resetting');
+        setTutorialStep(null);
+      } else {
+        console.log('[HomePage] Validation: Step was just set or onboarding just completed, skipping validation to prevent race condition');
+      }
       return;
     }
-  }, [currentTutorialStep, tutorialComplete, setTutorialStep]);
+  }, [currentTutorialStep, tutorialComplete, tutorialStateLoaded, setTutorialStep]);
 
   // Besties state for weekly summary
   const [besties, setBesties] = useState([]);
@@ -100,18 +133,29 @@ const HomePage = () => {
   }, [userData, authLoading, navigate]);
 
   // Auto-start tutorial when user first lands after onboarding
+  // Simple rule: If onboarding is completed and tutorial is not complete, start it
   useEffect(() => {
     if (authLoading) return;
     if (!userData) return;
+    if (!tutorialStateLoaded) return; // Wait for tutorial state to finish loading
+    if (tutorialAutoStartAttemptedRef.current) return; // Already attempted, don't try again
+    if (currentTutorialStep) return; // Tutorial step already set, don't override
 
-    // Check if onboarding was just completed (user has completed onboarding but tutorial not started)
-    if (userData.onboardingCompleted && !tutorialComplete && !currentTutorialStep) {
+    // Only check: onboarding completed AND tutorial not complete
+    const shouldAutoStart = userData.onboardingCompleted && !tutorialComplete;
+    
+    if (shouldAutoStart) {
+      tutorialAutoStartAttemptedRef.current = true; // Mark as attempted immediately
       // Small delay to ensure page is fully rendered
       setTimeout(() => {
-        setTutorialStep('welcome');
+        // Double-check we still need to set it (might have been set by another effect)
+        if (!currentTutorialStep) {
+          tutorialStepSetTimeRef.current = Date.now();
+          setTutorialStep('welcome');
+        }
       }, 300);
     }
-  }, [userData, authLoading, tutorialComplete, currentTutorialStep, setTutorialStep]);
+  }, [userData?.onboardingCompleted, authLoading, tutorialComplete, currentTutorialStep, tutorialStateLoaded, setTutorialStep]);
 
   // Redirect to login if there's a pending invite and user is not logged in
   useEffect(() => {
@@ -607,7 +651,9 @@ const HomePage = () => {
                 userId={currentUser?.uid}
                 shouldPlayTutorial={currentCheckInTutorialStep === 'sacredTransition' || currentCheckInTutorialStep === 'bestieCircle'}
                 onTutorialComplete={() => {
-                  markCheckInTutorialComplete();
+                  // Clear the 'sacredTransition' or 'bestieCircle' step to unstick the user doc
+                  // Don't mark entire tutorial complete yet - user still needs to see post-tutorial tooltip
+                  setCheckInTutorialStep(null);
                   toast.success("Welcome to your Bestie Circle! 💜", { icon: "✨" });
                 }}
               />
@@ -823,9 +869,13 @@ const HomePage = () => {
               if (action === 'continueTutorial') {
                 // User wants to continue tutorial - scroll to Bestie Circle and start tutorial
                 if (livingCircleRef.current) {
-                  livingCircleRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
+                  const element = livingCircleRef.current;
+                  const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                  const offsetPosition = elementPosition - 100; // 100px offset from top
+                  
+                  window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
                   });
                 }
                 // Small delay to let scroll complete before starting tutorial
@@ -833,7 +883,7 @@ const HomePage = () => {
                   setCheckInTutorialStep('sacredTransition');
                 }, 800);
               } else if (action === 'skip') {
-                // User wants to skip - mark tutorial complete and show reminder
+                // User wants to skip - mark tutorial complete and don't show bestie circle tutorial
                 markCheckInTutorialComplete();
                 toast.success("You can replay tutorials anytime from Settings! 💜", {
                   duration: 4000,
@@ -842,6 +892,7 @@ const HomePage = () => {
               }
             }}
             onSkipTutorial={() => {
+              // User skipped - mark tutorial complete and don't show bestie circle tutorial
               markCheckInTutorialComplete();
               toast.success("You can replay tutorials anytime from Settings! 💜", {
                 duration: 4000,
@@ -859,6 +910,7 @@ const HomePage = () => {
               showSkipText: true,
               skipText: 'Skip tutorial',
               onSkipClick: () => {
+                // User skipped - mark tutorial complete and don't show bestie circle tutorial
                 markCheckInTutorialComplete();
                 toast.success("You can replay tutorials anytime from Settings! 💜", {
                   duration: 4000,

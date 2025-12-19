@@ -69,6 +69,11 @@ service cloud.firestore {
         (!request.resource.data.keys().hasAny(['role', 'banned', 'isAdmin']));
       allow delete: if isSignedIn() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      
+      // Settings subcollection - for tutorial state and user preferences
+      match /settings/{settingId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
     
     // Check-ins collection
@@ -379,12 +384,14 @@ service cloud.firestore {
     match /circle_checkins/{checkInId} {
       allow read: if isSignedIn() && (
         request.auth.uid == resource.data.userId ||
-        // Visible to featured circle members only
-        request.auth.uid in resource.data.visibleTo
+        // Visible to featured circle members only (allow empty arrays)
+        (resource.data.visibleTo != null && request.auth.uid in resource.data.visibleTo)
       );
       allow create: if isSignedIn() && 
         request.auth.uid == request.resource.data.userId &&
-        request.resource.data.keys().hasAll(['userId', 'mood', 'createdAt', 'visibleTo']);
+        request.resource.data.keys().hasAll(['userId', 'mood', 'createdAt', 'visibleTo']) &&
+        // Allow empty visibleTo arrays (user might not have besties yet)
+        request.resource.data.visibleTo.size() >= 0;
       allow update, delete: if false; // Immutable records
     }
 
