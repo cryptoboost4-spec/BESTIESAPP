@@ -4,12 +4,13 @@ import confetti from 'canvas-confetti';
 import './BestieCircleTutorial.css';
 
 /**
- * BestieCircleTutorial - Bespoke Edition
- * 
- * Focuses on high-quality, organic transitions for:
- * - Connection Line ("River of Light / Fish")
- * - Avatar Reveal ("Bloom")
- * - Slot Breathing ("Living Mist")
+ * BestieCircleTutorial - Optimized Edition
+ *
+ * Performance optimizations:
+ * - Reduced particle count
+ * - Simplified animations
+ * - Optimized re-renders with useMemo
+ * - GPU acceleration hints
  */
 
 const TUTORIAL_STEPS = {
@@ -22,12 +23,12 @@ const TUTORIAL_STEPS = {
 };
 
 const STEP_DELAYS = {
-    [TUTORIAL_STEPS.MOMENT_0]: 1800,
-    [TUTORIAL_STEPS.STEP_1]: 500,
-    [TUTORIAL_STEPS.STEP_2]: 1500,
-    [TUTORIAL_STEPS.STEP_3]: 1000,
-    [TUTORIAL_STEPS.STEP_4]: 1000,
-    [TUTORIAL_STEPS.STEP_5]: 1500
+    [TUTORIAL_STEPS.MOMENT_0]: 1200, // Reduced from 1800
+    [TUTORIAL_STEPS.STEP_1]: 300,    // Reduced from 500
+    [TUTORIAL_STEPS.STEP_2]: 1000,   // Reduced from 1500
+    [TUTORIAL_STEPS.STEP_3]: 700,    // Reduced from 1000
+    [TUTORIAL_STEPS.STEP_4]: 700,    // Reduced from 1000
+    [TUTORIAL_STEPS.STEP_5]: 1000    // Reduced from 1500
 };
 
 const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
@@ -105,8 +106,8 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
     }, [onClose]);
 
     const triggerButterflies = useCallback((rect) => {
-        // Reduce butterfly count from 25 to 12 for better performance
-        const newButterflies = Array.from({ length: 12 }).map((_, i) => {
+        // Reduced butterfly count from 12 to 6 for better performance
+        const newButterflies = Array.from({ length: 6 }).map((_, i) => {
             const x = rect.left + rect.width / 2;
             const y = rect.top + rect.height / 2;
             return {
@@ -133,12 +134,16 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
     return (
         <motion.div
             className="absolute inset-0 z-50 flex items-center justify-center font-sans overflow-hidden rounded-[inherit] pointer-events-none"
-            style={{ borderRadius: 'inherit' }}
+            style={{
+                borderRadius: 'inherit',
+                willChange: 'opacity', // GPU acceleration hint
+                transform: 'translateZ(0)' // Force GPU layer
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
         >
             {/* Global Background Layer - Dream Circle Style */}
-            <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-gradient-to-br from-green-50 via-emerald-50 via-teal-50 via-pink-50 to-purple-50 border-4 border-green-300 z-0">
+            <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-gradient-to-br from-green-50 via-emerald-50 via-teal-50 via-pink-50 to-purple-50 border-4 border-green-300 z-0" style={{ willChange: 'transform' }}>
                 <DreamscapeBackground />
                 <ButterflySystem butterflies={butterflies} />
             </div>
@@ -202,26 +207,26 @@ const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
 // --- VISUAL COMPONENTS ---
 
 const DreamscapeBackground = memo(() => (
-    <div className="absolute inset-0 pointer-events-none">
-        {/* Dream Circle style gradient - Green and Pink mixing */}
+    <div className="absolute inset-0 pointer-events-none" style={{ willChange: 'transform' }}>
+        {/* Dream Circle style gradient - Simplified for performance */}
         <motion.div
-            className="absolute inset-0 opacity-40"
+            className="absolute inset-0 opacity-30"
             style={{
-                background: 'radial-gradient(circle at 50% 50%, #10b981 0%, #34d399 30%, #ec4899 60%, #f472b6 80%, transparent 100%)'
+                background: 'radial-gradient(circle at 50% 50%, #10b981 0%, #34d399 30%, #ec4899 60%, #f472b6 80%, transparent 100%)',
+                willChange: 'transform, opacity'
             }}
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
-        {/* Subtle overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-green-900/20 via-transparent to-pink-900/20 mix-blend-screen" />
-        <FallingStars />
+        {/* Subtle overlay for depth - removed for performance */}
+        {/* <FallingStars /> - Disabled for better performance */}
     </div>
 ));
 
 const FallingStars = () => {
-    // Pre-calculate random values to prevent recalculation on every render
-    const stars = useMemo(() => 
-        Array.from({ length: 5 }).map((_, i) => ({
+    // Reduced from 5 to 3 stars for better performance
+    const stars = useMemo(() =>
+        Array.from({ length: 3 }).map((_, i) => ({
             initialX: Math.random() * 100,
             animateX: Math.random() * 100,
             duration: Math.random() * 2 + 3,
@@ -256,7 +261,6 @@ const ButterflySystem = memo(({ butterflies }) => (
 
 const Butterfly = memo(({ data }) => {
     // Pre-calculate random values when butterfly is created (in triggerButterflies)
-    // data should already have targetX and targetY calculated
     const targetX = data.targetX ?? (data.x + (Math.random() - 0.5) * 400);
     const targetY = data.targetY ?? (data.y - Math.random() * 400 - 100);
 
@@ -269,17 +273,20 @@ const Butterfly = memo(({ data }) => {
                 scale: [0, 1, 0],
                 opacity: 0
             }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
+            transition={{ duration: 1, ease: "easeOut" }} // Reduced from 1.2
             className="absolute"
+            style={{ willChange: 'transform, opacity' }} // GPU hint
         >
-            <div className="w-4 h-4" style={{
+            <div className="w-3 h-3" style={{  // Reduced from w-4 h-4
                 background: `radial-gradient(circle, ${data.color}, transparent)`,
-                filter: 'blur(1px)'
+                filter: 'blur(1px)',
+                willChange: 'transform'
             }}>
                 <motion.div
                     animate={{ scaleX: [1, 0.2, 1] }}
-                    transition={{ duration: 0.15, repeat: Infinity }}
+                    transition={{ duration: 0.12, repeat: Infinity }} // Slightly faster
                     className="w-full h-full rounded-full bg-white/80"
+                    style={{ willChange: 'transform' }}
                 />
             </div>
         </motion.div>
@@ -340,11 +347,11 @@ const YouBubbleCore = memo(({ currentStep }) => {
             transition={{ duration: 0.8 }}
         >
             {/* Dream Circle style center - Green gradient like perfect circle */}
-            <div className="absolute inset-0 rounded-full shadow-[0_0_40px_rgba(16,185,129,0.5)] animate-breathe-perfect bg-gradient-to-br from-green-500 to-emerald-500 border-4 border-white ring-4 ring-green-300" />
+            <div className="absolute inset-0 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.4)] animate-breathe-perfect bg-gradient-to-br from-green-500 to-emerald-500 border-4 border-white ring-4 ring-green-300" style={{ willChange: 'transform' }} />
 
             {(isStep4) && (
-                <div className="absolute inset-0 rounded-full overflow-hidden mix-blend-overlay opacity-70">
-                    <div className="absolute inset-0 bg-white/20 animate-plasma" />
+                <div className="absolute inset-0 rounded-full overflow-hidden mix-blend-overlay opacity-60">
+                    {/* Simplified plasma effect */}
                 </div>
             )}
 
@@ -387,16 +394,17 @@ const YouBubbleCore = memo(({ currentStep }) => {
 
 const BurningProgressRing = () => {
     return (
-        <svg className="absolute -inset-3 w-[120px] h-[120px] rotate-[-90deg] overflow-visible">
-            <circle cx="60" cy="60" r="56" stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="none" />
+        <svg className="absolute -inset-3 w-[120px] h-[120px] rotate-[-90deg] overflow-visible" style={{ willChange: 'transform' }}>
+            <circle cx="60" cy="60" r="56" stroke="rgba(255,255,255,0.1)" strokeWidth="3" fill="none" />
             <motion.circle
                 cx="60" cy="60" r="56"
-                stroke="#fff" strokeWidth="4" fill="none" strokeLinecap="round"
+                stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 0.8 }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
+                transition={{ duration: 1.2, ease: "easeOut" }} // Slightly faster
                 style={{
-                    filter: 'drop-shadow(0 0 6px #fbcfe8) drop-shadow(0 0 10px #ec4899)'
+                    filter: 'drop-shadow(0 0 4px #fbcfe8)', // Simplified shadow
+                    willChange: 'stroke-dashoffset'
                 }}
             />
         </svg>
