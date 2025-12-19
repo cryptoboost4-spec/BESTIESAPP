@@ -111,7 +111,12 @@ export const useCheckInTutorialState = () => {
             }
           }
         } else {
-          console.log('[Tutorial] User document does not exist in Firestore');
+          console.log('[Tutorial] User document does not exist in Firestore - resetting tutorial state');
+          // If user doc doesn't exist in Firestore, reset tutorial state to initial
+          setCheckInTutorialComplete(false);
+          setCurrentCheckInTutorialStep(null);
+          localStorage.setItem('checkInTutorial_complete', 'false');
+          localStorage.removeItem('current_checkInTutorial_step');
         }
 
         // Mark sync as complete
