@@ -9,6 +9,7 @@ import ProfileWithBubble from './ProfileWithBubble';
 import AnimatedProfilePicture from './AnimatedProfilePicture';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
 import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
+import { useTutorialState } from '../hooks/useTutorialState';
 
 const Header = () => {
   const { userData } = useAuth();
@@ -19,6 +20,7 @@ const Header = () => {
   const menuRef = useRef(null);
   const { currentCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const tutorial = useBestiesTutorialState();
+  const { currentTutorialStep } = useTutorialState();
 
   const isActive = (path) => location.pathname === path;
   
@@ -129,8 +131,8 @@ const Header = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
-              {/* Only show Home button after Bestie Circle tutorial is complete */}
-              {isBestieCircleTutorialComplete && (
+              {/* Only show Home button after Bestie Circle tutorial is complete AND when home tutorial is not active */}
+              {isBestieCircleTutorialComplete && !currentTutorialStep && (
                 <Link
                   to="/"
                   className={`font-semibold transition-colors ${

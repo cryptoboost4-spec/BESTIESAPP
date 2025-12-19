@@ -783,9 +783,6 @@ const HomePage = () => {
               We're building this together, and we couldn't do it without amazing people like you.
               You're not just using an app—you're one of the besties. 💕
             </p>
-            <p className="text-sm text-primary font-semibold">
-              Keep slaying safely, queen! 👑✨
-            </p>
           </div>
         </div>
 

@@ -232,27 +232,6 @@ const BestieSelector = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Tutorial info card - styled like a bestie card */}
-          {isTutorial && (
-            <div className="w-full p-4 rounded-xl border-2 border-dashed border-purple-400 bg-purple-50/50 dark:bg-purple-900/20">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">💜</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="font-semibold text-text-primary text-sm">Tutorial</div>
-                    <span className="text-xs bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full font-bold">
-                      INFO
-                    </span>
-                  </div>
-                  <div className="text-sm text-text-secondary">
-                    Select the demo bestie if available, or continue without a bestie. After the tutorial, add real besties on the home page.
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           
           {/* Besties with contact methods - shown first */}
           {bestiesWithContact.map((bestie) => {

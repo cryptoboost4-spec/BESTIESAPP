@@ -260,7 +260,8 @@ const CreateCheckInPage = () => {
         // Auto-select besties who have any contact method (phone+SMS, telegram, or push)
         // Allow messenger-only check-ins - no SMS requirement
         // For quick check-ins, always auto-select all besties with contact info
-        if (!location.state?.template && bestiesWithUserData.length > 0) {
+        // BUT: Skip auto-selection during tutorial - only demo bestie should be available
+        if (!location.state?.template && !showTutorial && bestiesWithUserData.length > 0) {
           // Prefer besties with phone+SMS, but also include those with telegram or push
           const bestiesWithContact = bestiesWithUserData.filter(b => 
             (b.phone && b.smsEnabled) || 
@@ -322,6 +323,16 @@ const CreateCheckInPage = () => {
   useEffect(() => {
     if (!bestiesLoading && showTutorial) {
       const hasMockBestie = besties.some(b => isMockBestie(b));
+
+      // Clear any selected real besties when tutorial starts
+      const realSelectedBesties = selectedBesties.filter(id => {
+        const bestie = besties.find(b => b.id === id);
+        return bestie && !isMockBestie(bestie);
+      });
+      if (realSelectedBesties.length > 0) {
+        console.log('[Tutorial] Clearing selected real besties:', realSelectedBesties);
+        setSelectedBesties(selectedBesties.filter(id => !realSelectedBesties.includes(id)));
+      }
 
       if (!hasMockBestie) {
         // Add mock bestie for tutorial and filter out real besties
@@ -1409,7 +1420,7 @@ const CreateCheckInPage = () => {
                 }
               }}
               userId={currentUser?.uid}
-              showMessenger={FEATURES.messengerAlerts}
+              showMessenger={FEATURES.messengerAlerts && !(showTutorial && currentCheckInTutorialStep)}
             />
           </div>
           {formErrors.besties && <InlineError message={formErrors.besties} className="px-6 -mt-4" />}
