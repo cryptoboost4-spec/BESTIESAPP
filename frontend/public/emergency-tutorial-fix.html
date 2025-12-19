@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Tutorial Fix</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .primary {
+      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+      color: white;
+    }
+    .primary:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4);
+    }
+    .secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+    .secondary:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .success {
+      background: #10b981;
+      color: white;
+    }
+    .output {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+    .status.success {
+      background: rgba(16, 185, 129, 0.3);
+    }
+    .status.error {
+      background: rgba(239, 68, 68, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Emergency Tutorial Fix</h1>
+
+    <div id="status"></div>
+
+    <button class="primary" onclick="fixEverything()">
+      🔧 FIX EVERYTHING (Recommended)
+    </button>
+
+    <button class="secondary" onclick="syncLocalStorage()">
+      💾 Sync localStorage Only
+    </button>
+
+    <button class="secondary" onclick="checkCurrentState()">
+      🔍 Check Current State
+    </button>
+
+    <button class="secondary" onclick="clearAllTutorials()">
+      🗑️ Clear All Tutorial State
+    </button>
+
+    <div class="output" id="output"></div>
+  </div>
+
+  <script>
+    function log(message, type = 'info') {
+      const output = document.getElementById('output');
+      const timestamp = new Date().toLocaleTimeString();
+      const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '📝';
+      output.innerHTML += `[${timestamp}] ${icon} ${message}\n`;
+      output.scrollTop = output.scrollHeight;
+      console.log(message);
+    }
+
+    function showStatus(message, success = true) {
+      const status = document.getElementById('status');
+      status.className = `status ${success ? 'success' : 'error'}`;
+      status.textContent = message;
+      setTimeout(() => status.textContent = '', 5000);
+    }
+
+    function dispatchStorageEvent(key, value) {
+      // Dispatch custom event for same-tab updates
+      window.dispatchEvent(new CustomEvent(`${key}_changed`, {
+        detail: { [key.includes('complete') || key.includes('Complete') ? 'complete' : 'step']: value }
+      }));
+
+      // Dispatch storage event for cross-tab updates
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: key,
+        newValue: value,
+        url: window.location.href
+      }));
+    }
+
+    function syncLocalStorage() {
+      log('=== SYNCING LOCALSTORAGE ===', 'info');
+
+      // Set all tutorial completion flags
+      const tutorialKeys = {
+        'tutorial_complete': 'true',
+        'checkInTutorial_complete': 'true',
+        'bestieCircle_tutorialComplete': 'true',  // KEY FIX!
+        'bestiesTutorial_complete': 'true',
+        'profileTutorial_complete': 'true',
+        'settingsTutorial_complete': 'true'
+      };
+
+      Object.entries(tutorialKeys).forEach(([key, value]) => {
+        localStorage.setItem(key, value);
+        dispatchStorageEvent(key, value);
+        log(`Set ${key} = ${value}`);
+      });
+
+      // Remove any active tutorial steps
+      const stepsToRemove = [
+        'current_tutorial_step',
+        'current_checkInTutorial_step',
+        'bestieCircle_postTutorialStep',
+        'bestieCircle_tutorialActive'
+      ];
+
+      stepsToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        log(`Removed ${key}`);
+      });
+
+      log('=== SYNC COMPLETE ===', 'success');
+      showStatus('✅ localStorage synced! Refresh the page now.', true);
+    }
+
+    function checkCurrentState() {
+      log('=== CURRENT STATE ===', 'info');
+
+      const keys = [
+        'tutorial_complete',
+        'current_tutorial_step',
+        'checkInTutorial_complete',
+        'current_checkInTutorial_step',
+        'bestieCircle_tutorialComplete',
+        'bestieCircle_tutorialActive',
+        'bestieCircle_postTutorialStep',
+        'bestiesTutorial_complete',
+        'profileTutorial_complete',
+        'settingsTutorial_complete'
+      ];
+
+      keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        log(`${key}: ${value || 'null'}`);
+      });
+
+      log('=== END STATE ===', 'info');
+    }
+
+    function clearAllTutorials() {
+      if (!confirm('⚠️ This will reset ALL tutorials. Continue?')) return;
+
+      log('=== CLEARING ALL TUTORIALS ===', 'info');
+
+      Object.keys(localStorage)
+        .filter(k => k.toLowerCase().includes('tutorial') || k.toLowerCase().includes('bestie'))
+        .forEach(key => {
+          localStorage.removeItem(key);
+          log(`Removed ${key}`);
+        });
+
+      log('=== CLEAR COMPLETE ===', 'success');
+      showStatus('✅ All tutorials cleared!', true);
+    }
+
+    async function fixEverything() {
+      log('=== COMPREHENSIVE FIX STARTING ===', 'info');
+
+      // Step 1: Sync localStorage
+      log('\n🔧 Step 1: Syncing localStorage...', 'info');
+      syncLocalStorage();
+
+      // Step 2: Wait for events to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 3: Verify state
+      log('\n🔍 Step 2: Verifying state...', 'info');
+      const verifyKeys = [
+        'bestieCircle_tutorialComplete',
+        'tutorial_complete',
+        'checkInTutorial_complete'
+      ];
+
+      let allGood = true;
+      verifyKeys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value !== 'true') {
+          log(`❌ ${key} is ${value}, expected 'true'`, 'error');
+          allGood = false;
+        } else {
+          log(`✅ ${key} is correct`, 'success');
+        }
+      });
+
+      if (allGood) {
+        log('\n✅ ALL CHECKS PASSED!', 'success');
+        showStatus('🎉 Everything fixed! Refresh your app now!', true);
+
+        // Auto-refresh after 2 seconds
+        log('\n⏳ Auto-refreshing in 2 seconds...', 'info');
+        setTimeout(() => {
+          window.location.href = window.location.origin;
+        }, 2000);
+      } else {
+        log('\n❌ Some checks failed. Please refresh manually.', 'error');
+        showStatus('⚠️ Fix complete but please refresh manually', false);
+      }
+    }
+
+    // Auto-check state on load
+    window.addEventListener('DOMContentLoaded', () => {
+      log('🚀 Emergency Tutorial Fix Tool Loaded', 'success');
+      log('Click "FIX EVERYTHING" to repair your tutorial state.\n', 'info');
+    });
+  </script>
+</body>
+</html>
