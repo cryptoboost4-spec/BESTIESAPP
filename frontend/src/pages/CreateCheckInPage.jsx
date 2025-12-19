@@ -999,10 +999,15 @@ const CreateCheckInPage = () => {
     
     // During tutorial, allow check-ins without besties
     const isTutorialMode = showTutorial && !!currentCheckInTutorialStep;
-    
-    if (!hasRegularBesties && !hasMessengerContacts && !hasMockBestieSelected && !isTutorialMode) {
+
+    if (!hasRegularBesties && !hasMessengerContacts && !hasMockBestieSelected) {
       errorTracker.trackFunnelStep('checkin', 'error_no_besties');
-      setFormErrors(prev => ({ ...prev, besties: 'Please select at least one bestie or messenger contact to notify' }));
+      // Show tutorial-specific message if in tutorial mode
+      if (isTutorialMode) {
+        setFormErrors(prev => ({ ...prev, besties: 'Please select a bestie to use as emergency contact' }));
+      } else {
+        setFormErrors(prev => ({ ...prev, besties: 'Please select at least one bestie or messenger contact to notify' }));
+      }
       return;
     } else {
       setFormErrors(prev => ({ ...prev, besties: '' }));
