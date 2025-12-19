@@ -801,13 +801,10 @@ const HomePage = () => {
           onSkipTutorial={() => {
             markCheckInTutorialComplete();
           }}
-          highlightedElementRef={{ current: null }}
+          highlightedElementRef={quickCheckInButtonsRef}
           tooltipConfig={{
             title: 'You\'re Safe! 🎉',
             body: `You've completed your first check-in! That's the full check-in process.\n\nWould you like to continue with tutorials to learn more about the app, or explore on your own?`,
-            overlayOnElement: true,
-            dismissible: false,
-            canDismiss: false,
             buttons: [
               { text: 'Continue Tutorial', action: 'continueTutorial', primary: true },
               { text: 'Explore on My Own', action: 'explore', primary: false }
