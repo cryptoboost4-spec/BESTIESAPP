@@ -10,12 +10,14 @@ export const MOCK_BESTIE = {
   email: 'demo@besties.app',
   photoURL: null,
   phone: '+1 (555) 123-4567', // Fake phone number for tutorial
-  smsEnabled: true,
-  telegramChatId: null,
+  smsEnabled: false, // CHANGED: Disable SMS to avoid credit check
+  telegramChatId: '1234567890', // ADDED: Mock Telegram ID so validation passes
+  telegramUsername: '@demobestie', // ADDED: Mock Telegram username
   notificationPreferences: {
-    telegram: false,
+    telegram: true, // CHANGED: Enable Telegram instead of SMS
+    email: true, // ADDED: Enable Email as well
     push: false,
-    sms: true
+    sms: false // CHANGED: Disable SMS
   },
   requestAttention: false,
   isMock: true, // Flag to identify this as a mock bestie

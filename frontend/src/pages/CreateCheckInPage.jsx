@@ -352,8 +352,7 @@ const CreateCheckInPage = () => {
         setBesties(filteredBesties);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showTutorial, bestiesLoading]);
+  }, [showTutorial, bestiesLoading, besties]);
 
   // Load Messenger contacts when currentUser is available
   useEffect(() => {
@@ -1060,9 +1059,16 @@ const CreateCheckInPage = () => {
       // Skip validation during tutorial mode (for fake bestie or mock bestie)
       const isTutorialMode = showTutorial && !!currentCheckInTutorialStep;
       const hasFakeBestie = selectedBesties.includes('TUTORIAL_FAKE_BESTIE');
-      
-      if (isTutorialMode && (hasFakeBestie || hasMockBestieSelected)) {
-        // Skip SMS credit validation during tutorial
+
+      // ALWAYS skip validation if mock bestie is selected (even if tutorial state is unclear)
+      if (hasFakeBestie || hasMockBestieSelected) {
+        console.log('[Tutorial] Skipping SMS validation - mock bestie selected');
+        return true;
+      }
+
+      // Also skip if in tutorial mode
+      if (isTutorialMode) {
+        console.log('[Tutorial] Skipping SMS validation - tutorial mode');
         return true;
       }
 
