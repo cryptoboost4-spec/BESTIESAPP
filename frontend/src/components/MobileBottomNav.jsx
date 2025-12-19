@@ -187,8 +187,8 @@ const MobileBottomNav = () => {
           paddingTop: '12px'
         }}
       >
-        {/* Hide Home button during Besties tutorial or onboarding - only show Profile (flashing) during Besties tutorial */}
-        {!(tutorial.tutorialActive && tutorial.currentStep === 1) && !isOnboarding && (
+        {/* Hide Home button during Besties tutorial, onboarding, or until Besties button appears - only show Profile (flashing) during Besties tutorial */}
+        {!(tutorial.tutorialActive && tutorial.currentStep === 1) && !isOnboarding && shouldShowBestiesTab && (
           <Link
             to="/"
             className={`flex flex-col items-center gap-1 transition-colors ${isActive('/') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
@@ -212,11 +212,8 @@ const MobileBottomNav = () => {
                 markCheckInTutorialComplete();
                 navigate('/besties', { state: { startTutorial: true } });
               }
-              // If flashing from click-besties-tab step, clear it to stop flashing
-              if (postTutorialStep === 'click-besties-tab') {
-                localStorage.removeItem('bestieCircle_postTutorialStep');
-                localStorage.removeItem('bestieCircle_bestiesTooltipDismissed');
-              }
+              // Note: Don't clear localStorage flags here - let BestiesPage read them first
+              // BestiesPage will clear them after reading to prevent race condition
             }}
             className={`flex flex-col items-center gap-1 transition-colors relative ${isActive('/besties') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
               } ${shouldFlashBesties ? 'animate-pulse' : ''}`}

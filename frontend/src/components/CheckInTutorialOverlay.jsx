@@ -180,11 +180,22 @@ const CheckInTutorialOverlay = ({
       setArrowPosition({ top: -1000, left: -1000, rotation: 0 });
     };
 
-    // On mobile, add a small delay to ensure scroll lock is applied and DOM is settled
-    const delay = isMobile ? 100 : 0;
+    // On mobile, add a delay to ensure scroll lock is applied and DOM is settled
+    // For checkedIn and afterSafe steps, use longer delay to prevent jumping
+    const isCenteredStep = currentStep === 'checkedIn' || currentStep === 'afterSafe';
+    const delay = isMobile ? (isCenteredStep ? 300 : 100) : (isCenteredStep ? 200 : 0);
 
     const timeoutId = setTimeout(() => {
-      calculatePositions();
+      // Use double requestAnimationFrame for centered steps to ensure DOM is fully settled
+      if (isCenteredStep) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            calculatePositions();
+          });
+        });
+      } else {
+        calculatePositions();
+      }
     }, delay);
 
     window.addEventListener('resize', calculatePositions);

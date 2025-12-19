@@ -881,12 +881,12 @@ const HomePage = () => {
           onSkipTutorial={() => {
             markCheckInTutorialComplete();
           }}
-          highlightedElementRef={activeCheckIns.length > 0 ? activeCheckInCardRef : null}
+          highlightedElementRef={null}
           tooltipConfig={{
             icon: '✅',
             title: 'Your Active Check-In',
             body: `Great job! Your check-in is now active.\n\nHere you can:\n• Add notes about your situation\n• Add photos for your besties\n• Add more time if needed\n\nWhen you're safe, click the "I'm Safe" button. This lets your besties know you're okay! 💜`,
-            overlayOnElement: activeCheckIns.length > 0,
+            overlayOnElement: false,
             buttons: [
               { text: 'Got it!', action: 'continue', primary: true }
             ]
@@ -929,12 +929,12 @@ const HomePage = () => {
                 icon: '✨'
               });
             }}
-            highlightedElementRef={activeCheckIns.length > 0 ? activeCheckInCardRef : null}
+            highlightedElementRef={null}
             tooltipConfig={{
               icon: '🎉',
               title: 'Amazing Work!',
               body: `Congratulations! You've learned how to create a check-in and keep yourself safe.\n\nReady to learn about your Bestie Circle? It's where you build your safety network with the people you trust most.`,
-              overlayOnElement: activeCheckIns.length > 0,
+              overlayOnElement: false,
               dismissible: false,
               canDismiss: false,
               showSkipText: true,

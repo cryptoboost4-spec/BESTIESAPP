@@ -47,8 +47,32 @@ const BestiesPage = () => {
   // Mock posts for tutorial
   const [mockTutorialPosts, setMockTutorialPosts] = useState([]);
 
+  // Read localStorage flags BEFORE any state initialization to avoid race conditions
+  const initialState = useRef(() => {
+    if (typeof window === 'undefined') {
+      return { fromClickBestiesTab: false, shouldResetTooltip: false };
+    }
+    
+    const fromClickBestiesTab = localStorage.getItem('bestieCircle_postTutorialStep') === 'click-besties-tab';
+    
+    // If coming from click-besties-tab, clear flags immediately
+    if (fromClickBestiesTab) {
+      localStorage.removeItem('bestieCircle_postTutorialStep');
+      localStorage.removeItem('besties_tooltip_dismissed'); // FIXED: Correct key
+      console.log('[Besties Tutorial] Coming from click-besties-tab, cleared flags');
+      return { fromClickBestiesTab: true, shouldResetTooltip: true };
+    }
+    
+    return { fromClickBestiesTab: false, shouldResetTooltip: false };
+  }).current(); // Call immediately via IIFE pattern with useRef
+
   // Track if the first tooltip was dismissed (so Profile button appears and flashes)
   const [tooltipDismissed, setTooltipDismissed] = useState(() => {
+    // If we should reset (coming from click-besties-tab), start with false
+    if (initialState.shouldResetTooltip) {
+      return false;
+    }
+    // Otherwise, read from localStorage
     if (typeof window !== 'undefined') {
       return localStorage.getItem('besties_tooltip_dismissed') === 'true';
     }
@@ -61,85 +85,86 @@ const BestiesPage = () => {
   
   // Auto-start tutorial on first visit OR when coming from "click-besties-tab" step
   useEffect(() => {
-    // Check if we're coming from the "Ready to Learn More?" tooltip (click-besties-tab step)
-    const fromClickBestiesTab = typeof window !== 'undefined' && 
-                                localStorage.getItem('bestieCircle_postTutorialStep') === 'click-besties-tab';
+    const fromClickBestiesTab = initialState.fromClickBestiesTab;
     
-    // If coming from click-besties-tab, reset tutorial state to allow it to start
-    if (fromClickBestiesTab && tutorial.isCompleted && !tutorial.tutorialActive && !tutorial.isLoading) {
-      // Reset the tutorial so it can start again
-      const resetAndStart = async () => {
-        await tutorial.resetTutorial();
-        // Reset autoStartAttempted flag
-        autoStartAttempted.current = false;
-        // Small delay to ensure state is updated
-        setTimeout(() => {
-          tutorial.startTutorial();
-          // Reset tooltip dismissed state when tutorial starts
-          setTooltipDismissed(false);
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('besties_tooltip_dismissed');
-            window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
-              detail: { dismissed: false }
-            }));
-          }
-          if (typeof window !== 'undefined' && window.analytics) {
-            window.analytics.track('tutorial_started', { 
-              page: 'besties', 
-              auto_started: true,
-              from_click_besties_tab: true
-            });
-          }
-        }, 200);
-      };
-      resetAndStart();
-      return;
-    }
+    console.log('[Besties Tutorial] Auto-start check:', {
+      fromClickBestiesTab,
+      isLoading: tutorial.isLoading,
+      isCompleted: tutorial.isCompleted,
+      tutorialActive: tutorial.tutorialActive,
+      tooltipDismissed,
+      autoStartAttempted: autoStartAttempted.current
+    });
     
-    // If coming from click-besties-tab, reset autoStartAttempted to allow tutorial to start
-    if (fromClickBestiesTab && autoStartAttempted.current) {
-      autoStartAttempted.current = false;
-    }
+    // Don't run if still loading
+    if (tutorial.isLoading) return;
     
-    // Only auto-start if:
-    // - Tutorial is not loading
-    // - Tutorial is not completed (unless coming from click-besties-tab, handled above)
-    // - Tutorial is not already active
-    // - Not coming from a notification
-    // - (Not already attempted to auto-start OR coming from click-besties-tab step)
-    if (
-      !tutorial.isLoading &&
-      !tutorial.isCompleted &&
-      !tutorial.tutorialActive &&
-      !location.state?.fromNotification &&
-      !location.state?.restartTutorial &&
-      (!autoStartAttempted.current || fromClickBestiesTab)
-    ) {
-      if (!fromClickBestiesTab) {
-        autoStartAttempted.current = true;
-      }
-      // Small delay to ensure page is fully rendered
-      const timer = setTimeout(() => {
+    // If coming from click-besties-tab, always start tutorial (reset if needed)
+    if (fromClickBestiesTab && !tutorial.tutorialActive) {
+      console.log('[Besties Tutorial] Coming from click-besties-tab, starting tutorial...');
+      const startTutorial = async () => {
+        // Reset if previously completed
+        if (tutorial.isCompleted) {
+          console.log('[Besties Tutorial] Tutorial was completed, resetting...');
+          await tutorial.resetTutorial();
+        }
+        // Start tutorial
         tutorial.startTutorial();
-        // Reset tooltip dismissed state when tutorial starts
         setTooltipDismissed(false);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('besties_tooltip_dismissed');
           window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
             detail: { dismissed: false }
           }));
+          if (window.analytics) {
+            window.analytics.track('tutorial_started', { 
+              page: 'besties', 
+              auto_started: true,
+              from_click_besties_tab: true
+            });
+          }
         }
-        if (typeof window !== 'undefined' && window.analytics) {
-          window.analytics.track('tutorial_started', { 
-            page: 'besties', 
-            auto_started: true,
-            from_click_besties_tab: fromClickBestiesTab
-          });
+      };
+      startTutorial();
+      return;
+    }
+    
+    // Normal auto-start for first-time visitors
+    // Only auto-start if:
+    // - Tutorial is not completed
+    // - Tutorial is not already active
+    // - Not coming from a notification
+    // - Haven't already attempted to auto-start
+    if (
+      !tutorial.isCompleted &&
+      !tutorial.tutorialActive &&
+      !location.state?.fromNotification &&
+      !location.state?.restartTutorial &&
+      !autoStartAttempted.current
+    ) {
+      console.log('[Besties Tutorial] First-time visitor, auto-starting tutorial...');
+      autoStartAttempted.current = true;
+      // Small delay to ensure page is fully rendered
+      const timer = setTimeout(() => {
+        tutorial.startTutorial();
+        setTooltipDismissed(false);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('besties_tooltip_dismissed');
+          window.dispatchEvent(new CustomEvent('besties_tooltip_dismissed_changed', {
+            detail: { dismissed: false }
+          }));
+          if (window.analytics) {
+            window.analytics.track('tutorial_started', { 
+              page: 'besties', 
+              auto_started: true,
+              from_click_besties_tab: false
+            });
+          }
         }
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [tutorial, location.state?.fromNotification, location.state?.restartTutorial]);
+  }, [tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, location.state?.fromNotification, location.state?.restartTutorial, tooltipDismissed]);
   
   // Handle tutorial restart from navigation state
   useEffect(() => {
@@ -152,9 +177,10 @@ const BestiesPage = () => {
     }
   }, [location.state, tutorial]);
 
-  // Reset tooltipDismissed when tutorial starts
+  // Reset tooltipDismissed when tutorial starts (backup safety check)
   useEffect(() => {
     if (tutorial.tutorialActive && tutorial.currentStep === 1 && tooltipDismissed) {
+      console.log('[Besties Tutorial] Safety reset: Tutorial is active but tooltip is dismissed, resetting...');
       // Reset tooltip dismissed state when tutorial starts
       setTooltipDismissed(false);
       if (typeof window !== 'undefined') {
@@ -772,7 +798,16 @@ const BestiesPage = () => {
       )}
 
       {/* Tutorial Overlay */}
-      {tutorial.tutorialActive && tutorial.currentStep === 1 && !tooltipDismissed && (
+      {(() => {
+        const shouldRender = tutorial.tutorialActive && tutorial.currentStep === 1 && !tooltipDismissed;
+        console.log('[Besties Tutorial] Overlay render check:', {
+          tutorialActive: tutorial.tutorialActive,
+          currentStep: tutorial.currentStep,
+          tooltipDismissed,
+          shouldRender
+        });
+        return shouldRender;
+      })() && (
         <BestiesTutorialOverlay
           currentStep={tutorial.currentStep}
           onNext={() => {

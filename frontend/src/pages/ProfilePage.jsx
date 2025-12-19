@@ -56,18 +56,32 @@ const ProfilePage = () => {
     const fromBestiesTutorial = location.state?.fromBestiesTutorial || 
                                 (typeof window !== 'undefined' && sessionStorage.getItem('fromBestiesTutorial') === 'true');
     
-    if (fromBestiesTutorial && !tutorial.isLoading && !tutorial.isCompleted && !tutorial.tutorialActive) {
+    if (fromBestiesTutorial && !tutorial.isLoading && !tutorial.tutorialActive) {
       // Clear the flag
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('fromBestiesTutorial');
       }
-      // Auto-start tutorial
-      tutorial.startTutorial();
-      if (typeof window !== 'undefined' && window.analytics) {
-        window.analytics.track('tutorial_started', { page: 'profile', auto_started: true, from: 'besties' });
+      
+      // If tutorial was previously completed, reset it first
+      if (tutorial.isCompleted) {
+        tutorial.resetTutorial().then(() => {
+          // Small delay to ensure state is updated
+          setTimeout(() => {
+            tutorial.startTutorial();
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_started', { page: 'profile', auto_started: true, from: 'besties', reset: true });
+            }
+          }, 200);
+        });
+      } else {
+        // Tutorial not completed, just start it
+        tutorial.startTutorial();
+        if (typeof window !== 'undefined' && window.analytics) {
+          window.analytics.track('tutorial_started', { page: 'profile', auto_started: true, from: 'besties' });
+        }
       }
     }
-  }, [location.state, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, tutorial]);
+  }, [location.state?.fromBestiesTutorial, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, tutorial.startTutorial, tutorial.resetTutorial]);
 
   // Handle tutorial restart from navigation state
   useEffect(() => {
@@ -682,6 +696,10 @@ const ProfilePage = () => {
               // Complete tutorial when Settings is clicked (if tutorial was shown)
               if (!tutorial.isCompleted) {
                 tutorial.completeTutorial();
+              }
+              // Mark that we're coming from Profile tutorial so Settings tutorial auto-starts
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('fromProfileTutorial', 'true');
               }
               navigate('/settings');
             }}

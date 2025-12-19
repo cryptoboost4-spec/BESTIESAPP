@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { db, authService } from '../services/firebase';
@@ -17,15 +17,28 @@ import PreferencesAndQuickAccess from '../components/settings/PreferencesAndQuic
 import LegalSection from '../components/settings/LegalSection';
 import PricingTiers from '../components/settings/PricingTiers';
 import TutorialsSection from '../components/settings/TutorialsSection';
+import { useSettingsTutorialState } from '../hooks/useSettingsTutorialState';
+import SettingsTutorialOverlay from '../components/tutorials/settings/SettingsTutorialOverlay';
 import { FEATURES } from '../config/features';
 
 const SettingsPage = () => {
   const { currentUser, userData } = useAuth();
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [pushNotificationsSupported, setPushNotificationsSupported] = useState(true);
+
+  // Tutorial state
+  const tutorial = useSettingsTutorialState();
+
+  // Refs for tutorial highlighting
+  const notificationSettingsRef = useRef(null);
+  const messengerLinkRef = useRef(null);
+  const privacySettingsRef = useRef(null);
+  const securityPasscodesRef = useRef(null);
+  const preferencesRef = useRef(null);
 
   // SMS popup state
   const [showSMSPopup, setShowSMSPopup] = useState(false);
@@ -84,6 +97,39 @@ const SettingsPage = () => {
       }, 100);
     }
   }, [currentUser]);
+
+  // Auto-start tutorial when coming from Profile page (after clicking Settings button)
+  useEffect(() => {
+    // Check if we're coming from Profile tutorial
+    const fromProfileTutorial = location.state?.fromProfileTutorial || 
+                                (typeof window !== 'undefined' && sessionStorage.getItem('fromProfileTutorial') === 'true');
+    
+    if (fromProfileTutorial && !tutorial.isLoading && !tutorial.tutorialActive) {
+      // Clear the flag
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('fromProfileTutorial');
+      }
+      
+      // If tutorial was previously completed, reset it first
+      if (tutorial.isCompleted) {
+        tutorial.resetTutorial().then(() => {
+          // Small delay to ensure state is updated
+          setTimeout(() => {
+            tutorial.startTutorial();
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_started', { page: 'settings', auto_started: true, from: 'profile', reset: true });
+            }
+          }, 200);
+        });
+      } else {
+        // Tutorial not completed, just start it
+        tutorial.startTutorial();
+        if (typeof window !== 'undefined' && window.analytics) {
+          window.analytics.track('tutorial_started', { page: 'settings', auto_started: true, from: 'profile' });
+        }
+      }
+    }
+  }, [location.state?.fromProfileTutorial, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, tutorial.startTutorial, tutorial.resetTutorial]);
 
   // Timezone detection on mount (if not set)
   useEffect(() => {
@@ -506,7 +552,7 @@ const SettingsPage = () => {
           <p className="text-text-secondary">Manage your account and preferences</p>
         </div>
         {/* Notification Preferences */}
-        <div id="notifications">
+        <div id="notifications" ref={notificationSettingsRef}>
           <NotificationSettings
             userData={userData}
             currentUserId={currentUser.uid}
@@ -523,7 +569,7 @@ const SettingsPage = () => {
 
         {/* Messenger Integration */}
         {FEATURES.messengerAlerts && (
-          <div id="messenger">
+          <div id="messenger" ref={messengerLinkRef}>
             <MessengerLinkDisplay userId={currentUser?.uid} />
           </div>
         )}
@@ -536,14 +582,14 @@ const SettingsPage = () => {
 
 
         {/* Privacy Settings */}
-        <div id="privacy">
+        <div id="privacy" ref={privacySettingsRef}>
           <PrivacySettings userData={userData} currentUser={currentUser} />
         </div>
 
 
 
         {/* Security - Passcodes */}
-        <div id="security">
+        <div id="security" ref={securityPasscodesRef}>
           <SecurityPasscodes
             userData={userData}
             showPasscodeInfo={showPasscodeInfo}
@@ -583,7 +629,7 @@ const SettingsPage = () => {
         <TutorialsSection />
 
         {/* Preferences */}
-        <div>
+        <div ref={preferencesRef}>
           <PreferencesAndQuickAccess
             isDark={isDark}
             toggleDarkMode={toggleDarkMode}
@@ -788,6 +834,52 @@ const SettingsPage = () => {
         onSendTest={handleSendTestAlert}
         loading={loading}
       />
+
+      {/* Tutorial Overlay */}
+      {tutorial.tutorialActive && tutorial.currentStep && (
+        <SettingsTutorialOverlay
+          currentStep={tutorial.currentStep}
+          onNext={() => {
+            if (tutorial.currentStep === 5) {
+              tutorial.completeTutorial();
+            } else {
+              tutorial.nextStep();
+            }
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_step_completed', {
+                page: 'settings',
+                step: tutorial.currentStep,
+                action: 'next'
+              });
+            }
+          }}
+          onBack={() => {
+            if (tutorial.currentStep > 1) {
+              tutorial.setCurrentStep(tutorial.currentStep - 1);
+            }
+          }}
+          onSkip={() => {
+            if (typeof window !== 'undefined' && window.analytics) {
+              window.analytics.track('tutorial_skipped', {
+                page: 'settings',
+                at_step: tutorial.currentStep
+              });
+            }
+            tutorial.skipTutorial();
+          }}
+          isPaused={tutorial.isPaused}
+          onPause={() => tutorial.pauseTutorial()}
+          onResume={() => tutorial.resumeTutorial()}
+          hasMessenger={FEATURES.messengerAlerts}
+          refs={{
+            notificationSettings: notificationSettingsRef,
+            messengerLink: messengerLinkRef,
+            privacySettings: privacySettingsRef,
+            securityPasscodes: securityPasscodesRef,
+            preferences: preferencesRef
+          }}
+        />
+      )}
     </div>
   );
 };
