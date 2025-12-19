@@ -1,8 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const ChallengeProgressCard = ({ challenge, currentUserId, onCancel }) => {
-  const navigate = useNavigate();
 
   // Get challenge template name (we'll need to load this)
   const challengeName = challenge.name || 'Challenge';

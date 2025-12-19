@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, onSnapshot, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import ChallengeLibrary from '../components/challenges/ChallengeLibrary';
 import ActiveChallengesList from '../components/challenges/ActiveChallengesList';
 import ChallengeInvitationModal from '../components/challenges/ChallengeInvitationModal';
 import ChallengeCelebration from '../components/challenges/ChallengeCelebration';
+import ChallengesTutorialOverlay from '../components/tutorials/challenges/ChallengesTutorialOverlay';
 import toast from 'react-hot-toast';
 
 const ChallengesPage = () => {
   const { currentUser, userData } = useAuth();
   const [activeChallenges, setActiveChallenges] = useState([]);
-  const [invitations, setInvitations] = useState([]);
   const [showLibrary, setShowLibrary] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [showCelebration, setShowCelebration] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Load active challenges and invitations
   useEffect(() => {
@@ -99,39 +100,20 @@ const ChallengesPage = () => {
     };
   }, [currentUser, showCelebration]);
 
+  // Check for tutorial
+  useEffect(() => {
+    const tutorialSeen = localStorage.getItem('challengesTutorialSeen') === 'true';
+    if (!tutorialSeen && !loading && currentUser) {
+      // Show tutorial on first visit to challenges page
+      setShowTutorial(true);
+    }
+  }, [loading, currentUser]);
+
   const handleStartChallenge = (template) => {
     setSelectedChallenge(template);
     setShowLibrary(false);
   };
 
-  const handleInviteBestie = async (template, bestieId) => {
-    try {
-      // Create challenge invitation
-      const now = Timestamp.now();
-      const expiresAt = new Date(now.toMillis());
-      expiresAt.setDate(expiresAt.getDate() + template.duration);
-      const expiresAtTimestamp = Timestamp.fromDate(expiresAt);
-
-      await addDoc(collection(db, 'bestie_challenges'), {
-        challengeId: template.id,
-        user1Id: currentUser.uid,
-        user2Id: bestieId,
-        status: 'invited',
-        startedAt: null,
-        expiresAt: expiresAtTimestamp,
-        user1Progress: 0,
-        user2Progress: 0,
-        completedAt: null,
-        target: template.target
-      });
-
-      toast.success('Challenge invitation sent!');
-      setSelectedChallenge(null);
-    } catch (error) {
-      console.error('Error creating challenge:', error);
-      toast.error('Failed to create challenge');
-    }
-  };
 
   const handleAcceptInvitation = async (challengeId) => {
     try {
@@ -171,7 +153,16 @@ const ChallengesPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <>
+      {/* Tutorial */}
+      {showTutorial && (
+        <ChallengesTutorialOverlay
+          isActive={showTutorial}
+          onComplete={() => setShowTutorial(false)}
+        />
+      )}
+
+      <div className="container mx-auto px-4 py-6">
       <h1 className="text-3xl font-display text-gradient mb-6 text-center">
         Bestie Challenges 🏆
       </h1>
@@ -237,7 +228,8 @@ const ChallengesPage = () => {
           challenge={showCelebration}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

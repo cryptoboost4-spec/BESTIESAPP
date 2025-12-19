@@ -6,7 +6,6 @@ import haptic from '../../utils/hapticFeedback';
 
 const ChallengeCelebration = ({ isOpen, onClose, challenge }) => {
   const [template, setTemplate] = useState(null);
-  const [partnerName, setPartnerName] = useState('Your bestie');
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -23,16 +22,7 @@ const ChallengeCelebration = ({ isOpen, onClose, challenge }) => {
           }
         }
 
-        // Load partner name
-        const partnerId = challenge.user1Id === challenge.currentUserId
-          ? challenge.user2Id
-          : challenge.user1Id;
-        if (partnerId) {
-          const partnerDoc = await getDoc(doc(db, 'users', partnerId));
-          if (partnerDoc.exists()) {
-            setPartnerName(partnerDoc.data().displayName || 'Your bestie');
-          }
-        }
+        // Partner name can be loaded if needed in future
       } catch (error) {
         console.error('Error loading celebration data:', error);
       } finally {

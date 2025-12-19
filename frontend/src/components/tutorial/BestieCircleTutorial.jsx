@@ -783,28 +783,6 @@ const MockAvatarSequence = () => {
     )
 }
 
-const FishSchool = () => {
-    return (
-        <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 3 }).map((_, i) => (
-                <motion.div
-                    key={i}
-                    className="absolute top-0 h-[2px] w-4 bg-gradient-to-r from-transparent to-pink-300"
-                    initial={{ left: '-20%' }}
-                    animate={{ left: '120%' }}
-                    transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.4,
-                        ease: "linear"
-                    }}
-                    style={{ borderRadius: '100%' }}
-                />
-            ))}
-        </div>
-    )
-}
-
 const TutorialTooltip = ({ step, onNext }) => {
     const content = {
         [TUTORIAL_STEPS.STEP_1]: { icon: "💜", title: "Your Circle Awaits", text: "You've checked in. Now, meet your safety net. This is where your chosen family lives.", btn: "Reveal" },

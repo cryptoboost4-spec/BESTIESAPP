@@ -7,6 +7,7 @@ import CheckInNoteInput from './CheckInNoteInput';
 import { addDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import haptic from '../../utils/hapticFeedback';
+import CircleCheckInTutorialOverlay from '../tutorials/circleCheckin/CircleCheckInTutorialOverlay';
 
 const CircleCheckInCard = ({ onCheckInComplete }) => {
   const { currentUser, userData } = useAuth();
@@ -17,6 +18,7 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Check if user has checked in today
   useEffect(() => {
@@ -52,7 +54,13 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
     const dismissedKey = `circleCheckInDismissed_${new Date().toDateString()}`;
     const dismissed = localStorage.getItem(dismissedKey) === 'true';
     setIsDismissed(dismissed);
-  }, [currentUser]);
+
+    // Check if tutorial has been seen
+    const tutorialSeen = localStorage.getItem('circleCheckInTutorialSeen') === 'true';
+    if (!tutorialSeen && !hasCheckedInToday) {
+      setShowTutorial(true);
+    }
+  }, [currentUser, hasCheckedInToday]);
 
   const handleDismiss = () => {
     haptic.light();
@@ -114,7 +122,16 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
   }
 
   return (
-    <div className="card p-4 md:p-6 mb-4 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-orange-900/30 border-2 border-purple-200 dark:border-purple-700 relative">
+    <>
+      {/* Tutorial */}
+      {showTutorial && (
+        <CircleCheckInTutorialOverlay
+          isActive={showTutorial}
+          onComplete={() => setShowTutorial(false)}
+        />
+      )}
+
+      <div className="card p-4 md:p-6 mb-4 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-orange-900/30 border-2 border-purple-200 dark:border-purple-700 relative">
       {/* Dismiss button */}
       <button
         onClick={handleDismiss}
@@ -165,7 +182,8 @@ const CircleCheckInCard = ({ onCheckInComplete }) => {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
