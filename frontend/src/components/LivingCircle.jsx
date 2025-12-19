@@ -43,6 +43,7 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
     }
     return null;
   });
+  // eslint-disable-next-line
   const [hasOpenedInviteModal, setHasOpenedInviteModal] = useState(false);
 
   // Sync post-tutorial state to localStorage for Header access

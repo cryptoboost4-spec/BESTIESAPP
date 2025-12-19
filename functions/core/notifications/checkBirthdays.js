@@ -20,16 +20,18 @@ function initializeSendGrid() {
 const db = admin.firestore();
 const APP_URL = functions.config().app?.url || 'https://bestiesapp.web.app';
 
-// Check for birthdays and notify besties daily at midnight
+// Check for birthdays and notify besties daily at 9 AM in their local timezone
 exports.checkBirthdays = functions.pubsub
-  .schedule('0 0 * * *') // Run daily at midnight
-  .timeZone('America/New_York')
+  .schedule('*/15 * * * *') // Run every 15 minutes to catch 9 AM across all timezones
+  .timeZone('UTC')
   .onRun(async (context) => {
     functions.logger.info('🎂 Starting birthday check...');
 
-    const today = new Date();
-    const todayMonth = today.getMonth() + 1; // JavaScript months are 0-indexed
-    const todayDay = today.getDate();
+    const now = new Date();
+    const todayMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
+    const todayDay = now.getDate();
+    const currentHour = now.getUTCHours();
+    const currentMinute = now.getUTCMinutes();
 
     try {
       // Get all users with pagination to prevent unbounded reads
@@ -106,6 +108,24 @@ exports.checkBirthdays = functions.pubsub
 
                 const bestieData = bestieDoc.data();
                 const birthdayName = userData.displayName || 'Your bestie';
+
+                // Check if it's 9 AM in the bestie's timezone
+                const bestieTimezone = bestieData.timezone || 'UTC';
+                const now = new Date();
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                  timeZone: bestieTimezone,
+                  hour: 'numeric',
+                  minute: 'numeric',
+                  hour12: false
+                });
+                const parts = formatter.formatToParts(now);
+                const bestieHour = parseInt(parts.find(p => p.type === 'hour').value);
+                const bestieMinute = parseInt(parts.find(p => p.type === 'minute').value);
+
+                // Only send if it's 9:00-9:14 AM in their timezone (15-minute window)
+                if (bestieHour !== 9 || bestieMinute >= 15) {
+                  continue;
+                }
 
                 // Send push notification if available
                 if (bestieData.fcmToken && bestieData.notificationsEnabled) {

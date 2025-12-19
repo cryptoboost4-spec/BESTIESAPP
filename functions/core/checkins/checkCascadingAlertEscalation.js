@@ -5,19 +5,20 @@ const { sendCascadingAlert } = require('../../utils/notifications');
 const db = admin.firestore();
 
 /**
- * Check for cascading alert escalation every minute
+ * Check for cascading alert escalation with exponential backoff
+ * Intervals: 1min → 3min → 5min → 10min → 15min
  */
 async function checkCascadingAlertEscalationLogic() {
   const now = admin.firestore.Timestamp.now();
-  const oneMinuteAgo = admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() - 60 * 1000)
-  );
 
-  // Find alerted check-ins with current notified bestie that haven't been acknowledged in 1 minute
+  // Exponential backoff intervals in seconds: [60, 180, 300, 600, 900] = 1min, 3min, 5min, 10min, 15min
+  const ESCALATION_INTERVALS = [60, 180, 300, 600, 900];
+
+  // Find alerted check-ins with next escalation time reached
   const checkInsSnapshot = await db.collection('checkins')
     .where('status', '==', 'alerted')
     .where('currentNotifiedBestie', '!=', null)
-    .where('currentNotificationSentAt', '<=', oneMinuteAgo)
+    .where('nextEscalationTime', '<=', now)
     .get();
 
   const escalations = [];
@@ -33,6 +34,21 @@ async function checkCascadingAlertEscalationLogic() {
       await doc.ref.update({
         currentNotifiedBestie: null,
         currentNotificationSentAt: null,
+        nextEscalationTime: null,
+      });
+      continue;
+    }
+
+    // Get current escalation level (default to 0 if not set)
+    const escalationLevel = checkIn.escalationLevel || 0;
+
+    // Stop escalation if we've reached the maximum level (4 = 15min interval)
+    if (escalationLevel >= ESCALATION_INTERVALS.length - 1) {
+      functions.logger.info(`Max escalation level reached for check-in ${checkInId}, stopping escalation`);
+      await doc.ref.update({
+        currentNotifiedBestie: null,
+        currentNotificationSentAt: null,
+        nextEscalationTime: null,
       });
       continue;
     }
@@ -48,16 +64,24 @@ async function checkCascadingAlertEscalationLogic() {
       await doc.ref.update({
         currentNotifiedBestie: null,
         currentNotificationSentAt: null,
+        nextEscalationTime: null,
       });
       continue;
     }
 
     // Escalate to next bestie
     const nextBestieId = remainingBesties[0];
+    const nextEscalationLevel = escalationLevel + 1;
+    const intervalSeconds = ESCALATION_INTERVALS[nextEscalationLevel];
+    const nextEscalationTime = admin.firestore.Timestamp.fromDate(
+      new Date(now.toDate().getTime() + intervalSeconds * 1000)
+    );
 
     await doc.ref.update({
       currentNotifiedBestie: nextBestieId,
       currentNotificationSentAt: now,
+      escalationLevel: nextEscalationLevel,
+      nextEscalationTime: nextEscalationTime,
       notifiedBestieHistory: admin.firestore.FieldValue.arrayUnion(nextBestieId),
     });
 
@@ -67,7 +91,7 @@ async function checkCascadingAlertEscalationLogic() {
 
     escalations.push(sendCascadingAlert(checkInId, checkIn, nextBestieId, userData));
 
-    functions.logger.info(`Escalated check-in ${checkInId} to bestie ${nextBestieId} (${notifiedHistory.length + 1}/${allBesties.length})`);
+    functions.logger.info(`Escalated check-in ${checkInId} to bestie ${nextBestieId} (level ${nextEscalationLevel}, ${intervalSeconds}s interval, ${notifiedHistory.length + 1}/${allBesties.length})`);
   }
 
   await Promise.all(escalations);

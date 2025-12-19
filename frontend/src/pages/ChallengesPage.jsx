@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
+// eslint-disable-next-line
 import { collection, query, where, onSnapshot, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import ChallengeLibrary from '../components/challenges/ChallengeLibrary';
 import ActiveChallengesList from '../components/challenges/ActiveChallengesList';

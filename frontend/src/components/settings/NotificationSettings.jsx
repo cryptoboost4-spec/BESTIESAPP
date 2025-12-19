@@ -22,27 +22,6 @@ const NotificationSettings = ({
       <h2 className="text-xl font-display text-text-primary mb-4">Notifications</h2>
 
       <div className="space-y-4">
-        {/* WhatsApp - Coming Soon */}
-        <div className="flex items-center justify-between opacity-50">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-text-primary flex items-center gap-2 flex-wrap">
-              WhatsApp
-              <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full whitespace-nowrap">Coming Soon</span>
-              <InfoButton 
-                message="Free WhatsApp alerts coming soon." 
-                detailedMessage="Free WhatsApp alerts when besties need help. Coming soon." 
-              />
-            </div>
-            <div className="text-sm text-text-secondary">Integration in development</div>
-          </div>
-          <button
-            className="w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed flex-shrink-0 ml-3"
-            disabled
-          >
-            <div className="w-5 h-5 bg-white dark:bg-gray-300 rounded-full transition-transform translate-x-1" />
-          </button>
-        </div>
-
         {/* Telegram */}
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">

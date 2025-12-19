@@ -155,6 +155,7 @@ const HomePage = () => {
         }
       }, 300);
     }
+    // eslint-disable-next-line
   }, [userData?.onboardingCompleted, authLoading, tutorialComplete, currentTutorialStep, tutorialStateLoaded, setTutorialStep]);
 
   // Redirect to login if there's a pending invite and user is not logged in

@@ -314,10 +314,20 @@ async function sendAlertToBesties(checkInId, checkIn) {
 
   const firstBestieId = checkIn.bestieIds[0];
 
+  // Exponential backoff intervals in seconds: [60, 180, 300, 600, 900] = 1min, 3min, 5min, 10min, 15min
+  const ESCALATION_INTERVALS = [60, 180, 300, 600, 900];
+  const now = admin.firestore.Timestamp.now();
+  const firstIntervalSeconds = ESCALATION_INTERVALS[0]; // 60 seconds (1 minute)
+  const nextEscalationTime = admin.firestore.Timestamp.fromDate(
+    new Date(now.toDate().getTime() + firstIntervalSeconds * 1000)
+  );
+
   // Update check-in with cascading alert fields
   await db.collection('checkins').doc(checkInId).update({
     currentNotifiedBestie: firstBestieId,
-    currentNotificationSentAt: admin.firestore.Timestamp.now(),
+    currentNotificationSentAt: now,
+    escalationLevel: 0,
+    nextEscalationTime: nextEscalationTime,
     notifiedBestieHistory: [firstBestieId],
     acknowledgedBy: [],
   });

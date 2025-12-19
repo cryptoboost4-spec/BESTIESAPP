@@ -14,10 +14,15 @@ exports.cleanupOldData = functions.pubsub
     const sevenDaysAgo = admin.firestore.Timestamp.fromDate(
       new Date(now.toDate().getTime() - 7 * 24 * 60 * 60 * 1000)
     );
+    const thirtyDaysAgo = admin.firestore.Timestamp.fromDate(
+      new Date(now.toDate().getTime() - 30 * 24 * 60 * 60 * 1000)
+    );
 
     let deletedCheckIns = 0;
     let deletedSOS = 0;
     let deletedPhotos = 0;
+    let deletedNotifications = 0;
+    let deletedMessengerContacts = 0;
 
     try {
       // Get all users who DON'T have holdData enabled
@@ -77,13 +82,56 @@ exports.cleanupOldData = functions.pubsub
         }
       }
 
-      functions.logger.info(`Cleanup complete: ${deletedCheckIns} check-ins, ${deletedSOS} SOS, ${deletedPhotos} photos deleted`);
+      // Delete old notifications (30 days)
+      const oldNotifications = await db.collection('notifications')
+        .where('createdAt', '<', thirtyDaysAgo)
+        .get();
+
+      // Delete notifications in batches
+      const BATCH_SIZE = 500;
+      const notificationDocs = oldNotifications.docs;
+      
+      for (let i = 0; i < notificationDocs.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const batchDocs = notificationDocs.slice(i, i + BATCH_SIZE);
+        
+        for (const doc of batchDocs) {
+          batch.delete(doc.ref);
+          deletedNotifications++;
+        }
+        
+        await batch.commit();
+      }
+
+      // Delete expired messenger contacts
+      const expiredMessengerContacts = await db.collection('messengerContacts')
+        .where('expiresAt', '<', now)
+        .get();
+
+      // Delete messenger contacts in batches
+      const messengerContactDocs = expiredMessengerContacts.docs;
+      
+      for (let i = 0; i < messengerContactDocs.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const batchDocs = messengerContactDocs.slice(i, i + BATCH_SIZE);
+        
+        for (const doc of batchDocs) {
+          batch.delete(doc.ref);
+          deletedMessengerContacts++;
+        }
+        
+        await batch.commit();
+      }
+
+      functions.logger.info(`Cleanup complete: ${deletedCheckIns} check-ins, ${deletedSOS} SOS, ${deletedPhotos} photos, ${deletedNotifications} notifications, ${deletedMessengerContacts} messenger contacts deleted`);
 
       return {
         success: true,
         deletedCheckIns,
         deletedSOS,
         deletedPhotos,
+        deletedNotifications,
+        deletedMessengerContacts,
       };
     } catch (error) {
       functions.logger.error('Error during cleanup:', error);

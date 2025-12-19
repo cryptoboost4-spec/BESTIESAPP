@@ -102,6 +102,7 @@ export const useTutorialState = () => {
     return () => {
       isMounted = false;
     };
+  // eslint-disable-next-line
   }, [currentUser?.uid]); // Only depend on uid, not the whole currentUser object
 
   // Safety net: Clean up 'intro' step if it somehow gets into state

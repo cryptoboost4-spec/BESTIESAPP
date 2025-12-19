@@ -123,10 +123,22 @@ const FloatingNotificationBell = () => {
         }
         break;
       case 'checkin_reaction':
-        navigate('/besties');
+        // Navigate to specific check-in if available
+        if (notification.checkInId) {
+          navigate(`/alert/${notification.checkInId}`);
+        } else {
+          navigate('/besties');
+        }
         break;
       case 'attention_response':
-        navigate('/besties');
+        // Navigate to bestie's profile
+        if (notification.userId) {
+          navigate(`/user/${notification.userId}`);
+        } else if (notification.bestieId) {
+          navigate(`/user/${notification.bestieId}`);
+        } else {
+          navigate('/besties');
+        }
         break;
       case 'emergency_sos':
         // Navigate to the person who triggered SOS profile
