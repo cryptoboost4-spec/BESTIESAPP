@@ -325,14 +325,17 @@ const CreateCheckInPage = () => {
       const hasMockBestie = besties.some(b => isMockBestie(b));
 
       // Clear any selected real besties when tutorial starts
-      const realSelectedBesties = selectedBesties.filter(id => {
-        const bestie = besties.find(b => b.id === id);
-        return bestie && !isMockBestie(bestie);
+      setSelectedBesties(prev => {
+        const realSelectedBesties = prev.filter(id => {
+          const bestie = besties.find(b => b.id === id);
+          return bestie && !isMockBestie(bestie);
+        });
+        if (realSelectedBesties.length > 0) {
+          console.log('[Tutorial] Clearing selected real besties:', realSelectedBesties);
+          return prev.filter(id => !realSelectedBesties.includes(id));
+        }
+        return prev;
       });
-      if (realSelectedBesties.length > 0) {
-        console.log('[Tutorial] Clearing selected real besties:', realSelectedBesties);
-        setSelectedBesties(selectedBesties.filter(id => !realSelectedBesties.includes(id)));
-      }
 
       if (!hasMockBestie) {
         // Add mock bestie for tutorial and filter out real besties
