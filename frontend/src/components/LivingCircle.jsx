@@ -20,7 +20,6 @@ import {
 import BestieCircleTutorial from './tutorial/BestieCircleTutorial';
 import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
 import PostTutorialTooltip from './PostTutorialTooltip';
-import AddBestieHighlightOverlay from './AddBestieHighlightOverlay';
 
 const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComplete }) => {
   const navigate = useNavigate();
@@ -83,6 +82,19 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
 
   // Tutorial State
   const diffTutorial = useBestiesTutorialState(); // Renamed to avoid conflicts if any
+
+  // Sync tutorial active state to localStorage for MobileBottomNav to access
+  useEffect(() => {
+    if (diffTutorial.tutorialActive) {
+      localStorage.setItem('bestieCircle_tutorialActive', 'true');
+    } else {
+      localStorage.removeItem('bestieCircle_tutorialActive');
+    }
+    // Cleanup on unmount
+    return () => {
+      localStorage.removeItem('bestieCircle_tutorialActive');
+    };
+  }, [diffTutorial.tutorialActive]);
 
   // Note: Removed useEffect that was clearing postTutorialStep when diffTutorial.isCompleted
   // This was causing the add-bestie tooltip to be immediately cleared after being set

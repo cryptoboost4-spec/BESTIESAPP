@@ -22,12 +22,12 @@ const TUTORIAL_STEPS = {
 };
 
 const STEP_DELAYS = {
-    [TUTORIAL_STEPS.MOMENT_0]: 1800,
-    [TUTORIAL_STEPS.STEP_1]: 2000, // Increased to allow time to see circle reveal
-    [TUTORIAL_STEPS.STEP_2]: 3000, // Increased to allow time to see avatar bloom animation
-    [TUTORIAL_STEPS.STEP_3]: 4000, // Increased to allow time to see status changes
-    [TUTORIAL_STEPS.STEP_4]: 3000, // Increased to allow time to see vibe score animation
-    [TUTORIAL_STEPS.STEP_5]: 2500  // Increased to allow time to see final state
+    [TUTORIAL_STEPS.MOMENT_0]: 800,   // Reduced by 1 second
+    [TUTORIAL_STEPS.STEP_1]: 1000,    // Reduced by 1 second
+    [TUTORIAL_STEPS.STEP_2]: 2000,    // Reduced by 1 second
+    [TUTORIAL_STEPS.STEP_3]: 3000,    // Reduced by 1 second
+    [TUTORIAL_STEPS.STEP_4]: 2000,    // Reduced by 1 second
+    [TUTORIAL_STEPS.STEP_5]: 1500     // Reduced by 1 second
 };
 
 const BestieCircleTutorial = ({ isActive, onComplete, onClose }) => {
