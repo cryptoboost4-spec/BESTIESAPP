@@ -800,13 +800,8 @@ const HomePage = () => {
       )}
 
       {/* Check-In Tutorial - afterSafe step */}
-      {(() => {
-        console.log('[HomePage] Checking afterSafe render:', {
-          currentCheckInTutorialStep,
-          shouldRender: currentCheckInTutorialStep === 'afterSafe'
-        });
-        return currentCheckInTutorialStep === 'afterSafe';
-      })() && (
+      {currentCheckInTutorialStep === 'afterSafe' && (
+        <>
           <CheckInTutorialOverlay
             currentStep="afterSafe"
             onStepComplete={(action) => {
@@ -860,7 +855,8 @@ const HomePage = () => {
               ]
             }}
           />
-        )}
+        </>
+      )}
 
       {/* Step 1: Bestie Circle Tutorial (NEW) - Moved to embedded LivingCircle */}
 
