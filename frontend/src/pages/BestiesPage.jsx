@@ -164,6 +164,7 @@ const BestiesPage = () => {
       }, 500);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, location.state?.fromNotification, location.state?.restartTutorial, tooltipDismissed]);
   
   // Handle tutorial restart from navigation state

@@ -211,6 +211,7 @@ const CheckInTutorialOverlay = ({
         window.removeEventListener('orientationchange', calculatePositions);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightedElementRef, tooltipConfig]);
 
   // Handle tooltip dismiss/continue (for map section)

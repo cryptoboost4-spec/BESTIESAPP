@@ -81,7 +81,8 @@ const ProfilePage = () => {
         }
       }
     }
-  }, [location.state?.fromBestiesTutorial, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, tutorial.startTutorial, tutorial.resetTutorial]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.fromBestiesTutorial, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive]);
 
   // Handle tutorial restart from navigation state
   useEffect(() => {

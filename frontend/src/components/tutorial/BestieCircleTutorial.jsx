@@ -391,15 +391,15 @@ const ConnectionLinesOverlay = memo(({ currentStep }) => {
         })
         , []);
 
-    // Memoize computed values
-    const isTopSlotActive = useMemo(() =>
-        currentStep === TUTORIAL_STEPS.STEP_2 || currentStep === TUTORIAL_STEPS.STEP_3,
-        [currentStep]
-    );
-    const isTopSlotElectric = useMemo(() =>
-        currentStep === TUTORIAL_STEPS.STEP_3,
-        [currentStep]
-    );
+    // Memoize computed values (currently unused but kept for future use)
+    // const isTopSlotActive = useMemo(() =>
+    //     currentStep === TUTORIAL_STEPS.STEP_2 || currentStep === TUTORIAL_STEPS.STEP_3,
+    //     [currentStep]
+    // );
+    // const isTopSlotElectric = useMemo(() =>
+    //     currentStep === TUTORIAL_STEPS.STEP_3,
+    //     [currentStep]
+    // );
 
     return (
         <svg

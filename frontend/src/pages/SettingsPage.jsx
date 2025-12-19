@@ -129,7 +129,8 @@ const SettingsPage = () => {
         }
       }
     }
-  }, [location.state?.fromProfileTutorial, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive, tutorial.startTutorial, tutorial.resetTutorial]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.fromProfileTutorial, tutorial.isLoading, tutorial.isCompleted, tutorial.tutorialActive]);
 
   // Timezone detection on mount (if not set)
   useEffect(() => {
