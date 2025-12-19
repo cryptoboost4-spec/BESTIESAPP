@@ -1157,6 +1157,20 @@ const CreateCheckInPage = () => {
       serverUpdate: async () => {
         setLoading(true);
         try {
+          // Skip Firestore write during tutorial - just simulate success
+          const isTutorialMode = showTutorial && (hasMockBestieSelected || selectedBesties.includes('TUTORIAL_FAKE_BESTIE'));
+
+          if (isTutorialMode) {
+            console.log('[Tutorial] Skipping Firestore write - simulating check-in creation');
+            // Simulate delay for realism
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Set tutorial step to 'checkedIn' to show success screen
+            setCheckInTutorialStep('checkedIn');
+            setLoading(false);
+            return; // Skip the actual Firestore write
+          }
+
           const now = new Date();
           const alertTime = new Date(now.getTime() + duration * 60 * 1000);
 
@@ -1502,8 +1516,8 @@ const CreateCheckInPage = () => {
           });
 
           if (!config) {
-            // checkedIn and afterSafe steps are handled in other components, so null is expected
-            const expectedNullSteps = ['checkedIn', 'afterSafe'];
+            // checkedIn, afterSafe, and final steps are handled differently, so null is expected
+            const expectedNullSteps = ['checkedIn', 'afterSafe', 'final'];
             if (!expectedNullSteps.includes(currentCheckInTutorialStep)) {
               console.error('[Tutorial] Config is null for step:', currentCheckInTutorialStep, {
                 step: currentCheckInTutorialStep,
