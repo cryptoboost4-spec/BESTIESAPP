@@ -1260,7 +1260,12 @@ const CreateCheckInPage = () => {
           // Note: setTimeout is acceptable here as component will unmount on navigation
           // The navigation itself will cancel any pending operations
           setTimeout(() => {
-            navigate('/');
+            console.log('[CreateCheckIn] About to navigate with step:', currentCheckInTutorialStep);
+            // If we're in tutorial mode at 'final' step, set it before navigation
+            if (currentCheckInTutorialStep === 'final') {
+              setCheckInTutorialStep('final'); // Ensure it's persisted
+            }
+            navigate('/', { state: { fromCheckInCreation: true, tutorialActive: currentCheckInTutorialStep === 'final' } });
           }, 1000); // Small delay to show success message
 
           return docRef;

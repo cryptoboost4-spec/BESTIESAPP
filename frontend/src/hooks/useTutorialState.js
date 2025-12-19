@@ -12,6 +12,7 @@ export const useTutorialState = () => {
   const [tutorialComplete, setTutorialComplete] = useState(false);
   const [currentTutorialStep, setCurrentTutorialStep] = useState(null);
   const [tutorialStateLoaded, setTutorialStateLoaded] = useState(false);
+  const [firestoreSynced, setFirestoreSynced] = useState(false);
   const currentStepRef = useRef(null); // Track current step to prevent duplicate updates
 
   // Load initial state from localStorage and Firestore
@@ -19,8 +20,12 @@ export const useTutorialState = () => {
   useEffect(() => {
     if (!currentUser) {
       setTutorialStateLoaded(true);
+      setFirestoreSynced(true); // No Firestore sync needed if no user
       return;
     }
+
+    // Reset firestoreSynced when user changes
+    setFirestoreSynced(false);
 
     // Prevent multiple simultaneous syncs
     let isMounted = true;
@@ -93,6 +98,7 @@ export const useTutorialState = () => {
         if (isMounted) {
           console.log('[useTutorialState] Firestore sync completed, tutorialStateLoaded set to true');
           setTutorialStateLoaded(true);
+          setFirestoreSynced(true);
         }
       }
     };
@@ -102,8 +108,7 @@ export const useTutorialState = () => {
     return () => {
       isMounted = false;
     };
-  // eslint-disable-next-line
-  }, [currentUser?.uid]); // Only depend on uid, not the whole currentUser object
+  }, [currentUser]);
 
   // Safety net: Clean up 'intro' step if it somehow gets into state
   useEffect(() => {
@@ -223,6 +228,7 @@ export const useTutorialState = () => {
     tutorialComplete,
     currentTutorialStep,
     tutorialStateLoaded,
+    firestoreSynced,
     markTutorialComplete,
     setTutorialStep,
     resetTutorial

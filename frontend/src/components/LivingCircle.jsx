@@ -43,8 +43,6 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
     }
     return null;
   });
-  // eslint-disable-next-line
-  const [hasOpenedInviteModal, setHasOpenedInviteModal] = useState(false);
 
   // Sync post-tutorial state to localStorage for Header access
   useEffect(() => {
@@ -64,15 +62,13 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
       }
     };
     
-    // Check on mount and periodically
+    // Check on mount
     checkPostTutorialStep();
-    const interval = setInterval(checkPostTutorialStep, 500);
     
-    // Also listen for storage events (cross-tab)
+    // Only listen for cross-tab changes
     window.addEventListener('storage', checkPostTutorialStep);
     
     return () => {
-      clearInterval(interval);
       window.removeEventListener('storage', checkPostTutorialStep);
     };
   }, [postTutorialStep]);
@@ -510,10 +506,6 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
                   circleBestiesLength={circleBesties.length}
                   setShowShareModal={(show) => {
                     setShowShareModal(show);
-                    // Track modal opening for post-tutorial
-                    if (show && (postTutorialStep === 'waiting-for-modal' || postTutorialStep === 'add-bestie')) {
-                      setHasOpenedInviteModal(true);
-                    }
                   }}
                   buttonRef={emptySlotRefs.current[index]}
                 />
@@ -548,21 +540,13 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
         <BestieCircleShareModal
           onClose={() => {
             setShowShareModal(false);
-            // Track that user opened and closed the modal
+            // Move to next step after modal closes - show tooltip to click Besties tab
             if (postTutorialStep === 'waiting-for-modal') {
-              setHasOpenedInviteModal(true);
-              // Move to next step after modal closes - show tooltip to click Besties tab
               // localStorage will be set by useEffect when postTutorialStep becomes 'click-besties-tab'
               setTimeout(() => {
                 setPostTutorialStep('click-besties-tab');
                 localStorage.setItem('bestieCircle_postTutorialStep', 'click-besties-tab');
               }, 500);
-            }
-          }}
-          onOpen={() => {
-            // Track that user opened the modal
-            if (postTutorialStep === 'waiting-for-modal') {
-              setHasOpenedInviteModal(true);
             }
           }}
           circleCount={circleBesties.length}

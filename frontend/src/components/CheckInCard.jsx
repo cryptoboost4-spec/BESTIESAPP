@@ -56,15 +56,15 @@ const CheckInCard = ({ checkIn }) => {
   const safeButtonRef = useRef(null);
   const [tooltipDismissed, setTooltipDismissed] = useState(false);
 
-  // Debug: Log when tooltip should show
+  // Debug: Log tutorial state updates
   useEffect(() => {
-    if (currentCheckInTutorialStep === 'checkedIn') {
-      console.log('[CheckInCard] checkedIn tooltip should show:', {
-        step: currentCheckInTutorialStep,
-        tooltipDismissed,
-        cardRefExists: !!cardRef.current
-      });
-    }
+    console.log('[CheckInCard] Tutorial state update:', {
+      currentCheckInTutorialStep,
+      shouldShow: currentCheckInTutorialStep === 'checkedIn',
+      tooltipDismissed,
+      cardRefExists: !!cardRef.current,
+      finalShouldRender: currentCheckInTutorialStep === 'checkedIn' && !tooltipDismissed && !!cardRef.current
+    });
   }, [currentCheckInTutorialStep, tooltipDismissed]);
 
   // Sync photo URLs when checkIn prop changes
@@ -682,7 +682,16 @@ const CheckInCard = ({ checkIn }) => {
       />
 
       {/* Tutorial Overlay for checkedIn step */}
-      {currentCheckInTutorialStep === 'checkedIn' && !tooltipDismissed && (
+      {(() => {
+        const shouldRender = currentCheckInTutorialStep === 'checkedIn' && !tooltipDismissed && !!cardRef.current;
+        console.log('[CheckInCard] Render check:', {
+          step: currentCheckInTutorialStep,
+          dismissed: tooltipDismissed,
+          hasRef: !!cardRef.current,
+          shouldRender
+        });
+        return shouldRender;
+      })() && (
         <CheckInTutorialOverlay
           currentStep="checkedIn"
           onStepComplete={(action) => {

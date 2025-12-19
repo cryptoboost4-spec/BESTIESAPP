@@ -35,7 +35,7 @@ const HomePage = () => {
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
-  const { tutorialComplete, currentTutorialStep, tutorialStateLoaded, markTutorialComplete, setTutorialStep } = useTutorialState();
+  const { tutorialComplete, currentTutorialStep, tutorialStateLoaded, firestoreSynced, markTutorialComplete, setTutorialStep } = useTutorialState();
   const { currentCheckInTutorialStep, setCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const livingCircleRef = useRef(null);
@@ -86,12 +86,19 @@ const HomePage = () => {
     }
 
     const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
+    // Check-in tutorial steps that use the same state but should not be validated here
+    const checkInTutorialSteps = ['rideshare', 'walking', 'quickmeet'];
 
     // If tutorial is marked complete but has a step, clear the step
     // But don't clear if onboarding just completed (tutorial is about to start)
     if (tutorialComplete && currentTutorialStep && !onboardingJustCompletedRef.current) {
       console.log('[HomePage] Validation: Tutorial complete but has step, clearing step');
       setTutorialStep(null);
+      return;
+    }
+
+    // Skip validation for check-in tutorial steps (they're managed by check-in tutorial system)
+    if (currentTutorialStep && checkInTutorialSteps.includes(currentTutorialStep)) {
       return;
     }
 
@@ -138,6 +145,7 @@ const HomePage = () => {
     if (authLoading) return;
     if (!userData) return;
     if (!tutorialStateLoaded) return; // Wait for tutorial state to finish loading
+    if (!firestoreSynced) return; // Wait for Firestore sync to complete
     if (tutorialAutoStartAttemptedRef.current) return; // Already attempted, don't try again
     if (currentTutorialStep) return; // Tutorial step already set, don't override
 
@@ -155,8 +163,7 @@ const HomePage = () => {
         }
       }, 300);
     }
-    // eslint-disable-next-line
-  }, [userData?.onboardingCompleted, authLoading, tutorialComplete, currentTutorialStep, tutorialStateLoaded, setTutorialStep]);
+  }, [userData, authLoading, tutorialComplete, currentTutorialStep, tutorialStateLoaded, firestoreSynced, setTutorialStep]);
 
   // Redirect to login if there's a pending invite and user is not logged in
   useEffect(() => {
@@ -197,11 +204,20 @@ const HomePage = () => {
         }
 
         // Detect check-in creation during check-in tutorial (custom check-in)
+        console.log('[HomePage] Checking tutorial transition:', {
+          currentCheckInTutorialStep,
+          checkInsCount: checkIns.length,
+          previousCount: previousCheckInCount,
+          diff: checkIns.length - previousCheckInCount
+        });
+
         if (currentCheckInTutorialStep === 'final' && checkIns.length > previousCheckInCount) {
+          console.log('[HomePage] ✅ Conditions met! Setting checkedIn step');
           // Check-in was just created - show checkedIn tutorial step
           setTimeout(() => {
+            console.log('[HomePage] Executing setCheckInTutorialStep(checkedIn)');
             setCheckInTutorialStep('checkedIn');
-          }, 1000); // Small delay to let user see their check-in
+          }, 2000); // Increased delay to ensure DOM is ready
         }
 
         // Detect check-in completion (check-in disappeared from active list)
