@@ -188,29 +188,30 @@ const Header = () => {
               {/* Notification Bell */}
               <NotificationBell />
 
-              {/* Profile Menu */}
-              <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="hover:opacity-90 transition-opacity relative"
-              >
-                {/* Use animated profile picture if no attention request, otherwise show regular with bubble */}
-                {userData?.requestAttention?.active ? (
-                  <ProfileWithBubble
-                    photoURL={userData?.photoURL}
-                    name={userData?.displayName || 'User'}
-                    requestAttention={userData?.requestAttention}
-                    size="md"
-                    showBubble={true}
-                  />
-                ) : (
-                  <AnimatedProfilePicture
-                    photoURL={userData?.photoURL}
-                    name={userData?.displayName || 'User'}
-                    size="md"
-                  />
-                )}
-              </button>
+              {/* Profile Menu - hidden during tutorials, shown after bestie circle tutorial is complete and user has interacted with post-tutorial tooltip */}
+              {(!postTutorialStep || postTutorialStep === 'null') && bestieCircleTutorialComplete && (
+                <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="hover:opacity-90 transition-opacity relative"
+                >
+                  {/* Use animated profile picture if no attention request, otherwise show regular with bubble */}
+                  {userData?.requestAttention?.active ? (
+                    <ProfileWithBubble
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || 'User'}
+                      requestAttention={userData?.requestAttention}
+                      size="md"
+                      showBubble={true}
+                    />
+                  ) : (
+                    <AnimatedProfilePicture
+                      photoURL={userData?.photoURL}
+                      name={userData?.displayName || 'User'}
+                      size="md"
+                    />
+                  )}
+                </button>
 
               {/* Dropdown Menu */}
               {showProfileMenu && (
@@ -317,6 +318,7 @@ const Header = () => {
                 </div>
               )}
               </div>
+              )}
             </div>
           </div>
         </div>

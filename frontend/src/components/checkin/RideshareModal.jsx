@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
-import TestModeBadge from '../TestModeBadge';
 
 const RideshareModal = ({ onClose, isTutorialMode = false, onTutorialComplete }) => {
   const navigate = useNavigate();
@@ -143,8 +142,6 @@ const RideshareModal = ({ onClose, isTutorialMode = false, onTutorialComplete })
         <h2 id="rideshare-modal-title" className="text-2xl font-display text-text-primary mb-4 flex items-center gap-2">
           <span>🚗</span> Rideshare Check-In
         </h2>
-
-        {isTutorialMode && <TestModeBadge />}
 
         <p className="text-sm text-text-secondary mb-6">
           Enter your vehicle registration and select duration

@@ -568,10 +568,10 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
               if (onTutorialComplete) {
                 onTutorialComplete();
               }
-              // Show tooltip to click Besties tab after tutorial completes
+              // Show tooltip to add bestie after tutorial completes
               setTimeout(() => {
-                setPostTutorialStep('click-besties-tab');
-                localStorage.setItem('bestieCircle_postTutorialStep', 'click-besties-tab');
+                setPostTutorialStep('add-bestie');
+                localStorage.setItem('bestieCircle_postTutorialStep', 'add-bestie');
               }, 500);
             }}
             onClose={() => diffTutorial.setTutorialActive ? diffTutorial.setTutorialActive(false) : null}

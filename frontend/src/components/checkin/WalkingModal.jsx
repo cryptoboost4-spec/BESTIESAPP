@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import haptic from '../../utils/hapticFeedback';
-import TestModeBadge from '../TestModeBadge';
 
 const WalkingModal = ({ onClose, isTutorialMode = false, onTutorialComplete }) => {
   const navigate = useNavigate();
@@ -137,8 +136,6 @@ const WalkingModal = ({ onClose, isTutorialMode = false, onTutorialComplete }) =
         <h2 id="walking-modal-title" className="text-2xl font-display text-text-primary mb-4 flex items-center gap-2">
           <span>🚶‍♀️</span> Walking Alone
         </h2>
-
-        {isTutorialMode && <TestModeBadge />}
 
         <p className="text-sm text-text-secondary mb-6">
           Select duration and start your check-in. You can add location details during your walk.

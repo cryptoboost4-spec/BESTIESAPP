@@ -50,7 +50,7 @@ const HomePage = () => {
       setTimeout(() => {
         livingCircleRef.current?.scrollIntoView({
           behavior: 'smooth',
-          block: 'center'
+          block: 'start'
         });
       }, 500); // Small delay to ensure overlay is rendered
     }

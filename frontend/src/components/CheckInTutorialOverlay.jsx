@@ -375,12 +375,12 @@ const CheckInTutorialOverlay = ({
           {/* Buttons */}
           {tooltipConfig.buttons && tooltipConfig.buttons.length > 0 && (
             <div className="flex flex-col gap-2.5 mt-5">
-              <div className="flex gap-2.5">
+              <div className={`flex ${tooltipConfig.verticalButtons ? 'flex-col' : ''} gap-2.5`}>
                 {tooltipConfig.buttons.map((button, index) => (
                   <button
                     key={index}
                     onClick={() => handleButtonClick(button.action)}
-                    className={`${tooltipConfig.buttons.length === 1 ? 'w-full' : 'flex-1'} group relative px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-lg shadow-pink-500/30 overflow-hidden transform transition-all hover:scale-[1.02] active:scale-95`}
+                    className={`${tooltipConfig.buttons.length === 1 || tooltipConfig.verticalButtons ? 'w-full' : 'flex-1'} group relative px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-lg shadow-pink-500/30 overflow-hidden transform transition-all hover:scale-[1.02] active:scale-95`}
                   >
                     {button.primary ? (
                       <>

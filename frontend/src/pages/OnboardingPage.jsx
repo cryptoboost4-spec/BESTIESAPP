@@ -124,17 +124,6 @@ const OnboardingPage = () => {
     }
   };
 
-  const handleSkipPhoto = async () => {
-    // User wants to skip photo (no photo or doesn't want to use existing one)
-    // If user joined via invite, show welcome screen first
-    if (inviterInfo) {
-      setStep('invite-welcome');
-    } else {
-      // Complete onboarding and go to home
-      await handleFinish();
-    }
-  };
-
   const handleFinish = async () => {
     if (!currentUser) {
       toast.error('Please sign in to continue');
@@ -329,7 +318,7 @@ const OnboardingPage = () => {
                 Use This Photo →
               </button>
 
-              <label className="block w-full mb-3">
+              <label className="block w-full">
                 <div className="btn btn-secondary text-lg py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   {uploading ? 'Uploading...' : '📤 Upload Photo'}
                 </div>
@@ -341,21 +330,11 @@ const OnboardingPage = () => {
                   disabled={uploading}
                 />
               </label>
-
-              <button
-                onClick={handleSkipPhoto}
-                className="w-full btn btn-secondary text-sm py-3 opacity-75 hover:opacity-100 transition-opacity"
-                disabled={uploading}
-                aria-label="Skip photo and continue to setup"
-                title="You can add a photo later in your profile settings"
-              >
-                Skip Photo (Optional) →
-              </button>
             </>
           ) : (
             <>
               {/* User has no photo - show upload as primary action */}
-              <label className="block w-full mb-4">
+              <label className="block w-full">
                 <div className="btn btn-primary text-lg py-4 text-center cursor-pointer">
                   {uploading ? 'Uploading...' : '📤 Upload Photo'}
                 </div>
@@ -367,16 +346,6 @@ const OnboardingPage = () => {
                   disabled={uploading}
                 />
               </label>
-
-              <button
-                onClick={handleSkipPhoto}
-                className="w-full btn btn-secondary text-lg py-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                disabled={uploading}
-                aria-label="Skip photo and continue to setup"
-                title="You can add a photo later in your profile settings"
-              >
-                Skip Photo (Optional) →
-              </button>
             </>
           )}
         </div>
