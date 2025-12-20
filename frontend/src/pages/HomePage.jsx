@@ -43,7 +43,9 @@ const HomePage = () => {
   const livingCircleRef = useRef(null);
   const activeCheckInCardRef = useRef(null);
   const [previousCheckInCount, setPreviousCheckInCount] = useState(0);
-  const [previousCheckInIds, setPreviousCheckInIds] = useState(new Set());
+  // Use ref for previousCheckInIds to avoid re-subscribing Firestore listeners
+  // Sets are compared by reference, causing useEffect to re-run 
+  const previousCheckInIdsRef = useRef(new Set());
   const [showBestieCircleTutorial] = useState(false);
   const [checkedInTooltipDismissed, setCheckedInTooltipDismissed] = useState(false);
 
@@ -249,7 +251,7 @@ const HomePage = () => {
 
         // Detect check-in completion (check-in disappeared from active list)
         const currentCheckInIds = new Set(checkIns.map(c => c.id));
-        const completedCheckInId = Array.from(previousCheckInIds).find(id => !currentCheckInIds.has(id));
+        const completedCheckInId = Array.from(previousCheckInIdsRef.current).find(id => !currentCheckInIds.has(id));
 
         if (completedCheckInId && currentCheckInTutorialStep === 'checkedIn') {
           // Check-in was just completed - show afterSafe tutorial step
@@ -262,7 +264,7 @@ const HomePage = () => {
         }
 
         setPreviousCheckInCount(checkIns.length);
-        setPreviousCheckInIds(currentCheckInIds);
+        previousCheckInIdsRef.current = currentCheckInIds;
         setActiveCheckIns(checkIns);
         setLoading(false);
       },
@@ -346,7 +348,8 @@ const HomePage = () => {
       unsubscribeCheckIns();
       unsubscribeAlerted();
     };
-  }, [currentUser, currentTutorialStep, previousCheckInCount, previousCheckInIds, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
+    // Note: previousCheckInIdsRef is intentionally NOT in dependencies - uses ref to avoid re-subscriptions
+  }, [currentUser, currentTutorialStep, previousCheckInCount, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
 
   // Listen for tutorial check-in completion
   useEffect(() => {
@@ -717,6 +720,7 @@ const HomePage = () => {
               <LivingCircle
                 userId={currentUser?.uid}
                 shouldPlayTutorial={currentCheckInTutorialStep === 'sacredTransition' || currentCheckInTutorialStep === 'bestieCircle'}
+                isModalOpen={isTutorialModalOpen}
                 onTutorialComplete={() => {
                   // Clear the tutorial state completely
                   setCheckInTutorialStep(null);

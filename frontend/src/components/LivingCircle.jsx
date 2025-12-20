@@ -22,7 +22,7 @@ import { useBestiesTutorialState } from '../hooks/useBestiesTutorialState';
 import { useTutorialSystem } from '../hooks/useTutorialSystem';
 import PostTutorialTooltip from './PostTutorialTooltip';
 
-const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComplete }) => {
+const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComplete, isModalOpen = false }) => {
   const navigate = useNavigate();
   const tutorial = useTutorialSystem();
   const [allBesties, setAllBesties] = useState([]);
@@ -590,7 +590,8 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
 
       {/* Post-Tutorial Tooltips */}
       {/* Show tooltip only after tutorial is finished AND circle is visible on home screen */}
-      {postTutorialStep === 'add-bestie' && !loading && !diffTutorial.tutorialActive && (
+      {/* Only show add-bestie tooltip when NO modals are open and tutorial is not active */}
+      {postTutorialStep === 'add-bestie' && !loading && !diffTutorial.tutorialActive && !isModalOpen && !showShareModal && !showReplaceModal && (
         <PostTutorialTooltip
           step="add-bestie"
           onOkay={() => {
@@ -607,7 +608,8 @@ const LivingCircle = ({ userId, onAddClick, shouldPlayTutorial, onTutorialComple
 
       {/* Highlighting overlay removed - was causing visual issues during tutorial */}
 
-      {postTutorialStep === 'click-besties-tab' && !bestiesTooltipDismissed && (
+      {/* Only show click-besties-tab tooltip when NO modals are open and tutorial is not active */}
+      {postTutorialStep === 'click-besties-tab' && !bestiesTooltipDismissed && !diffTutorial.tutorialActive && !isModalOpen && !showShareModal && !showReplaceModal && (
         <PostTutorialTooltip
           step="click-besties-tab"
           onContinue={() => {
