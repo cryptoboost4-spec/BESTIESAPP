@@ -15,6 +15,32 @@ export function useCheckInCompletion(checkInId, currentUser) {
     setShowSafeLoader(true);
 
     try {
+      // Handle tutorial mock check-in locally (skip cloud function)
+      if (checkInId === 'tutorial-mock-checkin') {
+        console.log('[Tutorial] Completing mock check-in locally');
+        setLoading(true);
+
+        // Remove mock check-in from localStorage
+        localStorage.removeItem('tutorial_mock_checkin');
+
+        // Dispatch event to signal check-in was completed
+        window.dispatchEvent(new CustomEvent('tutorial_checkin_completed', {
+          detail: { checkInId: 'tutorial-mock-checkin' }
+        }));
+
+        // Show success message and navigate
+        setTimeout(() => {
+          navigate('/');
+          toast.success('Tutorial complete! You marked yourself safe 💜', {
+            duration: 4000,
+            icon: '✅',
+          });
+        }, 2000);
+
+        setLoading(false);
+        return; // Skip the normal Firestore flow
+      }
+
       setLoading(true);
       const result = await apiService.completeCheckIn({ checkInId: checkInId });
 

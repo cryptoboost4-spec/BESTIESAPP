@@ -201,35 +201,39 @@ const HomePage = () => {
           try {
             const mockCheckIn = JSON.parse(mockCheckInStr);
 
-            // Convert ISO string dates to Timestamp-like objects
-            // CheckInCard expects .toDate() method on these fields
-            if (mockCheckIn.createdAt && typeof mockCheckIn.createdAt === 'string') {
-              const createdDate = new Date(mockCheckIn.createdAt);
-              mockCheckIn.createdAt = {
-                toDate: () => createdDate,
-                seconds: Math.floor(createdDate.getTime() / 1000),
-                nanoseconds: 0
-              };
-            }
-            if (mockCheckIn.lastUpdate && typeof mockCheckIn.lastUpdate === 'string') {
-              const updateDate = new Date(mockCheckIn.lastUpdate);
-              mockCheckIn.lastUpdate = {
-                toDate: () => updateDate,
-                seconds: Math.floor(updateDate.getTime() / 1000),
-                nanoseconds: 0
-              };
-            }
-            if (mockCheckIn.alertTime && typeof mockCheckIn.alertTime === 'string') {
-              const alertDate = new Date(mockCheckIn.alertTime);
-              mockCheckIn.alertTime = {
-                toDate: () => alertDate,
-                seconds: Math.floor(alertDate.getTime() / 1000),
-                nanoseconds: 0
-              };
-            }
+            // Only add if not already in the array (prevent infinite loop)
+            const mockExists = checkIns.some(c => c.id === 'tutorial-mock-checkin');
+            if (!mockExists) {
+              // Convert ISO string dates to Timestamp-like objects
+              // CheckInCard expects .toDate() method on these fields
+              if (mockCheckIn.createdAt && typeof mockCheckIn.createdAt === 'string') {
+                const createdDate = new Date(mockCheckIn.createdAt);
+                mockCheckIn.createdAt = {
+                  toDate: () => createdDate,
+                  seconds: Math.floor(createdDate.getTime() / 1000),
+                  nanoseconds: 0
+                };
+              }
+              if (mockCheckIn.lastUpdate && typeof mockCheckIn.lastUpdate === 'string') {
+                const updateDate = new Date(mockCheckIn.lastUpdate);
+                mockCheckIn.lastUpdate = {
+                  toDate: () => updateDate,
+                  seconds: Math.floor(updateDate.getTime() / 1000),
+                  nanoseconds: 0
+                };
+              }
+              if (mockCheckIn.alertTime && typeof mockCheckIn.alertTime === 'string') {
+                const alertDate = new Date(mockCheckIn.alertTime);
+                mockCheckIn.alertTime = {
+                  toDate: () => alertDate,
+                  seconds: Math.floor(alertDate.getTime() / 1000),
+                  nanoseconds: 0
+                };
+              }
 
-            console.log('[Tutorial] Loading mock check-in from localStorage:', mockCheckIn);
-            checkIns.unshift(mockCheckIn); // Add to beginning of array
+              console.log('[Tutorial] Loading mock check-in from localStorage:', mockCheckIn);
+              checkIns.unshift(mockCheckIn); // Add to beginning of array
+            }
           } catch (e) {
             console.error('[Tutorial] Error parsing mock check-in:', e);
           }
@@ -343,6 +347,24 @@ const HomePage = () => {
       unsubscribeAlerted();
     };
   }, [currentUser, currentTutorialStep, previousCheckInCount, previousCheckInIds, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
+
+  // Listen for tutorial check-in completion
+  useEffect(() => {
+    const handleTutorialCheckInCompleted = (event) => {
+      if (event.detail.checkInId === 'tutorial-mock-checkin' && currentCheckInTutorialStep === 'checkedIn') {
+        console.log('[Tutorial] Tutorial check-in completed, advancing to afterSafe step');
+        setTimeout(() => {
+          setCheckInTutorialStep('afterSafe');
+        }, 100); // Small delay to ensure state is updated
+      }
+    };
+
+    window.addEventListener('tutorial_checkin_completed', handleTutorialCheckInCompleted);
+
+    return () => {
+      window.removeEventListener('tutorial_checkin_completed', handleTutorialCheckInCompleted);
+    };
+  }, [currentCheckInTutorialStep, setCheckInTutorialStep]);
 
   // Load alerts for featured circle besties
   useEffect(() => {
