@@ -960,8 +960,9 @@ const HomePage = () => {
                 // User wants to continue tutorial - scroll to Bestie Circle
                 const circleElement = document.getElementById('living-circle-origin');
                 if (circleElement) {
-                  const yOffset = -100;
-                  const y = circleElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  // Position Living Circle at top of screen, cutting off buttons above
+                  const headerHeight = 80; // Account for fixed header
+                  const y = circleElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
                 // Small delay to let scroll complete before starting tutorial
