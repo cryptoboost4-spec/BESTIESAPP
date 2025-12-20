@@ -202,7 +202,8 @@ const TutorialTooltip = ({
     const viewportHeight = window.innerHeight;
 
     // Dynamically detect bottom nav height - if nav is hidden during tutorial, use 0
-    const bottomNavElement = document.querySelector('nav[class*="bottom"]');
+    // The mobile nav has classes: md:hidden fixed bottom-0
+    const bottomNavElement = document.querySelector('nav.fixed.bottom-0.md\\:hidden');
     const bottomNavHeight = bottomNavElement && bottomNavElement.offsetHeight > 0
       ? bottomNavElement.offsetHeight + 20 // Add padding if nav is visible
       : 20; // Just use padding if nav is hidden
