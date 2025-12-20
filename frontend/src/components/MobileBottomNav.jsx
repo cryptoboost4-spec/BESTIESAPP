@@ -42,10 +42,11 @@ const MobileBottomNav = () => {
 
   // Besties tab should be visible when:
   // 1. Tutorial is actively running (bestieCircle_tutorialActive)
-  // 2. Post-tutorial step is 'click-besties-tab'
-  // 3. Tutorial is completed and no post-tutorial step active (normal state)
+  // 2. Post-tutorial step is 'add-bestie' (just finished tutorial)
+  // 3. Post-tutorial step is 'click-besties-tab' (ready to go to Besties page)
+  // 4. Tutorial is completed and no post-tutorial step active (normal state)
   const isBestieCircleTutorialComplete = bestieCircleTutorialComplete &&
-    (postTutorialStep === 'click-besties-tab' || !postTutorialStep);
+    (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab' || !postTutorialStep);
 
   // Show besties tab during active tutorial OR when complete
   const shouldShowBestiesTab = bestieCircleTutorialActive || isBestieCircleTutorialComplete;

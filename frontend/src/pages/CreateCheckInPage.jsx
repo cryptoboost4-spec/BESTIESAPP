@@ -1165,17 +1165,45 @@ const CreateCheckInPage = () => {
             // Simulate delay for realism
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // Navigate to home page with tutorial state
+            // Create a mock check-in in localStorage for tutorial
+            const now = new Date();
+            const alertTime = new Date(now.getTime() + duration * 60 * 1000);
+
+            const mockCheckIn = {
+              id: 'tutorial-mock-checkin',
+              userId: currentUser.uid,
+              location: locationInput,
+              gpsCoords: gpsCoords || null,
+              duration: duration,
+              alertTime: alertTime.toISOString(),
+              bestieIds: [MOCK_BESTIE.id],
+              notes: notes || null,
+              meetingWith: meetingWith || null,
+              status: 'active',
+              createdAt: now.toISOString(),
+              lastUpdate: now.toISOString(),
+              isTutorial: true,
+              isMock: true
+            };
+
+            // Store mock check-in in localStorage
+            localStorage.setItem('tutorial_mock_checkin', JSON.stringify(mockCheckIn));
+            console.log('[Tutorial] Created mock check-in in localStorage:', mockCheckIn);
+
+            // Set tutorial step to 'checkedIn' so HomePage shows the tutorial overlay
+            setCheckInTutorialStep('checkedIn');
+
+            // Navigate to home page
             setTimeout(() => {
-              console.log('[Tutorial] Navigating to home page after simulated check-in');
+              console.log('[Tutorial] Navigating to home page to show mock check-in');
               navigate('/', {
                 state: {
                   fromCheckInCreation: true,
                   tutorialActive: true,
-                  showCheckInCard: true // Signal to show the check-in card tutorial overlay
+                  showTutorialCheckIn: true // Signal to show the tutorial check-in
                 }
               });
-            }, 500); // Small delay to show any success message
+            }, 500); // Small delay to ensure state is saved
 
             setLoading(false);
             return; // Skip the actual Firestore write

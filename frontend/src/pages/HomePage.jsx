@@ -195,21 +195,56 @@ const HomePage = () => {
           checkIns.push({ id: doc.id, ...doc.data() });
         });
 
+        // Add mock check-in from localStorage during tutorial
+        const mockCheckInStr = localStorage.getItem('tutorial_mock_checkin');
+        if (mockCheckInStr && currentCheckInTutorialStep === 'checkedIn') {
+          try {
+            const mockCheckIn = JSON.parse(mockCheckInStr);
+
+            // Only add if not already in the array (prevent infinite loop)
+            const mockExists = checkIns.some(c => c.id === 'tutorial-mock-checkin');
+            if (!mockExists) {
+              // Convert ISO string dates to Timestamp-like objects
+              // CheckInCard expects .toDate() method on these fields
+              if (mockCheckIn.createdAt && typeof mockCheckIn.createdAt === 'string') {
+                const createdDate = new Date(mockCheckIn.createdAt);
+                mockCheckIn.createdAt = {
+                  toDate: () => createdDate,
+                  seconds: Math.floor(createdDate.getTime() / 1000),
+                  nanoseconds: 0
+                };
+              }
+              if (mockCheckIn.lastUpdate && typeof mockCheckIn.lastUpdate === 'string') {
+                const updateDate = new Date(mockCheckIn.lastUpdate);
+                mockCheckIn.lastUpdate = {
+                  toDate: () => updateDate,
+                  seconds: Math.floor(updateDate.getTime() / 1000),
+                  nanoseconds: 0
+                };
+              }
+              if (mockCheckIn.alertTime && typeof mockCheckIn.alertTime === 'string') {
+                const alertDate = new Date(mockCheckIn.alertTime);
+                mockCheckIn.alertTime = {
+                  toDate: () => alertDate,
+                  seconds: Math.floor(alertDate.getTime() / 1000),
+                  nanoseconds: 0
+                };
+              }
+
+              console.log('[Tutorial] Loading mock check-in from localStorage:', mockCheckIn);
+              checkIns.unshift(mockCheckIn); // Add to beginning of array
+            }
+          } catch (e) {
+            console.error('[Tutorial] Error parsing mock check-in:', e);
+          }
+        }
+
         // Detect check-in creation during tutorial
         if (currentTutorialStep === 'quickCheckIns' && checkIns.length > previousCheckInCount) {
           // Check-in was just created - advance tutorial
           setTimeout(() => {
             setTutorialStep('afterQuickCheckIn');
           }, 1000); // Small delay to let user see their check-in
-        }
-
-        // Detect check-in creation during check-in tutorial (custom check-in)
-        if (currentCheckInTutorialStep === 'final' && checkIns.length > previousCheckInCount) {
-          // Check-in was just created - show checkedIn tutorial step
-          setCheckedInTooltipDismissed(false); // Reset dismissal state for new check-in
-          setTimeout(() => {
-            setCheckInTutorialStep('checkedIn');
-          }, 2000); // Increased delay to ensure DOM is ready
         }
 
         // Detect check-in completion (check-in disappeared from active list)
@@ -219,6 +254,8 @@ const HomePage = () => {
         if (completedCheckInId && currentCheckInTutorialStep === 'checkedIn') {
           // Check-in was just completed - show afterSafe tutorial step
           console.log('[Tutorial] Check-in completed, showing afterSafe tooltip');
+          // Remove mock check-in from localStorage
+          localStorage.removeItem('tutorial_mock_checkin');
           setTimeout(() => {
             setCheckInTutorialStep('afterSafe');
           }, 1000); // Increased from 500ms to ensure navigation completes
@@ -310,6 +347,24 @@ const HomePage = () => {
       unsubscribeAlerted();
     };
   }, [currentUser, currentTutorialStep, previousCheckInCount, previousCheckInIds, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
+
+  // Listen for tutorial check-in completion
+  useEffect(() => {
+    const handleTutorialCheckInCompleted = (event) => {
+      if (event.detail.checkInId === 'tutorial-mock-checkin' && currentCheckInTutorialStep === 'checkedIn') {
+        console.log('[Tutorial] Tutorial check-in completed, advancing to afterSafe step');
+        setTimeout(() => {
+          setCheckInTutorialStep('afterSafe');
+        }, 100); // Small delay to ensure state is updated
+      }
+    };
+
+    window.addEventListener('tutorial_checkin_completed', handleTutorialCheckInCompleted);
+
+    return () => {
+      window.removeEventListener('tutorial_checkin_completed', handleTutorialCheckInCompleted);
+    };
+  }, [currentCheckInTutorialStep, setCheckInTutorialStep]);
 
   // Load alerts for featured circle besties
   useEffect(() => {
@@ -905,8 +960,9 @@ const HomePage = () => {
                 // User wants to continue tutorial - scroll to Bestie Circle
                 const circleElement = document.getElementById('living-circle-origin');
                 if (circleElement) {
-                  const yOffset = -100;
-                  const y = circleElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  // Position Living Circle at top of screen, cutting off buttons above
+                  const headerHeight = 80; // Account for fixed header
+                  const y = circleElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
                 // Small delay to let scroll complete before starting tutorial

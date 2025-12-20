@@ -200,7 +200,14 @@ const TutorialTooltip = ({
     const buttonTop = rect.top;
     const buttonBottom = rect.bottom;
     const viewportHeight = window.innerHeight;
-    const bottomNavHeight = 100; // Increased from 84 for more safety margin
+
+    // Dynamically detect bottom nav height - if nav is hidden during tutorial, use 0
+    // The mobile nav has classes: md:hidden fixed bottom-0
+    const bottomNavElement = document.querySelector('nav.fixed.bottom-0.md\\:hidden');
+    const bottomNavHeight = bottomNavElement && bottomNavElement.offsetHeight > 0
+      ? bottomNavElement.offsetHeight + 20 // Add padding if nav is visible
+      : 20; // Just use padding if nav is hidden
+
     const headerHeight = 80; // Approximate header height + buffer
     const bottomPadding = 20; // Increased from 12 for more clearance
     const minHeight = 150; // Minimum usable tooltip height
