@@ -195,21 +195,24 @@ const HomePage = () => {
           checkIns.push({ id: doc.id, ...doc.data() });
         });
 
+        // Add mock check-in from localStorage during tutorial
+        const mockCheckInStr = localStorage.getItem('tutorial_mock_checkin');
+        if (mockCheckInStr && currentCheckInTutorialStep === 'checkedIn') {
+          try {
+            const mockCheckIn = JSON.parse(mockCheckInStr);
+            console.log('[Tutorial] Loading mock check-in from localStorage:', mockCheckIn);
+            checkIns.unshift(mockCheckIn); // Add to beginning of array
+          } catch (e) {
+            console.error('[Tutorial] Error parsing mock check-in:', e);
+          }
+        }
+
         // Detect check-in creation during tutorial
         if (currentTutorialStep === 'quickCheckIns' && checkIns.length > previousCheckInCount) {
           // Check-in was just created - advance tutorial
           setTimeout(() => {
             setTutorialStep('afterQuickCheckIn');
           }, 1000); // Small delay to let user see their check-in
-        }
-
-        // Detect check-in creation during check-in tutorial (custom check-in)
-        if (currentCheckInTutorialStep === 'final' && checkIns.length > previousCheckInCount) {
-          // Check-in was just created - show checkedIn tutorial step
-          setCheckedInTooltipDismissed(false); // Reset dismissal state for new check-in
-          setTimeout(() => {
-            setCheckInTutorialStep('checkedIn');
-          }, 2000); // Increased delay to ensure DOM is ready
         }
 
         // Detect check-in completion (check-in disappeared from active list)
@@ -219,6 +222,8 @@ const HomePage = () => {
         if (completedCheckInId && currentCheckInTutorialStep === 'checkedIn') {
           // Check-in was just completed - show afterSafe tutorial step
           console.log('[Tutorial] Check-in completed, showing afterSafe tooltip');
+          // Remove mock check-in from localStorage
+          localStorage.removeItem('tutorial_mock_checkin');
           setTimeout(() => {
             setCheckInTutorialStep('afterSafe');
           }, 1000); // Increased from 500ms to ensure navigation completes
