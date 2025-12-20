@@ -200,6 +200,34 @@ const HomePage = () => {
         if (mockCheckInStr && currentCheckInTutorialStep === 'checkedIn') {
           try {
             const mockCheckIn = JSON.parse(mockCheckInStr);
+
+            // Convert ISO string dates to Timestamp-like objects
+            // CheckInCard expects .toDate() method on these fields
+            if (mockCheckIn.createdAt && typeof mockCheckIn.createdAt === 'string') {
+              const createdDate = new Date(mockCheckIn.createdAt);
+              mockCheckIn.createdAt = {
+                toDate: () => createdDate,
+                seconds: Math.floor(createdDate.getTime() / 1000),
+                nanoseconds: 0
+              };
+            }
+            if (mockCheckIn.lastUpdate && typeof mockCheckIn.lastUpdate === 'string') {
+              const updateDate = new Date(mockCheckIn.lastUpdate);
+              mockCheckIn.lastUpdate = {
+                toDate: () => updateDate,
+                seconds: Math.floor(updateDate.getTime() / 1000),
+                nanoseconds: 0
+              };
+            }
+            if (mockCheckIn.alertTime && typeof mockCheckIn.alertTime === 'string') {
+              const alertDate = new Date(mockCheckIn.alertTime);
+              mockCheckIn.alertTime = {
+                toDate: () => alertDate,
+                seconds: Math.floor(alertDate.getTime() / 1000),
+                nanoseconds: 0
+              };
+            }
+
             console.log('[Tutorial] Loading mock check-in from localStorage:', mockCheckIn);
             checkIns.unshift(mockCheckIn); // Add to beginning of array
           } catch (e) {
