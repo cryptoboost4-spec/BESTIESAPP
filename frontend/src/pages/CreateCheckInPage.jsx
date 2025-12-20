@@ -325,14 +325,17 @@ const CreateCheckInPage = () => {
       const hasMockBestie = besties.some(b => isMockBestie(b));
 
       // Clear any selected real besties when tutorial starts
-      const realSelectedBesties = selectedBesties.filter(id => {
-        const bestie = besties.find(b => b.id === id);
-        return bestie && !isMockBestie(bestie);
+      setSelectedBesties(prev => {
+        const realSelectedBesties = prev.filter(id => {
+          const bestie = besties.find(b => b.id === id);
+          return bestie && !isMockBestie(bestie);
+        });
+        if (realSelectedBesties.length > 0) {
+          console.log('[Tutorial] Clearing selected real besties:', realSelectedBesties);
+          return prev.filter(id => !realSelectedBesties.includes(id));
+        }
+        return prev;
       });
-      if (realSelectedBesties.length > 0) {
-        console.log('[Tutorial] Clearing selected real besties:', realSelectedBesties);
-        setSelectedBesties(selectedBesties.filter(id => !realSelectedBesties.includes(id)));
-      }
 
       if (!hasMockBestie) {
         // Add mock bestie for tutorial and filter out real besties
@@ -352,8 +355,7 @@ const CreateCheckInPage = () => {
         setBesties(filteredBesties);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showTutorial, bestiesLoading]);
+  }, [showTutorial, bestiesLoading, besties]);
 
   // Load Messenger contacts when currentUser is available
   useEffect(() => {
@@ -1060,9 +1062,16 @@ const CreateCheckInPage = () => {
       // Skip validation during tutorial mode (for fake bestie or mock bestie)
       const isTutorialMode = showTutorial && !!currentCheckInTutorialStep;
       const hasFakeBestie = selectedBesties.includes('TUTORIAL_FAKE_BESTIE');
-      
-      if (isTutorialMode && (hasFakeBestie || hasMockBestieSelected)) {
-        // Skip SMS credit validation during tutorial
+
+      // ALWAYS skip validation if mock bestie is selected (even if tutorial state is unclear)
+      if (hasFakeBestie || hasMockBestieSelected) {
+        console.log('[Tutorial] Skipping SMS validation - mock bestie selected');
+        return true;
+      }
+
+      // Also skip if in tutorial mode
+      if (isTutorialMode) {
+        console.log('[Tutorial] Skipping SMS validation - tutorial mode');
         return true;
       }
 
@@ -1148,6 +1157,20 @@ const CreateCheckInPage = () => {
       serverUpdate: async () => {
         setLoading(true);
         try {
+          // Skip Firestore write during tutorial - just simulate success
+          const isTutorialMode = showTutorial && (hasMockBestieSelected || selectedBesties.includes('TUTORIAL_FAKE_BESTIE'));
+
+          if (isTutorialMode) {
+            console.log('[Tutorial] Skipping Firestore write - simulating check-in creation');
+            // Simulate delay for realism
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Set tutorial step to 'checkedIn' to show success screen
+            setCheckInTutorialStep('checkedIn');
+            setLoading(false);
+            return; // Skip the actual Firestore write
+          }
+
           const now = new Date();
           const alertTime = new Date(now.getTime() + duration * 60 * 1000);
 
@@ -1493,8 +1516,8 @@ const CreateCheckInPage = () => {
           });
 
           if (!config) {
-            // checkedIn and afterSafe steps are handled in other components, so null is expected
-            const expectedNullSteps = ['checkedIn', 'afterSafe'];
+            // checkedIn, afterSafe, and final steps are handled differently, so null is expected
+            const expectedNullSteps = ['checkedIn', 'afterSafe', 'final'];
             if (!expectedNullSteps.includes(currentCheckInTutorialStep)) {
               console.error('[Tutorial] Config is null for step:', currentCheckInTutorialStep, {
                 step: currentCheckInTutorialStep,
