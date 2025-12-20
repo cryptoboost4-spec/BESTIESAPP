@@ -1165,8 +1165,18 @@ const CreateCheckInPage = () => {
             // Simulate delay for realism
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // Set tutorial step to 'checkedIn' to show success screen
-            setCheckInTutorialStep('checkedIn');
+            // Navigate to home page with tutorial state
+            setTimeout(() => {
+              console.log('[Tutorial] Navigating to home page after simulated check-in');
+              navigate('/', {
+                state: {
+                  fromCheckInCreation: true,
+                  tutorialActive: true,
+                  showCheckInCard: true // Signal to show the check-in card tutorial overlay
+                }
+              });
+            }, 500); // Small delay to show any success message
+
             setLoading(false);
             return; // Skip the actual Firestore write
           }
