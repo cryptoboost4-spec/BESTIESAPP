@@ -78,6 +78,13 @@ const LoginPage = () => {
 
     try {
       const result = await authService.signInWithGoogle();
+
+      if (result.success && result.usedRedirect) {
+        setLoadingStep('Redirecting to Google…');
+        // Full-page redirect; leave loading on until navigation completes
+        return;
+      }
+
       setLoading(false);
       setLoadingStep('');
 

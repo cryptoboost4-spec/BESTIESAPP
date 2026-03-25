@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { auth, db } from '../services/firebase';
+import { auth, db, resolveGoogleRedirectResult } from '../services/firebase';
 import {
   doc,
   onSnapshot,
@@ -271,7 +271,25 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+    let cancelled = false;
+    let unsubscribeAuth = () => {};
+
+    (async () => {
+      try {
+        const redirect = await resolveGoogleRedirectResult();
+        if (cancelled) return;
+        if (!redirect.ok && redirect.error) {
+          toast.error(redirect.error);
+        } else if (redirect.user) {
+          errorTracker.trackFunnelStep('signup', 'complete_google_signin');
+        }
+      } catch (e) {
+        console.error('resolveGoogleRedirectResult:', e);
+      }
+
+      if (cancelled) return;
+
+      unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
 
       if (user) {
@@ -399,8 +417,10 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     });
+    })();
 
     return () => {
+      cancelled = true;
       unsubscribeAuth();
       // Clean up user listener on unmount
       if (userUnsubscribeRef.current) {

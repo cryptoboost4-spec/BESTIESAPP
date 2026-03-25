@@ -195,6 +195,27 @@ const CheckInCard = ({ checkIn }) => {
 
     toast.success(`Extended by ${minutes} minutes!`, { duration: 2000 });
 
+    const isTutorialMock =
+      checkIn.id === 'tutorial-mock-checkin' || checkIn.isMock === true;
+
+    if (isTutorialMock) {
+      try {
+        const raw = localStorage.getItem('tutorial_mock_checkin');
+        if (raw) {
+          const mock = JSON.parse(raw);
+          mock.alertTime = newAlertTime.toISOString();
+          mock.duration = (typeof mock.duration === 'number' ? mock.duration : 0) + minutes;
+          mock.lastUpdate = new Date().toISOString();
+          localStorage.setItem('tutorial_mock_checkin', JSON.stringify(mock));
+        }
+      } catch (e) {
+        console.warn('[Tutorial] Could not persist mock extension:', e);
+      } finally {
+        setExtendingButton(null);
+      }
+      return;
+    }
+
     try {
       const result = await apiService.extendCheckIn({ checkInId: checkIn.id, additionalMinutes: minutes });
 

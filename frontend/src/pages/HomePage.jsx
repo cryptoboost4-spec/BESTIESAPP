@@ -46,6 +46,9 @@ const HomePage = () => {
   // Use ref for previousCheckInIds to avoid re-subscribing Firestore listeners
   // Sets are compared by reference, causing useEffect to re-run 
   const previousCheckInIdsRef = useRef(new Set());
+  // Use refs for tutorial steps to avoid re-subscribing when they change
+  const currentTutorialStepRef = useRef(currentTutorialStep);
+  const currentCheckInTutorialStepRef = useRef(currentCheckInTutorialStep);
   const [showBestieCircleTutorial] = useState(false);
   const [checkedInTooltipDismissed, setCheckedInTooltipDismissed] = useState(false);
 
@@ -61,12 +64,29 @@ const HomePage = () => {
     }
   }, [showBestieCircleTutorial]);
 
+  // Keep refs in sync with state values
+  useEffect(() => {
+    currentTutorialStepRef.current = currentTutorialStep;
+  }, [currentTutorialStep]);
+
+  useEffect(() => {
+    currentCheckInTutorialStepRef.current = currentCheckInTutorialStep;
+  }, [currentCheckInTutorialStep]);
+
+  useEffect(() => {
+    if (currentCheckInTutorialStep !== 'checkedIn') {
+      tutorialMockLoggedRef.current = false;
+    }
+  }, [currentCheckInTutorialStep]);
+
   // Debug logging removed for production
 
   // Track when tutorial step was last set to prevent premature clearing
   const tutorialStepSetTimeRef = useRef(null);
   const onboardingJustCompletedRef = useRef(false);
   const tutorialAutoStartAttemptedRef = useRef(false); // Track if we've already tried to auto-start
+  /** Avoid console spam: mock merge runs on every Firestore snapshot but isn't "new" each time */
+  const tutorialMockLoggedRef = useRef(false);
 
   // Track when onboarding is completed to prevent clearing tutorial step
   useEffect(() => {
@@ -233,7 +253,10 @@ const HomePage = () => {
                 };
               }
 
-              console.log('[Tutorial] Loading mock check-in from localStorage:', mockCheckIn);
+              if (!tutorialMockLoggedRef.current) {
+                console.log('[Tutorial] Loading mock check-in from localStorage:', mockCheckIn);
+                tutorialMockLoggedRef.current = true;
+              }
               checkIns.unshift(mockCheckIn); // Add to beginning of array
             }
           } catch (e) {
@@ -241,8 +264,8 @@ const HomePage = () => {
           }
         }
 
-        // Detect check-in creation during tutorial
-        if (currentTutorialStep === 'quickCheckIns' && checkIns.length > previousCheckInCount) {
+        // Detect check-in creation during tutorial - use ref to get current step
+        if (currentTutorialStepRef.current === 'quickCheckIns' && checkIns.length > previousCheckInCount) {
           // Check-in was just created - advance tutorial
           setTimeout(() => {
             setTutorialStep('afterQuickCheckIn');
@@ -253,11 +276,13 @@ const HomePage = () => {
         const currentCheckInIds = new Set(checkIns.map(c => c.id));
         const completedCheckInId = Array.from(previousCheckInIdsRef.current).find(id => !currentCheckInIds.has(id));
 
-        if (completedCheckInId && currentCheckInTutorialStep === 'checkedIn') {
+        // Use ref to get current check-in tutorial step
+        if (completedCheckInId && currentCheckInTutorialStepRef.current === 'checkedIn') {
           // Check-in was just completed - show afterSafe tutorial step
           console.log('[Tutorial] Check-in completed, showing afterSafe tooltip');
           // Remove mock check-in from localStorage
           localStorage.removeItem('tutorial_mock_checkin');
+          tutorialMockLoggedRef.current = false;
           setTimeout(() => {
             setCheckInTutorialStep('afterSafe');
           }, 1000); // Increased from 500ms to ensure navigation completes
@@ -348,8 +373,9 @@ const HomePage = () => {
       unsubscribeCheckIns();
       unsubscribeAlerted();
     };
-    // Note: previousCheckInIdsRef is intentionally NOT in dependencies - uses ref to avoid re-subscriptions
-  }, [currentUser, currentTutorialStep, previousCheckInCount, setTutorialStep, currentCheckInTutorialStep, setCheckInTutorialStep]);
+    // Note: Tutorial step refs are used inside callbacks to avoid re-subscriptions
+    // previousCheckInCount is still needed because it's used for comparison
+  }, [currentUser, previousCheckInCount, setTutorialStep, setCheckInTutorialStep]);
 
   // Listen for tutorial check-in completion
   useEffect(() => {
