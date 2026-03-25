@@ -397,7 +397,26 @@ export const AuthProvider = ({ children }) => {
               console.log('✅ Push notification foreground listener initialized');
             }
           } else {
-            console.error('❌ User document does not exist at path:', `users/${user.uid}`);
+            console.warn('⚠️ User document missing, auto-creating...', `users/${user.uid}`);
+            // Self-heal: create missing Firestore doc so rules stop denying access
+            setDoc(userRef, {
+              displayName: user.displayName || 'User',
+              email: user.email || null,
+              phoneNumber: user.phoneNumber || null,
+              photoURL: user.photoURL || null,
+              stats: {
+                joinedAt: Timestamp.now(),
+                totalCheckIns: 0,
+                completedCheckIns: 0,
+                alertedCheckIns: 0,
+                totalBesties: 0,
+              },
+              notificationPreferences: { whatsapp: false, email: true },
+              notificationsEnabled: false,
+              smsSubscription: { active: false },
+              lastActive: Timestamp.now(),
+              onboardingCompleted: true, // existing auth user, skip onboarding
+            }).catch((e) => console.error('❌ Failed to auto-create user doc:', e));
           }
           setLoading(false);
         }, (error) => {
