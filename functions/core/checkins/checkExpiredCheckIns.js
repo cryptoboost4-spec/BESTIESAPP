@@ -51,7 +51,19 @@ async function checkExpiredCheckIns(config) {
             functions.logger.info(`Check-in ${checkinId} already alerted, skipping`);
             return;
           }
-          
+
+          // TEST MODE: mark as alerted but send NO notifications
+          if (checkinData.isTest === true) {
+            functions.logger.info(`Test check-in ${checkinId} expired — skipping all notifications`);
+            await db.collection('checkins').doc(checkinId).update({
+              status: 'alerted',
+              alertedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              testAlertSkipped: true,
+            });
+            return;
+          }
+
           const userId = checkinData.userId;
         // Get user data
         const userDoc = await db.collection('users').doc(userId).get();

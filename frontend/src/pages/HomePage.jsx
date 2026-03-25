@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import haptic from '../utils/hapticFeedback';
@@ -36,6 +36,12 @@ const HomePage = () => {
 
   const handleSOS = async () => {
     if (sosLoading || sosTriggered) return;
+    // Check besties exist before confirming
+    const bestieCount = userData?.stats?.totalBesties || 0;
+    if (bestieCount === 0) {
+      toast.error('Add at least one bestie before using SOS — they need to know who to alert!', { duration: 5000 });
+      return;
+    }
     const confirmed = window.confirm('🆘 TRIGGER SOS?\n\nThis will immediately alert all your besties that you need help. Only use in a real emergency.');
     if (!confirmed) return;
     setSosLoading(true);
@@ -51,6 +57,79 @@ const HomePage = () => {
       setSosLoading(false);
     }
   };
+
+  // 60-second alarm when a check-in expires client-side
+  const alarmRef = useRef(null);
+  const [alarmActive, setAlarmActive] = useState(false);
+
+  const playBeep = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch (e) { /* browser may block audio before user interaction */ }
+  }, []);
+
+  const startAlarm = useCallback(() => {
+    if (alarmRef.current) return;
+    setAlarmActive(true);
+    playBeep();
+    const interval = setInterval(playBeep, 1200);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setAlarmActive(false);
+      alarmRef.current = null;
+    }, 60000);
+    alarmRef.current = { interval, timeout };
+  }, [playBeep]);
+
+  const stopAlarm = useCallback(() => {
+    if (alarmRef.current) {
+      clearInterval(alarmRef.current.interval);
+      clearTimeout(alarmRef.current.timeout);
+      alarmRef.current = null;
+    }
+    setAlarmActive(false);
+  }, []);
+
+  // Detect expired non-test check-ins and trigger alarm
+  useEffect(() => {
+    if (activeCheckIns.length === 0) return;
+    const check = () => {
+      const now = Date.now();
+      const expired = activeCheckIns.find(
+        c => !c.isTest && c.alertTime && c.alertTime.toMillis() <= now
+      );
+      if (expired) startAlarm();
+    };
+    check();
+    const interval = setInterval(check, 5000);
+    return () => clearInterval(interval);
+  }, [activeCheckIns, startAlarm]);
+
+  // Stop alarm if all check-ins are resolved
+  useEffect(() => {
+    if (activeCheckIns.length === 0) stopAlarm();
+  }, [activeCheckIns, stopAlarm]);
+
+  // Cleanup alarm on unmount
+  useEffect(() => {
+    return () => {
+      if (alarmRef.current) {
+        clearInterval(alarmRef.current.interval);
+        clearTimeout(alarmRef.current.timeout);
+      }
+    };
+  }, []);
 
   // Invite Friends modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -1085,6 +1164,27 @@ const HomePage = () => {
       */}
 
       {/* Step 1: Bestie Circle Tutorial (NEW) - Moved to embedded LivingCircle */}
+
+      {/* 60-Second Alarm Overlay */}
+      {alarmActive && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-red-900/85 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm mx-4 text-center shadow-2xl border-4 border-red-500">
+            <div className="text-7xl mb-4" style={{ animation: 'pulse 0.6s ease-in-out infinite' }}>🚨</div>
+            <h2 className="text-2xl font-display text-red-700 dark:text-red-400 mb-2">Check-In Expired!</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-2">
+              Your timer has run out. Your besties are being alerted right now.
+            </p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">If you're safe, mark yourself safe on your check-in card.</p>
+            <button
+              onClick={stopAlarm}
+              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-lg mb-3 transition-colors"
+            >
+              Stop Alarm
+            </button>
+            <p className="text-xs text-gray-400">Alarm stops automatically after 60 seconds</p>
+          </div>
+        </div>
+      )}
 
       {/* Tutorial Debug Panel (development only) */}
       {process.env.NODE_ENV === 'development' && (

@@ -1388,7 +1388,7 @@ const CreateCheckInPage = () => {
     <div className="min-h-screen bg-pattern">
       <div className={`max-w-2xl mx-auto p-4 pb-20 ${shouldAutoSubmit ? 'opacity-0 pointer-events-none' : ''}`}>
         {/* Test Mode Toggle */}
-        <div className="mb-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className={`mb-4 rounded-xl p-4 shadow-sm border-2 transition-colors ${isTestMode ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400 dark:border-yellow-600' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-xl shrink-0">
@@ -1396,7 +1396,11 @@ const CreateCheckInPage = () => {
               </div>
               <div>
                 <p className="font-bold text-text-primary dark:text-gray-200">Test Check-in</p>
-                <p className="text-sm text-text-secondary dark:text-gray-400">Practice without affecting stats or alerting friends outside the app</p>
+                <p className="text-sm text-text-secondary dark:text-gray-400">
+                  {isTestMode
+                    ? 'ON — zero notifications sent to besties when this expires'
+                    : 'Practice the safety loop without alerting anyone'}
+                </p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer ml-4">
@@ -1406,9 +1410,15 @@ const CreateCheckInPage = () => {
                 checked={isTestMode}
                 onChange={(e) => setIsTestMode(e.target.checked)}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:bg-gray-700 rounded-full peer dark:border-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-400/30 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
             </label>
           </div>
+          {isTestMode && (
+            <div className="mt-3 flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg px-3 py-2">
+              <span className="text-yellow-700 dark:text-yellow-300 text-sm font-semibold">🧪 TEST MODE ON</span>
+              <span className="text-yellow-600 dark:text-yellow-400 text-xs">— alarm will still sound on your device, but besties get nothing</span>
+            </div>
+          )}
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">

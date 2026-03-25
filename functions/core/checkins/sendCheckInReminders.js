@@ -49,6 +49,11 @@ async function sendCheckInRemindersLogic(config) {
         bodyText = `Your check-in at ${checkIn.location} expires in 1 minute! Please mark yourself safe.`;
       }
 
+      // Skip test check-ins — no reminder notifications in test mode
+      if (checkIn.isTest === true) {
+        continue;
+      }
+
       // Skip if no matching reminder logic
       if (!reminderType) {
         continue;
