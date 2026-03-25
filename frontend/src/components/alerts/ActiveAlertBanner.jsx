@@ -23,14 +23,14 @@ export default function ActiveAlertBanner() {
 
     const unsubscribe = onSnapshot(alertsQuery, (snapshot) => {
       const alerts = [];
-      
+
       snapshot.forEach((doc) => {
         const data = doc.data();
-        
+
         // Show if: user created it OR user is a selected bestie
         const isUserAlert = data.userId === currentUser.uid;
         const isBestieAlert = data.bestieIds?.includes(currentUser.uid);
-        
+
         if (isUserAlert || isBestieAlert) {
           alerts.push({
             id: doc.id,
@@ -48,7 +48,7 @@ export default function ActiveAlertBanner() {
           return bTime - aTime;
         });
         setActiveAlert(alerts[0]);
-        
+
         // Auto-mark as viewed if user is a bestie (not the creator)
         if (!alerts[0].isUserAlert) {
           markAsViewed(alerts[0].id);
@@ -56,7 +56,10 @@ export default function ActiveAlertBanner() {
       } else {
         setActiveAlert(null);
       }
-      
+
+      setLoading(false);
+    }, (error) => {
+      console.error('Error loading active alerts:', error);
       setLoading(false);
     });
 

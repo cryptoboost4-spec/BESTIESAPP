@@ -252,7 +252,7 @@ function App() {
     <ErrorBoundary>
       <DarkModeProvider>
         <AuthProvider>
-          <Router>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <DeepLinkHandler />
             <RouteTracker />
             <ScrollToTop />

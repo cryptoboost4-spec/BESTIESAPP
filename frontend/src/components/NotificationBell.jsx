@@ -44,6 +44,8 @@ const NotificationBell = () => {
 
       setNotifications(notifs);
       setUnreadCount(notifs.filter(n => !n.read).length);
+    }, (error) => {
+      console.error('Error loading notifications:', error);
     });
 
     return () => unsubscribe();

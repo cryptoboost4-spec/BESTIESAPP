@@ -147,6 +147,9 @@ const BestiesPage = () => {
       }).catch((error) => {
         console.error('Error loading featuredCircle:', error);
       });
+    }, (error) => {
+      console.error('Error loading besties:', error);
+      setLoading(false);
     });
 
     const pendingQuery = query(
@@ -161,6 +164,8 @@ const BestiesPage = () => {
         requests.push({ id: doc.id, ...doc.data() });
       });
       setPendingRequests(requests);
+    }, (error) => {
+      console.error('Error loading pending bestie requests:', error);
     });
 
     return () => {
