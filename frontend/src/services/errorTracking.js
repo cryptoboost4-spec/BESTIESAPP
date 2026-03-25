@@ -109,7 +109,7 @@ class ErrorTracker {
             type: 'slow_resource',
             name: entry.name,
             duration: entry.duration,
-            size: entry.transferSize,
+            size: entry.transferSize ?? null,
           });
         }
       }

@@ -12,7 +12,8 @@ import { DarkModeProvider } from './contexts/DarkModeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import AdminRoute from './components/AdminRoute';
 import ScrollToTop from './components/ScrollToTop';
-import MilestoneCelebration from './components/MilestoneCelebration';
+// eslint-disable-next-line no-unused-vars
+import MilestoneCelebration from './components/MilestoneCelebration'; // hidden in MVP
 import BestieCelebrationModal from './components/BestieCelebrationModal';
 import FloatingNotificationBell from './components/FloatingNotificationBell';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -185,7 +186,7 @@ function App() {
             <DeepLinkHandler />
             <RouteTracker />
             <ScrollToTop />
-            <MilestoneCelebration />
+            {/* <MilestoneCelebration /> */}{/* hidden in MVP - causes permission-denied errors */}
             <BestieCelebrationModal />
             {user && (
               <>
