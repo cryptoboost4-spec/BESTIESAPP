@@ -19,6 +19,15 @@ import notificationService from '../services/notifications';
 
 const AuthContext = createContext();
 
+// getDoc uses Firebase's internal snapshot listener which logs "Uncaught Error in
+// snapshot listener" before our try-catch runs. Using onSnapshot with an explicit
+// error callback prevents that internal log while still rejecting the Promise.
+function getDocOnce(ref) {
+  return new Promise((resolve, reject) => {
+    const unsub = onSnapshot(ref, (snap) => { unsub(); resolve(snap); }, (err) => { unsub(); reject(err); });
+  });
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');
@@ -297,12 +306,10 @@ export const AuthProvider = ({ children }) => {
         // Ensure the auth token is propagated to Firestore before making requests.
         // onAuthStateChanged can fire before Firestore receives the token, causing
         // permission-denied errors on the very first read.
-        try { await user.getIdToken(); } catch (e) { /* non-fatal */ }
-
         const userRef = doc(db, 'users', user.uid);
         let userSnap;
         try {
-        userSnap = await getDoc(userRef);
+        userSnap = await getDocOnce(userRef);
 
         const isNewUser = !userSnap.exists();
 
