@@ -45,7 +45,7 @@ const PostReactions = ({ postId, initialCounts }) => {
       if (docSnap.exists()) {
         setReactions(docSnap.data().reactionCounts || { heart: 0, laugh: 0, fire: 0 });
       }
-    });
+    }, (error) => { console.error('Error loading post reactions:', error); });
 
     return () => unsubscribe();
   }, [postId]);

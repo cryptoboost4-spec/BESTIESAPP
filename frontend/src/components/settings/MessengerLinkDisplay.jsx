@@ -26,7 +26,7 @@ const MessengerLinkDisplay = ({ userId }) => {
         doc.data().expiresAt?.toMillis() > now
       ).length;
       setActiveContactCount(activeCount);
-    });
+    }, (error) => { console.error('Error loading messenger contacts:', error); });
 
     return () => unsubscribe();
   }, [userId]);

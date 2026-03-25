@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { loadTutorialState, saveTutorialState } from '../utils/tutorialHelpers';
+import { getDocOnce } from '../utils/firestoreHelpers';
 
 /**
  * Hook to manage Besties page tutorial state
@@ -37,9 +38,7 @@ export const useBestiesTutorialState = () => {
       // from logging "Uncaught Error in snapshot listener" before our catch runs.
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-        const docSnap = await new Promise((resolve, reject) => {
-          const unsub = onSnapshot(tutorialsRef, (s) => { unsub(); resolve(s); }, (e) => { unsub(); reject(e); });
-        });
+        const docSnap = await getDocOnce(tutorialsRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.besties?.completed) {

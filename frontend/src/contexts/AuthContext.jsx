@@ -16,17 +16,9 @@ import {
 import toast from 'react-hot-toast';
 import errorTracker from '../services/errorTracking';
 import notificationService from '../services/notifications';
+import { getDocOnce } from '../utils/firestoreHelpers';
 
 const AuthContext = createContext();
-
-// getDoc uses Firebase's internal snapshot listener which logs "Uncaught Error in
-// snapshot listener" before our try-catch runs. Using onSnapshot with an explicit
-// error callback prevents that internal log while still rejecting the Promise.
-function getDocOnce(ref) {
-  return new Promise((resolve, reject) => {
-    const unsub = onSnapshot(ref, (snap) => { unsub(); resolve(snap); }, (err) => { unsub(); reject(err); });
-  });
-}
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

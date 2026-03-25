@@ -43,7 +43,7 @@ const ChallengesPage = () => {
         return combined;
       });
       setLoading(false);
-    });
+    }, (error) => { console.error('Error loading challenges (user1):', error); setLoading(false); });
 
     const unsubscribe2 = onSnapshot(activeQuery2, (snapshot) => {
       const challenges = [];
@@ -55,7 +55,7 @@ const ChallengesPage = () => {
         return combined;
       });
       setLoading(false);
-    });
+    }, (error) => { console.error('Error loading challenges (user2):', error); setLoading(false); });
 
     // Check for celebration (completed challenges)
     const completedQuery1 = query(
@@ -79,7 +79,7 @@ const ChallengesPage = () => {
           setShowCelebration(challenge);
         }
       });
-    });
+    }, (error) => { console.error('Error loading completed challenges (user1):', error); });
 
     const unsubscribe4 = onSnapshot(completedQuery2, (snapshot) => {
       snapshot.forEach((doc) => {
@@ -88,7 +88,7 @@ const ChallengesPage = () => {
           setShowCelebration(challenge);
         }
       });
-    });
+    }, (error) => { console.error('Error loading completed challenges (user2):', error); });
 
     return () => {
       unsubscribe1();

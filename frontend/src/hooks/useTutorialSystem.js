@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getDocOnce } from '../utils/firestoreHelpers';
 
 /**
  * Unified Tutorial System Hook
@@ -202,7 +203,7 @@ export const useTutorialSystem = () => {
     const syncFromFirestore = async () => {
       try {
         const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
+        const userSnap = await getDocOnce(userRef);
 
         if (!userSnap.exists()) {
           console.log('[TutorialSystem] User doc does not exist, using localStorage state');

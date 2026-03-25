@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { loadTutorialState, saveTutorialState } from '../utils/tutorialHelpers';
+import { getDocOnce } from '../utils/firestoreHelpers';
 
 /**
  * Hook to manage Settings page tutorial state
@@ -34,7 +35,7 @@ export const useSettingsTutorialState = () => {
       // Check Firestore (cross-device sync)
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-        const docSnap = await getDoc(tutorialsRef);
+        const docSnap = await getDocOnce(tutorialsRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.settings?.completed) {

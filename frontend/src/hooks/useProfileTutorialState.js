@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { loadTutorialState, saveTutorialState } from '../utils/tutorialHelpers';
+import { getDocOnce } from '../utils/firestoreHelpers';
 
 /**
  * Hook to manage Profile page tutorial state
@@ -35,7 +36,7 @@ export const useProfileTutorialState = () => {
       // Firestore is optional - tutorial works fine with localStorage only
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-        const docSnap = await getDoc(tutorialsRef);
+        const docSnap = await getDocOnce(tutorialsRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.profile?.completed) {

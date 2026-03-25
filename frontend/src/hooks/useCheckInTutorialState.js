@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getDocOnce } from '../utils/firestoreHelpers';
 
 // Valid steps for check-in tutorial (constant)
 const VALID_STEPS = [
@@ -51,7 +52,7 @@ export const useCheckInTutorialState = () => {
       try {
         console.log('[Tutorial] Starting Firestore sync...');
         const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
+        const userSnap = await getDocOnce(userRef);
 
         if (userSnap.exists()) {
           const data = userSnap.data();

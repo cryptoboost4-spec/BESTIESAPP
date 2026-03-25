@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getDocOnce } from '../utils/firestoreHelpers';
 
 /**
  * Hook to manage tutorial state in both localStorage and Firestore
@@ -49,8 +50,8 @@ export const useTutorialState = () => {
     const syncWithFirestore = async () => {
       try {
         const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        
+        const userSnap = await getDocOnce(userRef);
+
         if (!isMounted) return; // Component unmounted, don't update state
         
         if (userSnap.exists()) {
