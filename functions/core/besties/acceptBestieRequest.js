@@ -42,9 +42,11 @@ exports.acceptBestieRequest = functions.https.onCall(async (data, context) => {
     const recipientRef = db.collection('users').doc(currentBestieData.recipientId);
     
     // Update bestie status atomically
+    // isFavorite: true by default — all accepted besties are in your emergency circle
     transaction.update(bestieRef, {
       status: 'accepted',
       acceptedAt: admin.firestore.Timestamp.now(),
+      isFavorite: true,
     });
     
     // CRITICAL: Update bestieUserIds synchronously in transaction to prevent race condition
