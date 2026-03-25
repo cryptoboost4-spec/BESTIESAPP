@@ -78,57 +78,82 @@ function RouteTracker() {
 function ConditionalMobileNav() {
   const location = useLocation();
   const [shouldShow, setShouldShow] = useState(false);
-  
+
   useEffect(() => {
     const isOnboarding = location.pathname === '/onboarding';
-    
+    const isOnBestiesPage = location.pathname === '/besties';
+    const isOnProfilePage = location.pathname === '/profile';
+
     // Hide during onboarding
     if (isOnboarding) {
       setShouldShow(false);
       return;
     }
-    
-    // Check if bestie circle tutorial is active or completed
-    const checkBestieTutorialStatus = () => {
+
+    // ALWAYS show on besties and profile pages
+    if (isOnBestiesPage || isOnProfilePage) {
+      setShouldShow(true);
+      return;
+    }
+
+    // For home page: only show nav when we're in active post-tutorial flow
+    // (meaning user just finished bestie circle tutorial and we're guiding them to Besties page)
+    const checkShouldShowOnHome = () => {
       if (typeof window === 'undefined') return false;
-      
+
+      // Check for active post-tutorial step in legacy key
       const postTutorialStep = localStorage.getItem('bestieCircle_postTutorialStep');
-      const isBestieCircleTutorialComplete = localStorage.getItem('bestieCircle_tutorial_complete') === 'true';
-      const bestieCircleTutorialActive = postTutorialStep && postTutorialStep !== 'complete';
-      
-      // Show nav when besties tutorial is active or complete
-      return bestieCircleTutorialActive || isBestieCircleTutorialComplete;
+      if (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab') {
+        return true;
+      }
+
+      // Also check the unified tutorial system state for active post-tutorial step
+      try {
+        const unifiedState = localStorage.getItem('_tutorial_system_state');
+        if (unifiedState) {
+          const parsed = JSON.parse(unifiedState);
+          const step = parsed?.bestieCircle?.postTutorialStep;
+          if (step === 'add-bestie' || step === 'click-besties-tab') {
+            return true;
+          }
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+
+      // Don't show nav on home during tutorial - only when explicitly in post-tutorial flow
+      return false;
     };
-    
+
     const updateVisibility = () => {
-      setShouldShow(checkBestieTutorialStatus());
+      setShouldShow(checkShouldShowOnHome());
     };
-    
+
     // Initial check
     updateVisibility();
-    
+
     // Listen for tutorial state changes
     const handleStorageChange = () => {
       updateVisibility();
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('bestieCircle_postTutorialStep_changed', handleStorageChange);
-    
+
     // Also check periodically for same-tab updates
     const interval = setInterval(updateVisibility, 100);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('bestieCircle_postTutorialStep_changed', handleStorageChange);
       clearInterval(interval);
     };
   }, [location.pathname]);
-  
+
   if (!shouldShow) {
     return null;
   }
-  
+
   return <MobileBottomNav />;
 }
 
@@ -289,10 +314,10 @@ function App() {
                     path="/profile"
                     element={user ? <ProfilePage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/user/:userId"
                     element={user ? <ViewUserProfilePage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/edit-profile"
                     element={user ? <EditProfilePage /> : <Navigate to="/login" />}
@@ -309,10 +334,10 @@ function App() {
                     path="/badges"
                     element={user ? <BadgesPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/history"
                     element={user ? <CheckInHistoryPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/templates"
                     element={user ? <TemplatesPage /> : <Navigate to="/login" />}
@@ -325,26 +350,26 @@ function App() {
                     path="/export-data"
                     element={user ? <ExportDataPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/social-feed"
                     element={user ? <SocialFeedPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/about"
                     element={user ? <AboutBestiesPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/circle-health"
                     element={user ? <CircleHealthPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/data-policy"
                     element={user ? <DataPolicyPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/challenges"
                     element={user ? <ChallengesPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
 
                   {/* Admin-only routes */}
                   <Route

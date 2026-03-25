@@ -6,7 +6,7 @@ import { doc, getDoc, collection, query, where, getDocs, onSnapshot, limit, Time
 import SocialShareCardsModal from '../components/SocialShareCardsModal';
 import ConfettiCelebration from '../components/ConfettiCelebration';
 import ProfileCard from '../components/profile/ProfileCard';
-import ProfileCompletion from '../components/profile/ProfileCompletion';
+
 import LoginStreak from '../components/profile/LoginStreak';
 // import BestieCircleStatus from '../components/BestieCircleStatus'; // Removed from Profile Page per user request
 import BadgesSection from '../components/profile/BadgesSection';
@@ -57,7 +57,7 @@ const ProfilePage = () => {
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
   const customizerButtonRef = useRef(null);
-  const profileCompletionRef = useRef(null);
+  const customizerButtonRef = useRef(null);
   const badgesSectionRef = useRef(null);
   const statsSectionRef = useRef(null);
   const settingsButtonRef = useRef(null);
@@ -587,15 +587,7 @@ const ProfilePage = () => {
           />
         </div>
 
-        {/* Profile Completion */}
-        <div ref={profileCompletionRef}>
-          <ProfileCompletion
-            profileCompletion={profileCompletion}
-            animatedProgress={animatedProgress}
-            onTaskNavigation={handleTaskNavigation}
-            disableInteractions={false}
-          />
-        </div>
+
 
         {/* Request Support Section */}
         <RequestSupportSection />

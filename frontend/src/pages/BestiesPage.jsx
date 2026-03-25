@@ -17,15 +17,12 @@ import {
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
-import ActivityFeed from '../components/besties/ActivityFeed';
 import CreatePostModal from '../components/CreatePostModal';
-import BestiesGrid from '../components/besties/BestiesGrid';
-import CommentsModal from '../components/besties/CommentsModal';
-import CircleCheckInCard from '../components/circleCheckin/CircleCheckInCard';
 import { useActivityFeed } from '../hooks/useActivityFeed';
 import { useSimpleTutorial } from '../hooks/useSimpleTutorial';
 import BestiesTutorialOverlay from '../components/tutorials/besties/BestiesTutorialOverlay';
 import { clearAllTutorialState } from '../utils/tutorialHelpers';
+import { useTutorialSystem } from '../hooks/useTutorialSystem';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -43,7 +40,7 @@ const BestiesPage = () => {
 
   // Simple tutorial state - just tracks if tutorial has been shown
   const { showTutorial, completeTutorial } = useSimpleTutorial('besties');
-  
+
   // Track if tooltip was dismissed (for Profile button flashing)
   const [tooltipDismissed, setTooltipDismissed] = useState(false);
 
@@ -51,6 +48,16 @@ const BestiesPage = () => {
   useEffect(() => {
     console.log('[Besties Tutorial] State:', { showTutorial, tooltipDismissed });
   }, [showTutorial, tooltipDismissed]);
+
+  // Clear stale postTutorialStep when landing on this page
+  // This fixes the issue where the nav shows on home page due to Firestore syncing old values
+  const { setPostTutorialStep } = useTutorialSystem();
+  useEffect(() => {
+    // Clear both the legacy localStorage key and the unified system
+    localStorage.removeItem('bestieCircle_postTutorialStep');
+    setPostTutorialStep(null);
+    console.log('[BestiesPage] Cleared stale postTutorialStep');
+  }, [setPostTutorialStep]);
 
   // Refs for highlighted elements (kept for potential future use)
   const activityFeedRef = useRef(null);
@@ -387,7 +394,7 @@ const BestiesPage = () => {
       const bInCircle = featuredCircle.includes(b.userId);
       if (aInCircle && !bInCircle) return -1;
       if (!aInCircle && bInCircle) return 1;
-      
+
       // Then favorites (for backward compatibility)
       if (a.isFavorite && !b.isFavorite) return -1;
       if (!a.isFavorite && b.isFavorite) return 1;
@@ -444,49 +451,7 @@ const BestiesPage = () => {
           besties={besties}
         />
 
-        {/* Activity Feed - Moved to top */}
-        <div ref={activityFeedRef} className="mb-6">
-          {/* Circle Check-In Card */}
-          <CircleCheckInCard />
 
-          {/* Activity Feed Header with Create Post Button */}
-          <div className="flex items-center justify-between mb-4 mt-6">
-            <h2 className="text-lg md:text-xl font-display text-text-primary">
-              📰 Activity Feed
-            </h2>
-            <button
-              ref={postButtonRef}
-              onClick={() => {
-                setShowCreatePostModal(true);
-              }}
-              className="btn btn-primary px-4 py-2 text-sm font-semibold"
-              aria-label="Create a new post"
-            >
-              ✍️ Post
-            </button>
-          </div>
-
-          {/* Activity Feed */}
-          {!activityLoading && (
-            <ActivityFeed
-              activityFeed={activityFeed.filter(activity => {
-                const isInMissedCheckIns = missedCheckIns.some(m => 
-                  m.userId === activity.userId && activity.status === 'alerted'
-                );
-                const isInAttentionRequests = requestsForAttention.some(r => 
-                  r.userId === activity.userId && activity.type === 'checkin'
-                );
-                return !isInMissedCheckIns && !isInAttentionRequests;
-              })}
-              reactions={reactions}
-              addReaction={addReaction}
-              setSelectedCheckIn={setSelectedCheckIn}
-              setShowComments={setShowComments}
-              getTimeAgo={getTimeAgo}
-              initialPostId={selectedPostId}
-            />
-          )}
-        </div>
 
         {/* Besties Section */}
         <div className="space-y-6">
@@ -503,40 +468,10 @@ const BestiesPage = () => {
 
       </div>
 
-      {/* Comments Modal */}
-      {showComments && selectedCheckIn && (
-        <CommentsModal
-          selectedCheckIn={selectedCheckIn}
-          comments={comments}
-          newComment={newComment}
-          setNewComment={setNewComment}
-          onAddComment={addComment}
-          onClose={() => {
-            setShowComments(false);
-            setSelectedCheckIn(null);
-            setComments([]);
-            setNewComment('');
-          }}
-        />
-      )}
-
       {/* Add Bestie Modal */}
       {showAddModal && (
-        <AddBestieModal 
+        <AddBestieModal
           onClose={() => setShowAddModal(false)}
-        />
-      )}
-
-      {/* Create Post Modal */}
-      {showCreatePostModal && (
-        <CreatePostModal
-          onClose={() => {
-            setShowCreatePostModal(false);
-          }}
-          onPostCreated={() => {
-            setShowCreatePostModal(false);
-            // Note: Activity feed will update automatically via useActivityFeed hook
-          }}
         />
       )}
 
@@ -558,7 +493,7 @@ const BestiesPage = () => {
               }));
             }
           }}
-          onBack={() => {}}
+          onBack={() => { }}
           onSkip={() => {
             // Same as "Got it"
             setTooltipDismissed(true);

@@ -173,16 +173,6 @@ const BestieCard = ({ bestie, onRemove, featuredCircle = [] }) => {
                 {showProfileMenu && (
                   <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-2xl border-2 z-50 min-w-[180px]`}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowProfileMenu(false);
-                        navigate(`/user/${bestie.userId}`);
-                      }}
-                      className={`w-full text-left px-4 py-2.5 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold first:rounded-t-xl`}
-                    >
-                      👤 View Profile
-                    </button>
-                    <button
                       onClick={handleToggleCircle}
                       className={`w-full text-left px-4 py-2.5 ${isDark ? 'hover:bg-gray-700 text-gray-100' : 'hover:bg-gray-100 text-gray-700'} text-sm font-semibold`}
                     >
@@ -218,10 +208,8 @@ const BestieCard = ({ bestie, onRemove, featuredCircle = [] }) => {
               </div>
             )}
 
-            {/* Name */}
             <div
-              className="cursor-pointer mt-3"
-              onClick={() => bestie.userId && navigate(`/user/${bestie.userId}`)}
+              className="mt-3"
             >
               <h3 className="font-display text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent truncate">
                 {bestie.name || 'Unknown'}

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
@@ -44,6 +44,26 @@ export const logAnalyticsEvent = (eventName, eventParams = {}) => {
 // Auth providers
 export const googleProvider = new GoogleAuthProvider();
 
+/** Popups are blocked or auto-closed on most mobile browsers; use full-page redirect instead. */
+function shouldUseGoogleRedirect() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+    return true;
+  }
+  if (typeof navigator.standalone === 'boolean' && navigator.standalone) {
+    return true;
+  }
+  try {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 // Helper function to parse Firebase auth errors into user-friendly messages
 const getAuthErrorMessage = (error) => {
   const errorCode = error.code;
@@ -66,7 +86,7 @@ const getAuthErrorMessage = (error) => {
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection.';
     case 'auth/popup-closed-by-user':
-      return 'Sign-in popup was closed.';
+      return 'Sign-in popup was closed or blocked. On mobile, try again or use email sign-in.';
     case 'auth/cancelled-popup-request':
       return 'Sign-in was cancelled.';
     case 'auth/invalid-credential':
@@ -77,11 +97,29 @@ const getAuthErrorMessage = (error) => {
   }
 };
 
+/** Call once on app load after returning from Google redirect sign-in. */
+export async function resolveGoogleRedirectResult() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      return { ok: true, user: result.user };
+    }
+    return { ok: true, user: null };
+  } catch (error) {
+    console.error('Google redirect sign-in error:', error);
+    return { ok: false, error: getAuthErrorMessage(error) };
+  }
+}
+
 // Auth functions
 export const authService = {
   // Sign in with Google
   signInWithGoogle: async () => {
     try {
+      if (shouldUseGoogleRedirect()) {
+        await signInWithRedirect(auth, googleProvider);
+        return { success: true, usedRedirect: true };
+      }
       const result = await signInWithPopup(auth, googleProvider);
       return { success: true, user: result.user };
     } catch (error) {

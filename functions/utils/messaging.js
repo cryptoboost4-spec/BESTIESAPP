@@ -50,20 +50,27 @@ async function sendNotification(userId, message, config, options = {}) {
       }
     }
 
-    // SMS (Paid - Priority 2, only if subscribed)
-    if (userData.smsSubscription?.active && userData.phoneNumber) {
+    // SMS (Paid - Priority 2, must have credits or emergency)
+    if (userData.notificationPreferences?.sms && userData.phoneNumber) {
       try {
-        const result = await client.messages.create({
-          from: config.twilio.phone_number,
-          to: userData.phoneNumber,
-          body: message
+        const { sendSMSAlert } = require('./notifications');
+        const alertType = options.type === 'emergency_sos' ? 'emergency_sos' : 'check_in';
+        // Sender is options.userId (the check-in creator) or the current user
+        const senderId = options.userId || userId; 
+        
+        await sendSMSAlert(userData.phoneNumber, message, {
+          userId: senderId,
+          recipientId: userId,
+          alertType: alertType,
+          checkinId: options.checkinId || null
         });
-        results.push({ method: 'sms', success: true, sid: result.sid });
+        
+        results.push({ method: 'sms', success: true });
         const functions = require('firebase-functions');
-        functions.logger.info('SMS sent:', result.sid);
+        functions.logger.info('SMS sent via sendSMSAlert to:', userData.phoneNumber);
       } catch (error) {
         const functions = require('firebase-functions');
-        functions.logger.error('SMS failed:', error.message);
+        functions.logger.error('SMS failed via sendSMSAlert:', error.message);
         results.push({ method: 'sms', success: false, error: error.message });
       }
     }

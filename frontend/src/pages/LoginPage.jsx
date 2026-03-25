@@ -33,12 +33,7 @@ const LoginPage = () => {
       }
     }
   );
-  const [countryCode, setCountryCode] = useState('+61'); // Default to Australia
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
-  const [recaptchaReady, setRecaptchaReady] = useState(false);
+
   const [loadingStep, setLoadingStep] = useState(''); // For showing progress
   const navigate = useNavigate();
 
@@ -46,30 +41,7 @@ const LoginPage = () => {
     errorTracker.trackFunnelStep('signup', 'view_login_page');
   }, []);
 
-  // Preload reCAPTCHA when phone auth section opens
-  useEffect(() => {
-    if (showPhoneAuth && !recaptchaReady) {
-      const setupRecaptcha = async () => {
-        try {
-          setLoadingStep('Setting up verification...');
-          const result = authService.setupRecaptcha('recaptcha-container');
-          if (result.success) {
-            setRecaptchaReady(true);
-            setLoadingStep('');
-          } else {
-            setLoadingStep('');
-            toast.error('Verification setup failed. Please refresh the page.');
-          }
-        } catch (error) {
-          setLoadingStep('');
-          console.error('reCAPTCHA setup error:', error);
-        }
-      };
 
-      // Small delay to let the UI render first
-      setTimeout(setupRecaptcha, 100);
-    }
-  }, [showPhoneAuth, recaptchaReady]);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -78,6 +50,13 @@ const LoginPage = () => {
 
     try {
       const result = await authService.signInWithGoogle();
+
+      if (result.success && result.usedRedirect) {
+        setLoadingStep('Redirecting to Google…');
+        // Full-page redirect; leave loading on until navigation completes
+        return;
+      }
+
       setLoading(false);
       setLoadingStep('');
 
@@ -129,78 +108,7 @@ const LoginPage = () => {
     }
   };
 
-  const handleSendCode = async (e) => {
-    e.preventDefault();
 
-    if (!recaptchaReady) {
-      toast.error('Please wait for verification to be ready...');
-      return;
-    }
-
-    setLoading(true);
-    setLoadingStep('Sending verification code...');
-    errorTracker.trackFunnelStep('signup', 'click_phone_send_code');
-
-    try {
-      // Format phone number with selected country code
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `${countryCode}${phoneNumber.replace(/\s/g, '')}`;
-
-      // Get the pre-loaded reCAPTCHA verifier
-      const recaptchaResult = authService.setupRecaptcha('recaptcha-container');
-      if (!recaptchaResult.success) {
-        toast.error('Verification not ready. Please try again.');
-        setLoading(false);
-        setLoadingStep('');
-        return;
-      }
-
-      // Send verification code
-      const result = await authService.sendPhoneVerification(formattedPhone, recaptchaResult.verifier);
-      setLoading(false);
-      setLoadingStep('');
-
-      if (result.success) {
-        setConfirmationResult(result.confirmationResult);
-        toast.success('Verification code sent!');
-        errorTracker.trackFunnelStep('signup', 'phone_code_sent');
-      } else {
-        errorTracker.logCustomError('Phone verification failed', { error: result.error });
-        toast.error(result.error || 'Failed to send code');
-      }
-    } catch (error) {
-      setLoading(false);
-      setLoadingStep('');
-      errorTracker.logCustomError('Phone send code error', { error: error.message });
-      toast.error('Failed to send code. Please try again.');
-    }
-  };
-
-  const handleVerifyCode = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setLoadingStep('Verifying code...');
-    errorTracker.trackFunnelStep('signup', 'click_phone_verify_code');
-
-    try {
-      const result = await authService.verifyPhoneCode(confirmationResult, verificationCode);
-      setLoading(false);
-      setLoadingStep('');
-
-      if (result.success) {
-        errorTracker.trackFunnelStep('signup', 'complete_phone_signin');
-        toast.success('Welcome to Besties!');
-        // Navigate to home - HomePage will handle onboarding redirect if needed
-        navigate('/');
-      } else {
-        errorTracker.logCustomError('Phone code verification failed', { error: result.error });
-        toast.error(result.error || 'Invalid code');
-      }
-    } catch (error) {
-      setLoading(false);
-      setLoadingStep('');
-      toast.error('Verification failed. Please try again.');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
@@ -240,138 +148,7 @@ const LoginPage = () => {
             Continue with Google
           </button>
 
-          {/* Phone Sign In */}
-          <button
-            onClick={() => setShowPhoneAuth(!showPhoneAuth)}
-            className="w-full btn btn-secondary mb-3"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            Continue with Phone
-          </button>
 
-          {/* Phone Auth Form */}
-          {showPhoneAuth && (
-            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              {!confirmationResult ? (
-                <form onSubmit={handleSendCode} className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-text-primary mb-2">
-                      Phone Number
-                    </label>
-                    <div className="flex gap-2">
-                      <select
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        className="input w-20"
-                      >
-                        <option value="+1">+1</option>
-                        <option value="+44">+44</option>
-                        <option value="+61">+61</option>
-                        <option value="+91">+91</option>
-                      </select>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => {
-                          // Format with spaces as user types
-                          const value = e.target.value.replace(/\s/g, ''); // Remove existing spaces
-                          let formatted = value;
-
-                          // Format Australian numbers: 435 853 854
-                          if (countryCode === '+61' && value.length > 3) {
-                            formatted = value.slice(0, 3);
-                            if (value.length > 3) formatted += ' ' + value.slice(3, 6);
-                            if (value.length > 6) formatted += ' ' + value.slice(6, 9);
-                          }
-                          // Format US/Canada numbers: (435) 853-8540
-                          else if (countryCode === '+1' && value.length > 3) {
-                            formatted = value.slice(0, 3);
-                            if (value.length > 3) formatted += ' ' + value.slice(3, 6);
-                            if (value.length > 6) formatted += ' ' + value.slice(6, 10);
-                          }
-                          // Format UK numbers: 7911 123456
-                          else if (countryCode === '+44' && value.length > 4) {
-                            formatted = value.slice(0, 4);
-                            if (value.length > 4) formatted += ' ' + value.slice(4, 10);
-                          }
-                          // Format Indian numbers: 98765 43210
-                          else if (countryCode === '+91' && value.length > 5) {
-                            formatted = value.slice(0, 5);
-                            if (value.length > 5) formatted += ' ' + value.slice(5, 10);
-                          }
-
-                          setPhoneNumber(formatted);
-                        }}
-                        className="input flex-1"
-                        placeholder="435123456"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* reCAPTCHA Ready Indicator */}
-                  {!recaptchaReady && (
-                    <div className="flex items-center justify-center gap-2 text-xs text-text-secondary">
-                      <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                      <span>Preparing verification...</span>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || !recaptchaReady}
-                    className="w-full btn btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading && (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    )}
-                    {loading ? 'Sending Code...' : 'Send Verification Code'}
-                  </button>
-
-                  {/* Invisible reCAPTCHA container */}
-                  <div id="recaptcha-container"></div>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyCode} className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-text-primary mb-2">
-                      Verification Code
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
-                      className="input"
-                      placeholder="123456"
-                      required
-                      maxLength={6}
-                      autoComplete="one-time-code"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full btn btn-primary"
-                  >
-                    {loading ? 'Verifying...' : 'Verify Code'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmationResult(null);
-                      setVerificationCode('');
-                    }}
-                    className="w-full btn btn-secondary"
-                  >
-                    Back
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
 
           {/* Facebook Sign In */}
           <button

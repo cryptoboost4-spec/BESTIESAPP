@@ -39,6 +39,12 @@ exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
       startedAt: null
     },
 
+    smsCredits: {
+      balance: 3,
+      freeCredits: 3,
+      freeCreditsGrantedAt: admin.firestore.Timestamp.now()
+    },
+
     donationStats: {
       isActive: false,
       totalDonated: 0,

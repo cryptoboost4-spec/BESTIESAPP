@@ -10,9 +10,7 @@ import { getTypographyById, getNameStyle, getBioStyle } from './themes/typograph
 import { BACKGROUNDS } from './themes/backgrounds';
 import './themes/backgroundPatterns.css';
 
-const ProfileCustomizer = lazy(() => import('./ProfileCustomizer'));
-
-const GRADIENT_OPTIONS = [
+import './themes/backgroundPatterns.css';const GRADIENT_OPTIONS = [
   { id: 'pink', name: 'Pink Dream', gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)' },
   { id: 'purple', name: 'Purple Magic', gradient: 'linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%)' },
   { id: 'blue', name: 'Ocean Blue', gradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' },
@@ -48,11 +46,11 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
   const currentGradient = userData?.profile?.backgroundGradient || GRADIENT_OPTIONS[0].gradient;
   const currentAura = userData?.profile?.aura || 'none';
 
-  // Get customization settings
-  const customization = userData?.profile?.customization || {};
-  const layoutId = customization.layout || 'classic';
-  const backgroundId = customization.background || null;
-  const typographyId = customization.typography || 'playful';
+  // Hardcoded for MVP
+  const customization = {};
+  const layoutId = 'classic';
+  const backgroundId = null;
+  const typographyId = 'playful';
 
   // Get the selected background or fall back to gradient
   const getBackgroundById = (id) => {
@@ -94,9 +92,9 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
   // Get layout component
   const LayoutComponent = getLayoutById(layoutId);
 
-  // Use customization photo settings or defaults
-  const photoShape = customization.photoShape || 'circle';
-  const photoBorder = customization.photoBorder || 'classic';
+  // Hardcoded photo settings
+  const photoShape = 'circle';
+  const photoBorder = 'classic';
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -255,21 +253,6 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
       >
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 color-picker-container flex flex-col gap-2 z-20">
-          {/* Customize Button */}
-          <button
-            ref={customizerButtonRef}
-            id="profile-customizer-button"
-            onClick={() => {
-              setShowCustomizer(true);
-              if (onCustomizerClick) {
-                onCustomizerClick();
-              }
-            }}
-            className="w-10 h-10 rounded-full bg-gradient-primary text-white backdrop-blur-sm shadow-xl flex items-center justify-center hover:scale-110 transition-all text-lg"
-            title="Customize your vibe"
-          >
-            ✨
-          </button>
           {/* Edit Profile Button */}
           <button
             onClick={() => navigate('/edit-profile')}
@@ -506,17 +489,7 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
         </div>
       </div>
 
-      {/* Profile Customizer Modal */}
-      {showCustomizer && (
-        <Suspense fallback={null}>
-          <ProfileCustomizer
-            currentUser={currentUser}
-            userData={userData}
-            onClose={() => setShowCustomizer(false)}
-            onSave={onCustomizerSave}
-          />
-        </Suspense>
-      )}
+
     </>
   );
 };

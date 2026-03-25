@@ -195,6 +195,27 @@ const CheckInCard = ({ checkIn }) => {
 
     toast.success(`Extended by ${minutes} minutes!`, { duration: 2000 });
 
+    const isTutorialMock =
+      checkIn.id === 'tutorial-mock-checkin' || checkIn.isMock === true;
+
+    if (isTutorialMock) {
+      try {
+        const raw = localStorage.getItem('tutorial_mock_checkin');
+        if (raw) {
+          const mock = JSON.parse(raw);
+          mock.alertTime = newAlertTime.toISOString();
+          mock.duration = (typeof mock.duration === 'number' ? mock.duration : 0) + minutes;
+          mock.lastUpdate = new Date().toISOString();
+          localStorage.setItem('tutorial_mock_checkin', JSON.stringify(mock));
+        }
+      } catch (e) {
+        console.warn('[Tutorial] Could not persist mock extension:', e);
+      } finally {
+        setExtendingButton(null);
+      }
+      return;
+    }
+
     try {
       const result = await apiService.extendCheckIn({ checkInId: checkIn.id, additionalMinutes: minutes });
 
@@ -561,8 +582,32 @@ const CheckInCard = ({ checkIn }) => {
         </button>
       </div>
 
+      {/* SOS Button */}
+      {!isAlerted && (
+        <div className="px-5 pt-4">
+          <button
+            onClick={async () => {
+              if (window.confirm("EMERGENCY: Are you sure you want to alert your besties immediately?")) {
+                haptic.warning();
+                try {
+                  toast.success("🚨 Alerting Besties...");
+                  await apiService.triggerEmergencySOS({ checkInId: checkIn.id });
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Failed to trigger SOS. Call emergency services.");
+                }
+              }
+            }}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-12 px-4 bg-red-600 hover:bg-red-700 text-white text-base font-bold leading-normal shadow-md transition-transform hover:scale-105 active:scale-95"
+          >
+            <span className="material-symbols-outlined text-xl">sos</span>
+            <span className="truncate">ALERT BESTIES NOW</span>
+          </button>
+        </div>
+      )}
+
       {/* Extended details section - collapsible or always visible */}
-      <div className="px-5 pb-4 space-y-4">
+      <div className="px-5 pb-4 space-y-4 mt-4">
         {/* Display photos if any */}
         {photoURLs.length > 0 && (
           <div className="mb-4">

@@ -139,8 +139,12 @@ export const useTutorialSystem = () => {
     newState.system.migrated = true;
     newState.system.lastUpdated = new Date().toISOString();
 
-    // Save migrated state
-    saveToLocalStorage(newState);
+    // Save migrated state - inline save since useCallback isn't defined yet during initial load
+    try {
+      localStorage.setItem('_tutorial_system_state', JSON.stringify(newState));
+    } catch (e) {
+      console.error('[TutorialSystem] Error saving migrated state:', e);
+    }
 
     // Clean up old keys
     Object.keys(migrations).forEach(oldKey => {
