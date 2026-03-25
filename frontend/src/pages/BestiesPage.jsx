@@ -15,6 +15,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import AddBestieModal from '../components/AddBestieModal';
+import BestiesGrid from '../components/besties/BestiesGrid';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
 import { useActivityFeed } from '../hooks/useActivityFeed';

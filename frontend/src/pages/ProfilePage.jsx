@@ -34,7 +34,7 @@ const ProfilePage = () => {
   const [firstCheckInDate, setFirstCheckInDate] = useState(null);
   const [nighttimeCheckIns, setNighttimeCheckIns] = useState(0);
   const [weekendCheckIns, setWeekendCheckIns] = useState(0);
-  const [animatedProgress, setAnimatedProgress] = useState(0);
+  // animatedProgress removed (progress bar hidden in MVP)
   const [alertedBestieCheckIns, setAlertedBestieCheckIns] = useState([]);
   const [showCustomizer, setShowCustomizer] = useState(false);
   
@@ -118,13 +118,6 @@ const ProfilePage = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Animate progress bar when profile completion changes
-  useEffect(() => {
-    const profileCompletion = calculateProfileCompletion();
-    const targetProgress = profileCompletion.percentage;
-    setAnimatedProgress(targetProgress);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userData, bestiesCount, currentUser]);
 
   const loadData = async () => {
     if (!currentUser) return;
@@ -486,6 +479,7 @@ const ProfilePage = () => {
     return { tasks, percentage, completed, total: tasks.length };
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleTaskNavigation = (task) => {
     if (task.action === 'scrollToPhoto') {
       const photoElement = document.querySelector('.photo-menu-container');
@@ -517,7 +511,6 @@ const ProfilePage = () => {
     return diffDays;
   };
 
-  const profileCompletion = calculateProfileCompletion();
   const loginStreak = userData?.loginStreak || 0;
 
   if (loading) {
