@@ -15,32 +15,33 @@ export default function ActiveAlertBanner() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Query for active alerts where user is involved
-    const alertsQuery = query(
+    // Two separate queries matching security rules:
+    // 1. Check-ins the user created that are alerted
+    const ownAlertsQuery = query(
       collection(db, 'checkins'),
+      where('userId', '==', currentUser.uid),
       where('status', '==', 'alerted')
     );
 
-    const unsubscribe = onSnapshot(alertsQuery, (snapshot) => {
-      const alerts = [];
+    // 2. Check-ins where user is a selected bestie that are alerted
+    const bestieAlertsQuery = query(
+      collection(db, 'checkins'),
+      where('bestieIds', 'array-contains', currentUser.uid),
+      where('status', '==', 'alerted')
+    );
 
+    const alertsMap = new Map();
+
+    const handleSnapshot = (isUserAlert) => (snapshot) => {
       snapshot.forEach((doc) => {
-        const data = doc.data();
-
-        // Show if: user created it OR user is a selected bestie
-        const isUserAlert = data.userId === currentUser.uid;
-        const isBestieAlert = data.bestieIds?.includes(currentUser.uid);
-
-        if (isUserAlert || isBestieAlert) {
-          alerts.push({
-            id: doc.id,
-            ...data,
-            isUserAlert
-          });
-        }
+        alertsMap.set(doc.id, { id: doc.id, ...doc.data(), isUserAlert });
+      });
+      // Remove docs no longer in this snapshot
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'removed') alertsMap.delete(change.doc.id);
       });
 
-      // Show most recent alert
+      const alerts = Array.from(alertsMap.values());
       if (alerts.length > 0) {
         alerts.sort((a, b) => {
           const aTime = a.alertedAt?.toMillis() || a.alertTime?.toMillis() || 0;
@@ -48,22 +49,27 @@ export default function ActiveAlertBanner() {
           return bTime - aTime;
         });
         setActiveAlert(alerts[0]);
-
-        // Auto-mark as viewed if user is a bestie (not the creator)
         if (!alerts[0].isUserAlert) {
           markAsViewed(alerts[0].id);
         }
       } else {
         setActiveAlert(null);
       }
-
       setLoading(false);
-    }, (error) => {
+    };
+
+    const handleError = (error) => {
       console.error('Error loading active alerts:', error);
       setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    const unsubscribeOwn = onSnapshot(ownAlertsQuery, handleSnapshot(true), handleError);
+    const unsubscribeBestie = onSnapshot(bestieAlertsQuery, handleSnapshot(false), handleError);
+
+    return () => {
+      unsubscribeOwn();
+      unsubscribeBestie();
+    };
   }, [currentUser]);
 
   const markAsViewed = async (checkinId) => {
