@@ -294,8 +294,15 @@ export const AuthProvider = ({ children }) => {
 
       if (user) {
         errorTracker.setUser(user.uid);
+        // Ensure the auth token is propagated to Firestore before making requests.
+        // onAuthStateChanged can fire before Firestore receives the token, causing
+        // permission-denied errors on the very first read.
+        try { await user.getIdToken(); } catch (e) { /* non-fatal */ }
+
         const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
+        let userSnap;
+        try {
+        userSnap = await getDoc(userRef);
 
         const isNewUser = !userSnap.exists();
 
@@ -377,6 +384,12 @@ export const AuthProvider = ({ children }) => {
             }
           }
           // For new users, inviter_info will be cleaned up in onboarding welcome screen
+        }
+
+        } catch (error) {
+          console.error('Error initializing user data:', error);
+          setLoading(false);
+          return;
         }
 
         // Clean up previous listener if it exists
