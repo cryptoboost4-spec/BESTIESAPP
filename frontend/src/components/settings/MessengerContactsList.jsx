@@ -36,7 +36,7 @@ const MessengerContactsList = ({ userId }) => {
 
       setContacts(activeContacts);
       setLoading(false);
-    });
+    }, (error) => { console.error('Error loading messenger contacts list:', error); setLoading(false); });
 
     return () => unsubscribe();
   }, [userId]);
