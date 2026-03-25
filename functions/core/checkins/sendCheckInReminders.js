@@ -10,18 +10,18 @@ const db = admin.firestore();
 async function sendCheckInRemindersLogic(config) {
   const APP_URL = config?.app?.url || 'https://bestiesapp.web.app';
   const now = admin.firestore.Timestamp.now();
-  const fiveMinutesFromNow = admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() + 5 * 60 * 1000)
-  );
   const sixMinutesFromNow = admin.firestore.Timestamp.fromDate(
     new Date(Date.now() + 6 * 60 * 1000)
   );
+  const oneMinuteFromNow = admin.firestore.Timestamp.fromDate(
+    new Date(Date.now() + 1 * 60 * 1000)
+  );
 
   try {
-    // Find check-ins expiring in 5-6 minutes that haven't been reminded yet
+    // Find check-ins expiring in 1-6 minutes
     const checkInsSnapshot = await db.collection('checkins')
       .where('status', '==', 'active')
-      .where('alertTime', '>=', fiveMinutesFromNow)
+      .where('alertTime', '>=', oneMinuteFromNow)
       .where('alertTime', '<=', sixMinutesFromNow)
       .get();
 
@@ -32,8 +32,25 @@ async function sendCheckInRemindersLogic(config) {
     for (const doc of checkInsSnapshot.docs) {
       const checkIn = doc.data();
 
-      // Skip if already reminded
-      if (checkIn.reminderSent) {
+      const timeRemainingMs = checkIn.alertTime.toMillis() - Date.now();
+      const minutesRemaining = Math.max(1, Math.round(timeRemainingMs / 60000));
+      
+      let reminderType = null;
+      let title = '';
+      let bodyText = '';
+
+      if (minutesRemaining === 5 && !checkIn.remindersSent?.fiveMin) {
+        reminderType = 'fiveMin';
+        title = '⏰ 5 Minute Warning';
+        bodyText = `Your check-in at ${checkIn.location} expires in 5 minutes!`;
+      } else if (minutesRemaining === 1 && !checkIn.remindersSent?.oneMin) {
+        reminderType = 'oneMin';
+        title = '🚨 1 MINUTE WARNING';
+        bodyText = `Your check-in at ${checkIn.location} expires in 1 minute! Please mark yourself safe.`;
+      }
+
+      // Skip if no matching reminder logic
+      if (!reminderType) {
         continue;
       }
 
@@ -51,12 +68,13 @@ async function sendCheckInRemindersLogic(config) {
         const message = {
           token: userData.fcmToken,
           notification: {
-            title: '⏰ Check-In Reminder',
-            body: `Your check-in at ${checkIn.location} expires in 5 minutes!`,
+            title: title,
+            body: bodyText,
             icon: '/logo192.png',
           },
           data: {
             type: 'check-in-reminder',
+            reminderType: reminderType,
             checkInId: doc.id,
             location: checkIn.location,
           },
@@ -84,9 +102,12 @@ async function sendCheckInRemindersLogic(config) {
         notifications.push(
           admin.messaging().send(message)
             .then(() => {
-              functions.logger.info(`Sent reminder to user ${checkIn.userId} for check-in ${doc.id}`);
+              functions.logger.info(`Sent ${reminderType} reminder to user ${checkIn.userId} for check-in ${doc.id}`);
               // Mark as reminded
-              return doc.ref.update({ reminderSent: true });
+              return doc.ref.update({ 
+                [`remindersSent.${reminderType}`]: true,
+                reminderSent: true // Fallback for backwards compatibility
+              });
             })
             .catch((error) => {
               functions.logger.error(`Failed to send notification to ${checkIn.userId}:`, error);

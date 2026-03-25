@@ -24,24 +24,8 @@ export const PRESET_MESSAGES = [
  * Rate limit: 1 message per day per bestie
  */
 export const canSendMessage = async (senderId, recipientId) => {
-    try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const messagesQuery = query(
-            collection(db, 'bestie_messages'),
-            where('senderId', '==', senderId),
-            where('recipientId', '==', recipientId),
-            where('sentAt', '>=', Timestamp.fromDate(today)),
-            limit(1)
-        );
-
-        const snapshot = await getDocs(messagesQuery);
-        return snapshot.empty; // true if can send
-    } catch (error) {
-        console.error('Error checking message rate limit:', error);
-        return false; // Fail closed - don't allow if error
-    }
+    // Rate limit removed for MVP
+    return true;
 };
 
 /**

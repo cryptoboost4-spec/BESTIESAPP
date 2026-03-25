@@ -582,8 +582,32 @@ const CheckInCard = ({ checkIn }) => {
         </button>
       </div>
 
+      {/* SOS Button */}
+      {!isAlerted && (
+        <div className="px-5 pt-4">
+          <button
+            onClick={async () => {
+              if (window.confirm("EMERGENCY: Are you sure you want to alert your besties immediately?")) {
+                haptic.warning();
+                try {
+                  toast.success("🚨 Alerting Besties...");
+                  await apiService.triggerEmergencySOS({ checkInId: checkIn.id });
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Failed to trigger SOS. Call emergency services.");
+                }
+              }
+            }}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-12 px-4 bg-red-600 hover:bg-red-700 text-white text-base font-bold leading-normal shadow-md transition-transform hover:scale-105 active:scale-95"
+          >
+            <span className="material-symbols-outlined text-xl">sos</span>
+            <span className="truncate">ALERT BESTIES NOW</span>
+          </button>
+        </div>
+      )}
+
       {/* Extended details section - collapsible or always visible */}
-      <div className="px-5 pb-4 space-y-4">
+      <div className="px-5 pb-4 space-y-4 mt-4">
         {/* Display photos if any */}
         {photoURLs.length > 0 && (
           <div className="mb-4">

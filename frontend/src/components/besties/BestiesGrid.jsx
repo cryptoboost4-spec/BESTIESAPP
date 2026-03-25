@@ -192,16 +192,6 @@ const BestiesGrid = ({ besties, activityFeed, featuredCircle = [], onAddBestie }
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/user/${bestie.userId}`);
-                        }}
-                        className="w-full bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900 text-purple-900 dark:text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
-                      >
-                        <span>👤</span>
-                        <span>View Profile</span>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
                           if (bestie.phone) {
                             window.location.href = `sms:${bestie.phone}`;
                           } else {

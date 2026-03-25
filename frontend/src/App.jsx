@@ -314,10 +314,10 @@ function App() {
                     path="/profile"
                     element={user ? <ProfilePage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/user/:userId"
                     element={user ? <ViewUserProfilePage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/edit-profile"
                     element={user ? <EditProfilePage /> : <Navigate to="/login" />}
@@ -334,10 +334,10 @@ function App() {
                     path="/badges"
                     element={user ? <BadgesPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/history"
                     element={user ? <CheckInHistoryPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/templates"
                     element={user ? <TemplatesPage /> : <Navigate to="/login" />}
@@ -350,26 +350,26 @@ function App() {
                     path="/export-data"
                     element={user ? <ExportDataPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/social-feed"
                     element={user ? <SocialFeedPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/about"
                     element={user ? <AboutBestiesPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/circle-health"
                     element={user ? <CircleHealthPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
                   <Route
                     path="/data-policy"
                     element={user ? <DataPolicyPage /> : <Navigate to="/login" />}
                   />
-                  <Route
+                  {/* <Route
                     path="/challenges"
                     element={user ? <ChallengesPage /> : <Navigate to="/login" />}
-                  />
+                  /> */}
 
                   {/* Admin-only routes */}
                   <Route

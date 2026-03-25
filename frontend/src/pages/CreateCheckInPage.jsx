@@ -60,6 +60,13 @@ const CreateCheckInPage = () => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [socialMediaExpanded, setSocialMediaExpanded] = useState(false);
   const [showNoChannelModal, setShowNoChannelModal] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
+
+  useEffect(() => {
+    if (userData?.testMode !== undefined) {
+      setIsTestMode(userData.testMode);
+    }
+  }, [userData?.testMode]);
 
   // Form validation errors
   const [formErrors, setFormErrors] = useState({
@@ -1272,7 +1279,7 @@ const CreateCheckInPage = () => {
             circleSnapshot: circleSnapshot,
             createdAt: Timestamp.now(),
             lastUpdate: Timestamp.now(),
-            isTest: userData?.testMode || false,
+            isTest: isTestMode,
             isTutorial: (hasMockBestieSelected || selectedBesties.includes('TUTORIAL_FAKE_BESTIE')) && showTutorial, // Mark as tutorial check-in
           };
 
@@ -1380,18 +1387,29 @@ const CreateCheckInPage = () => {
   return (
     <div className="min-h-screen bg-pattern">
       <div className={`max-w-2xl mx-auto p-4 pb-20 ${shouldAutoSubmit ? 'opacity-0 pointer-events-none' : ''}`}>
-        {/* Test Mode Banner */}
-        {userData?.testMode && (
-          <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🧪</span>
+        {/* Test Mode Toggle */}
+        <div className="mb-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-xl shrink-0">
+                🧪
+              </div>
               <div>
-                <p className="font-semibold text-yellow-800 dark:text-yellow-300">Test Mode Active</p>
-                <p className="text-sm text-yellow-700 dark:text-yellow-400">Your check-ins won't affect stats or analytics</p>
+                <p className="font-bold text-text-primary dark:text-gray-200">Test Check-in</p>
+                <p className="text-sm text-text-secondary dark:text-gray-400">Practice without affecting stats or alerting friends outside the app</p>
               </div>
             </div>
+            <label className="relative inline-flex items-center cursor-pointer ml-4">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={isTestMode}
+                onChange={(e) => setIsTestMode(e.target.checked)}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:bg-gray-700 rounded-full peer dark:border-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+            </label>
           </div>
-        )}
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Location with Map */}
