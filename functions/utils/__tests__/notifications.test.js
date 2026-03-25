@@ -50,38 +50,21 @@ describe('Notification Utilities', () => {
   });
 
   describe('sendSMSAlert', () => {
-    test('should send SMS via Twilio', async () => {
-      await sendSMSAlert('+61412345678', 'Test message');
+    // sendSMSAlert now requires metadata (userId, recipientId) and performs
+    // credit/rate-limit checks against Firestore before sending.
+    // These are integration-level tests covered in notificationReliability.test.js.
+    // The unit tests below verify that missing metadata is rejected immediately.
 
-      expect(mockMessages.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: '+61412345678',
-          from: '+1234567890',
-          body: 'Test message',
-        })
-      );
+    test('should throw when metadata is missing', async () => {
+      await expect(
+        sendSMSAlert('+61412345678', 'Test message', {})
+      ).rejects.toThrow('SMS metadata required: userId and recipientId');
     });
 
-    test('should handle Twilio errors', async () => {
-      // Clear the module cache first to reset the cached twilioClient
-      jest.resetModules();
-      
-      // Re-mock twilio after resetModules (the mock is also reset)
-      const twilio = require('twilio');
-      const rejectMock = jest.fn().mockRejectedValue(new Error('Twilio error'));
-      const newMockTwilioClient = {
-        messages: {
-          create: rejectMock,
-        },
-      };
-      twilio.mockImplementation(() => newMockTwilioClient);
-      
-      // Now require the module so it uses the new mock
-      const notifications = require('../notifications');
-
+    test('should throw when only userId is provided', async () => {
       await expect(
-        notifications.sendSMSAlert('+61412345678', 'Test message')
-      ).rejects.toThrow('Twilio error');
+        sendSMSAlert('+61412345678', 'Test message', { userId: 'user1' })
+      ).rejects.toThrow('SMS metadata required: userId and recipientId');
     });
   });
 

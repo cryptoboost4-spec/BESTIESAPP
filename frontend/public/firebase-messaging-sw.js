@@ -101,12 +101,6 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle service worker installation
-self.addEventListener('install', (event) => {
-  console.log('[firebase-messaging-sw.js] Service worker installing...');
-  self.skipWaiting();
-});
-
 // Handle service worker activation
 self.addEventListener('activate', (event) => {
   console.log('[firebase-messaging-sw.js] Service worker activated');
