@@ -35,6 +35,7 @@ const BestiesPage = () => {
   const [featuredCircle, setFeaturedCircle] = useState([]);
 
   // Activity feed - using custom hook
+  // eslint-disable-next-line no-unused-vars
   const { activityFeed, activityLoading, missedCheckIns, requestsForAttention } = useActivityFeed(currentUser, besties, userData);
 
   // Simple tutorial state - just tracks if tutorial has been shown
@@ -63,12 +64,18 @@ const BestiesPage = () => {
   const postButtonRef = useRef(null);
   const bestiesGridRef = useRef(null);
 
-  // Modal state
+  // Modal state (social features - kept for future use per MVP brief)
+  // eslint-disable-next-line no-unused-vars
   const [selectedCheckIn, setSelectedCheckIn] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [showComments, setShowComments] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [selectedPostId, setSelectedPostId] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [comments, setComments] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [newComment, setNewComment] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [reactions, setReactions] = useState({}); // { checkInId: [reactions] }
 
   // Handle opening post from notification

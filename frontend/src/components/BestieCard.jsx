@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -10,7 +9,6 @@ import { useAuth } from '../contexts/AuthContext';
 const BestieCard = ({ bestie, onRemove, featuredCircle = [] }) => {
   const { isDark } = useDarkMode();
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [userPhoto, setUserPhoto] = useState(null);
   const [requestAttention, setRequestAttention] = useState(null);
   const [loading, setLoading] = useState(true);

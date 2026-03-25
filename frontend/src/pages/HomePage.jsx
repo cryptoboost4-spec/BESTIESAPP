@@ -783,6 +783,7 @@ const HomePage = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getStepNumber = () => {
     const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const index = steps.indexOf(currentTutorialStep);
@@ -812,6 +813,7 @@ const HomePage = () => {
   const validSteps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
   const isValidStep = currentTutorialStep && validSteps.includes(currentTutorialStep);
   const shouldShowTutorial = isValidStep && !tutorialComplete;
+  // eslint-disable-next-line no-unused-vars
   const tooltipConfig = shouldShowTutorial ? getTooltipConfig() : null;
 
   return (
@@ -822,8 +824,8 @@ const HomePage = () => {
         {/* Active Alert Banner - Only thing that shows above check-in buttons */}
         <ActiveAlertBanner />
 
-        {/* Circle Check-In Prompt - Daily wellness check */}
-        {activeCheckIns.length === 0 && <CircleCheckInPrompt />}
+        {/* Circle Check-In Prompt - Hidden for MVP (circle check-ins removed from nav) */}
+        {/* {activeCheckIns.length === 0 && <CircleCheckInPrompt />} */}
 
         {/* =================================================================
             ⚠️  AI PROTECTION: DO NOT EDIT THIS SECTION ⚠️
@@ -891,26 +893,24 @@ const HomePage = () => {
                       {checkIn.notes && <div><strong>Notes:</strong> {checkIn.notes}</div>}
                     </div>
                     <div className="flex gap-2 mt-3">
+                      {checkIn.phone && (
+                        <a
+                          href={`tel:${checkIn.phone}`}
+                          onClick={() => logAlertResponse(checkIn.id, checkIn.userId, currentUser.uid)}
+                          className="btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          📞 Call Now
+                        </a>
+                      )}
                       <button
                         onClick={() => {
                           haptic.medium();
-                          navigate(`/user/${checkIn.userId}`);
-                          // Log alert response when profile is viewed
                           logAlertResponse(checkIn.id, checkIn.userId, currentUser.uid);
+                          // Acknowledge - navigate to home (alert will clear when resolved)
                         }}
                         className="btn btn-sm bg-purple-600 hover:bg-purple-700 text-white"
                       >
-                        👤 View Profile
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate(`/history/${checkIn.id}`);
-                          // Log alert response when details are viewed
-                          logAlertResponse(checkIn.id, checkIn.userId, currentUser.uid);
-                        }}
-                        className="btn btn-sm bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        View Details →
+                        ✅ Acknowledge
                       </button>
                     </div>
                   </div>

@@ -1,12 +1,10 @@
 import React, { useState, useMemo, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import BestieCard from '../BestieCard';
 import toast from 'react-hot-toast';
 import { db } from '../../services/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 
 const BestiesGrid = ({ besties, activityFeed, featuredCircle = [], onAddBestie }) => {
-  const navigate = useNavigate();
   const [selectedBestie, setSelectedBestie] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bestieToDelete, setBestieToDelete] = useState(null);
