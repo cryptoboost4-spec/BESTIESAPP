@@ -349,6 +349,7 @@ const ProfilePage = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const calculateProfileCompletion = () => {
     const tasks = [];
     let completed = 0;

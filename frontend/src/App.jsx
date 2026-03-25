@@ -29,17 +29,20 @@ import HomePage from './pages/HomePage';
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const CreateCheckInPage = lazy(() => import('./pages/CreateCheckInPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+// eslint-disable-next-line no-unused-vars
 const ViewUserProfilePage = lazy(() => import('./pages/ViewUserProfilePage'));
 const BestiesPage = lazy(() => import('./pages/BestiesPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const BadgesPage = lazy(() => import('./pages/BadgesPage'));
 const EditProfilePage = lazy(() => import('./pages/EditProfilePage'));
+// eslint-disable-next-line no-unused-vars
 const CheckInHistoryPage = lazy(() => import('./pages/CheckInHistoryPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const DevAnalyticsPage = lazy(() => import('./pages/DevAnalyticsPage'));
 const LocationFavoritesPage = lazy(() => import('./pages/LocationFavoritesPage'));
 const ExportDataPage = lazy(() => import('./pages/ExportDataPage'));
 const MonitoringDashboard = lazy(() => import('./pages/MonitoringDashboard'));
+// eslint-disable-next-line no-unused-vars
 const SocialFeedPage = lazy(() => import('./pages/SocialFeedPage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
@@ -49,8 +52,10 @@ const SubscriptionSuccessPage = lazy(() => import('./pages/SubscriptionSuccessPa
 const SubscriptionCancelPage = lazy(() => import('./pages/SubscriptionCancelPage'));
 const AboutBestiesPage = lazy(() => import('./pages/AboutBestiesPage'));
 const AdminBackfillPage = lazy(() => import('./pages/AdminBackfillPage'));
+// eslint-disable-next-line no-unused-vars
 const CircleHealthPage = lazy(() => import('./pages/CircleHealthPage'));
 const DataPolicyPage = lazy(() => import('./pages/DataPolicyPage'));
+// eslint-disable-next-line no-unused-vars
 const ChallengesPage = lazy(() => import('./pages/ChallengesPage'));
 
 // Loading component for lazy-loaded routes

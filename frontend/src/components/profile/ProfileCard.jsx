@@ -1,4 +1,4 @@
-import React, { useState, useRef, lazy, Suspense } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -39,8 +39,10 @@ const ProfileCard = ({ currentUser, userData, showCustomizer: externalShowCustom
   const [internalShowCustomizer, setInternalShowCustomizer] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Use external state if provided, otherwise use internal state
+  // Use external state if provided, otherwise use internal state (hidden in MVP)
+  // eslint-disable-next-line no-unused-vars
   const showCustomizer = externalShowCustomizer !== undefined ? externalShowCustomizer : internalShowCustomizer;
+  // eslint-disable-next-line no-unused-vars
   const setShowCustomizer = externalSetShowCustomizer || setInternalShowCustomizer;
 
   const currentGradient = userData?.profile?.backgroundGradient || GRADIENT_OPTIONS[0].gradient;

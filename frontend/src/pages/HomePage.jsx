@@ -13,16 +13,12 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
-import TutorialOverlay from '../components/TutorialOverlay';
-import CheckInTutorialOverlay from '../components/CheckInTutorialOverlay';
 import { useTutorialState } from '../hooks/useTutorialState';
 import { useCheckInTutorialState } from '../hooks/useCheckInTutorialState';
-import { clearAllTutorialState } from '../utils/tutorialHelpers';
 // FloatingNotificationBell removed per user request
 import { logAlertResponse } from '../services/interactionTracking';
 import toast from 'react-hot-toast';
 
-import CircleCheckInPrompt from '../components/circleCheckin/CircleCheckInPrompt';
 
 const HomePage = () => {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -139,6 +135,7 @@ const HomePage = () => {
 
   // Tutorial state - NEW FLOW: welcome, allButtons, quickCheckIns, afterQuickCheckIn, custom
   const { tutorialComplete, currentTutorialStep, tutorialStateLoaded, firestoreSynced, markTutorialComplete, setTutorialStep } = useTutorialState();
+  // eslint-disable-next-line no-unused-vars
   const { currentCheckInTutorialStep, setCheckInTutorialStep, markCheckInTutorialComplete } = useCheckInTutorialState();
   const quickCheckInButtonsRef = useRef(null);
   const livingCircleRef = useRef(null);
@@ -151,6 +148,7 @@ const HomePage = () => {
   const currentTutorialStepRef = useRef(currentTutorialStep);
   const currentCheckInTutorialStepRef = useRef(currentCheckInTutorialStep);
   const [showBestieCircleTutorial] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [checkedInTooltipDismissed, setCheckedInTooltipDismissed] = useState(false);
 
   // Scroll to bestie circle when tutorial starts
@@ -477,6 +475,7 @@ const HomePage = () => {
     };
     // Note: Tutorial step refs are used inside callbacks to avoid re-subscriptions
     // previousCheckInCount is still needed because it's used for comparison
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, previousCheckInCount, setTutorialStep, setCheckInTutorialStep]);
 
   // Listen for tutorial check-in completion
@@ -657,7 +656,8 @@ const HomePage = () => {
     }
   };
 
-  // Get highlighted element ref based on current step - NEW FLOW
+  // Get highlighted element ref based on current step (tutorial hidden in MVP)
+  // eslint-disable-next-line no-unused-vars
   const getHighlightedElementRef = () => {
     // Always return consistent structure: { current: element | null }
     if (!quickCheckInButtonsRef.current) {
@@ -774,6 +774,7 @@ const HomePage = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleTutorialBack = () => {
     const steps = ['welcome', 'allButtons', 'quickCheckIns', 'afterQuickCheckIn', 'custom'];
     const currentIndex = steps.indexOf(currentTutorialStep);

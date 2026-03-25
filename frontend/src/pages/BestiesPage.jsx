@@ -291,7 +291,8 @@ const BestiesPage = () => {
     loadComments();
   }, [selectedCheckIn, showComments]);
 
-  // Add reaction to check-in
+  // Add reaction to check-in (hidden in MVP)
+  // eslint-disable-next-line no-unused-vars
   const addReaction = async (checkInId, emoji) => {
     try {
       // Check if user already reacted with this emoji
@@ -337,7 +338,8 @@ const BestiesPage = () => {
     }
   };
 
-  // Add comment to check-in
+  // Add comment to check-in (hidden in MVP)
+  // eslint-disable-next-line no-unused-vars
   const addComment = async () => {
     if (!newComment.trim() || !selectedCheckIn) return;
 
@@ -412,7 +414,8 @@ const BestiesPage = () => {
     return filtered;
   };
 
-  // Helper function to get time ago
+  // Helper function to get time ago (hidden in MVP)
+  // eslint-disable-next-line no-unused-vars
   const getTimeAgo = (timestamp) => {
     const now = new Date();
     const diffMs = now - timestamp;
