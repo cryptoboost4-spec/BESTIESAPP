@@ -9,11 +9,15 @@ import toast from 'react-hot-toast';
 const OnboardingPage = () => {
   const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState('welcome'); // welcome, name, photo, invite-welcome
+  const [step, setStep] = useState('welcome'); // welcome, name, photo, tutorial, invite-welcome
   const [displayName, setDisplayName] = useState('');
   const [uploading, setUploading] = useState(false);
   const [inviterInfo, setInviterInfo] = useState(null);
   const [nameHasBeenEdited, setNameHasBeenEdited] = useState(false);
+  // Tutorial step state
+  const [tutStep, setTutStep] = useState(1);
+  const [mockBestie, setMockBestie] = useState('');
+  const [mockLocation, setMockLocation] = useState('');
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const inputRef = useRef(null); // Correctly placed at top level - false positive from ESLint cache
 
@@ -102,8 +106,8 @@ const OnboardingPage = () => {
       if (inviterInfo) {
         setStep('invite-welcome');
       } else {
-        // Complete onboarding and go to home
-        await handleFinish();
+        // Show interactive tutorial before completing onboarding
+        setStep('tutorial');
       }
     } catch (error) {
       console.error('Error uploading photo:', error);
@@ -114,13 +118,10 @@ const OnboardingPage = () => {
   };
 
   const handleUseCurrentPhoto = async () => {
-    // User already has a photo and wants to use it
-    // No need to update anything, just advance to next step
     if (inviterInfo) {
       setStep('invite-welcome');
     } else {
-      // Complete onboarding and go to home
-      await handleFinish();
+      setStep('tutorial');
     }
   };
 
@@ -314,6 +315,131 @@ const OnboardingPage = () => {
                 />
               </label>
             </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Interactive 5-Step Safety Tutorial
+  if (step === 'tutorial') {
+    const steps = [
+      { num: 1, label: 'Add Bestie' },
+      { num: 2, label: 'Check-in' },
+      { num: 3, label: 'Timer' },
+      { num: 4, label: 'Mark Safe' },
+      { num: 5, label: 'If Missed' },
+    ];
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 pb-32 overflow-y-auto">
+        <div className="max-w-md w-full">
+          {/* Progress dots */}
+          <div className="flex justify-center gap-2 mb-8">
+            {steps.map(s => (
+              <div key={s.num} className={`w-2 h-2 rounded-full transition-colors ${tutStep >= s.num ? 'bg-primary' : 'bg-gray-200'}`} />
+            ))}
+          </div>
+
+          {tutStep === 1 && (
+            <div className="text-center">
+              <div className="text-6xl mb-4">💜</div>
+              <h2 className="text-3xl font-display text-gray-900 dark:text-white mb-2">Step 1: Add a Bestie</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">Safety is better together. Add someone you trust as your emergency contact.</p>
+              <input
+                type="text"
+                placeholder="Bestie's name or phone number"
+                className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-xl mb-4 focus:border-primary outline-none text-lg"
+                value={mockBestie}
+                onChange={(e) => setMockBestie(e.target.value)}
+              />
+              <button
+                onClick={() => setTutStep(2)}
+                disabled={!mockBestie.trim()}
+                className="btn btn-primary w-full py-4 text-lg disabled:opacity-40"
+              >
+                Add "{mockBestie || 'Bestie'}" →
+              </button>
+            </div>
+          )}
+
+          {tutStep === 2 && (
+            <div className="text-center">
+              <div className="text-6xl mb-4">📍</div>
+              <h2 className="text-3xl font-display text-gray-900 dark:text-white mb-2">Step 2: Create a Check-in</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">When you're heading somewhere, set a timer. Where are you going?</p>
+              <input
+                type="text"
+                placeholder="e.g. Walking to my car"
+                className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-xl mb-4 focus:border-primary outline-none text-lg"
+                value={mockLocation}
+                onChange={(e) => setMockLocation(e.target.value)}
+              />
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-3 mb-4 text-sm text-gray-500 dark:text-gray-400">
+                Timer set for <span className="font-bold text-primary">15 minutes</span>
+              </div>
+              <button
+                onClick={() => setTutStep(3)}
+                disabled={!mockLocation.trim()}
+                className="btn btn-primary w-full py-4 text-lg disabled:opacity-40"
+              >
+                Start Check-in →
+              </button>
+            </div>
+          )}
+
+          {tutStep === 3 && (
+            <div className="text-center">
+              <div className="text-6xl mb-4">⏱️</div>
+              <h2 className="text-3xl font-display text-gray-900 dark:text-white mb-2">Step 3: Timer is Running</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">Your besties are watching. You'll get a warning at 5 minutes and 1 minute left.</p>
+              <div className="bg-primary/10 dark:bg-primary/20 rounded-2xl p-6 mb-6">
+                <div className="text-5xl font-bold text-primary mb-1">14:59</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">📍 {mockLocation || 'Walking to my car'}</div>
+              </div>
+              <button onClick={() => setTutStep(4)} className="btn btn-primary w-full py-4 text-lg">
+                Got it →
+              </button>
+            </div>
+          )}
+
+          {tutStep === 4 && (
+            <div className="text-center">
+              <div className="text-6xl mb-4">✅</div>
+              <h2 className="text-3xl font-display text-gray-900 dark:text-white mb-2">Step 4: Mark Yourself Safe</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">When you arrive safely, tap the button. Your besties get a "they're safe!" notification.</p>
+              <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-2xl p-4 mb-6">
+                <p className="text-green-800 dark:text-green-300 font-semibold">📍 {mockLocation || 'Walking to my car'}</p>
+                <p className="text-green-600 dark:text-green-400 text-sm mt-1">Timer: 12:43 remaining</p>
+              </div>
+              <button onClick={() => setTutStep(5)} className="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg transition-colors">
+                ✅ I'm Safe!
+              </button>
+            </div>
+          )}
+
+          {tutStep === 5 && (
+            <div className="text-center">
+              <div className="text-6xl mb-4">🚨</div>
+              <h2 className="text-3xl font-display text-gray-900 dark:text-white mb-2">Step 5: If You Miss It…</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">If the timer expires without you marking safe:</p>
+              <div className="space-y-3 mb-6 text-left">
+                <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+                  <span className="text-xl">📳</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">Your phone sounds a <strong>loud alarm</strong> for 60 seconds</p>
+                </div>
+                <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+                  <span className="text-xl">📱</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300"><strong>{mockBestie || 'Your bestie'}</strong> gets an instant push notification</p>
+                </div>
+                <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+                  <span className="text-xl">💬</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">If push fails, they receive an <strong>SMS alert</strong></p>
+                </div>
+              </div>
+              <button onClick={handleFinish} className="btn btn-primary w-full py-4 text-lg">
+                I'm Ready — Let's Go! 🚀
+              </button>
+            </div>
           )}
         </div>
       </div>
