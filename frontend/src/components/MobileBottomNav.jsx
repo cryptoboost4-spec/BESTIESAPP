@@ -26,8 +26,15 @@ const MobileBottomNav = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  // Check if user is in onboarding
-  const isOnboarding = location.pathname === '/onboarding' || userData?.onboardingCompleted === false;
+  // Explicit page checks
+  const isOnBestiesPage = isActive('/besties');
+  const isOnProfilePage = isActive('/profile');
+  const isOnOnboardingPage = isActive('/onboarding');
+
+  // Check if user is in onboarding - NEVER hide menu on /besties or /profile
+  const isOnboardingIncomplete = userData && userData.onboardingCompleted === false;
+  // Only apply onboarding restrictions on pages other than besties/profile
+  const isOnboarding = isOnOnboardingPage || (isOnboardingIncomplete && !isOnBestiesPage && !isOnProfilePage);
 
   // SIMPLIFIED: Use tutorial system state directly
   const postTutorialStep = bestieCircle.postTutorialStep;
@@ -59,7 +66,9 @@ const MobileBottomNav = () => {
   const shouldFlashProfile = isActive('/besties') && bestiesTutorialComplete && profileShowTutorial;
 
   // Determine if we're in post-tutorial flow on home page (where Profile should be hidden)
-  const isInPostTutorialFlowOnHome = (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab') &&
+  // IMPORTANT: Only true if bestie circle tutorial is complete AND we have a post-tutorial step
+  const isInPostTutorialFlowOnHome = bestieCircleTutorialComplete &&
+    (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab') &&
     !isActive('/besties') && !isActive('/profile');
 
   // Profile button visibility logic:
@@ -89,8 +98,8 @@ const MobileBottomNav = () => {
           paddingTop: '12px'
         }}
       >
-        {/* Home button - show on besties/profile pages, or when besties tab is available */}
-        {!isOnboarding && (isActive('/besties') || isActive('/profile') || shouldShowBestiesTab) && (
+        {/* Home button - ALWAYS show on besties/profile pages (no conditions), or when on home with proper tutorial state */}
+        {(isOnBestiesPage || isOnProfilePage || (!isOnboarding && (shouldShowBestiesTab || isInPostTutorialFlowOnHome))) && (
           <Link
             to="/"
             className={`flex flex-col items-center gap-1 transition-colors ${isActive('/') ? 'text-primary' : (isDark ? 'text-gray-300' : 'text-text-secondary')
@@ -103,8 +112,8 @@ const MobileBottomNav = () => {
           </Link>
         )}
 
-        {/* Besties button - show on besties/profile pages, or when available */}
-        {!isOnboarding && (isActive('/besties') || isActive('/profile') || (shouldShowBestiesTab && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep)) && (
+        {/* Besties button - ALWAYS show on besties/profile pages (no conditions), or when on home with proper tutorial state */}
+        {(isOnBestiesPage || isOnProfilePage || (!isOnboarding && (isInPostTutorialFlowOnHome || (shouldShowBestiesTab && (tutorialComplete || !currentTutorialStep) && !currentCheckInTutorialStep)))) && (
           <Link
             to="/besties"
             onClick={(e) => {

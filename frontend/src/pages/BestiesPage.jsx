@@ -26,6 +26,7 @@ import { useActivityFeed } from '../hooks/useActivityFeed';
 import { useSimpleTutorial } from '../hooks/useSimpleTutorial';
 import BestiesTutorialOverlay from '../components/tutorials/besties/BestiesTutorialOverlay';
 import { clearAllTutorialState } from '../utils/tutorialHelpers';
+import { useTutorialSystem } from '../hooks/useTutorialSystem';
 import toast from 'react-hot-toast';
 
 const BestiesPage = () => {
@@ -43,7 +44,7 @@ const BestiesPage = () => {
 
   // Simple tutorial state - just tracks if tutorial has been shown
   const { showTutorial, completeTutorial } = useSimpleTutorial('besties');
-  
+
   // Track if tooltip was dismissed (for Profile button flashing)
   const [tooltipDismissed, setTooltipDismissed] = useState(false);
 
@@ -51,6 +52,16 @@ const BestiesPage = () => {
   useEffect(() => {
     console.log('[Besties Tutorial] State:', { showTutorial, tooltipDismissed });
   }, [showTutorial, tooltipDismissed]);
+
+  // Clear stale postTutorialStep when landing on this page
+  // This fixes the issue where the nav shows on home page due to Firestore syncing old values
+  const { setPostTutorialStep } = useTutorialSystem();
+  useEffect(() => {
+    // Clear both the legacy localStorage key and the unified system
+    localStorage.removeItem('bestieCircle_postTutorialStep');
+    setPostTutorialStep(null);
+    console.log('[BestiesPage] Cleared stale postTutorialStep');
+  }, [setPostTutorialStep]);
 
   // Refs for highlighted elements (kept for potential future use)
   const activityFeedRef = useRef(null);
@@ -387,7 +398,7 @@ const BestiesPage = () => {
       const bInCircle = featuredCircle.includes(b.userId);
       if (aInCircle && !bInCircle) return -1;
       if (!aInCircle && bInCircle) return 1;
-      
+
       // Then favorites (for backward compatibility)
       if (a.isFavorite && !b.isFavorite) return -1;
       if (!a.isFavorite && b.isFavorite) return 1;
@@ -470,10 +481,10 @@ const BestiesPage = () => {
           {!activityLoading && (
             <ActivityFeed
               activityFeed={activityFeed.filter(activity => {
-                const isInMissedCheckIns = missedCheckIns.some(m => 
+                const isInMissedCheckIns = missedCheckIns.some(m =>
                   m.userId === activity.userId && activity.status === 'alerted'
                 );
-                const isInAttentionRequests = requestsForAttention.some(r => 
+                const isInAttentionRequests = requestsForAttention.some(r =>
                   r.userId === activity.userId && activity.type === 'checkin'
                 );
                 return !isInMissedCheckIns && !isInAttentionRequests;
@@ -522,7 +533,7 @@ const BestiesPage = () => {
 
       {/* Add Bestie Modal */}
       {showAddModal && (
-        <AddBestieModal 
+        <AddBestieModal
           onClose={() => setShowAddModal(false)}
         />
       )}
@@ -558,7 +569,7 @@ const BestiesPage = () => {
               }));
             }
           }}
-          onBack={() => {}}
+          onBack={() => { }}
           onSkip={() => {
             // Same as "Got it"
             setTooltipDismissed(true);
