@@ -172,7 +172,8 @@ const HomePage = () => {
     if (currentTutorialStep) return; // Tutorial step already set, don't override
 
     // Only check: onboarding completed AND tutorial not complete
-    const shouldAutoStart = userData.onboardingCompleted && !tutorialComplete;
+    // Disabled for MVP - users now run through the interactive 5-step tutorial during onboarding
+    const shouldAutoStart = false; // userData.onboardingCompleted && !tutorialComplete;
 
     if (shouldAutoStart) {
       tutorialAutoStartAttemptedRef.current = true; // Mark as attempted immediately
@@ -938,8 +939,9 @@ const HomePage = () => {
       )}
 
 
-      {/* Tutorial Overlay - NEW FLOW */}
+      {/* Tutorial Overlay - NEW FLOW (Commented out for MVP - onboarding loop replaces this) */}
       {/* Hide HomePage tutorial when check-in tutorial is active */}
+      {/* 
       {shouldShowTutorial && tooltipConfig && !isTutorialModalOpen && (currentCheckInTutorialStep === null || currentCheckInTutorialStep === undefined) && (
         <TutorialOverlay
           currentStep={currentTutorialStep}
@@ -952,8 +954,10 @@ const HomePage = () => {
           totalSteps={5}
         />
       )}
+      */}
 
       {/* Check-In Tutorial - checkedIn step (moved from CheckInCard for reliable rendering) */}
+      {/*
       {currentCheckInTutorialStep === 'checkedIn' && !checkedInTooltipDismissed && (
         <CheckInTutorialOverlay
           currentStep="checkedIn"
@@ -971,7 +975,7 @@ const HomePage = () => {
           tooltipConfig={{
             icon: '✅',
             title: 'Your Active Check-In',
-            body: `Great job! Your check-in is now active.\n\nHere you can:\n• Add notes about your situation\n• Add photos for your besties\n• Add more time if needed\n\nWhen you're safe, click the "I'm Safe" button. This lets your besties know you're okay! 💜`,
+            body: \`Great job! Your check-in is now active.\\n\\nHere you can:\\n• Add notes about your situation\\n• Add photos for your besties\\n• Add more time if needed\\n\\nWhen you're safe, click the "I'm Safe" button. This lets your besties know you're okay! 💜\`,
             overlayOnElement: false,
             buttons: [
               { text: 'Got it!', action: 'continue', primary: true }
@@ -979,8 +983,10 @@ const HomePage = () => {
           }}
         />
       )}
+      */}
 
       {/* Check-In Tutorial - afterSafe step */}
+      {/*
       {currentCheckInTutorialStep === 'afterSafe' && (
         <>
           <CheckInTutorialOverlay
@@ -1022,7 +1028,7 @@ const HomePage = () => {
             tooltipConfig={{
               icon: '🎉',
               title: 'Amazing Work!',
-              body: `Congratulations! You've learned how to create a check-in and keep yourself safe.\n\nReady to learn about your Bestie Circle? It's where you build your safety network with the people you trust most.`,
+              body: \`Congratulations! You've learned how to create a check-in and keep yourself safe.\\n\\nReady to learn about your Bestie Circle? It's where you build your safety network with the people you trust most.\`,
               overlayOnElement: false,
               dismissible: false,
               canDismiss: false,
@@ -1044,6 +1050,7 @@ const HomePage = () => {
           />
         </>
       )}
+      */}
 
       {/* Step 1: Bestie Circle Tutorial (NEW) - Moved to embedded LivingCircle */}
 

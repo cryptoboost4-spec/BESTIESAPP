@@ -265,23 +265,7 @@ async function checkExpiredCheckIns(config) {
           viewedBy: [] // Initialize viewedBy array
         });
         
-        // Schedule SMS for 5 minutes later (only if there are besties to notify)
-        if (bestiesToNotify.length > 0) {
-          const smsScheduleTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-          await db.collection('scheduledSMS').add({
-            checkinId: checkinId,
-            userId: userId,
-            bestieIds: bestiesToNotify,
-            scheduledFor: admin.firestore.Timestamp.fromDate(smsScheduleTime),
-            status: 'pending',
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
-          });
-          functions.logger.info('SMS scheduled', {
-            checkinId,
-            scheduledFor: smsScheduleTime.toISOString(),
-            bestieCount: bestiesToNotify.length
-          });
-        }
+
 
         // Log analytics
         await db.collection('analytics').add({

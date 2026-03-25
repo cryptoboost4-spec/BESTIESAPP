@@ -14,35 +14,10 @@ const OnboardingFlow = ({ onComplete }) => {
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [uploading, setUploading] = useState(false);
 
-  const slides = [
-    {
-      emoji: '👋',
-      title: 'Welcome to Besties!',
-      description: 'Your personal safety check-in app that keeps your loved ones informed.',
-    },
-    {
-      emoji: '⏰',
-      title: 'How It Works',
-      description: 'Create a check-in with a time limit. If you don\'t mark yourself safe before time runs out, your besties get alerted.',
-    },
-    {
-      emoji: '💜',
-      title: 'Your Safety Network',
-      description: 'Add up to 5 besties to your circle. They\'ll be notified if you miss a check-in, so they can make sure you\'re okay.',
-    },
-    {
-      emoji: '📱',
-      title: 'Stay Connected',
-      description: 'Your besties get SMS alerts when you miss a check-in. They can also see your location and notes from your last check-in.',
-    },
-    {
-      emoji: '✨',
-      title: 'Let\'s Get Started!',
-      description: 'We\'ll help you set up your profile and add your first bestie. Then you\'ll be ready to create your first check-in!',
-    },
-  ];
-
-  const currentSlide = slides[slideIndex];
+  // Tutorial Steps for Action Loop
+  const [tutStep, setTutStep] = useState(1);
+  const [mockBestie, setMockBestie] = useState('');
+  const [mockLocation, setMockLocation] = useState('');
 
   const handleSaveName = async () => {
     try {
@@ -113,7 +88,7 @@ const OnboardingFlow = ({ onComplete }) => {
             Your personal safety network in your pocket
           </p>
           <button
-            onClick={() => setStep('slides')}
+            onClick={() => setStep('name')}
             className="btn bg-white text-primary hover:bg-white/90 text-lg px-8 py-4"
           >
             Get Started →
@@ -123,57 +98,138 @@ const OnboardingFlow = ({ onComplete }) => {
     );
   }
 
-  // Slides
-  if (step === 'slides') {
+  // Action-Based Tutorial Loop
+  if (step === 'tutorial') {
     return (
       <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50 p-4">
         <div className="max-w-md w-full text-center">
-          <div className="text-7xl mb-6">{currentSlide.emoji}</div>
-          <h2 className="text-3xl font-display text-text-primary mb-4">
-            {currentSlide.title}
-          </h2>
-          <p className="text-lg text-text-secondary mb-8">
-            {currentSlide.description}
-          </p>
-
-          {/* Dots */}
-          <div className="flex justify-center gap-2 mb-8">
-            {slides.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === slideIndex ? 'bg-primary w-6' : 'bg-gray-300'
-                }`}
+          
+          {/* Step 1: Add Bestie */}
+          {tutStep === 1 && (
+            <div className="animate-fade-in">
+              <div className="text-6xl mb-4">💜</div>
+              <h2 className="text-3xl font-display text-text-primary mb-4">Step 1: Add a Bestie</h2>
+              <p className="text-text-secondary mb-6">Safety is better together. Add someone you trust to be your emergency contact.</p>
+              <input 
+                type="text" 
+                placeholder="Bestie's Name or Phone #"
+                className="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 focus:border-primary outline-none"
+                value={mockBestie}
+                onChange={(e) => setMockBestie(e.target.value)}
               />
+              <button 
+                onClick={() => setTutStep(2)}
+                disabled={!mockBestie.trim()}
+                className="btn btn-primary w-full py-4 disabled:opacity-50"
+              >
+                Add "{mockBestie || 'Bestie'}" →
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Create Check-in */}
+          {tutStep === 2 && (
+            <div className="animate-fade-in">
+              <div className="text-6xl mb-4">📍</div>
+              <h2 className="text-3xl font-display text-text-primary mb-4">Step 2: Create Check-in</h2>
+              <p className="text-text-secondary mb-6">Whenever you're feeling unsafe, set a timer. Where are you going?</p>
+              <input 
+                type="text" 
+                placeholder="e.g., Walking to my car"
+                className="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 focus:border-primary outline-none"
+                value={mockLocation}
+                onChange={(e) => setMockLocation(e.target.value)}
+              />
+              <div className="bg-gray-100 rounded-xl p-4 mb-6 text-sm text-gray-500">
+                Timer set for: <span className="font-bold text-primary">15 minutes</span>
+              </div>
+              <button 
+                onClick={() => setTutStep(3)}
+                disabled={!mockLocation.trim()}
+                className="btn btn-primary w-full py-4 disabled:opacity-50"
+              >
+                Start Check-in →
+              </button>
+            </div>
+          )}
+
+          {/* Step 3: View Mockup */}
+          {tutStep === 3 && (
+            <div className="animate-fade-in">
+              <div className="text-6xl mb-4">⏱️</div>
+              <h2 className="text-3xl font-display text-text-primary mb-4">Timer is Active</h2>
+              <p className="text-text-secondary mb-6">Your check-in is now running.</p>
+              
+              <div className="border-2 border-primary rounded-xl p-6 mb-8 text-left bg-primary/5">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-primary">Active Check-in</span>
+                  <span className="text-primary font-mono bg-white px-2 py-1 rounded">14:59</span>
+                </div>
+                <p className="text-gray-800 font-semibold">{mockLocation}</p>
+                <div className="mt-4 flex gap-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-xs">💜</div>
+                  <span className="text-sm text-gray-600 self-center">{mockBestie} is watching</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setTutStep(4)}
+                className="btn btn-primary w-full py-4"
+              >
+                Next Step →
+              </button>
+            </div>
+          )}
+
+          {/* Step 4: Mark Safe */}
+          {tutStep === 4 && (
+            <div className="animate-fade-in">
+              <div className="text-6xl mb-4">✅</div>
+              <h2 className="text-3xl font-display text-text-primary mb-4">Step 3: Mark Safe</h2>
+              <p className="text-text-secondary mb-6">When you arrive, press the green button to end the timer before it runs out.</p>
+              
+              <button 
+                onClick={() => setTutStep(5)}
+                className="btn bg-green-500 hover:bg-green-600 text-white w-full py-5 text-xl font-bold rounded-2xl mb-4 shadow-lg active:scale-95 transition-transform"
+              >
+                MARK AS SAFE
+              </button>
+              <button 
+                onClick={() => setTutStep(5)} // Allow skip for demo
+                className="text-gray-400 text-sm hover:underline"
+              >
+                What happens if I don't?
+              </button>
+            </div>
+          )}
+
+          {/* Step 5: Missed Consequence */}
+          {tutStep === 5 && (
+            <div className="animate-fade-in">
+              <div className="text-6xl mb-4">🚨</div>
+              <h2 className="text-3xl font-display text-text-primary mb-4">If You Don't Check In...</h2>
+              <p className="text-text-secondary mb-6">If the timer hits zero, we instantly alert your besties so they can check on you.</p>
+
+              <div className="bg-gray-100 p-4 rounded-xl text-left border-l-4 border-red-500 mb-8 max-w-sm mx-auto">
+                <p className="text-xs text-gray-500 mb-1">Incoming SMS to {mockBestie}</p>
+                <p className="font-mono text-sm">🚨 EMERGENCY: {displayName || 'Your friend'} missed their check-in! Location: {mockLocation}. Check Besties app immediately!</p>
+              </div>
+
+              <button 
+                onClick={handleFinish}
+                className="btn btn-primary w-full py-4"
+              >
+                I Understand, Let's Go! ✨
+              </button>
+            </div>
+          )}
+
+          <div className="flex justify-center gap-2 mt-8">
+            {[1,2,3,4,5].map(step => (
+              <div key={step} className={`w-2 h-2 rounded-full ${tutStep >= step ? 'bg-primary' : 'bg-gray-200'}`} />
             ))}
           </div>
 
-          {/* Navigation */}
-          <div className="flex gap-3">
-            {slideIndex < slides.length - 1 ? (
-              <>
-                <button
-                  onClick={() => setStep('name')}
-                  className="flex-1 btn btn-secondary"
-                >
-                  Skip
-                </button>
-                <button
-                  onClick={() => setSlideIndex(slideIndex + 1)}
-                  className="flex-1 btn btn-primary"
-                >
-                  Next →
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setStep('name')}
-                className="w-full btn btn-primary text-lg py-4"
-              >
-                Let's Go! ✨
-              </button>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -252,7 +308,7 @@ const OnboardingFlow = ({ onComplete }) => {
           </label>
 
           <button
-            onClick={handleSkipPhoto}
+            onClick={() => setStep('tutorial')}
             className="w-full btn btn-secondary text-lg py-4"
             disabled={uploading}
           >
@@ -260,7 +316,7 @@ const OnboardingFlow = ({ onComplete }) => {
           </button>
 
           <button
-            onClick={handleSkipPhoto}
+            onClick={() => setStep('tutorial')}
             className="w-full text-center text-sm text-text-secondary hover:text-primary transition-colors mt-2"
             disabled={uploading}
           >
@@ -271,61 +327,7 @@ const OnboardingFlow = ({ onComplete }) => {
     );
   }
 
-  // Bestie Circle Intro
-  if (step === 'bestie-circle') {
-    return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="max-w-md w-full py-8">
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">⭐</div>
-            <h2 className="text-3xl font-display text-text-primary mb-2">
-              Your Bestie Circle
-            </h2>
-            <p className="text-text-secondary mb-6">
-              These are the 5 besties who get notified if you miss a check-in.
-            </p>
-            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 mb-6">
-              <p className="text-sm font-semibold text-yellow-800">
-                ⚠️ You need at least one bestie to create a check-in
-              </p>
-            </div>
-          </div>
 
-          <div className="card p-6 mb-6">
-            <h3 className="font-display text-lg mb-4 text-center">How It Works:</h3>
-            <ul className="space-y-3 text-sm text-text-secondary">
-              <li className="flex gap-3">
-                <span className="text-2xl">1️⃣</span>
-                <span>Choose up to 5 besties for your safety circle</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-2xl">2️⃣</span>
-                <span>They'll get SMS alerts if you miss a check-in</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-2xl">3️⃣</span>
-                <span>You can change who's in your circle anytime</span>
-              </li>
-            </ul>
-          </div>
-
-          <button
-            onClick={() => {
-              handleFinish();
-              navigate('/profile');
-            }}
-            className="w-full btn btn-primary text-lg py-4 mb-3"
-          >
-            ➕ Add Your First Bestie
-          </button>
-
-          <p className="text-xs text-center text-text-secondary">
-            Click on a + button in your bestie circle to continue
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return null;
 };
