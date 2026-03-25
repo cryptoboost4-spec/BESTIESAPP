@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { loadTutorialState, saveTutorialState } from '../utils/tutorialHelpers';
 
 /**
@@ -33,9 +33,13 @@ export const useBestiesTutorialState = () => {
 
       // Try Firestore but don't let it block the tutorial
       // Firestore is optional - tutorial works fine with localStorage only
+      // Uses onSnapshot with error callback instead of getDoc to prevent Firebase
+      // from logging "Uncaught Error in snapshot listener" before our catch runs.
       try {
         const tutorialsRef = doc(db, 'users', currentUser.uid, 'settings', 'tutorials');
-        const docSnap = await getDoc(tutorialsRef);
+        const docSnap = await new Promise((resolve, reject) => {
+          const unsub = onSnapshot(tutorialsRef, (s) => { unsub(); resolve(s); }, (e) => { unsub(); reject(e); });
+        });
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.besties?.completed) {
