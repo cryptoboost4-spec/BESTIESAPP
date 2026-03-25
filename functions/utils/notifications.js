@@ -395,11 +395,27 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
         notificationStatus.channelsSucceeded.push('Push');
       } catch (pushError) {
         functions.logger.warn('Push notification failed:', pushError.message);
-        notificationStatus.channelsFailed.push({ 
-          channel: 'Push', 
+        notificationStatus.channelsFailed.push({
+          channel: 'Push',
           error: pushError.message,
           code: pushError.code || 'unknown'
         });
+        // Clear stale/invalid FCM tokens so we stop wasting retries on them
+        const INVALID_TOKEN_CODES = [
+          'messaging/registration-token-not-registered',
+          'messaging/invalid-registration-token',
+        ];
+        if (INVALID_TOKEN_CODES.includes(pushError.code)) {
+          try {
+            await db.collection('users').doc(bestieId).update({
+              fcmToken: admin.firestore.FieldValue.delete(),
+              notificationsEnabled: false,
+            });
+            functions.logger.info(`Cleared invalid FCM token for user ${bestieId}`);
+          } catch (cleanupError) {
+            functions.logger.warn('Failed to clear invalid FCM token:', cleanupError.message);
+          }
+        }
         // Continue with other notification methods
       }
     }
@@ -409,6 +425,7 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
     // 1. Telegram (free)
     let telegramSent = false;
     if (bestieData.notificationPreferences?.telegram && bestieData.telegramChatId) {
+      notificationStatus.channelsAttempted.push('Telegram');
       try {
         const { sendTelegramAlert } = require('../index');
         await sendTelegramAlert(bestieData.telegramChatId, {
@@ -421,9 +438,11 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
           photoURLs: checkIn.photoURLs || []
         });
         notificationsSent.push('Telegram');
+        notificationStatus.channelsSucceeded.push('Telegram');
         telegramSent = true;
       } catch (telegramError) {
         functions.logger.warn('Telegram failed for check-in alert:', telegramError.message);
+        notificationStatus.channelsFailed.push({ channel: 'Telegram', error: telegramError.message });
       }
     }
 
@@ -437,6 +456,7 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
       const contact = doc.data();
       const expiresAt = contact.expiresAt?.toMillis();
       if (expiresAt && expiresAt > Date.now() && contact.messengerPSID) {
+        notificationStatus.channelsAttempted.push('Messenger');
         try {
           const { sendMessengerAlert } = require('./checkInNotifications');
           sendMessengerAlert(contact.messengerPSID, {
@@ -449,8 +469,10 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
           });
           messengerSent = true;
           notificationsSent.push('Messenger');
+          notificationStatus.channelsSucceeded.push('Messenger');
         } catch (messengerError) {
           functions.logger.warn('Messenger failed for check-in alert:', messengerError.message);
+          notificationStatus.channelsFailed.push({ channel: 'Messenger', error: messengerError.message });
         }
       }
     });
@@ -493,17 +515,6 @@ async function sendCascadingAlert(checkInId, checkIn, bestieId, userData) {
         notificationStatus.channelsFailed.push({ channel: 'SMS', error: smsError.message });
       }
     }
-
-    // Track notification attempts
-    const notificationStatus = {
-      checkInId,
-      bestieId,
-      userId: checkIn.userId,
-      timestamp: admin.firestore.Timestamp.now(),
-      channelsAttempted: [],
-      channelsSucceeded: [],
-      channelsFailed: []
-    };
 
     // Send email if enabled (cheap - use full message)
     if (bestieData.email && bestieData.notificationPreferences?.email) {
