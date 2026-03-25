@@ -17,7 +17,6 @@ import {
 import AddBestieModal from '../components/AddBestieModal';
 import PendingRequestsList from '../components/besties/PendingRequestsList';
 import NeedsAttentionSection from '../components/besties/NeedsAttentionSection';
-import CreatePostModal from '../components/CreatePostModal';
 import { useActivityFeed } from '../hooks/useActivityFeed';
 import { useSimpleTutorial } from '../hooks/useSimpleTutorial';
 import BestiesTutorialOverlay from '../components/tutorials/besties/BestiesTutorialOverlay';
@@ -31,7 +30,6 @@ const BestiesPage = () => {
   const [besties, setBesties] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [featuredCircle, setFeaturedCircle] = useState([]);
 

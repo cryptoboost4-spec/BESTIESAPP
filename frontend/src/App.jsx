@@ -74,86 +74,10 @@ function RouteTracker() {
   return null;
 }
 
-// Conditional Mobile Nav - hide during onboarding and until besties tutorial starts
+// Conditional Mobile Nav - hide only during onboarding
 function ConditionalMobileNav() {
   const location = useLocation();
-  const [shouldShow, setShouldShow] = useState(false);
-
-  useEffect(() => {
-    const isOnboarding = location.pathname === '/onboarding';
-    const isOnBestiesPage = location.pathname === '/besties';
-    const isOnProfilePage = location.pathname === '/profile';
-
-    // Hide during onboarding
-    if (isOnboarding) {
-      setShouldShow(false);
-      return;
-    }
-
-    // ALWAYS show on besties and profile pages
-    if (isOnBestiesPage || isOnProfilePage) {
-      setShouldShow(true);
-      return;
-    }
-
-    // For home page: only show nav when we're in active post-tutorial flow
-    // (meaning user just finished bestie circle tutorial and we're guiding them to Besties page)
-    const checkShouldShowOnHome = () => {
-      if (typeof window === 'undefined') return false;
-
-      // Check for active post-tutorial step in legacy key
-      const postTutorialStep = localStorage.getItem('bestieCircle_postTutorialStep');
-      if (postTutorialStep === 'add-bestie' || postTutorialStep === 'click-besties-tab') {
-        return true;
-      }
-
-      // Also check the unified tutorial system state for active post-tutorial step
-      try {
-        const unifiedState = localStorage.getItem('_tutorial_system_state');
-        if (unifiedState) {
-          const parsed = JSON.parse(unifiedState);
-          const step = parsed?.bestieCircle?.postTutorialStep;
-          if (step === 'add-bestie' || step === 'click-besties-tab') {
-            return true;
-          }
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-
-      // Don't show nav on home during tutorial - only when explicitly in post-tutorial flow
-      return false;
-    };
-
-    const updateVisibility = () => {
-      setShouldShow(checkShouldShowOnHome());
-    };
-
-    // Initial check
-    updateVisibility();
-
-    // Listen for tutorial state changes
-    const handleStorageChange = () => {
-      updateVisibility();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('bestieCircle_postTutorialStep_changed', handleStorageChange);
-
-    // Also check periodically for same-tab updates
-    const interval = setInterval(updateVisibility, 100);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('bestieCircle_postTutorialStep_changed', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [location.pathname]);
-
-  if (!shouldShow) {
-    return null;
-  }
-
+  if (location.pathname === '/onboarding') return null;
   return <MobileBottomNav />;
 }
 

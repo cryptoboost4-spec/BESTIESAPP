@@ -9,7 +9,7 @@ import QuickCheckInButtons from '../components/QuickCheckInButtons';
 import LivingCircle from '../components/LivingCircle';
 import DonationCard from '../components/DonationCard';
 import WeeklySummary from '../components/profile/WeeklySummary';
-// EmergencySOSButton removed per user request
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import OfflineBanner from '../components/OfflineBanner';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner';
@@ -29,6 +29,28 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [activeCheckIns, setActiveCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // SOS state
+  const [sosLoading, setSosLoading] = useState(false);
+  const [sosTriggered, setSosTriggered] = useState(false);
+
+  const handleSOS = async () => {
+    if (sosLoading || sosTriggered) return;
+    const confirmed = window.confirm('🆘 TRIGGER SOS?\n\nThis will immediately alert all your besties that you need help. Only use in a real emergency.');
+    if (!confirmed) return;
+    setSosLoading(true);
+    try {
+      const fns = getFunctions();
+      const triggerSOS = httpsCallable(fns, 'triggerEmergencySOS');
+      await triggerSOS({ location: 'Unknown' });
+      setSosTriggered(true);
+      toast.success('🆘 SOS sent! Your besties have been alerted.', { duration: 6000 });
+    } catch (err) {
+      toast.error(err.message || 'Failed to send SOS. Please call 911.');
+    } finally {
+      setSosLoading(false);
+    }
+  };
 
   // Invite Friends modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -831,18 +853,28 @@ const HomePage = () => {
               ))}
             </div>
 
-            {/* Get Me Out Button - Coming Soon */}
-            <div className="card p-6 mb-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-2 border-orange-200 dark:border-orange-700 opacity-75">
-              <h3 className="text-lg font-display text-orange-900 dark:text-orange-100 mb-2 text-center">
-                🆘 Need an Exit Strategy?
+            {/* Emergency SOS Button */}
+            <div className="card p-6 mb-6 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-2 border-red-300 dark:border-red-700">
+              <h3 className="text-lg font-display text-red-900 dark:text-red-100 mb-2 text-center">
+                Need help right now?
               </h3>
-              <p className="text-sm text-orange-700 dark:text-orange-300 mb-3 text-center">
-                Feeling uncomfortable? We're working on a way to help you get out safely.
+              <p className="text-sm text-red-700 dark:text-red-300 mb-4 text-center">
+                Press SOS to instantly alert all your besties.
               </p>
               <div className="text-center">
-                <span className="inline-block px-4 py-2 bg-orange-200 dark:bg-orange-800/50 text-orange-800 dark:text-orange-200 rounded-full text-sm font-semibold">
-                  ✨ Coming Soon
-                </span>
+                {sosTriggered ? (
+                  <div className="inline-block px-6 py-3 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-full font-bold text-lg">
+                    ✅ Besties Alerted
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleSOS}
+                    disabled={sosLoading}
+                    className="px-10 py-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white rounded-full font-bold text-xl shadow-lg transition-all disabled:opacity-60"
+                  >
+                    {sosLoading ? '...' : '🆘 SOS'}
+                  </button>
+                )}
               </div>
             </div>
           </>

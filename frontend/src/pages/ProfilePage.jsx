@@ -57,7 +57,6 @@ const ProfilePage = () => {
   // Refs for highlighted elements
   const profileCardRef = useRef(null);
   const customizerButtonRef = useRef(null);
-  const customizerButtonRef = useRef(null);
   const badgesSectionRef = useRef(null);
   const statsSectionRef = useRef(null);
   const settingsButtonRef = useRef(null);
